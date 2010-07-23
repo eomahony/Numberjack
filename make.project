@@ -1,0 +1,33 @@
+ARCH            :=      $(shell uname -m | \
+                        sed \
+			-e s/sun../sparc/ \
+			-e s/i.86/x86/ \
+			-e s/i86pc/x86/ \
+			-e s/IP../mips/ \
+			-e s/9000..../hppa/ \
+			-e s/Power\ Macintosh/ppc/ \
+			-e s/00........../pwr4/)
+OSTYPE          :=      $(shell uname -s | \
+                        tr '[:upper:]' '[:lower:]' | \
+                        sed \
+			-e s/cygwin.*/cygwin/ \
+                        -e s/irix../irix/ )
+
+CURDIR		:=	$(shell pwd)
+
+PYVERSION	:=	$(shell python -V 2>&1 | \
+                        tr '[:upper:]' '[:lower:]' | \
+                        sed \
+			-e s/" 2.4."*/2.4/ \
+			-e s/" 2.5."*/2.5/ \
+			-e s/" 2.6."*/2.6/ )
+
+
+ifeq ($(OSTYPE),darwin)
+BUNDLE = -bundle -undefined suppress 
+HACK = -I/usr/lib/gcc/i686-apple-darwin9/4.2.1/include
+else
+BUNDLE = -shared 
+endif
+
+

@@ -66,7 +66,9 @@ Mistral_Expression::Mistral_Expression(MistralIntArray& vals)
   initialise();
 
   int _size   = vals.size();
-  int *_values = new int[_size]; 
+  int *_values = new int[_size];
+  for(int i=0; i<_size; ++i)
+    _values[i] = vals.get_item(i);
   _self = CSP::_Variable(_values, _size);
 
   delete[] _values;
@@ -1798,9 +1800,12 @@ bool MistralSolver::branch_right() {
 // }
 
 void MistralSolver::store_solution() {
-  solver->store_solution();
-  if( solver->goal ) solver->status = solver->goal->update();
-  solver->closeSearch();
+  //std::cout << solver->status << std::endl;
+  if(solver->SOLUTIONS == 0 || solver->level != solver->init_level) {
+    solver->store_solution();
+    if( solver->goal ) solver->status = solver->goal->update();
+    solver->closeSearch();
+  }
 }
 
 void MistralSolver::setHeuristic(const char* var_heuristic, const char* val_heuristic, const int rand)

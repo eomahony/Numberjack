@@ -51,7 +51,7 @@ OPTFLAGS = -O3 #-m32
 #OPTFLAGS = -finstrument-functions 
 #OPTFLAGS = -g 
 
-COMPILFLAGS = -Wall -D_UNIX -fPIC #-D_DEBUGSEARCH #-D_DEBUGPROPAG 
+COMPILFLAGS = -Wall -D_UNIX -fPIC #-D_DEBUGMODEL
 
 #-Wl,--hash-style=sysv
 #-D_DEBUGSEARCH \

@@ -2,9 +2,7 @@
 #include <iostream>
 #include "MiniSat.hpp"
 #include <math.h>
-//#include <vector>
 #include <Sort.h>
-//#include "SimpSolver.hpp"
 
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -13,13 +11,6 @@
 Lit Lit_False;
 Lit Lit_True;
 
-
-void printClause(vec<Lit>& cl)
-{
-  for(int i=0; i<cl.size(); ++i)
-    std::cout << " " << (sign(cl[i]) ? "-" : "") << var(cl[i]);
-  std::cout << std::endl;
-}
 
 static inline double cpuTime(void) {
     struct rusage ru;
@@ -38,8 +29,6 @@ void printStats(Solver& S)
     if (mem_used != 0) reportf("Memory used           : %.2f MB\n", mem_used / 1048576.0);
     reportf("CPU time              : %g s\n", cpu_time);
 }
-
-
 
 #define CHUNK_LIMIT 1048576
 
@@ -157,41 +146,480 @@ static void SIGINT_handler(int signum) {
 
 
 
+
+/**************************************************************
+ ********************      ENCODINGS        *******************
+ **************************************************************/
+
+std::ostream& DomainEncoding::display(std::ostream& o) const {
+  if(_values) {
+    o << "{" << _values[0];
+    for(int i=1; i<_size; ++i)
+      o << ", " << _values[i];
+    o << "}";
+  } else o << "[" << _lower << ".." << _upper << "]";
+  o << " (" << _size << ")";
+  return o;
+}
+
+std::ostream& OffsetDomain::display(std::ostream& o) const { 
+  o << offset << " + ";
+  return _dom_ptr->display(o);
+}
+
+std::ostream& FactorDomain::display(std::ostream& o) const { 
+  o << factor << " * ";
+  return _dom_ptr->display(o);
+}
+
+std::ostream& EqDomain::display(std::ostream& o) const { 
+  o << value << (spin ? " == " : " != ");
+  return _dom_ptr->display(o);
+}
+
+std::ostream& LeqDomain::display(std::ostream& o) const { 
+  o << bound << (spin ? " < " : " >= ");
+  return _dom_ptr->display(o);
+}
+
+std::ostream& ConstantDomain::display(std::ostream& o) const { 
+  o << value;
+  return o;
+}
+
+DomainEncoding::DomainEncoding(MiniSat_Expression *o) : AbstractDomain(o) {
+  _lower = 0;
+  _upper = 1;
+  _size = 2;
+  _values = NULL;
+
+  // not initialised
+  _direct_encoding = -1;
+  _order_encoding = -1;
+}
+
+DomainEncoding::DomainEncoding(MiniSat_Expression *o, const int nval) : AbstractDomain(o) {
+  _lower = 0;
+  _upper = nval-1;
+  _size = nval;
+  _values = NULL;
+
+  // not initialised
+  _direct_encoding = -1;
+  _order_encoding = -1;
+}
+
+DomainEncoding::DomainEncoding(MiniSat_Expression *o, const int lb, const int ub) : AbstractDomain(o) {
+  _lower = lb;
+  _upper = ub;
+  _size = ub-lb+1;
+  _values = NULL;
+
+  // not initialised
+  _direct_encoding = -1;
+  _order_encoding = -1;
+}
+
+DomainEncoding::DomainEncoding(MiniSat_Expression *o, MiniSatIntArray& vals) : AbstractDomain(o) {
+  _size   = vals.size();
+  _values = new int[_size]; 
+  _lower = _upper = vals.get_item(0);
+  for(int i=0; i<_size; ++ i) {
+    _values[i] = vals.get_item(i);
+    if(_upper < _values[i]) _upper = _values[i];
+    if(_lower > _values[i]) _lower = _values[i];
+  }
+}
+
+DomainEncoding::~DomainEncoding() {
+  delete [] _values;
+}
+
+Lit DomainEncoding::less_or_equal(const int value, const int index) const {
+  if(_lower > value) return Lit_False;
+  else if(_upper <= value) return Lit_True;
+  else if(_size == 2) return ~Lit(_direct_encoding);
+  else if(index >= 0) return Lit(_order_encoding+index);
+  else if(!_values) return Lit(_order_encoding+value-_lower);
+
+  // We need to search for the right variable, the index of 'value' 
+  // if it is in the domain, or the index of the largest element
+  // smaller than 'value' otherwise
+  return Lit(_order_encoding+get_index_p(value));
+} 
+
+Lit DomainEncoding::equal(const int value, const int index) const {
+  if(_lower > value || _upper < value) return Lit_False;
+  else if(_size == 2) {
+    if(_lower == value) return ~Lit(_direct_encoding);
+    if(_upper == value) return Lit(_direct_encoding);
+    return Lit_False;
+  } else {
+    if(index >= 0) {return Lit(_direct_encoding+index);}
+    if(!_values) return Lit(_direct_encoding+value-_lower);
+
+    // We need to search for the right variable,: the index of 'value' 
+    int x = get_index_p(value);
+    if(_values[x] == value) return Lit(_direct_encoding+x);
+  }
+  return Lit_False;
+} 
+
+void DomainEncoding::encode(MiniSatSolver *solver)
+{
+
+#ifdef _DEBUGWRAP
+  std::cout << "encode x" << owner->_ident << " in ";
+  display(std::cout);
+  std::cout << std::endl;
+#endif
+
+  if(_size == 2) _direct_encoding = solver->create_atom(this,SELF);
+  else {
+    // create one atom for each value in the domain (direct encoding)
+    _direct_encoding = solver->create_atom(this,DIRECT);
+    for(int i=1; i<_size; ++i) solver->create_atom(this,DIRECT);
+    
+    // create one atom for each value in the domain but the last (order encoding)
+    _order_encoding = solver->create_atom(this,ORDER);
+    for(int i=1; i<_size-1; ++i) solver->create_atom(this,ORDER);
+  
+    std::vector<Lit> lits;
+     
+    // at least one value x=1 or x=2 or ...
+    for(int i=0; i<_size; ++i) lits.push_back(equal(getval(i),i));
+    solver->addClause(lits);
+
+    for(int i=0; i<_size; ++i) {
+      // chain the bounds x<=i -> x<=i+1
+      if(i) {
+	lits.clear();
+	lits.push_back(~(less_or_equal(getval(i-1),i-1)));
+	lits.push_back(less_or_equal(getval(i),i));
+	solver->addClause(lits);
+      }
+
+      // channel x=i -> x>i-1
+      if(i) {
+	lits.clear();
+	lits.push_back(~(equal(getval(i),i)));
+	lits.push_back(~(less_or_equal(getval(i-1),i-1)));
+	solver->addClause(lits);
+      }
+
+      // channel x=i -> x<=i
+      if(i<_size-1) {
+	lits.clear();
+	lits.push_back(~equal(getval(i),i));
+	lits.push_back(less_or_equal(getval(i),i));
+	solver->addClause(lits);
+      }
+    }
+
+    solver->validate();
+  }
+}
+
+void DomainEncoding::print_lit(Lit p, const int type) const {
+    std::cout << "(x" << owner->_ident << " " ;
+    if(type == SELF) {
+      std::cout << "== " << (sign(p) ? _lower : _upper);
+    } else if(type == DIRECT) {
+      std::cout << (sign(p) ? "!= " : "== ") << (_values ? _values[((var(p))-_direct_encoding)] : ((var(p))-_direct_encoding+_lower));
+    } else if(type == ORDER) {
+      std::cout << (sign(p) ? "> " : "<= ") << (_values ? _values[((var(p))-_order_encoding)] : ((var(p))-_order_encoding+_lower));
+    }
+    std::cout << ")";
+}
+
+OffsetDomain::OffsetDomain(MiniSat_Expression *o, AbstractDomain *d, const int os) : AbstractDomain(o) {
+  _dom_ptr = d;
+  offset = os;
+}
+
+int OffsetDomain::getval(int idx) const { return (_dom_ptr->getval(idx)+offset); }
+int OffsetDomain::getmin() const { return (_dom_ptr->getmin()+offset); }
+int OffsetDomain::getmax() const { return (_dom_ptr->getmax()+offset); }
+
+Lit OffsetDomain::less_or_equal(const int value, const int index) const {
+  return _dom_ptr->less_or_equal(value-offset,index);
+}
+Lit OffsetDomain::equal(const int value, const int index) const {
+  return _dom_ptr->equal(value-offset,index);
+}
+
+FactorDomain::FactorDomain(MiniSat_Expression *o, AbstractDomain *d, const int f) : AbstractDomain(o) {
+  _dom_ptr = d;
+  factor = f;
+}
+
+int FactorDomain::getval(int idx) const { return ((factor < 0 ? _dom_ptr->getval(_dom_ptr->getsize()-idx-1) : _dom_ptr->getval(idx))*factor); }
+int FactorDomain::getmin() const { return (factor < 0 ? factor*(_dom_ptr->getmax()) : factor*(_dom_ptr->getmin())); }
+int FactorDomain::getmax() const { return (factor < 0 ? factor*(_dom_ptr->getmin()) : factor*(_dom_ptr->getmax())); }
+
+Lit FactorDomain::less_or_equal(const int value, const int index) const {
+  if(factor>0) {
+
+    int quotient = (value/factor);
+    if(value < 0 && value%factor) --quotient;
+
+    return _dom_ptr->less_or_equal(quotient,-1);
+    //return _dom_ptr->less_or_equal(value/factor,-1);
+  } else {
+    
+    int quotient = (value/factor)-1;
+    if(value < 0 && value%factor) ++quotient;
+
+    return ~(_dom_ptr->less_or_equal(quotient,-1));
+    //return ~(_dom_ptr->less_or_equal((value/factor)-1+(value%factor != 0),-1));
+  }
+}
+
+Lit FactorDomain::equal(const int value, const int index) const {
+  if(value%factor) return Lit_False;
+  return _dom_ptr->equal(value/factor,-1);
+}
+
+EqDomain::EqDomain(MiniSat_Expression *o, AbstractDomain *d, const int v, const int s) : AbstractDomain(o) {
+  _dom_ptr = d;
+  value = v;
+  spin = s;
+}
+
+Lit EqDomain::less_or_equal(const int v, const int index) const {
+  // make sense iff v == 0
+  if(v < 0) return Lit_False;
+  if(v > 0) return Lit_True;
+  // <= 0, i.e., false iff the pointed domain is not equal to 'value' (reverse if neg spin)
+  return (spin ? ~(_dom_ptr->equal(value,-1)) : _dom_ptr->equal(value,-1));
+}
+Lit EqDomain::equal(const int v, const int index) const {
+  // make sense iff v == 0 or v == 1
+  if(v < 0 || v > 1) return Lit_False;
+  // find out if it is in fact an equality or an inequality
+  return ((v == spin) ? _dom_ptr->equal(value,-1) : ~(_dom_ptr->equal(value,-1)));
+}
+
+LeqDomain::LeqDomain(MiniSat_Expression *o, AbstractDomain *d, const int b, const int s) : AbstractDomain(o) {
+  _dom_ptr = d;
+  bound = b;
+  spin = s;
+}
+
+Lit LeqDomain::less_or_equal(const int v, const int index) const {
+  // make sense iff v == 0
+  if(v < 0) return Lit_False;
+  if(v > 0) return Lit_True;
+  // <= 0, i.e., false iff the pointed domain is <= bound (reverse if neg spin)
+  return (spin ? ~(_dom_ptr->less_or_equal(bound,-1)) : _dom_ptr->less_or_equal(bound,-1));
+}
+Lit LeqDomain::equal(const int v, const int index) const {
+  // make sense iff v == 0 or v == 1
+  if(v < 0 || v > 1) return Lit_False;
+  // find out if it is in fact an equality or an inequality
+  return ((v == spin) ? _dom_ptr->less_or_equal(bound,-1) : ~(_dom_ptr->less_or_equal(bound,-1)));
+}
+
+Lit ConstantDomain::less_or_equal(const int v, const int index) const {if(value <= v) return Lit_True; else return Lit_False;}
+Lit ConstantDomain::equal(const int v, const int index) const {if(value == v) return Lit_True; else return Lit_False;}
+
+bool processClause(std::vector<Lit>& cl_in, std::vector<Lit>& cl_out) {
+  cl_out.clear();
+  unsigned int i=0;
+  while(i<cl_in.size()) {
+    if(cl_in[i] == Lit_True) break;
+    else if(cl_in[i] != Lit_False) cl_out.push_back(cl_in[i]);
+    ++i;
+  }
+  return i<cl_in.size();
+}
+
+// (X + Y) == Z
+void additionEncoder(MiniSat_Expression *X,
+		     MiniSat_Expression *Y,
+		     MiniSat_Expression *Z,
+		     MiniSatSolver *solver) {
+  std::vector<Lit> lits;
+  int i, j, x, y;
+
+  for(i=0; i<X->getsize(); ++i) {
+    x = X->getval(i);
+    for(j=0; j<Y->getsize(); ++j) {
+      y = Y->getval(j);
+      
+      lits.clear();
+      if(i) lits.push_back(X->less_or_equal(x-1));
+      if(j) lits.push_back(Y->less_or_equal(y-1));
+      if(i || j) {
+	lits.push_back(~(Z->less_or_equal(x+y-1)));
+	solver->addClause(lits);
+      }
+
+      lits.clear();
+      if(i<X->getsize()) lits.push_back(~(X->less_or_equal(x)));
+      if(j<Y->getsize())lits.push_back(~(Y->less_or_equal(y)));
+      if(i<X->getsize() || j<Y->getsize()) {
+	lits.push_back(Z->less_or_equal(x+y));
+	solver->addClause(lits);
+      }
+    }
+  }
+}
+
+// (X != Y)
+void disequalityEncoder(MiniSat_Expression *X,
+			MiniSat_Expression *Y,
+			MiniSatSolver *solver) {
+  std::vector<Lit> lits;
+  int i=0, j=0, x, y;
+  while( i<X->getsize() && j<Y->getsize() )
+    {
+      x = X->getval(i);
+      y = Y->getval(j);
+      if(x == y) {
+	lits.clear();
+	lits.push_back(~(X->equal(x,i)));
+	lits.push_back(~(Y->equal(y,j)));
+	solver->addClause(lits);
+      }
+      if( x <= y ) ++i;
+      if( y <= x ) ++j;
+    }
+}
+
+// (X == Y)
+void equalityEncoder(MiniSat_Expression *X,
+		     MiniSat_Expression *Y,
+		     MiniSatSolver *solver) {
+  std::vector<Lit> lits;
+  int i=0, j=0, x, y;
+  while( i<X->getsize() && j<Y->getsize() )
+    {
+      x = X->getval(i);
+      y = Y->getval(j);
+
+      if(x == y) {
+	lits.clear();
+	lits.push_back(~(X->equal(x,i)));
+	lits.push_back(Y->equal(y,j));
+	solver->addClause(lits);
+
+	lits.clear();
+	lits.push_back(X->equal(x,i));
+	lits.push_back(~(Y->equal(y,j)));
+	solver->addClause(lits);
+	++i;
+	++j;
+      }
+      if( x < y ) {
+	lits.clear();
+	lits.push_back(~(X->equal(x,i)));
+	solver->addClause(lits);
+	++i;
+      }
+      if( y < x ) {
+	lits.clear();
+	lits.push_back(~(Y->equal(y,j)));
+	solver->addClause(lits);
+	++j;
+      }
+    }
+}
+
+// (X == Y) <-> Z
+void equalityEncoder(MiniSat_Expression *X,
+		     MiniSat_Expression *Y,
+		     MiniSat_Expression *Z,
+		     MiniSatSolver *solver,
+		     const bool spin) {
+  unsigned int num_clauses = solver->clause_base.size();
+  equalityEncoder(X,Y,solver);
+  while(num_clauses < solver->clause_base.size()) 
+    solver->clause_base[num_clauses++].push_back((spin ? Z->equal(0) : ~(Z->equal(0))));
+  disequalityEncoder(X,Y,solver);
+  while(num_clauses < solver->clause_base.size())
+    solver->clause_base[num_clauses++].push_back((spin ? ~(Z->equal(0)) : Z->equal(0)));
+}
+
+
+// X+K <= Y
+void precedenceEncoder(MiniSat_Expression *X,
+		       MiniSat_Expression *Y,
+		       const int K,
+		       MiniSatSolver *solver) {
+  std::vector<Lit> lits;
+  int i=0, j=0, x=0, y=0;
+  
+  while( i<X->getsize() )
+    {
+      if(i<X->getsize()) x = X->getval(i);
+      if(j<Y->getsize()) y = Y->getval(j);
+
+      if(x+K == y) {
+	lits.clear();
+	lits.push_back(X->less_or_equal(x,i));
+	lits.push_back(~(Y->less_or_equal(y,j)));
+	solver->addClause(lits);
+	++i;
+	++j;
+      } else if(x+K < y) {
+	++i;
+      } else if(x+K > y) {
+	if(x == X->getmin()) {
+	  lits.clear();
+	  lits.push_back(~(Y->less_or_equal(y,j)));
+	  solver->addClause(lits);
+	  ++j;
+	} else if(y == Y->getmax()) {
+	  lits.clear();
+	  lits.push_back(X->less_or_equal(X->getval(i-1),i-1));
+	  solver->addClause(lits);
+	  ++i;
+	} else {
+	  lits.clear();
+	  lits.push_back(X->less_or_equal(X->getval(i-1),i-1));
+	  lits.push_back(~(Y->less_or_equal(y,j)));
+	  solver->addClause(lits);
+	  ++j;
+	}
+      }
+    }
+}
+
+// (X+K <= Y) <-> Z
+void precedenceEncoder(MiniSat_Expression *X,
+		       MiniSat_Expression *Y,
+		       MiniSat_Expression *Z,
+		       const int K,
+		       MiniSatSolver *solver) {
+  unsigned int num_clauses = solver->clause_base.size();
+  precedenceEncoder(X,Y,K,solver);
+  while(num_clauses < solver->clause_base.size()) 
+    solver->clause_base[num_clauses++].push_back(Z->equal(0));
+  precedenceEncoder(Y,X,1-K,solver);
+  while(num_clauses < solver->clause_base.size())
+    solver->clause_base[num_clauses++].push_back(~(Z->equal(0)));
+}
+
+
 /**************************************************************
  ********************     EXPRESSION        *******************
  **************************************************************/
 
-void MiniSat_Expression::initialise()
-{ 
+void MiniSat_Expression::initialise() { 
   _ident = -1;
   _solver = NULL;
-  _direct_encoding = NULL;
-  _order_encoding = NULL;
-  _values = NULL;
-  //_encoding_type = NO;
-  _encoding_type = (ORDER | DIRECT); // we force all variables to have both, 
-  // otherwise the states of the literals do not exactly reflect the state of the cp var
-  // ans this is bad for the get_min/get_max/get_size
-  _lower = 0;
-  _upper = 0; 
-  _size  = 0;  
+  domain = NULL;
 }
 
-MiniSat_Expression::MiniSat_Expression()
-{
+MiniSat_Expression::MiniSat_Expression() {
   initialise();
-
-#ifdef _DEBUGWRAP
-  std::cout << "creating an empty expression" << std::endl;
-#endif
-
+  domain = new DomainEncoding(this);
 }
 
-MiniSat_Expression::MiniSat_Expression(const int nval)
-{
+MiniSat_Expression::MiniSat_Expression(const int nval) {
   initialise();
-  _upper = nval-1;
-  _size  = nval;
+  domain = new DomainEncoding(this,nval);
 
 #ifdef _DEBUGWRAP
   std::cout << "creating variable [" << 0 << ".." << (nval-1) << "]" << std::endl;
@@ -199,12 +627,9 @@ MiniSat_Expression::MiniSat_Expression(const int nval)
 
 }
 
-MiniSat_Expression::MiniSat_Expression(const int lb, const int ub)
-{
+MiniSat_Expression::MiniSat_Expression(const int lb, const int ub) {
   initialise();
-  _upper = ub;
-  _lower = lb;
-  _size  = (ub-lb+1);
+  domain = new DomainEncoding(this,lb,ub);
 
 #ifdef _DEBUGWRAP
   std::cout << "creating variable [" << lb << ".." << ub << "]" << std::endl;
@@ -212,210 +637,54 @@ MiniSat_Expression::MiniSat_Expression(const int lb, const int ub)
 
 }
 
-MiniSat_Expression::MiniSat_Expression(MiniSatIntArray& vals)
-{
+MiniSat_Expression::MiniSat_Expression(MiniSatIntArray& vals) {
   initialise();
-  _size   = vals.size();
-  _values = new int[_size]; 
-  _lower = _upper = vals.get_item(0);
-
-  std::cout << "init: " << _lower << " " << _upper << std::endl;
-
-  for(int i=0; i<_size; ++ i) {
-    _values[i] = vals.get_item(i);
-
-    std::cout << _values[i] << " ";
-
-    if(_upper < _values[i]) _upper = _values[i];
-    if(_lower > _values[i]) _lower = _values[i];
-  }
-  
-  std::cout << std::endl;
-
+  domain = new DomainEncoding(this,vals);
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating variable [" << _lower << ".." << _upper << "]" << std::endl;
+  std::cout << "creating variable [" << getmin() << ".." << getmax() << "]" << std::endl;
 #endif
 
 }
 
-// int MiniSat_Expression::get_lower() const {
-//   return _lower;
-// }
-
-// int get_upper() const {
-
-// }
-
-
-int MiniSat_Expression::getval(const int i) const {
-  if(_values) return _values[i];
-  else return _lower+i;
-}
-
-int MiniSat_Expression::getNextEq(const int v) const {
-  if(!_values) {
-    if(v <= _lower) return _lower;
-    else if(v <= _upper) return v;
-  } else return _values[getind(v)];
-  return v-1;
-}
-
-int MiniSat_Expression::getNext(const int v) const {
-  if(!_values) {
-    if(v < _lower) return _lower;
-    else if(v < _upper) return v+1;
-  } else return _values[getind(v+1)];
-  return v;
-}
-
-int MiniSat_Expression::getPrevEq(const int v) const {
-  if(!_values) {
-    if(v >= _upper) return _upper;
-    else if(v >= _lower) return v;
-  } else {
-    int x = _values[getind(v)];
-    if(_values[x] == v) return v;
-    else if(x) return _values[x-1];
-  }
-  return v-1;
-}
-
-int MiniSat_Expression::getPrev(const int v) const {
-  if(!_values) {
-    if(v >= _upper) return _upper;
-    else if(v >= _lower) return v;
-  } else {
-    int x = _values[getind(v)];
-    if(x) return _values[x-1];
-  }
-  return v-1;
-}
-
-int MiniSat_Expression::getind(const int v) const {
-  if(!_values) return v-_lower;
-  int lb = 0, ub = _size-1, x;
-  while(lb < ub) {
-    x = (lb+ub)/2;
-    if(_values[x] == v) return x;
-    if(_values[x] < v) lb = x+1;
-    else ub = x-1;
-  }
-  return lb;
-}
-
-
-void MiniSat_Expression::setDirectEncoding()
-{
-#ifdef _DEBUGWRAP
-  std::cout << "set encoding (exp): direct" << std::endl;
-#endif
-
-  _encoding_type |= DIRECT;
-}
-
-void MiniSat_Expression::setOrderEncoding()
-{
-#ifdef _DEBUGWRAP
-  std::cout << "set encoding (exp): order" << std::endl;
-#endif
-
-  _encoding_type |= ORDER;
+MiniSat_Expression::~MiniSat_Expression() {
+  delete domain;
 }
 
 int MiniSat_Expression::get_size() const
 {
-  int i=0, lb=0, ub=0, domsize=0;
-  lbool tv;
-  if(_direct_encoding) {
-    for(i=0; i<_size; ++i) {
-      tv = _solver->truth_value(equal(getval(i)));
-      if(tv == l_True) {domsize=1; break;}
-      if(tv != l_False) ++domsize;
-    }
-  } else if(_order_encoding) {
-    for(i=0; i<_size; ++i) {
-      lb = getval(i);
-      if(_solver->truth_value(less_or_equal(lb)) != l_False) 
-	break;
-    }
-    for(i=_size-1; i>=0; --i) {
-      ub = getval(i);
-      if(_solver->truth_value(greater_than(ub-1)) != l_False) 
-	break;
-    }
-    domsize = ub-lb+1;
-  } 
-
+  int i=0, domsize=0;
+  for(i=0; i<getsize(); ++i)
+    domsize += (_solver->truth_value(equal(getval(i),i)) != l_False);
   return domsize;
 }
 
-int MiniSat_Sum::get_size() const
+int MiniSat_Expression::next(const int v) const
 {
-  if(_vars.size() > 1)
-    return _self->get_size();
-  else
-    return MiniSat_Expression::get_size();
+  int nxt = v;
+  while( ++nxt <= getmax() ) 
+    if(_solver->truth_value(equal(nxt)) != l_False) break;
+  if(nxt > getmax()) nxt = v;
+  return nxt;
 }
-
 
 int MiniSat_Expression::get_min() const
 {
-  int i=0;
-  if(_direct_encoding) {
-    for(i=0; i<_size; ++i) {
-      if(_solver->truth_value(equal(getval(i))) != l_False)
-	break;
-    }
-  } else if(_order_encoding) {
-    for(i=0; i<_size; ++i)
-      if(_solver->truth_value(less_or_equal(getval(i))) != l_False)
-	break;
-  } 
-  return getval(i);
-}
-
-int MiniSat_Sum::get_min() const
-{
-  if(_vars.size() > 1)
-    return _self->get_min();
-  else
-    return MiniSat_Expression::get_min();
+  for(int i=0; i<getsize(); ++i) {
+    if(_solver->truth_value(equal(getval(i),i)) != l_False) return getval(i);
+  }
+  return getmin();
 }
 
 int MiniSat_Expression::get_max() const
 {
-  int i=0;
-  if(_direct_encoding) {
-    for(i=_size-1; i>=0; --i)
-      if(_solver->truth_value(equal(getval(i))) != l_False)
-	break;
-  } else if(_order_encoding) {
-    for(i=_size-1; i>=0; --i)
-      if(_solver->truth_value(less_or_equal(getval(i))) != l_False)
-	break;
-  }
-
-  return getval(i);
+  for(int i=getsize()-1; i>=0; --i)
+    if(_solver->truth_value(equal(getval(i),i)) != l_False) return getval(i);
+  return getmax();
 }
-
-int MiniSat_Sum::get_max() const
-{
-  if(_vars.size() > 1)
-    return _self->get_max();
-  else
-    return MiniSat_Expression::get_max();
-}
-
 
 bool MiniSat_Expression::contain(const int v) const {
-  bool isin = false;
-  if(_direct_encoding) 
-    isin = _solver->truth_value(equal(v)) != l_False;
-  else if(_order_encoding) 
-    isin = (_solver->truth_value(less_or_equal(v)) != l_False &&
-	    _solver->truth_value(greater_than(v-1)) != l_False);
-  return isin;
+  return (_solver->truth_value(equal(v)) != l_False);
 }
 
 int MiniSat_Expression::get_value() const
@@ -426,389 +695,41 @@ int MiniSat_Expression::get_value() const
     return get_min();
 }
 
-
-
-
-// int MiniSat_Expression::get_value() const
-// {
-//   return _solver->cp_model[_ident];
-// }
-
-
-MiniSat_Expression::~MiniSat_Expression()
-{
-  if(_direct_encoding) {
-    _direct_encoding += _lower;
-    delete [] _direct_encoding;
-  }
-  if(_order_encoding) {
-    _order_encoding += _lower;
-    delete [] _order_encoding;
-  }
-  delete [] _values;
-}
-
-void MiniSat_Expression::channel(MiniSatSolver *solver)
-{
-#ifdef _DEBUGWRAP
-  std::cout << "\tchannel encoding" << std::endl;
-#endif
-  vec<Lit> lits;
-  int x;
-  for(int i=0; i<_size; ++i) {
-    x = getval(i);
-    if(x>_lower) {
-
-      std::cout << "channel: " << _ident << " = " << x << " -> " << _ident << " > " << (getval(i-1)) << std::endl;
-
-      lits.clear();
-      lits.push(~(equal(x)));
-      lits.push(greater_than(getval(i-1)));
-
-      printClause(lits);
-      
-      solver->addClause(lits);
-    }
-    if(x<_upper) {
-
-      std::cout << "channel: " << _ident << " = " << x << " -> " << _ident << " <= " << x << std::endl;
-
-      lits.clear();
-      lits.push(~equal(x));
-      lits.push(less_or_equal(x));
-
-      printClause(lits);
-
-      solver->addClause(lits);
-    }
-  }
-
-
-//   for(int i=_lower; i<=_upper; ++i) {
-//     // WE SHOULDN'T NEED A QUADRATIC NUMBER OF CLAUSES
-//     //       // -xij \/ -yik for all k < j
-//     //       for(j=_lower; j<i; ++j) {
-//     // 	lits.clear();
-//     // 	lits.push(~Lit(_direct_encoding[i]));
-//     // 	lits.push(~Lit(_order_encoding[j]));
-//     // 	solver->addClause(lits);
-//     //       }
-//     //       // -xij \/ yik for all k >= j
-//     //       for(j=i; j<_upper; ++j) {
-//     // 	lits.clear();
-//     // 	lits.push(~Lit(_direct_encoding[i]));
-//     // 	lits.push(Lit(_order_encoding[j]));
-//     // 	solver->addClause(lits);
-//     //       }
-//     if(i>_lower) {
-//       lits.clear();
-//       lits.push(~Lit(_direct_encoding[i]));
-//       lits.push(~Lit(_order_encoding[i-1]));
-//       solver->addClause(lits);
-//     }
-//     if(i<_upper) {
-//       lits.clear();
-//       lits.push(~Lit(_direct_encoding[i]));
-//       lits.push(Lit(_order_encoding[i]));
-//       solver->addClause(lits);
-//     }
-//   }
-}
-
-void MiniSat_Expression::encode(MiniSatSolver *solver)
-{
-#ifdef _DEBUGWRAP
-  std::cout << "encode variable x" << _ident << std::endl;
-#endif
-
-  assert(_encoding_type == (DIRECT | ORDER));
-
- 
-  if(!_encoding_type)
-    _encoding_type |= ORDER;
-
-
-  vec<Lit> lits;
-  int i, x, y, val;
-  if( _encoding_type & DIRECT ) {
-    if( !_direct_encoding ) {
-
-#ifdef _DEBUGWRAP
-      std::cout << "\tdirect encoding" << std::endl;
-#endif
-      _direct_encoding = new Var[_upper-_lower+1];
-      _direct_encoding -= _lower;
-
-
-      std::cout << "direct: " ;
-      
-      for(i=0; i<_size; ++i) {
-	val = getval(i);
-	_direct_encoding[val] = solver->newVar(this, (val << 1));
-      }
-
-      for(i=0; i<_size; ++i) {
-	lits.push(equal(getval(i)));
-
-	std::cout << _ident << " = " << getval(i) << " or " ;
-
-	assert(var(lits[i]) == var(equal(getval(i))));
-	assert(solver->_lit_to_var[var(lits[i])] == this);
-	assert(((solver->_lit_to_val[var(lits[i])]) >> 1) == getval(i));
-	assert(((solver->_lit_to_val[var(lits[i])]) % 2) == 0);
-	assert(sign(lits[i]) == false);
-
-      }
-
-      std::cout << std::endl;
-
-      solver->addClause(lits);
-      
-      printClause(lits);
-
-
-//       // those are optional, but can provides stronger filtering
-//       for(i=_lower; i<_upper; ++i)
-// 	for(j=i+1; j<=_upper; ++j)
-// 	  if(_direct_encoding[i] >= 0 && _direct_encoding[j] >= 0)
-// 	    {
-// 	      lits.clear();
-// 	      lits.push(~Lit(_direct_encoding[i]));
-// 	      lits.push(~Lit(_direct_encoding[j]));
-// 	      solver->addClause(lits);
-// 	    }
-      if(_order_encoding)
-	this->channel(_solver);
-    }
-  }
-
-  if( _encoding_type & ORDER ) {
-    if( !_order_encoding) {
-
-#ifdef _DEBUGWRAP
-      std::cout << "\torder encoding" << std::endl;
-#endif
-
-      _order_encoding = new Var[_upper-_lower];
-      _order_encoding -= _lower;
-      
-      for(i=0; i<_size-1; ++i) {
-	val = getval(i);
-	_order_encoding[val] = solver->newVar(this, (val << 1)+1);
-      }
-      
-      for(i=1; i<_size-1; ++i) {
-
-	x = getval(i);
-	y = getval(i-1);
-
-
-	std::cout << "order: " << _ident << " > " << y << " or " << _ident << " <= " << x << std::endl;
-
-	lits.clear();
-	lits.push(greater_than(y));
-	lits.push(less_or_equal(x));
-
-	printClause(lits);
-
-	solver->addClause(lits);
-
-
-// 	assert(solver->_lit_to_var[var(lits[1])] == this);
-// 	assert(((solver->_lit_to_val[var(lits[1])]) >> 1) == x);
-// 	assert(((solver->_lit_to_val[var(lits[1])]) % 2) == 1);
-// 	assert(sign(lits[1]) == false);
-
-// 	assert(solver->_lit_to_var[var(lits[0])] == this);
-// 	assert(((solver->_lit_to_val[var(lits[0])]) >> 1) == y);
-// 	assert(((solver->_lit_to_val[var(lits[0])]) % 2) == 1);
-// 	assert(sign(lits[0]) == true);
-      }
-
-      if(_direct_encoding)
-	this->channel(_solver);
-    }
-  } 
-
-  //std::cout << "end encode" << std::endl;
-}
-
-Lit MiniSat_Expression::less_or_equal(const int value) const {
-  if(value < _lower) {
-    return Lit_False;
-  } else if(value >= _upper) {
-    return Lit_True;
-  } else {
-    if(!_order_encoding) {
-      std::cerr << "Warning: order encoding not defined" << std::endl;
-      exit(1);
-    } else {
-      //int v=value;
-      //while(v>=_lower && _order_encoding[v] < 0) --v;
-      return Lit(_order_encoding[value]);
-    }
-  }
-}
-
-Lit MiniSat_Expression::greater_than(const int value) const {
-  if(value < _lower) {
-    return Lit_True;
-  } else if(value >= _upper) {
-    return Lit_False;
-  } else {
-    if(!_order_encoding) {
-      std::cerr << "Warning: order encoding not defined" << std::endl;
-      exit(1);
-    } else {
-      //int v=value;
-      //while(v<_upper && _order_encoding[v] < 0) ++v;
-      return ~Lit(_order_encoding[value]);
-    }
-  }
-}
-
-Lit MiniSat_Expression::equal(const int value) const {
-  if(value < _lower || value > _upper) {
-    return Lit_False;
-  } else {
-    if(!_direct_encoding) {
-      std::cerr << "Warning: direct encoding not defined" << std::endl;
-      exit(1);
-    } else {
-      if(_direct_encoding[value] < 0) {
-	return Lit_False;
-      } else {
-	return Lit(_direct_encoding[value]);
-      }
-    }
-  }
-}
-
-// Lit MiniSat_Expression::not_equal(const int value) {
-//   if(value < _lower || value > _upper) {
-//     return Lit_True;
-//   } else {
-//     if(!_direct_encoding) {
-//       std::cerr << "Warning: direct encoding not defined" << std::endl;
-//       exit(1);
-//     } else {
-//       if(_direct_encoding[value] < 0) {
-// 	return Lit_True;
-//       } else {
-// 	return ~Lit(_order_encoding[value]);
-//       }
-//     }
-//   }
-// }
-
-bool MiniSat_Expression::has_been_added() const
-{
+bool MiniSat_Expression::has_been_added() const {
   return (_solver != NULL);
 }
 
-MiniSat_Expression* MiniSat_Expression::add(MiniSatSolver *solver, bool top_level){
-
-#ifdef _DEBUGWRAP
-  std::cout << "+ add variable [" << _lower << ".." << _upper << "]" << std::endl;
-#endif
-
+MiniSat_Expression* MiniSat_Expression::add(MiniSatSolver *solver, bool top_level) {
   if(!has_been_added()) {
 
-#ifdef _DEBUGWRAP
-    std::cout << "+ add variable to minisat" << std::endl;    
-#endif
-
     _solver = solver;
-    _ident = _solver->declare(this);
+    _ident = _solver->declare(this, true);
+    solver->_variables.push_back(this);
 
+#ifdef _DEBUGWRAP
+    std::cout << "+ add x" << _ident << " [" << getmin() << ".." << getmax() << "]" << std::endl;
+#endif
+    
+    domain->encode(_solver);
   }
-  encode(_solver);
 
   return this;
 }
 
-void MiniSat_binop::setDirectEncoding()
-{
-#ifdef _DEBUGWRAP
-  std::cout << "set encoding (bin op): direct" << std::endl;
-#endif
-
-  _encoding_type |= DIRECT;
-
-  if(!_vars[1]) // for views
-    _vars[0]->setDirectEncoding();
-}
-
-void MiniSat_binop::setOrderEncoding()
-{
-#ifdef _DEBUGWRAP
-  std::cout << "set encoding (bin op): order" << std::endl;
-#endif
-
-  _encoding_type |= ORDER;
-
-  if(!_vars[1]) // for views
-    _vars[0]->setOrderEncoding();
-}
-
-
-int MiniSat_add::get_min() const {
-  return this->MiniSat_Expression::get_min();
-}
-
-int MiniSat_add::getval(const int i) const {
-  if(_vars[1]) return this->MiniSat_Expression::getval(i);
-  return (_vars[0]->getval(i)+_rhs);
-}
-
-Lit MiniSat_add::less_or_equal(const int value) const {
-  if(_vars[1]) return this->MiniSat_Expression::less_or_equal(value);
-  else return _vars[0]->less_or_equal(value-_rhs);
-}
-
-Lit MiniSat_add::greater_than(const int value) const {
-  if(_vars[1]) return this->MiniSat_Expression::greater_than(value);
-  else return _vars[0]->greater_than(value-_rhs);
-}
-
-Lit MiniSat_add::equal(const int value) const {
-  if(_vars[1]) return this->MiniSat_Expression::equal(value);
-  else return _vars[0]->equal(value-_rhs);
-}
-
-// Lit MiniSat_add::not_equal(const int value) {
-//   if(_vars[1]) return this->MiniSat_Expression::not_equal(value);
-//   else return _vars[0]->not_equal(value-_rhs);
-// }
 
 MiniSat_add::MiniSat_add(MiniSat_Expression *arg1, MiniSat_Expression *arg2)
-  : MiniSat_binop(arg1, arg2)
-{
-  initialise();
-  _lower = arg1->_lower+arg2->_lower;
-  _upper = arg1->_upper+arg2->_upper;
-  _size = _upper-_lower+1;
-
-#ifdef _DEBUGWRAP
-  std::cout << "creating add expression [" << _lower << ".." << _upper << "]" << std::endl;
-#endif
-
-  arg1->setOrderEncoding();
-  arg2->setOrderEncoding();
-  this->setOrderEncoding();
-
+  : MiniSat_binop(arg1, arg2) {
+  int _lower = arg1->getmin()+arg2->getmin();
+  int _upper = arg1->getmax()+arg2->getmax();
+  domain = new DomainEncoding(this, _lower, _upper);
 }
 
 MiniSat_add::MiniSat_add(MiniSat_Expression *arg1, const int arg2)
-  : MiniSat_binop(arg1, arg2)
-{
-  initialise();
-  _lower = arg1->_lower+arg2;
-  _upper = arg1->_upper+arg2;
-  _size = arg1->_size;
+  : MiniSat_binop(arg1, arg2) {
+  domain = new OffsetDomain(this,arg1->domain, arg2);
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating offset expression [" << _lower << ".." << _upper << "]" << std::endl;
+  std::cout << "creating offset expression [" << getmin() << ".." << getmax() << "]" << std::endl;
 #endif
 
 }
@@ -816,7 +737,11 @@ MiniSat_add::MiniSat_add(MiniSat_Expression *arg1, const int arg2)
 MiniSat_Expression* MiniSat_add::add(MiniSatSolver *solver, bool top_level) {
   if(!has_been_added()){
     _solver = solver;
-    _ident = _solver->declare(this);
+    _ident = _solver->declare(this, false);
+
+#ifdef _DEBUGWRAP
+    std::cout << "creating add expression x" << _ident << " [" << getmin() << ".." << getmax() << "]" << std::endl;
+#endif
 
     if(top_level) {
       
@@ -825,82 +750,25 @@ MiniSat_Expression* MiniSat_add::add(MiniSatSolver *solver, bool top_level) {
       
     } else {
 
-      _vars[0] = _vars[0]->add(solver, false);            
+      _vars[0] = _vars[0]->add(_solver, false);            
 
       if(_vars[1]) {
 
-	_vars[0] = _vars[0]->add(solver, false);
-	_vars[1] = _vars[1]->add(solver, false);
-	this->encode(solver);
+	_vars[1] = _vars[1]->add(_solver, false);
+	domain->encode(_solver);
+
 
 #ifdef _DEBUGWRAP
-      std::cout << "add add predicate" << std::endl;
+	std::cout << "encode add predicate x" << _ident << " == x" 
+		  << _vars[0]->_ident << " + x" << _vars[1]->_ident << std::endl;
 #endif
 
-	vec<Lit> lits;
-	int i, j, x, y;
-	Lit p;
-	bool valid;
+	additionEncoder(_vars[0], _vars[1], this, _solver);
 
-	for(i=0; i<_vars[0]->_size; ++i) {
-	  x = _vars[0]->getval(i);
-	  for(j=0; j<_vars[1]->_size; ++j) {
-	    y = _vars[1]->getval(j);
-
-	    lits.clear();
-	    valid = false;
-
-	    p = _vars[0]->less_or_equal(x-1);
-	    if(p != Lit_False) {
-	      lits.push(p);
-	      valid |= (p == Lit_True);
-	    }
-
-	    p = _vars[1]->less_or_equal(y-1);
-	    if(p != Lit_False) {
-	      lits.push(p);
-	      valid |= (p == Lit_True);
-	    }
-
-	    p = this->greater_than(x+y-1);
-	    if(p != Lit_False) {
-	      lits.push(p);
-	      valid |= (p == Lit_True);
-	    }
-
-	    if(!valid) {
-	      solver->addClause(lits);
-	    }
-
-	    valid = false;
-	    lits.clear();
-
-	    p = _vars[0]->greater_than(x);
-	    if(p != Lit_False) {
-	      lits.push(p);
-	      valid |= (p == Lit_True);
-	    }
-
-	    p = _vars[1]->greater_than(y);
-	    if(p != Lit_False) {
-	      lits.push(p);
-	      valid |= (p == Lit_True);
-	    }
-
-	    p = this->less_or_equal(x+y);
-	    if(p != Lit_False) {
-	      lits.push(p);
-	      valid |= (p == Lit_True);
-	    }
-
-	    if(!valid) {
-	      solver->addClause(lits);
-	    }
-	    
-	  }
-	}
       }
     }
+
+    _solver->validate();
   } 
 
   return this;
@@ -908,117 +776,15 @@ MiniSat_Expression* MiniSat_add::add(MiniSatSolver *solver, bool top_level) {
 
 MiniSat_add::~MiniSat_add() {}
 
-int MiniSat_mul::get_min() const {
-  return this->MiniSat_Expression::get_min();
-}
-
-int MiniSat_mul::getval(const int i) const {
-  if(_vars[1]) return this->MiniSat_Expression::getval(i);
-  return (_vars[0]->getval(i)*_rhs);
-}
-
-Lit MiniSat_mul::less_or_equal(const int value) const {
-  if(_vars[1]) return this->MiniSat_Expression::less_or_equal(value);
-  else {
-    
-    //        std::cout << _rhs << " * X <= " << value << " <-> X ";
-
-    if(_rhs>=0) {
-
-//       std::cout << "<= " << ((value/_rhs)// -(value%_rhs != 0 //&& value<0
-// // 					   )
-// 			     ) << std::endl;
-      return _vars[0]->less_or_equal((value/_rhs)// -(value%_rhs != 0 //&& value<0
-// 						   )
-				     );
-
-    } else {
-      
-//       std::cout << ">= " << ((value/_rhs)+(value%_rhs != 0//  && value>0
-// 					   )) << std::endl;
-      
-      return _vars[0]->greater_than((value/_rhs)-1+(value%_rhs != 0//  && value>0
-						  ));
-    }
-  }
-}
-
-Lit MiniSat_mul::greater_than(const int value) const {
-  if(!_vars[1]) {
-
-//     std::cout << _rhs << " * X > " << value << " <-> X " ;
-
-    if(_rhs>=0) {
-
-//       std::cout << "> " << ((value/_rhs)) << std::endl;
-
-      return _vars[0]->greater_than((value/_rhs));
-    } else {
-
-//       std::cout << "< " << ((value/_rhs)+(value%_rhs != 0)) << std::endl;
-
-      return _vars[0]->less_or_equal((value/_rhs)-1+(value%_rhs != 0));
-    }
-  }
-  return this->MiniSat_Expression::greater_than(value);
-}
-
-Lit MiniSat_mul::equal(const int value) const {
-  if(!_vars[1]) {
-    if(value%_rhs) return Lit_False;
-    return _vars[0]->equal(value/_rhs);
-  }
-  return this->MiniSat_Expression::equal(value);
-}
-
-// Var MiniSat_mul::getDirectVar(const int value) {
-//   if(_vars[1]) return MiniSat_Expression::getDirectVar(value);
-//   else {
-
-//     std::cout <<value<< "%" << _rhs << " = "<< (value%_rhs) << std::endl;
-
-//     if(value%_rhs) return -1;
-//     return _vars[0]->getDirectVar(value/_rhs);
-//   }
-// }
-
-// Var MiniSat_mul::getInterVar(const int value) {
-//   if(_vars[1]) return MiniSat_Expression::getInterVar(value);
-//   else {
-
-//     std::cout <<value<< "%" << _rhs << " = "<< (value%_rhs) << std::endl;
-
-//     if(value%_rhs) return -1;
-//     return _vars[0]->getInterVar(value/_rhs);
-//   }
-// }
-
 MiniSat_mul::MiniSat_mul(MiniSat_Expression *arg1, const int arg2)
-  : MiniSat_binop(arg1, arg2)
-{
-  initialise();
-  if(arg2 > 0) {
-    _lower = arg1->_lower*arg2;
-    _upper = arg1->_upper*arg2;
-  } else {
-    _lower = arg1->_upper*arg2;
-    _upper = arg1->_lower*arg2;
-  }
-  _size = arg1->_size;
+  : MiniSat_binop(arg1, arg2) {
 
-#ifdef _DEBUGWRAP
-  std::cout << "creating factor expression [" << _lower << ".." << _upper << "]" << std::endl;
-#endif
+  domain = new FactorDomain(this,arg1->domain, arg2);
 
 }
 
 MiniSat_mul::MiniSat_mul(MiniSat_Expression *arg1, MiniSat_Expression *arg2)
-  : MiniSat_binop(arg1, arg2)
-{
-
-#ifdef _DEBUGWRAP
-  std::cout << "creating mul expression [" << _lower << ".." << _upper << "]" << std::endl;
-#endif
+  : MiniSat_binop(arg1, arg2) {
 
   std::cerr << "c NOT SUPPORTED (multiplication) - exiting" << std::endl;
   exit(1);
@@ -1026,9 +792,13 @@ MiniSat_mul::MiniSat_mul(MiniSat_Expression *arg1, MiniSat_Expression *arg2)
 }
 
 MiniSat_Expression* MiniSat_mul::add(MiniSatSolver *solver, bool top_level) {
-  if(!has_been_added()){
+  if(!has_been_added()) {
     _solver = solver;
-    _ident = _solver->declare(this);
+    _ident = _solver->declare(this, false);
+
+#ifdef _DEBUGWRAP
+    std::cout << "creating mul expression x" << _ident << " [" << getmin() << ".." << getmax() << "]" << std::endl;
+#endif
 
     if(top_level) {
       
@@ -1037,19 +807,17 @@ MiniSat_Expression* MiniSat_mul::add(MiniSatSolver *solver, bool top_level) {
       
     } else {
       
-#ifdef _DEBUGWRAP
-      std::cout << "add mul predicate" << std::endl;
-#endif
-      
-      _vars[0] = _vars[0]->add(solver, false);
+      _vars[0] = _vars[0]->add(_solver, false);
 
       if(_vars[1]) {
 
 	std::cerr << "c NOT SUPPORTED (multiplication) - exiting" << std::endl;
 	exit(1);
-
+	
       } 
     }
+
+    _solver->validate();
   } 
 
   return this;
@@ -1057,53 +825,34 @@ MiniSat_Expression* MiniSat_mul::add(MiniSatSolver *solver, bool top_level) {
 
 MiniSat_mul::~MiniSat_mul() {}
 
-
-
-void MiniSat_AllDiff::addVar(MiniSat_Expression* v){
+void MiniSat_AllDiff::addVar(MiniSat_Expression* v) {
   _vars.add(v);
 }
 
 MiniSat_AllDiff::MiniSat_AllDiff( MiniSat_Expression* arg1, MiniSat_Expression* arg2 ) 
-  : MiniSat_Expression()
-{
+  : MiniSat_Expression() {
   addVar(arg1);
   addVar(arg2);
-
-#ifdef _DEBUGWRAP
-  std::cout << "creating bin alldiff" << std::endl;
-#endif
-
-  arg1->setDirectEncoding();
-  arg2->setDirectEncoding();
-
 }
 
 MiniSat_AllDiff::MiniSat_AllDiff( MiniSatExpArray& vars ) 
-  : MiniSat_Expression() 
-{
-
+  : MiniSat_Expression() {
   _vars = vars;
-
-#ifdef _DEBUGWRAP
-  std::cout << "creating alldiff" << std::endl;
-#endif
-
-  int i, n=_vars.size();  
-  for(i=0; i<n; ++i)
-    (_vars.get_item(i))->setDirectEncoding();
-
 }
 
-MiniSat_AllDiff::~MiniSat_AllDiff()
-{
+MiniSat_AllDiff::~MiniSat_AllDiff() {
   for(unsigned int i=0; i<_clique.size(); ++i)
     delete _clique[i];
 }
 
 MiniSat_Expression* MiniSat_AllDiff::add(MiniSatSolver *solver, bool top_level) {
-  if(!has_been_added()){
+  if(!has_been_added()) {
     _solver = solver;
-    _ident = _solver->declare(this);
+    _ident = _solver->declare(this, false);
+
+#ifdef _DEBUGWRAP
+    std::cout << "creating alldiff expression" << std::endl;
+#endif
 
     if(top_level){
       
@@ -1111,15 +860,11 @@ MiniSat_Expression* MiniSat_AllDiff::add(MiniSatSolver *solver, bool top_level) 
       for(i=0; i<n; ++i) 
 	_vars.set_item(i, (_vars.get_item(i))->add(_solver,false));
 
-#ifdef _DEBUGWRAP
-      std::cout << "add alldiff constraint" << std::endl;
-#endif
-
       MiniSat_Expression *exp;
       for(i=1; i<n; ++i)
 	for(j=0; j<i; ++j) {
 	  exp = new MiniSat_ne(_vars.get_item(j), _vars.get_item(i));
-	  solver->add(exp);
+	  _solver->add(exp);
 	  _clique.push_back(exp);
 	}
       
@@ -1134,33 +879,11 @@ MiniSat_Expression* MiniSat_AllDiff::add(MiniSatSolver *solver, bool top_level) 
   return NULL;
 }
 
-Lit MiniSat_Sum::less_or_equal(const int value) const {
-  int factor = _weights.get_item(0);  
-  if(_vars.size() > 1) return _self->MiniSat_Expression::less_or_equal(value);
-  else return _vars.get_item(0)->less_or_equal(((value-_offset)/factor)+((value-_offset)%factor != 0));
-}
-
-Lit MiniSat_Sum::greater_than(const int value) const {
-  int factor = _weights.get_item(0);  
-  if(_vars.size() > 1) return _self->MiniSat_Expression::greater_than(value);
-  else return _vars.get_item(0)->greater_than(((value-_offset)/factor)+((value-_offset)%factor != 0));
-}
-
-Lit MiniSat_Sum::equal(const int value) const {
-  if(_vars.size() > 1) return _self->MiniSat_Expression::equal(value);
-  else {
-    int factor = _weights.get_item(0);
-    if((value-_offset)%factor) return Lit_False;
-    return _vars.get_item(0)->equal((value-_offset)/factor);
-  }
-}
 
 MiniSat_Sum::MiniSat_Sum(MiniSatExpArray& vars, 
-			 MiniSatIntArray& weights, 
-			 const int offset)
-  : MiniSat_Expression() 
-{
-  _self = NULL;
+				 MiniSatIntArray& weights, 
+				 const int offset)
+  : MiniSat_Expression() {
   _offset = offset;
   _vars = vars;
   _weights = weights;
@@ -1168,12 +891,10 @@ MiniSat_Sum::MiniSat_Sum(MiniSatExpArray& vars,
 }
 
 MiniSat_Sum::MiniSat_Sum(MiniSat_Expression *arg1, 
-			 MiniSat_Expression *arg2, 
-			 MiniSatIntArray& w, 
-			 const int offset)
-  : MiniSat_Expression() 
-{
-  _self = NULL;
+				 MiniSat_Expression *arg2, 
+				 MiniSatIntArray& w, 
+				 const int offset)
+  : MiniSat_Expression() {
   _offset = offset;
   _vars.add(arg1);
   _vars.add(arg2);
@@ -1182,10 +903,9 @@ MiniSat_Sum::MiniSat_Sum(MiniSat_Expression *arg1,
 }
 
 MiniSat_Sum::MiniSat_Sum(MiniSat_Expression *arg, 
-			 MiniSatIntArray& w, 
-			 const int offset)
-  : MiniSat_Expression() 
-{
+				 MiniSatIntArray& w, 
+				 const int offset)
+  : MiniSat_Expression() {
   _self = NULL;
   _offset = offset;
   _vars.add(arg);
@@ -1194,87 +914,77 @@ MiniSat_Sum::MiniSat_Sum(MiniSat_Expression *arg,
 }
 
 MiniSat_Sum::MiniSat_Sum()
-  : MiniSat_Expression()
-{
+  : MiniSat_Expression() {
   _offset = 0;
 }
 
 void MiniSat_Sum::initialise() {
+  if(_vars.size() == 2) {
+    int _lower = 0;
+    int _upper = 0;
 
-#ifdef _DEBUGWRAP
-  std::cout << "creating sum: Size of parameters is " << _vars.size() << std::endl; 
-#endif
-    
-  _lower = 0;
-  _upper = 0;
-
-  int weight;
-  for(int i = 0; i < _vars.size(); ++i){
-    weight = _weights.get_item(i);
-    
-    if( weight > 0 ) {
-      _lower += (weight * _vars.get_item(i)->_lower);
-      _upper += (weight * _vars.get_item(i)->_upper);
-    } else {
-      _upper += (weight * _vars.get_item(i)->_lower);
-      _lower += (weight * _vars.get_item(i)->_upper);
+    int weight;
+    for(int i = 0; i < _vars.size(); ++i){
+      weight = _weights.get_item(i);
+      
+      if( weight > 0 ) {
+	_lower += (weight * _vars.get_item(i)->getmin());
+	_upper += (weight * _vars.get_item(i)->getmax());
+      } else {
+	_upper += (weight * _vars.get_item(i)->getmin());
+	_lower += (weight * _vars.get_item(i)->getmax());
+      }
+      
     }
-
-    _vars.get_item(i)->setDirectEncoding();
+    _lower += _offset;
+    _upper += _offset;
+    
+    domain = new DomainEncoding(this,_lower, _upper);
   }
-  _lower += _offset;
-  _upper += _offset;
-
-  if(_vars.size() > 1)
-    _size = (_upper - _lower +1);
-  else
-    _size = _vars.get_item(0)->_size;
 
 #ifdef _DEBUGWRAP
-  std::cout << "Intermediate variable has values: " << _lower << " to " << _upper << std::endl;
+  std::cout << "Intermediate variable has values: " << getmin() << " to " << getmax() << std::endl;
 #endif
 
 }
 
-MiniSat_Sum::~MiniSat_Sum(){
+MiniSat_Sum::~MiniSat_Sum() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete sum" << std::endl;
 #endif
 
-//   for(unsigned int i=0; i<_subsum.size()-1; ++i) {
-    //     delete _subsum[i];
-//   }
-
+  for(unsigned int i=0; i<_subsum.size(); ++i) {
+    delete _subsum[i];
+  }
 }
 
-void MiniSat_Sum::addVar(MiniSat_Expression* v){
+void MiniSat_Sum::addVar(MiniSat_Expression* v) {
   _vars.add(v);
 }
 
-void MiniSat_Sum::addWeight(const int w){
+void MiniSat_Sum::addWeight(const int w) {
   _weights.add(w);
 }
 
-void MiniSat_Sum::set_rhs(const int k){
+void MiniSat_Sum::set_rhs(const int k) {
   _offset = k;
 }
 
 MiniSat_Expression* MiniSat_Sum::add(MiniSatSolver *solver, bool top_level){
   if(!has_been_added()){
     _solver = solver;
-    _ident = _solver->declare(this);
+    _ident = _solver->declare(this, false);
     
+#ifdef _DEBUGWRAP    
+      std::cout << "add sum expression x" << _ident << " [" << getmin() << ".." << getmax() << "]" << std::endl;
+#endif
+
     if(!top_level) {
       
       if(_vars.size() == 1) {
 
-	_vars.set_item(0, _vars.get_item(0)->add(solver, false));
-	_self = this;
-
-#ifdef _DEBUGWRAP    
-      std::cout << "add sum" << std::endl;
-#endif
+	_vars.set_item(0, _vars.get_item(0)->add(_solver, false));
 
       } else {
 
@@ -1291,37 +1001,29 @@ MiniSat_Expression* MiniSat_Sum::add(MiniSatSolver *solver, bool top_level){
 	  else exp2 = _vars.get_item(i+1);
 
 	  exp = new MiniSat_add(exp1, exp2);
-	  if(_encoding_type & DIRECT) exp->setDirectEncoding();
-	  exp->add(solver, false);
+	  exp->add(_solver, false);
+
 	  _vars.add(exp);
 	  _weights.add(1);
 	  _subsum.push_back(exp);
 	} 
-
-#ifdef _DEBUGWRAP    
-      std::cout << "add sum predicate" << std::endl;
-#endif
-	
-	_self = _vars.get_item(_vars.size()-1);
-	//_solver->_variables[_ident] = _self;
-	_solver->_variables[_ident] = NULL;
       }
 
-      
+      domain = new OffsetDomain(this,_vars.get_item(_vars.size()-1)->domain, _offset);
+
     } else {
       std::cout << "Warning SUM constraint on top level not supported" << std::endl;
     }
   }
 
-  return _self;
+  return this;
 }
 
 
 /* Binary operators */
 
 MiniSat_binop::MiniSat_binop(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_Expression()
-{
+  : MiniSat_Expression() {
   _vars[0] = var1;
   _vars[1] = var2;
 
@@ -1332,8 +1034,7 @@ MiniSat_binop::MiniSat_binop(MiniSat_Expression *var1, MiniSat_Expression *var2)
 }
 
 MiniSat_binop::MiniSat_binop(MiniSat_Expression *var1, int rhs)
-  : MiniSat_Expression()
-{
+  : MiniSat_Expression() {
   _vars[0] = var1;
   _vars[1] = NULL;
   _rhs = rhs;
@@ -1345,7 +1046,7 @@ MiniSat_binop::MiniSat_binop(MiniSat_Expression *var1, int rhs)
 }
 
 
-MiniSat_binop::~MiniSat_binop(){
+MiniSat_binop::~MiniSat_binop() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete binary operator" << std::endl;
@@ -1354,38 +1055,29 @@ MiniSat_binop::~MiniSat_binop(){
 }
 
 MiniSat_or::MiniSat_or(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_binop(var1,var2)
-{
+  : MiniSat_binop(var1,var2) {
 
 #ifdef _DEBUGWRAP
   std::cout << "creating or predicate" << std::endl;
 #endif
 
-  _lower = 0;
-  _upper = 1;
-  _size = 2;
-  _vars[0]->setDirectEncoding();
-  _vars[1]->setDirectEncoding();
+  domain = new DomainEncoding(this);
 
 }
 
 MiniSat_or::MiniSat_or(MiniSat_Expression *var1, int rhs)
-  : MiniSat_binop(var1,rhs)
-{
+  : MiniSat_binop(var1,rhs) {
 
 #ifdef _DEBUGWRAP
   std::cout << "creating or predicate" << std::endl;
 #endif
 
-  _lower = 0;
-  _upper = 1;
-  _size = 2;
-  _vars[0]->setDirectEncoding();
-
+  if(rhs) domain = new ConstantDomain(this,1);
+  else domain = new OffsetDomain(this,var1->domain,0);
 }
 
 
-MiniSat_or::~MiniSat_or(){
+MiniSat_or::~MiniSat_or() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete or" << std::endl;
@@ -1393,135 +1085,103 @@ MiniSat_or::~MiniSat_or(){
 
 }
 
-MiniSat_Expression* MiniSat_or::add(MiniSatSolver *solver, bool top_level){
-  if(!has_been_added()){
+MiniSat_Expression* MiniSat_or::add(MiniSatSolver *solver, bool top_level) {
+  if(!has_been_added()) {
     _solver = solver;
-    _ident = _solver->declare(this);
+    _ident = _solver->declare(this, false);
 
-    vec<Lit> lits;
+    std::vector<Lit> lits;
     if(top_level) {
             
       if(_vars[1]) {
   
-	_vars[0] = _vars[0]->add(solver, false);
-	_vars[1] = _vars[1]->add(solver, false);
+	_vars[0] = _vars[0]->add(_solver, false);
+	_vars[1] = _vars[1]->add(_solver, false);
 	
-
 #ifdef _DEBUGWRAP
 	std::cout << "add or constraint" << std::endl;
 #endif
 
 	lits.clear();
 	for(int i=0; i<2; ++i) 
-	  lits.push(~(_vars[i]->equal(0)));
-	solver->addClause(lits);
+	  lits.push_back(~(_vars[i]->equal(0)));
+	_solver->addClause(lits);
       
       } else if(_rhs == 0) {
 	
-	_vars[0] = _vars[0]->add(solver, false);
+	_vars[0] = _vars[0]->add(_solver, false);
 
 #ifdef _DEBUGWRAP
       std::cout << "add or constraint" << std::endl;
 #endif
 
 	lits.clear();
-	lits.push(~(_vars[0]->equal(0)));
-	solver->addClause(lits);
+	lits.push_back(~(_vars[0]->equal(0)));
+	_solver->addClause(lits);
       }
 
     } else {
+      
+      _vars[0] = _vars[0]->add(_solver, false);
 
-      this->setDirectEncoding();
-      this->encode(solver);
-    
       if(_vars[1]) {
   
-	_vars[0] = _vars[0]->add(solver, false);
-	_vars[1] = _vars[1]->add(solver, false);
+	domain->encode(_solver);
+	_vars[1] = _vars[1]->add(_solver, false);
 	
-
 #ifdef _DEBUGWRAP
 	std::cout << "add or constraint" << std::endl;
 #endif
 
 	// x -> y or z
 	lits.clear();
-	lits.push(this->equal(0));
+	lits.push_back(this->equal(0));
 	for(int i=0; i<2; ++i) {
-	  lits.push(~(_vars[i]->equal(0)));
+	  lits.push_back(~(_vars[i]->equal(0)));
 	}
-	solver->addClause(lits);
+	_solver->addClause(lits);
       
 	// y -> x  and z -> x
 	for(int i=0; i<2; ++i) {
 	  lits.clear();
-	  lits.push(_vars[i]->equal(0));
-	  lits.push(~(this->equal(0)));
-	  solver->addClause(lits);
+	  lits.push_back(_vars[i]->equal(0));
+	  lits.push_back(~(this->equal(0)));
+	  _solver->addClause(lits);
 	}
-
-      } else if(_rhs == 0) {
-	
-	_vars[0] = _vars[0]->add(solver, false);
-
-#ifdef _DEBUGWRAP
-      std::cout << "add or constraint" << std::endl;
-#endif
-
-	// x -> y 
-	lits.clear();
-	lits.push(this->equal(0));
-	lits.push(~(_vars[0]->equal(0)));
-	solver->addClause(lits);
-      
-	// y -> x 
-	lits.clear();
-	lits.push(_vars[0]->equal(0));
-	lits.push(~(this->equal(0)));
-	solver->addClause(lits);
-      }
-      
+      } 
     }
-  } 
 
+    _solver->validate();
+  } 
+  
   return this;
 }
 
 
 
 MiniSat_and::MiniSat_and(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_binop(var1,var2)
-{
+  : MiniSat_binop(var1,var2) {
 
 #ifdef _DEBUGWRAP
   std::cout << "creating or predicate" << std::endl;
 #endif
 
-  _lower = 0;
-  _upper = 1;
-  _size = 2;
-  _vars[0]->setDirectEncoding();
-  _vars[1]->setDirectEncoding();
-
+  domain = new DomainEncoding(this);
 }
 
 MiniSat_and::MiniSat_and(MiniSat_Expression *var1, int rhs)
-  : MiniSat_binop(var1,rhs)
-{
+  : MiniSat_binop(var1,rhs) {
 
 #ifdef _DEBUGWRAP
   std::cout << "creating or predicate" << std::endl;
 #endif
 
-  _lower = 0;
-  _upper = 1;
-  _size = 2;
-  _vars[0]->setDirectEncoding();
-
+  if(rhs) domain = new OffsetDomain(this,var1->domain,0);
+  else domain = new ConstantDomain(this,0);
 }
 
 
-MiniSat_and::~MiniSat_and(){
+MiniSat_and::~MiniSat_and() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete or" << std::endl;
@@ -1529,137 +1189,94 @@ MiniSat_and::~MiniSat_and(){
 
 }
 
-MiniSat_Expression* MiniSat_and::add(MiniSatSolver *solver, bool top_level){
-  if(!has_been_added()){
+MiniSat_Expression* MiniSat_and::add(MiniSatSolver *solver, bool top_level) {
+  if(!has_been_added()) {
     _solver = solver;
-    _ident = _solver->declare(this);
+    _ident = _solver->declare(this, false);
 
-    vec<Lit> lits;
+    std::vector<Lit> lits;
     if(top_level) {
-            
+      
       if(_vars[1]) {
-  
-	_vars[0] = _vars[0]->add(solver, false);
-	_vars[1] = _vars[1]->add(solver, false);
 	
-
+	_vars[0] = _vars[0]->add(_solver, false);
+	_vars[1] = _vars[1]->add(_solver, false);
+	
 #ifdef _DEBUGWRAP
 	std::cout << "add or constraint" << std::endl;
 #endif
-
+	
 	for(int i=0; i<2; ++i) {
 	  lits.clear();
-	  lits.push(~(_vars[i]->equal(0)));
-	  solver->addClause(lits);
+	  lits.push_back(~(_vars[i]->equal(0)));
+	  _solver->addClause(lits);
 	}
-      
-      } else if(_rhs == 1) {
 	
-	_vars[0] = _vars[0]->add(solver, false);
-
-#ifdef _DEBUGWRAP
-      std::cout << "add or constraint" << std::endl;
-#endif
-
-	lits.clear();
-	lits.push(~(_vars[0]->equal(0)));
-	solver->addClause(lits);
-      }
-
-    } else {
-
-      this->setDirectEncoding();
-      this->encode(solver);
-
-    
-      if(_vars[1]) {
-  
-	_vars[0] = _vars[0]->add(solver, false);
-	_vars[1] = _vars[1]->add(solver, false);
+      } else if(_rhs != 0) {
 	
-
+	_vars[0] = _vars[0]->add(_solver, false);
+	
 #ifdef _DEBUGWRAP
 	std::cout << "add or constraint" << std::endl;
 #endif
-
+	
+	lits.clear();
+	lits.push_back(~(_vars[0]->equal(0)));
+	_solver->addClause(lits);
+      }
+      
+    } else {
+      
+      if(_vars[1]) {
+	
+	domain->encode(_solver);
+	
+	_vars[0] = _vars[0]->add(_solver, false);
+	_vars[1] = _vars[1]->add(_solver, false);
+	
+#ifdef _DEBUGWRAP
+	std::cout << "add or constraint" << std::endl;
+#endif
+	
 	// y and z -> x
 	// x or ~y or ~z
 	lits.clear();
-	lits.push(~(this->equal(0)));
+	lits.push_back(~(this->equal(0)));
 	for(int i=0; i<2; ++i) {
-	  lits.push(_vars[i]->equal(0));
+	  lits.push_back(_vars[i]->equal(0));
 	}
-	solver->addClause(lits);
-      
+	_solver->addClause(lits);
+	
 	// x -> y  and x -> z
 	for(int i=0; i<2; ++i) {
 	  lits.clear();
-	  lits.push(this->equal(0));
-	  lits.push(~(_vars[i]->equal(0)));
-	  solver->addClause(lits);
+	  lits.push_back(this->equal(0));
+	  lits.push_back(~(_vars[i]->equal(0)));
+	  _solver->addClause(lits);
 	}
 
-      } else if(_rhs == 1) {
-	
-	_vars[0] = _vars[0]->add(solver, false);
-
-#ifdef _DEBUGWRAP
-      std::cout << "add or constraint" << std::endl;
-#endif
-
-	// x -> y 
-	lits.clear();
-	lits.push(this->equal(0));
-	lits.push(~(_vars[0]->equal(0)));
-	solver->addClause(lits);
-      
-	// y -> x 
-	lits.clear();
-	lits.push(_vars[0]->equal(0));
-	lits.push(~(this->equal(0)));
-	solver->addClause(lits);
       }
-      
-    }
-  } 
+    } 
+
+    _solver->validate();
+  }
 
   return this;
 }
 
 
 MiniSat_eq::MiniSat_eq(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_binop(var1,var2)
-{
-
-#ifdef _DEBUGWRAP
-  std::cout << "creating equality" << std::endl;
-#endif
-
-  _lower = 0;
-  _upper = 1;
-  _size = 2;
-  _vars[0]->setDirectEncoding();
-  _vars[1]->setDirectEncoding();
-
+  : MiniSat_binop(var1,var2) {
+  domain = new DomainEncoding(this);
 }
 
 MiniSat_eq::MiniSat_eq(MiniSat_Expression *var1, int rhs)
-  : MiniSat_binop(var1,rhs)
-{
-
-#ifdef _DEBUGWRAP
-  std::cout << "creating equality" << std::endl;
-#endif
-
-  _lower = 0;
-  _upper = 1;
-  _size = 2;
-  _vars[0]->setDirectEncoding();
-
+  : MiniSat_binop(var1,rhs) {
+  domain = new EqDomain(this,var1->domain, rhs, 1);
 }
 
 
-MiniSat_eq::~MiniSat_eq(){
+MiniSat_eq::~MiniSat_eq() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete eq" << std::endl;
@@ -1667,292 +1284,80 @@ MiniSat_eq::~MiniSat_eq(){
 
 }
 
-MiniSat_Expression* MiniSat_eq::add(MiniSatSolver *solver, bool top_level){
-  if(!has_been_added()){
+MiniSat_Expression* MiniSat_eq::add(MiniSatSolver *solver, bool top_level) {
+  if(!has_been_added()) {
     _solver = solver;
-    _ident = _solver->declare(this);
+    _ident = _solver->declare(this, false);
 
-    vec<Lit> lits;
+#ifdef _DEBUGWRAP
+    std::cout << "creating eq expression x" << _ident << " [" << getmin() << ".." << getmax() << "]" << std::endl;
+#endif
+
+    std::vector<Lit> lits;
+
+    _vars[0] = _vars[0]->add(_solver, false);
     if(top_level) {
             
       if(_vars[1]) {
   
-	_vars[0] = _vars[0]->add(solver, false);
-	_vars[1] = _vars[1]->add(solver, false);
-
+	_vars[1] = _vars[1]->add(_solver, false);
 
 #ifdef _DEBUGWRAP
-      std::cout << "add equality" << std::endl;
+	std::cout << "encode equality constraint x" 
+		  << _vars[0]->_ident << " == x" << _vars[1]->_ident << std::endl;
 #endif
 
-	int lb = std::max(_vars[0]->_lower, _vars[1]->_lower);
-	int ub = std::min(_vars[0]->_upper, _vars[1]->_upper);
-
-	Lit p;
-
-	for(int x=0; x<2; ++x)
-	  for(int i=_vars[x]->_lower; i<lb; ++i) {
-	    lits.clear();
-	    p = ~(_vars[x]->equal(i));
-	    if(p != Lit_True) {
-	      lits.push(p);
-	      solver->addClause(lits);
-	    }
-	  }
-
-	for(int x=0; x<2; ++x)
-	  for(int i=ub+1; i<=_vars[x]->_upper; ++i) {
-	    lits.clear();
-	    p = ~(_vars[x]->equal(i));
-	    if(p != Lit_True) {
-	      lits.push(p);
-	      solver->addClause(lits);
-	    }
-	  }
-
-	bool valid;
-	for(int i=lb; i<=ub; ++i) {
-	  valid = false;
-	  lits.clear();
-	  p = ~(_vars[0]->equal(i));
-	  if(p != Lit_False) {
-	    valid |= (p == Lit_True);
-	    lits.push(p);
-	  }
-	  
-	  p = _vars[1]->equal(i);
-	  if(p != Lit_False) {
-	    valid |= (p == Lit_True);
-	    lits.push(p);
-	  }
-
-	  if(!valid) solver->addClause(lits);
-
-	  valid = false;
-	  lits.clear();
-	  p = ~(_vars[1]->equal(i));
-	  if(p != Lit_False) {
-	    valid |= (p == Lit_True);
-	    lits.push(p);
-	  }
-	  
-	  p = _vars[0]->equal(i);
-	  if(p != Lit_False) {
-	    valid |= (p == Lit_True);
-	    lits.push(p);
-	  }
-
-	  if(!valid) solver->addClause(lits);
-	}
+	equalityEncoder(_vars[0], _vars[1], _solver);
 
       } else {
-	_vars[0] = _vars[0]->add(solver, false);
 
 #ifdef _DEBUGWRAP
-      std::cout << "add equality" << std::endl;
+	std::cout << "encode unary equality constraint x" 
+		  << _vars[0]->_ident << " == " << _rhs << std::endl;
 #endif
 
 	lits.clear();
-	lits.push(_vars[0]->equal(_rhs));
-	solver->addClause(lits);
+	lits.push_back(_vars[0]->equal(_rhs));
+	_solver->addClause(lits);
+
       }
     } else {
       
-      //std::cout << "add equal predicate (not supported)" << std::endl;
-      //exit(1);
-
       if(_vars[1]) {
   
-	this->setDirectEncoding();
-	this->encode(solver);
-
-	_vars[0] = _vars[0]->add(solver, false);
-	_vars[1] = _vars[1]->add(solver, false);
-	
-	
-#ifdef _DEBUGWRAP
-	std::cout << "add equality predicate" << std::endl;
-#endif
-	
-	int lb = std::max(_vars[0]->_lower, _vars[1]->_lower);
-	int ub = std::min(_vars[0]->_upper, _vars[1]->_upper);
-
-	Lit p;
-
-	for(int x=0; x<2; ++x)
-	  for(int i=_vars[x]->_lower; i<lb; ++i) {
-	    // k not in z and yk -> -x
-	    lits.clear();
-	    p = ~(_vars[x]->equal(i));
-	    if(p != Lit_True) {
-	      lits.push(this->equal(0));
-	      lits.push(p);
-	      solver->addClause(lits);
-	    }
-	  }
-
-	for(int x=0; x<2; ++x)
-	  for(int i=ub+1; i<=_vars[x]->_upper; ++i) {
-	    lits.clear();
-	    p = ~(_vars[x]->equal(i));
-	    if(p != Lit_True) {
-	      lits.push(this->equal(0));
-	      lits.push(p);
-	      solver->addClause(lits);
-	    }
-	  }
-
-	bool valid;
-	for(int i=lb; i<=ub; ++i) {
-	  // yi and zi -> x
-	  // -yi or -zi or x
-	  valid = false;
-	  lits.clear();
-	  lits.push(this->equal(1));
-
-	  p = ~(_vars[0]->equal(i));
-	  if(p != Lit_False) {
-	    valid |= (p == Lit_True);
-	    lits.push(p);
-	  }
-	  
-	  p = ~(_vars[1]->equal(i));
-	  if(p != Lit_False) {
-	    valid |= (p == Lit_True);
-	    lits.push(p);
-	  }
-
-	  if(!valid) solver->addClause(lits);
-
-	  // -yi and zi -> -x
-	  // yi or -zi or -x
-	  valid = false;
-	  lits.clear();
-	  lits.push(this->equal(0));
-
-	  p = _vars[0]->equal(i);
-	  if(p != Lit_False) {
-	    valid |= (p == Lit_True);
-	    lits.push(p);
-	  }
-	  
-	  p = ~(_vars[1]->equal(i));
-	  if(p != Lit_False) {
-	    valid |= (p == Lit_True);
-	    lits.push(p);
-	  }
-
-	  if(!valid) solver->addClause(lits);
-
-	  // yi and -zi -> -x
-	  // -yi or zi or -x
-	  valid = false;
-	  lits.clear();
-	  lits.push(this->equal(0));
-
-	  p = ~(_vars[0]->equal(i));
-	  if(p != Lit_False) {
-	    valid |= (p == Lit_True);
-	    lits.push(p);
-	  }
-	  
-	  p = _vars[1]->equal(i);
-	  if(p != Lit_False) {
-	    valid |= (p == Lit_True);
-	    lits.push(p);
-	  }
-
-	  if(!valid) solver->addClause(lits);
-	}
-
-      } else {
-	_vars[0] = _vars[0]->add(solver, false);
+	domain->encode(_solver);
+	_vars[1] = _vars[1]->add(_solver, false);
 
 #ifdef _DEBUGWRAP
-      std::cout << "add equality" << std::endl;
-#endif
+	std::cout << "encode equality predicate x" << this->_ident << " == (x"
+		  << _vars[0]->_ident << " == x" << _vars[1]->_ident << ")" << std::endl;
+#endif	
 
-// 	lits.clear();
-// 	lits.push(this->equal(0));
-// 	lits.push(_vars[0]->equal(_rhs));
-// 	solver->addClause(lits);
+	equalityEncoder(_vars[0], _vars[1], this, _solver, true);
 
-// 	lits.clear();
-// 	lits.push(this->equal(1));
-// 	lits.push(~(_vars[0]->equal(_rhs)));
-// 	solver->addClause(lits);
       }
-      
     }
+
+    _solver->validate();
   } 
 
   return this;
 }
 
 
-Lit MiniSat_eq::less_or_equal(const int value) const {
-  if(_vars[1]) return this->MiniSat_Expression::less_or_equal(value);
-  else {
-    if(value < 0) return Lit_False;
-    if(value >= 1) return Lit_True;
-    // the value is 0, eq is false iff vars[0] != _rhs
-    return ~(_vars[0]->equal(_rhs));
-  }
-}
-
-Lit MiniSat_eq::greater_than(const int value) const {
-  if(_vars[1]) return this->MiniSat_Expression::greater_than(value);
-  else {
-    if(value < 0) return Lit_True;
-    if(value >= 1) return Lit_False;
-    // the value is 0, eq is true iff vars[0] == _rhs
-    return _vars[0]->equal(_rhs);
-  }
-}
-
-Lit MiniSat_eq::equal(const int value) const {
-  if(!_vars[1]) {
-    if(value < 0 || value > 1) return Lit_False;
-
-    if(value == 0) {
-      // the value is 0, eq is false iff vars[0] != _rhs
-      return ~(_vars[0]->equal(_rhs));
-    }
-    if(value == 1) {
-      // the value is 1, eq is true iff vars[0] == _rhs
-      return _vars[0]->equal(_rhs);
-    }
-  }return this->MiniSat_Expression::equal(value);
-}
-
 /* Disequality operator */
 
 MiniSat_ne::MiniSat_ne(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_binop(var1,var2)
-{
-  //_vars[0]->setDirectEncoding();
-  //_vars[1]->setDirectEncoding();
-  
-  _vars[0]->setDirectEncoding();
-  _vars[1]->setDirectEncoding();
-  _lower = 0;
-  _upper = 1;
-  _size = 2;
-
+  : MiniSat_binop(var1,var2) {
+  domain = new DomainEncoding(this);
 }
 
 MiniSat_ne::MiniSat_ne(MiniSat_Expression *var1, int rhs)
-  : MiniSat_binop(var1,rhs)
-{
-
-  _vars[0]->setDirectEncoding();
-  _lower = 0;
-  _upper = 1;
-  _size = 2;
-
+  : MiniSat_binop(var1,rhs) {
+  domain = new EqDomain(this,var1->domain, rhs, 0);
 }
 
-MiniSat_ne::~MiniSat_ne(){
+MiniSat_ne::~MiniSat_ne() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete notequal" << std::endl;
@@ -1960,46 +1365,34 @@ MiniSat_ne::~MiniSat_ne(){
 
 }
 
-MiniSat_Expression* MiniSat_ne::add(MiniSatSolver *solver, bool top_level){
-  if(!has_been_added()){
+MiniSat_Expression* MiniSat_ne::add(MiniSatSolver *solver, bool top_level) {
+  if(!has_been_added()) {
     _solver = solver;
-    _ident = _solver->declare(this);
+    _ident = _solver->declare(this, false);
 
-    vec<Lit> lits;
+    std::vector<Lit> lits;
+
+    _vars[0] = _vars[0]->add(_solver, false);
     if(top_level){
 
       if(_vars[1]) {
-	
-	_vars[0] = _vars[0]->add(solver, false);
-	_vars[1] = _vars[1]->add(solver, false);
+	_vars[1] = _vars[1]->add(_solver, false);
 	
 #ifdef _DEBUGWRAP
 	std::cout << "add notequal constraint" << std::endl;
 #endif
 	
-	int lb = std::max(_vars[0]->_lower, _vars[1]->_lower);
-	int ub = std::min(_vars[0]->_upper, _vars[1]->_upper);
-
-	int val;
-	
-	for(val=lb; val<=ub; ++val) {
-	  lits.clear();
-	  lits.push(~(_vars[0]->equal(val)));
-	lits.push(~(_vars[1]->equal(val)));
-	solver->addClause(lits);
-	}
+	disequalityEncoder(_vars[0], _vars[1], _solver);
 
       } else  {
-
-	_vars[0] = _vars[0]->add(solver, false);
 
 #ifdef _DEBUGWRAP
 	std::cout << "add notequal" << std::endl;
 #endif
 
 	lits.clear();
-	lits.push(~(_vars[0]->equal(_rhs)));
-	solver->addClause(lits);
+	lits.push_back(~(_vars[0]->equal(_rhs)));
+	_solver->addClause(lits);
 
       }
       
@@ -2007,202 +1400,49 @@ MiniSat_Expression* MiniSat_ne::add(MiniSatSolver *solver, bool top_level){
 
       if(_vars[1]) {
 	
-	this->setDirectEncoding();
-	this->encode(solver);
-
-	_vars[0] = _vars[0]->add(solver, false);
-	_vars[1] = _vars[1]->add(solver, false);
+	domain->encode(_solver);
+	_vars[1] = _vars[1]->add(_solver, false);
 	
 #ifdef _DEBUGWRAP
 	std::cout << "add notequal predicate" << std::endl;
 #endif
 	
-	int lb = std::max(_vars[0]->_lower, _vars[1]->_lower);
-	int ub = std::min(_vars[0]->_upper, _vars[1]->_upper);
+	equalityEncoder(_vars[0], _vars[1], this, _solver, false);
 
-	Lit p;
-
-
-	for(int x=0; x<2; ++x)
-	  for(int i=_vars[x]->_lower; i<lb; ++i) {
-	    // k not in z and yk -> x
-	    lits.clear();
-	    p = ~(_vars[x]->equal(i));
-	    if(p != Lit_True) {
-	      lits.push(this->equal(1));
-	      lits.push(p);
-	      solver->addClause(lits);
-	    }
-	  }
-
-	for(int x=0; x<2; ++x)
-	  for(int i=ub+1; i<=_vars[x]->_upper; ++i) {
-	    lits.clear();
-	    p = ~(_vars[x]->equal(i));
-	    if(p != Lit_True) {
-	      lits.push(this->equal(1));
-	      lits.push(p);
-	      solver->addClause(lits);
-	    }
-	  }
-
-	bool valid;
-	for(int i=lb; i<=ub; ++i) {
-	  // yi and zi -> -x
-	  // -yi or -zi or -x
-	  valid = false;
-	  lits.clear();
-	  lits.push(this->equal(0));
-
-	  p = ~(_vars[0]->equal(i));
-	  if(p != Lit_False) {
-	    valid |= (p == Lit_True);
-	    lits.push(p);
-	  }
-	  
-	  p = ~(_vars[1]->equal(i));
-	  if(p != Lit_False) {
-	    valid |= (p == Lit_True);
-	    lits.push(p);
-	  }
-
-	  if(!valid) solver->addClause(lits);
-
-	  // -yi and zi -> x
-	  // yi or -zi or x
-	  valid = false;
-	  lits.clear();
-	  lits.push(this->equal(1));
-
-	  p = _vars[0]->equal(i);
-	  if(p != Lit_False) {
-	    valid |= (p == Lit_True);
-	    lits.push(p);
-	  }
-	  
-	  p = ~(_vars[1]->equal(i));
-	  if(p != Lit_False) {
-	    valid |= (p == Lit_True);
-	    lits.push(p);
-	  }
-
-	  if(!valid) solver->addClause(lits);
-
-	  // yi and -zi -> x
-	  // -yi or zi or x
-	  valid = false;
-	  lits.clear();
-	  lits.push(this->equal(1));
-
-	  p = ~(_vars[0]->equal(i));
-	  if(p != Lit_False) {
-	    valid |= (p == Lit_True);
-	    lits.push(p);
-	  }
-	  
-	  p = _vars[1]->equal(i);
-	  if(p != Lit_False) {
-	    valid |= (p == Lit_True);
-	    lits.push(p);
-	  }
-
-	  if(!valid) solver->addClause(lits);
-	}
-
-
-      } else  {
-	_vars[0] = _vars[0]->add(solver, false);
-
-#ifdef _DEBUGWRAP
-	std::cout << "add notequal" << std::endl;
-#endif
-
-// 	lits.clear();
-// 	lits.push(this->equal(1));
-// 	lits.push(_vars[0]->equal(_rhs));
-// 	solver->addClause(lits);
-
-// 	lits.clear();
-// 	lits.push(this->equal(0));
-// 	lits.push(~(_vars[0]->equal(_rhs)));
-// 	solver->addClause(lits);
-      }
-
+      } 
     }
+
+    _solver->validate();
   }
 
   return this;
 }
 
 
-Lit MiniSat_ne::less_or_equal(const int value) const {
-  if(_vars[1]) return this->MiniSat_Expression::less_or_equal(value);
-  else {
-    if(value < 0) return Lit_False;
-    if(value >= 1) return Lit_True;
-    // the value is 0, ne is false iff vars[0] == _rhs
-    return _vars[0]->equal(_rhs);
-  }
-}
-
-Lit MiniSat_ne::greater_than(const int value) const {
-  if(_vars[1]) return this->MiniSat_Expression::greater_than(value);
-  else {
-    if(value < 0) return Lit_True;
-    if(value >= 1) return Lit_False;
-    // the value is 0, ne is true iff vars[0] != _rhs
-    return ~(_vars[0]->equal(_rhs));
-  }
-}
-
-Lit MiniSat_ne::equal(const int value) const {
-  if(!_vars[1]) {
-    if(value < 0 || value > 1) return Lit_False;
-
-    if(value == 0) {
-      // the value is 0, ne is false iff vars[0] == _rhs
-      return _vars[0]->equal(_rhs);
-    }
-    if(value == 1) {
-      // the value is 1, ne is true iff vars[0] != _rhs
-      return ~(_vars[0]->equal(_rhs));
-    }
-  }return this->MiniSat_Expression::equal(value);
-}
-
-
 /* Leq operator */
 
 MiniSat_le::MiniSat_le(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_binop(var1,var2)
-{ 
+  : MiniSat_binop(var1,var2) { 
 #ifdef _DEBUGWRAP
   std::cout << "Creating Le constraint" << std::endl;
 #endif
 
-  _lower = 0;
-  _upper = 1;
-  _size = 2;
-  _vars[0]->setOrderEncoding();
-  _vars[1]->setOrderEncoding();
+  domain = new DomainEncoding(this);
+
 }
 
 MiniSat_le::MiniSat_le(MiniSat_Expression *var1, int rhs)
-  : MiniSat_binop(var1,rhs)
-{
+  : MiniSat_binop(var1,rhs) {
 
 #ifdef _DEBUGWRAP
   std::cout << "Leq on constant constructor" << std::endl;
 #endif
 
-  _lower = 0;
-  _upper = 1;
-  _size = 2;
-  _vars[0]->setOrderEncoding();
+  domain = new LeqDomain(this,var1->domain, rhs, 1);
 }
 
 
-MiniSat_le::~MiniSat_le(){
+MiniSat_le::~MiniSat_le() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete lessequal" << std::endl;
@@ -2213,58 +1453,37 @@ MiniSat_le::~MiniSat_le(){
 MiniSat_Expression* MiniSat_le::add(MiniSatSolver *solver, bool top_level) {
   if(!has_been_added()) {
     _solver = solver;
-    _ident = _solver->declare(this);
+    _ident = _solver->declare(this, false);
 
+    std::vector<Lit> lits;
+
+    _vars[0] = _vars[0]->add(_solver, false);
     if(top_level) {
 
       if(_vars[1]) {
 
-	_vars[0] = _vars[0]->add(solver, false);
-	_vars[1] = _vars[1]->add(solver, false);
+	_vars[1] = _vars[1]->add(_solver, false);
 
 #ifdef _DEBUGWRAP
       std::cout << "Adding leq constraint" << std::endl;
 #endif
 
-	vec<Lit> lits;
-	int i, j;
-	
-	// x1_j -> x0_j-1 
-	for(j=_vars[1]->_lower; j<_vars[1]->_upper; ++j) {
-	  if(j < _vars[0]->_lower) {
-	    //x1_y is inconsistent
-	    lits.clear();
-	    lits.push(~(_vars[1]->less_or_equal(j)));
-	    solver->addClause(lits);
-	  } else if(j < _vars[0]->_upper) { 
-	    lits.clear();
-	    lits.push(~(_vars[1]->less_or_equal(j)));
-	    lits.push(_vars[0]->less_or_equal(j));
-	    solver->addClause(lits);
-	  } 
-	}
-	for(i=_vars[1]->_upper; i<_vars[0]->_upper; ++i) {
-	  lits.clear();
-	  lits.push(_vars[0]->less_or_equal(i));
-	  solver->addClause(lits);
-	}
+      precedenceEncoder(_vars[0], _vars[1], 0, _solver);
       } else {
-	_vars[0] = _vars[0]->add(solver, false);
+	_vars[0] = _vars[0]->add(_solver, false);
 
 #ifdef _DEBUGWRAP
       std::cout << "Adding leq constraint" << std::endl;
 #endif
-
-	vec<Lit> lits;
 	
 	// x0 <= r
-	if(_rhs < _vars[0]->_lower) {
+	if(_rhs < _vars[0]->getmin()) {
 	  std::cerr << "model is inconsistent, -exiting" <<std::endl;
 	  exit(1);
-	} else if(_rhs < _vars[0]->_upper) {
+	} else if(_rhs < _vars[0]->getmax()) {
 	  lits.clear();
-	  lits.push(_vars[0]->less_or_equal(_rhs));
-	  solver->addClause(lits);
+	  lits.push_back(_vars[0]->less_or_equal(_rhs));
+	  _solver->addClause(lits);
 	}
       }
     } else {
@@ -2275,178 +1494,43 @@ MiniSat_Expression* MiniSat_le::add(MiniSatSolver *solver, bool top_level) {
 
       if(_vars[1]) {
 
-	this->setDirectEncoding();
-	this->encode(solver);
+	domain->encode(_solver);
+	_vars[1] = _vars[1]->add(_solver, false);
+
+	precedenceEncoder(_vars[0], _vars[1], this, 0, _solver);
 	
-	_vars[0] = _vars[0]->add(solver, false);
-	_vars[1] = _vars[1]->add(solver, false);
-
-	vec<Lit> lits;
-	int i, j;
-	
-	// x -> y <= z
-	for(j=_vars[1]->_lower; j<_vars[1]->_upper; ++j) {
-	  if(j < _vars[0]->_lower) {
-	    //x1_y is inconsistent
-	    lits.clear();
-	    lits.push((this->equal(0)));
-	    lits.push(~(_vars[1]->less_or_equal(j)));
-	    solver->addClause(lits);
-	  } else if(j < _vars[0]->_upper) { 
-	    lits.clear();
-	    lits.push((this->equal(0)));
-	    lits.push(~(_vars[1]->less_or_equal(j)));
-	    lits.push(_vars[0]->less_or_equal(j));
-	    solver->addClause(lits);
-	  } 
-	}
-	for(i=_vars[1]->_upper; i<_vars[0]->_upper; ++i) {
-	  lits.clear();
-	  lits.push((this->equal(0)));
-	  lits.push(_vars[0]->less_or_equal(i));
-	  solver->addClause(lits);
-	}
-
-	// ~x -> z < y
-	for(j=_vars[0]->_lower; j<_vars[0]->_upper; ++j) {
-	  if(j-1 < _vars[1]->_lower) {
-	    //x1_y is incomsistent
-	    lits.clear();
-	    lits.push(~(this->equal(0)));
-	    lits.push(~(_vars[0]->less_or_equal(j)));
-	    solver->addClause(lits);
-	  } else if(j-1 < _vars[1]->_upper) { 
-	    lits.clear();
-	    lits.push(~(this->equal(0)));
-	    lits.push(~(_vars[0]->less_or_equal(j)));
-	    lits.push(_vars[1]->less_or_equal(j-1));
-	    solver->addClause(lits);
-	  } 
-	}
-	for(i=_vars[0]->_upper-1; i<_vars[1]->_upper; ++i) {
-	  lits.clear();
-	  lits.push(~(this->equal(0)));
-	  lits.push(_vars[1]->less_or_equal(i));
-	  solver->addClause(lits);
-	}
-
-
-      } else {
-	_vars[0] = _vars[0]->add(solver, false);
-
-#ifdef _DEBUGWRAP
-      std::cout << "Adding leq predicate" << std::endl;
-#endif
-
-// 	vec<Lit> lits;
-	
-// 	// x -> y <= r
-// 	if(_rhs < _vars[0]->_lower) {
-// 	  lits.clear();
-// 	  lits.push(this->equal(0));
-// 	} else if(_rhs < _vars[0]->_upper) {
-// 	  lits.clear();
-// 	  lits.push(~(this->equal(0)));
-// 	  lits.push(_vars[0]->less_or_equal(_rhs));
-// 	} else {
-// 	  lits.clear();
-// 	  lits.push(~(this->equal(0)));
-// 	}
-// 	solver->addClause(lits);
-
-// 	// x -> r < y
-// 	if(_rhs >= _vars[0]->_upper) {
-// 	  lits.clear();
-// 	  lits.push(this->equal(0));
-// 	} else if(_rhs >= _vars[0]->_lower) {
-// 	  lits.clear();
-// 	  lits.push(~(this->equal(0)));
-// 	  lits.push(_vars[0]->greater_than(_rhs));
-// 	} else {
-// 	  lits.clear();
-// 	  lits.push(~(this->equal(0)));
-// 	}
-// 	solver->addClause(lits);
-      }
-
-
-
+      } 
     } 
+
+    _solver->validate();
   }
 
   return this;
 }
 
 
-Lit MiniSat_le::less_or_equal(const int value) const {
-  if(_vars[1]) return this->MiniSat_Expression::less_or_equal(value);
-  else {
-    if(value < 0) return Lit_False;
-    if(value >= 1) return Lit_True;
-    // the value is 0, le is false iff vars[0] > _rhs
-    return _vars[0]->greater_than(_rhs);
-  }
-}
-
-Lit MiniSat_le::greater_than(const int value) const {
-  if(_vars[1]) return this->MiniSat_Expression::greater_than(value);
-  else {
-    if(value < 0) return Lit_True;
-    if(value >= 1) return Lit_False;
-    // the value is 0, le is true iff vars[0] <= _rhs
-    return _vars[0]->less_or_equal(_rhs);
-  }
-}
-
-Lit MiniSat_le::equal(const int value) const {
-  if(!_vars[1]) {
-    if(value < 0 || value > 1) return Lit_False;
-
-    if(value == 0) {
-      // the value is 0, le is false iff vars[0] > _rhs
-      return _vars[0]->greater_than(_rhs);
-    }
-    if(value == 1) {
-      // the value is 1, le is true iff vars[0] <= _rhs
-      return _vars[0]->less_or_equal(_rhs);
-    }
-  }
-  return this->MiniSat_Expression::equal(value);
-}
-
-
 /* Geq operator */
 
 MiniSat_ge::MiniSat_ge(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_binop(var1,var2)
-{
+  : MiniSat_binop(var1,var2) {
 #ifdef _DEBUGWRAP
   std::cout << "Creating Ge constraint" << std::endl;
 #endif
 
-  _lower = 0;
-  _upper = 1;
-  _size = 2;
-  _vars[0]->setOrderEncoding();
-  _vars[1]->setOrderEncoding();
+  domain = new DomainEncoding(this);
 }
 
 MiniSat_ge::MiniSat_ge(MiniSat_Expression *var1, int rhs)
-  : MiniSat_binop(var1,rhs)
-{
+  : MiniSat_binop(var1,rhs) {
 
 #ifdef _DEBUGWRAP
   std::cout << "Geq on constant constructor" << std::endl;
 #endif
 
-  _lower = 0;
-  _upper = 1;
-  _size = 2;
-  _vars[0]->setOrderEncoding();
-
+  domain = new LeqDomain(this,var1->domain, rhs-1, 0);
 }
 
-MiniSat_ge::~MiniSat_ge(){
+MiniSat_ge::~MiniSat_ge() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete greaterequal" << std::endl;
@@ -2454,245 +1538,79 @@ MiniSat_ge::~MiniSat_ge(){
 
 }
 
-MiniSat_Expression* MiniSat_ge::add(MiniSatSolver *solver, bool top_level){ 
+MiniSat_Expression* MiniSat_ge::add(MiniSatSolver *solver, bool top_level) { 
   if(!has_been_added()) {
     _solver = solver;
-    _ident = _solver->declare(this);
+    _ident = _solver->declare(this, false);
 
+    std::vector<Lit> lits;
+
+    _vars[0] = _vars[0]->add(_solver, false);
     if(top_level) {
-
+      
       if(_vars[1]) {
-
-	// reverse less than or equal constraint
-	_vars[0] = _vars[0]->add(solver, false);
-	_vars[1] = _vars[1]->add(solver, false);
-
-	MiniSat_Expression *aux = _vars[1];
-	_vars[1] = _vars[0];
-	_vars[0] = aux;
-
-#ifdef _DEBUGWRAP
-      std::cout << "Adding geq constraint" << std::endl;
-#endif
-
-	vec<Lit> lits;
-	int i, j;
 	
-	// x1_j -> x0_j-1 
-	for(j=_vars[1]->_lower; j<_vars[1]->_upper; ++j) {
-	  if(j < _vars[0]->_lower) {
-	    //x1_y is inconsistent
-	    lits.clear();
-	    lits.push(~(_vars[1]->less_or_equal(j)));
-	    solver->addClause(lits);
-	  } else if(j < _vars[0]->_upper) { 
-	    lits.clear();
-	    lits.push(~(_vars[1]->less_or_equal(j)));
-	    lits.push(_vars[0]->less_or_equal(j));
-	    solver->addClause(lits);
-	  } 
-	}
-	for(i=_vars[1]->_upper; i<_vars[0]->_upper; ++i) {
-	  lits.clear();
-	  lits.push(_vars[0]->less_or_equal(i));
-	  solver->addClause(lits);
-	}
+	_vars[1] = _vars[1]->add(_solver, false);
+	
+#ifdef _DEBUGWRAP
+	std::cout << "Adding geq constraint" << std::endl;
+#endif
+	
+	precedenceEncoder(_vars[1], _vars[0], 0, _solver);
+
       } else {
 
-	_vars[0] = _vars[0]->add(solver, false);
-
 #ifdef _DEBUGWRAP
       std::cout << "Adding geq constraint" << std::endl;
 #endif
-
-	vec<Lit> lits;
 	
 	// x0 >= r
-	if(_rhs > _vars[0]->_upper) {
+	if(_rhs > _vars[0]->getmax()) {
 	  std::cerr << "model is inconsistent, -exiting" <<std::endl;
 	  exit(1);
-	} else if(_rhs > _vars[0]->_lower) {
+	} else if(_rhs > _vars[0]->getmin()) {
 	  lits.clear();
-	  lits.push(_vars[0]->greater_than(_rhs-1));
-	  solver->addClause(lits);
+	  lits.push_back(_vars[0]->greater_than(_rhs-1));
+	  _solver->addClause(lits);
 	}
       }
     } else {
 
-      //std::cout << "do not support this constraint yet" << std::endl;
-      //exit(1);
-  
 #ifdef _DEBUGWRAP    
       std::cout << "Adding geq predicate" << std::endl;
 #endif
 
       if(_vars[1]) {
 
-	this->setDirectEncoding();
-	this->encode(solver);
+	domain->encode(_solver);
+	_vars[1] = _vars[1]->add(_solver, false);
 
-	_vars[0] = _vars[0]->add(solver, false);
-	_vars[1] = _vars[1]->add(solver, false);
+	precedenceEncoder(_vars[1], _vars[0], this, 0, _solver);
 
-	MiniSat_Expression *aux = _vars[1];
-	_vars[1] = _vars[0];
-	_vars[0] = aux;
-
-	vec<Lit> lits;
-	int i, j;
-	
-	// x -> y <= z
-	for(j=_vars[1]->_lower; j<_vars[1]->_upper; ++j) {
-	  if(j < _vars[0]->_lower) {
-	    //x1_y is inconsistent
-	    lits.clear();
-	    lits.push((this->equal(0)));
-	    lits.push(~(_vars[1]->less_or_equal(j)));
-	    solver->addClause(lits);
-	  } else if(j < _vars[0]->_upper) { 
-	    lits.clear();
-	    lits.push((this->equal(0)));
-	    lits.push(~(_vars[1]->less_or_equal(j)));
-	    lits.push(_vars[0]->less_or_equal(j));
-	    solver->addClause(lits);
-	  } 
-	}
-	for(i=_vars[1]->_upper; i<_vars[0]->_upper; ++i) {
-	  lits.clear();
-	  lits.push((this->equal(0)));
-	  lits.push(_vars[0]->less_or_equal(i));
-	  solver->addClause(lits);
-	}
-
-	// ~x -> z < y
-	for(j=_vars[0]->_lower; j<_vars[0]->_upper; ++j) {
-	  if(j-1 < _vars[1]->_lower) {
-	    //x1_y is incomsistent
-	    lits.clear();
-	    lits.push(~(this->equal(0)));
-	    lits.push(~(_vars[0]->less_or_equal(j)));
-	    solver->addClause(lits);
-	  } else if(j-1 < _vars[1]->_upper) { 
-	    lits.clear();
-	    lits.push(~(this->equal(0)));
-	    lits.push(~(_vars[0]->less_or_equal(j)));
-	    lits.push(_vars[1]->less_or_equal(j-1));
-	    solver->addClause(lits);
-	  } 
-	}
-	for(i=_vars[0]->_upper-1; i<_vars[1]->_upper; ++i) {
-	  lits.clear();
-	  lits.push(~(this->equal(0)));
-	  lits.push(_vars[1]->less_or_equal(i));
-	  solver->addClause(lits);
-	}
-
-
-      } else {
-
-	_vars[0] = _vars[0]->add(solver, false);
-	//_vars[1] = NULL;
-
-#ifdef _DEBUGWRAP
-      std::cout << "Adding geq predicate" << std::endl;
-#endif
-
-// 	vec<Lit> lits;
-	
-// 	// x -> y <= r
-// 	if(_rhs < _vars[0]->_lower) {
-// 	  lits.clear();
-// 	  lits.push(this->equal(0));
-// 	} else if(_rhs < _vars[0]->_upper) {
-// 	  lits.clear();
-// 	  lits.push(~(this->equal(0)));
-// 	  lits.push(_vars[0]->less_or_equal(_rhs));
-// 	} else {
-// 	  lits.clear();
-// 	  lits.push(~(this->equal(0)));
-// 	}
-// 	solver->addClause(lits);
-
-// 	// x -> r < y
-// 	if(_rhs >= _vars[0]->_upper) {
-// 	  lits.clear();
-// 	  lits.push(this->equal(0));
-// 	} else if(_rhs >= _vars[0]->_lower) {
-// 	  lits.clear();
-// 	  lits.push(~(this->equal(0)));
-// 	  lits.push(_vars[0]->greater_than(_rhs));
-// 	} else {
-// 	  lits.clear();
-// 	  lits.push(~(this->equal(0)));
-// 	}
-// 	solver->addClause(lits);
-      }
-
+      } 
     } 
+    
+    _solver->validate();
   }
 
   return this;
 }
 
-Lit MiniSat_ge::less_or_equal(const int value) const {
-  if(_vars[1]) return this->MiniSat_Expression::less_or_equal(value);
-  else {
-    if(value < 0) return Lit_False;
-    if(value >= 1) return Lit_True;
-    // the value is 0, ge is false iff vars[0] < _rhs
-    return _vars[0]->less_or_equal(_rhs-1);
-  }
-}
-
-Lit MiniSat_ge::greater_than(const int value) const {
-  if(_vars[1]) return this->MiniSat_Expression::greater_than(value);
-  else {
-    if(value < 0) return Lit_True;
-    if(value >= 1) return Lit_False;
-    // the value is 0, ge is true iff vars[0] >= _rhs
-    return _vars[0]->greater_than(_rhs-1);
-  }
-}
-
-Lit MiniSat_ge::equal(const int value) const {
-  if(!_vars[1]) {
-    if(value < 0 || value > 1) return Lit_False;
-
-    if(value == 0) {
-      // the value is 0, ge is false iff vars[0] < _rhs
-      return _vars[0]->less_or_equal(_rhs-1);
-    }
-    if(value == 1) {
-      // the value is 1, ge is true iff vars[0] >= _rhs
-      return _vars[0]->greater_than(_rhs-1);
-    }
-  }
-  return this->MiniSat_Expression::equal(value);
-}
 
 
 /* Lt object */
 
 MiniSat_lt::MiniSat_lt(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_binop(var1,var2)
-{
-  _lower = 0;
-  _upper = 1;
-  _size = 2;
-  _vars[0]->setOrderEncoding();
-  _vars[1]->setOrderEncoding();
+  : MiniSat_binop(var1,var2) {
+  domain = new DomainEncoding(this);
 }
 
 MiniSat_lt::MiniSat_lt(MiniSat_Expression *var1, int rhs)
-  : MiniSat_binop(var1,rhs)
-{
-  _lower = 0;
-  _upper = 1;
-  _size = 2;
-  _vars[0]->setOrderEncoding();
+  : MiniSat_binop(var1,rhs) {
+  domain = new LeqDomain(this,var1->domain, rhs-1, 1);
 }
 
-MiniSat_lt::~MiniSat_lt(){
+MiniSat_lt::~MiniSat_lt() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete lessthan" << std::endl;
@@ -2701,109 +1619,40 @@ MiniSat_lt::~MiniSat_lt(){
 }
 
 MiniSat_Expression* MiniSat_lt::add(MiniSatSolver *solver, bool top_level) {
-  if(!has_been_added()){
+  if(!has_been_added()) {
     _solver = solver;
-    _ident = _solver->declare(this);
+    _ident = _solver->declare(this, false);
 
+    std::vector<Lit> lits;
+
+    _vars[0] = _vars[0]->add(_solver, false);
     if(top_level) {
 
       if(_vars[1]) {
-	_vars[0] = _vars[0]->add(solver, false);
-	_vars[1] = _vars[1]->add(solver, false);
+
+	_vars[1] = _vars[1]->add(_solver, false);
 
 #ifdef _DEBUGWRAP
-      std::cout << "Adding lt constraint" << std::endl;
+	std::cout << "Adding lt constraint" << std::endl;
 #endif
-
-	vec<Lit> lits;
-	int i, j, x, y;
-	
-	// x1_j -> x0_j-1 
-	for(j=_vars[1]->_lower; j<_vars[1]->_upper; ++j) {
-	  if(j-1 < _vars[0]->_lower) {
-	    //x1_y is incomsistent
-	    lits.clear();
-	    lits.push(~(_vars[1]->less_or_equal(j)));
-	    solver->addClause(lits);
-	  } else if(j-1 < _vars[0]->_upper) { 
-	    lits.clear();
-	    lits.push(~(_vars[1]->less_or_equal(j)));
-	    lits.push(_vars[0]->less_or_equal(j-1));
-	    solver->addClause(lits);
-	  } 
-	}
-	for(i=_vars[1]->_upper-1; i<_vars[0]->_upper; ++i) {
-	  lits.clear();
-	  lits.push(_vars[0]->less_or_equal(i));
-	  solver->addClause(lits);
-	}
-
-
-// 	//x1 <= j -> x0 <= j-1 
-// 	std::cout << " X < Y " << std::endl;
-// 	i=0;
-// 	j=0;
-// 	x = _vars[0]->getval(i);
-// 	y = _vars[1]->getval(j);
-// 	while(y <= x) {
-	  
-// 	}
-
-
-// 	for(i=0; i<_vars[0]->_size; ++i) {
-
-
-
-// 	for(i=0; i<_vars[1]->_size; ++i) {
-// 	  x = _vars[1]->getval(i);
-// 	  y = _vars[0]->getPrev(x);
-// 	  std::cout << _vars[1]->_ident << " <= " << x << " -> " << _vars[0]->_ident << " <= " << y << std::endl;
-
-// 	  if(y<x) {
-// 	    lits.clear();
-// 	    lits.push(_vars[1]->greater_than(x));
-// 	    lits.push(_vars[0]->less_or_equal(y));
-// 	  } else
-// 	  for(j=0; j<_vars[1]->_size; ++j) { 
-
-
-// 	for(j=_vars[1]->_lower; j<_vars[1]->_upper; ++j) {
-// 	  if(j-1 < _vars[0]->_lower) {
-// 	    //x1_y is incomsistent
-// 	    lits.clear();
-// 	    lits.push(~(_vars[1]->less_or_equal(j)));
-// 	    solver->addClause(lits);
-// 	  } else if(j-1 < _vars[0]->_upper) { 
-// 	    lits.clear();
-// 	    lits.push(~(_vars[1]->less_or_equal(j)));
-// 	    lits.push(_vars[0]->less_or_equal(j-1));
-// 	    solver->addClause(lits);
-// 	  } 
-// 	}
-// 	for(i=_vars[1]->_upper-1; i<_vars[0]->_upper; ++i) {
-// 	  lits.clear();
-// 	  lits.push(_vars[0]->less_or_equal(i));
-// 	  solver->addClause(lits);
-// 	}
+      
+	precedenceEncoder(_vars[0], _vars[1], 1, _solver);
 
       } else {
-	_vars[0] = _vars[0]->add(solver, false);
 
 #ifdef _DEBUGWRAP
-      std::cout << "Adding lt constraint" << std::endl;
+	std::cout << "Adding lt constraint" << std::endl;
 #endif
-
-	vec<Lit> lits;
 	
 	// x0 < r
-	if(_rhs <= _vars[0]->_lower) {
+	if(_rhs <= _vars[0]->getmin()) {
 	  std::cerr << "model is inconsistent, -exiting" <<std::endl;
 	  exit(1);
-	} else if(_rhs <= _vars[0]->_upper) {
+	} else if(_rhs <= _vars[0]->getmax()) {
 	  lits.clear();
-	  lits.push(_vars[0]->less_or_equal(_rhs-1));
-	  solver->addClause(lits);
-	}
+	  lits.push_back(_vars[0]->less_or_equal(_rhs-1));
+	  _solver->addClause(lits);
+	} 
       }
 
     } else {
@@ -2814,394 +1663,112 @@ MiniSat_Expression* MiniSat_lt::add(MiniSatSolver *solver, bool top_level) {
 
       if(_vars[1]) {
 
-	this->setDirectEncoding();
-	this->encode(solver);
+	domain->encode(_solver);
+	_vars[1] = _vars[1]->add(_solver, false);
 
-	_vars[0] = _vars[0]->add(solver, false);
-	_vars[1] = _vars[1]->add(solver, false);
+	precedenceEncoder(_vars[0], _vars[1], this, 1, _solver);
 
-	vec<Lit> lits;
-	int i, j;
-
-	// x -> y < z
-	for(j=_vars[1]->_lower; j<_vars[1]->_upper; ++j) {
-	  if(j-1 < _vars[0]->_lower) {
-	    lits.clear();
-	    lits.push((this->equal(0)));
-	    lits.push(~(_vars[1]->less_or_equal(j)));
-	    solver->addClause(lits);
-	  } else if(j-1 < _vars[0]->_upper) { 
-	    lits.clear();
-	    lits.push((this->equal(0)));
-	    lits.push(~(_vars[1]->less_or_equal(j)));
-	    lits.push(_vars[0]->less_or_equal(j-1));
-	    solver->addClause(lits);
-
-	  } 
-	}
-	for(i=_vars[1]->_upper-1; i<_vars[0]->_upper; ++i) {
-	  lits.clear();
-	  lits.push((this->equal(0)));
-	  lits.push(_vars[0]->less_or_equal(i));
-	  solver->addClause(lits);
-	}
-
-	// ~x -> y >= z
-	for(j=_vars[0]->_lower; j<_vars[0]->_upper; ++j) {
-	  if(j < _vars[1]->_lower) {
-	    //x1_y is inconsistent
-	    lits.clear();
-	    lits.push(~(this->equal(0)));
-	    lits.push(~(_vars[0]->less_or_equal(j)));
-	    solver->addClause(lits);
-	  } else if(j < _vars[1]->_upper) { 
-	    lits.clear();
-	    lits.push(~(this->equal(0)));
-	    lits.push(~(_vars[0]->less_or_equal(j)));
-	    lits.push(_vars[1]->less_or_equal(j));
-	    solver->addClause(lits);
-	  } 
-	}
-	for(i=_vars[0]->_upper; i<_vars[1]->_upper; ++i) {
-	  lits.clear();
-	  lits.push(~(this->equal(0)));
-	  lits.push(_vars[1]->less_or_equal(i));
-	  solver->addClause(lits);
-	}
-
-      } else {
-
-	_vars[0] = _vars[0]->add(solver, false);
-
-#ifdef _DEBUGWRAP
-	std::cout << "Adding lt constraint" << std::endl;
-#endif
-	
-// 	vec<Lit> lits;
-	
-// 	// x -> y < r
-// 	if(_rhs <= _vars[0]->_lower) {
-// 	  lits.clear();
-// 	  lits.push(this->equal(0));
-// 	} else if(_rhs <= _vars[0]->_upper) {
-// 	  lits.clear();
-// 	  lits.push(~(this->equal(0)));
-// 	  lits.push(_vars[0]->less_or_equal(_rhs-1));
-// 	} else {
-// 	  lits.clear();
-// 	  lits.push(~(this->equal(0)));
-// 	}
-// 	solver->addClause(lits);
-
-// 	// x -> r < y
-// 	if(_rhs > _vars[0]->_upper) {
-// 	  lits.clear();
-// 	  lits.push(this->equal(0));
-// 	} else if(_rhs > _vars[0]->_lower) {
-// 	  lits.clear();
-// 	  lits.push(~(this->equal(0)));
-// 	  lits.push(_vars[0]->greater_than(_rhs-1));
-// 	} else {
-// 	  lits.clear();
-// 	  lits.push(~(this->equal(0)));
-// 	}
-// 	solver->addClause(lits);
       }
-
     } 
+
+    _solver->validate();
   }
 
   return this;
-}
-
-
-Lit MiniSat_lt::less_or_equal(const int value) const {
-  if(_vars[1]) return this->MiniSat_Expression::less_or_equal(value);
-  else {
-    if(value < 0) return Lit_False;
-    if(value >= 1) return Lit_True;
-    // the value is 0, lt is false iff vars[0] >= _rhs
-    return _vars[0]->greater_than(_rhs-1);
-  }
-}
-
-Lit MiniSat_lt::greater_than(const int value) const {
-  if(_vars[1]) return this->MiniSat_Expression::greater_than(value);
-  else {
-    if(value < 0) return Lit_True;
-    if(value >= 1) return Lit_False;
-    // the value is 0, lt is true iff vars[0] < _rhs
-    return _vars[0]->less_or_equal(_rhs-1);
-  }
-}
-
-Lit MiniSat_lt::equal(const int value) const {
-  if(!_vars[1]) {
-    if(value < 0 || value > 1) return Lit_False;
-
-    if(value == 0) {
-      // the value is 0, lt is false iff vars[0] >= _rhs
-      return _vars[0]->greater_than(_rhs-1);
-    }
-    if(value == 1) {
-      // the value is 1, lt is true iff vars[0] < _rhs
-      return _vars[0]->less_or_equal(_rhs-1);
-    }
-  }return this->MiniSat_Expression::equal(value);
 }
 
 
 /* Gt object */
 
 MiniSat_gt::MiniSat_gt(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_binop(var1,var2)
-{
-  _lower = 0;
-  _upper = 1;
-  _size = 2;
-  _vars[0]->setOrderEncoding();
-  _vars[1]->setOrderEncoding();
+  : MiniSat_binop(var1,var2) {
+  domain = new DomainEncoding(this);
 }
 
 MiniSat_gt::MiniSat_gt(MiniSat_Expression *var1, int rhs)
-  : MiniSat_binop(var1,rhs)
-{
-  _lower = 0;
-  _upper = 1;
-  _size = 2;
-  _vars[0]->setOrderEncoding();
+  : MiniSat_binop(var1,rhs) {
+  domain = new LeqDomain(this, var1->domain, rhs, 0);
 }
 
-MiniSat_gt::~MiniSat_gt(){
+MiniSat_gt::~MiniSat_gt() {
 }
 
 MiniSat_Expression* MiniSat_gt::add(MiniSatSolver *solver, bool top_level) {
-  if(!has_been_added()){
+  if(!has_been_added()) {
     _solver = solver;
-    _ident = _solver->declare(this);
+    _ident = _solver->declare(this, false);
 
+    std::vector<Lit> lits;
+
+    _vars[0] = _vars[0]->add(_solver, false);
     if(top_level) {
 
       if(_vars[1]) {
-
-	
-	MiniSat_Expression *aux = _vars[1]->add(solver, false);
-	_vars[1] = _vars[0]->add(solver, false);
-	_vars[0] = aux;
+	_vars[1] = _vars[1]->add(_solver, false);
 
 #ifdef _DEBUGWRAP
-      std::cout << "Adding gt constraint" << std::endl;
+	std::cout << "Adding gt constraint" << std::endl;
 #endif
 
-	vec<Lit> lits;
-	int i, j;
-	
-	// x1_j -> x0_j-1 
-	for(j=_vars[1]->_lower; j<_vars[1]->_upper; ++j) {
-	  if(j-1 < _vars[0]->_lower) {
-	    //x1_y is incomsistent
-	    lits.clear();
-	    lits.push(~(_vars[1]->less_or_equal(j)));
-	    solver->addClause(lits);
-	  } else if(j-1 < _vars[0]->_upper) { 
-	    lits.clear();
-	    lits.push(~(_vars[1]->less_or_equal(j)));
-	    lits.push(_vars[0]->less_or_equal(j-1));
-	    solver->addClause(lits);
-	  } 
-	}
-	for(i=_vars[1]->_upper-1; i<_vars[0]->_upper; ++i) {
-	  lits.clear();
-	  lits.push(_vars[0]->less_or_equal(i));
-	  solver->addClause(lits);
-	}
+	precedenceEncoder(_vars[1], _vars[0], 1, _solver);
 
       } else {
-	_vars[0] = _vars[0]->add(solver, false);
 
 #ifdef _DEBUGWRAP
       std::cout << "Adding gt constraint" << std::endl;
 #endif
-      
-	vec<Lit> lits;
 	
 	// x0 > r
-	if(_rhs >= _vars[0]->_upper) {
+	if(_rhs >= _vars[0]->getmax()) {
 	  std::cerr << "model is inconsistent, -exiting" <<std::endl;
 	  exit(1);
-	} else if(_rhs >= _vars[0]->_lower) {
+	} else if(_rhs >= _vars[0]->getmin()) {
 	  lits.clear();
-	  lits.push(_vars[0]->greater_than(_rhs));
-	  solver->addClause(lits);
+	  lits.push_back(_vars[0]->greater_than(_rhs));
+	  _solver->addClause(lits);
 	}
       }
 
     } else {
-
-//       this->setDirectEncoding();
-//       this->encode(solver);
 
 #ifdef _DEBUGWRAP
 	std::cout << "Adding gt predicate" << std::endl;
 #endif	
 
       if(_vars[1]) {
-	
-	this->setDirectEncoding();
-	this->encode(solver);
+	domain->encode(_solver);
+	_vars[1] = _vars[1]->add(_solver, false);
 
-	MiniSat_Expression *aux = _vars[1]->add(solver, false);
-	_vars[1] = _vars[0]->add(solver, false);
-	_vars[0] = aux;
-	vec<Lit> lits;
-	int i, j;
+	precedenceEncoder(_vars[1], _vars[0], this, 1, _solver);
 
-	// x -> y < z
-	for(j=_vars[1]->_lower; j<_vars[1]->_upper; ++j) {
-	  if(j-1 < _vars[0]->_lower) {
-	    lits.clear();
-	    lits.push((this->equal(0)));
-	    lits.push(~(_vars[1]->less_or_equal(j)));
-	    solver->addClause(lits);
-	  } else if(j-1 < _vars[0]->_upper) { 
-	    lits.clear();
-	    lits.push((this->equal(0)));
-	    lits.push(~(_vars[1]->less_or_equal(j)));
-	    lits.push(_vars[0]->less_or_equal(j-1));
-	    solver->addClause(lits);
-
-	  } 
-	}
-	for(i=_vars[1]->_upper-1; i<_vars[0]->_upper; ++i) {
-	  lits.clear();
-	  lits.push((this->equal(0)));
-	  lits.push(_vars[0]->less_or_equal(i));
-	  solver->addClause(lits);
-	}
-
-	// ~x -> y >= z
-	for(j=_vars[0]->_lower; j<_vars[0]->_upper; ++j) {
-	  if(j < _vars[1]->_lower) {
-	    //x1_y is inconsistent
-	    lits.clear();
-	    lits.push(~(this->equal(0)));
-	    lits.push(~(_vars[0]->less_or_equal(j)));
-	    solver->addClause(lits);
-	  } else if(j < _vars[1]->_upper) { 
-	    lits.clear();
-	    lits.push(~(this->equal(0)));
-	    lits.push(~(_vars[0]->less_or_equal(j)));
-	    lits.push(_vars[1]->less_or_equal(j));
-	    solver->addClause(lits);
-	  } 
-	}
-	for(i=_vars[0]->_upper; i<_vars[1]->_upper; ++i) {
-	  lits.clear();
-	  lits.push(~(this->equal(0)));
-	  lits.push(_vars[1]->less_or_equal(i));
-	  solver->addClause(lits);
-	}
-
-      } else {
-
-	_vars[0] = _vars[0]->add(solver, false);
-
-#ifdef _DEBUGWRAP
-	std::cout << "Adding gt constraint" << std::endl;
-#endif
-	
-// 	vec<Lit> lits;
-	
-// 	// x -> y > r
-// 	if(_rhs >= _vars[0]->_upper) {
-// 	  lits.clear();
-// 	  lits.push(this->equal(0));
-// 	} else if(_rhs >= _vars[0]->_lower) {
-// 	  lits.clear();
-// 	  lits.push(this->equal(0));
-// 	  lits.push(_vars[0]->greater_than(_rhs));
-// 	} else {
-// 	  lits.clear();
-// 	  lits.push(~(this->equal(0)));
-// 	}
-// 	solver->addClause(lits);
-
-// 	// y > r -> x
-// 	if(_rhs > _vars[0]->_upper) {
-// 	  lits.clear();
-// 	  lits.push(this->equal(0));
-// 	} else if(_rhs > _vars[0]->_lower) {
-// 	  lits.clear();
-// 	  lits.push(~(this->equal(0)));
-// 	  lits.push(~(_vars[0]->greater_than(_rhs)));
-// 	} else {
-// 	  lits.clear();
-// 	  lits.push(~(this->equal(0)));
-// 	}
-// 	solver->addClause(lits);
       }
-
     } 
+
+    _solver->validate();
   }
 
   return this;
 }
 
 
-Lit MiniSat_gt::less_or_equal(const int value) const {
-  if(!_vars[1]) {
-    if(value < 0) return Lit_True;
-    if(value >= 1) return Lit_False;
-    // the value is 0, gt is false iff vars[0] <= _rhs
-    return _vars[0]->less_or_equal(_rhs);
-  }
-  return this->MiniSat_Expression::less_or_equal(value);
-}
 
-Lit MiniSat_gt::greater_than(const int value) const {
-  if(!_vars[1]) {
-    if(value < 0) return Lit_False;
-    if(value >= 1) return Lit_True;
-    // the value is 0, gt is true iff vars[0] > _rhs
-    return _vars[0]->greater_than(_rhs);
-  }
-  return this->MiniSat_Expression::greater_than(value);
-}
-
-Lit MiniSat_gt::equal(const int value) const {
-  if(!_vars[1]) {
-    if(value < 0 || value > 1) return Lit_False;
-    
-    if(value == 0) {
-      // the value is 0, gt is false iff vars[0] <= _rhs
-      return _vars[0]->less_or_equal(_rhs);
-    }
-    if(value == 1) {
-      // the value is 1, gt is true iff vars[0] > _rhs
-      return _vars[0]->greater_than(_rhs);
-    }
-  }
-  return this->MiniSat_Expression::equal(value);
-}
 
 /* Minimise object */
 
 MiniSat_Minimise::MiniSat_Minimise(MiniSat_Expression *var)
-  : MiniSat_Expression()
-{
+  : MiniSat_Expression() {
   _obj = var;
-  _obj->setOrderEncoding();
 }
 
 MiniSat_Minimise::~MiniSat_Minimise(){
 }
 
 MiniSat_Expression* MiniSat_Minimise::add(MiniSatSolver *solver, bool top_level) {
-  if(!has_been_added()){
+  if(!has_been_added()) {
     _solver = solver;
-    _ident = _solver->declare(this);
+    _ident = _solver->declare(this, false);
 
-    _obj = _obj->add(solver, false);
+    _obj = _obj->add(_solver, false);
 
     if(top_level) {
       
@@ -3209,7 +1776,7 @@ MiniSat_Expression* MiniSat_Minimise::add(MiniSatSolver *solver, bool top_level)
       std::cout << "Adding minimise objective" << std::endl;
 #endif
       
-      solver->minimise_obj = _obj;
+      _solver->minimise_obj = _obj;
       
     } 
   }
@@ -3220,21 +1787,19 @@ MiniSat_Expression* MiniSat_Minimise::add(MiniSatSolver *solver, bool top_level)
 /* Maximise object */
 
 MiniSat_Maximise::MiniSat_Maximise(MiniSat_Expression *var)
-  : MiniSat_Expression()
-{
+  : MiniSat_Expression() {
   _obj = var;
-  _obj->setOrderEncoding();
 }
 
 MiniSat_Maximise::~MiniSat_Maximise(){
 }
 
 MiniSat_Expression* MiniSat_Maximise::add(MiniSatSolver *solver, bool top_level) {
-  if(!has_been_added()){
+  if(!has_been_added()) {
     _solver = solver;
-    _ident = _solver->declare(this);
+    _ident = _solver->declare(this, false);
 
-    _obj = _obj->add(solver, false);
+    _obj = _obj->add(_solver, false);
 
     if(top_level) {
       
@@ -3242,7 +1807,7 @@ MiniSat_Expression* MiniSat_Maximise::add(MiniSatSolver *solver, bool top_level)
       std::cout << "Adding minimise objective" << std::endl;
 #endif
       
-      solver->maximise_obj = _obj;
+      _solver->maximise_obj = _obj;
       
     } 
   }
@@ -3250,45 +1815,50 @@ MiniSat_Expression* MiniSat_Maximise::add(MiniSatSolver *solver, bool top_level)
   return this;
 }
 
+
+
+
 /**************************************************************
  ********************     Solver        ***********************
  **************************************************************/
 
-MiniSatSolver::MiniSatSolver()
+MiniSatSolver::MiniSatSolver() : SimpSolver()
 {
 
 #ifdef _DEBUGWRAP
   std::cout << "create a minisat solver" << std::endl;
 #endif
 
+  ////////////// MiniSat Specific ////////////////
+  STARTTIME = cpuTime();
+  result = l_Undef;
+  nbSolutions = 0;
+  
+  // search stuff
+  conflict_clause = NULL;
+  backtrack_level = 0;
+  conflictC = 0;
+
+  first_decision_level = -1;
+  last_decision = lit_Undef;
+  saved_level = -1;
+  ////////////// MiniSat Specific ////////////////
+
   minimise_obj = NULL;
   maximise_obj = NULL;
   cp_model = NULL;
 
-  conflict_clause = NULL;
-  conflictC = 0;
-
-  result = l_Undef;
-  nbSolutions = 0;
-
-  Var dummy = SimpSolver::newVar();
+  vec<Lit> lits;
+  Lit dummy(Solver::newVar(),true);
   Lit_True = Lit(dummy);
   Lit_False = ~Lit(dummy);
 
-  vec<Lit> lits;
-  lits.push(Lit_True);
-  addClause(lits);
+  lits.push(dummy);
+  Solver::addClause(lits);
 
-  _lit_to_var.push_back(NULL);
-  _lit_to_val.push_back(0);
-
-  first_decision_level = -1;
-
-  STARTTIME = cpuTime();
-
-  //minisolver = new SimpSolver();
-
-  // Create the scip object
+  current = 0;
+  _atom_to_domain.push_back(NULL);
+  _atom_to_type.push_back(0);
 }
 
 MiniSatSolver::~MiniSatSolver()
@@ -3298,37 +1868,64 @@ MiniSatSolver::~MiniSatSolver()
   std::cout << "delete wrapped solver" << std::endl;
 #endif
 
-//   for(unsigned int i=0; i<_variables.size(); ++i) {
-//     delete _variables[i];
-//   }
-
 }
 
-int MiniSatSolver::declare(MiniSat_Expression *exp) {
-  int id = _variables.size();
-  _variables.push_back(exp);
+int MiniSatSolver::declare(MiniSat_Expression *exp, bool type) {
+  int id = _expressions.size(); 
+  _expressions.push_back(exp); 
   return id;
 }
 
+int MiniSatSolver::create_atom(DomainEncoding* dom, const int type) {
+  unsigned int id = Solver::newVar();
+  assert(id == _atom_to_domain.size()); 
+  _atom_to_domain.push_back(dom); 
+  _atom_to_type.push_back(type); 
+  return id; 
+}
+
+void MiniSatSolver::addClause(std::vector<Lit>& cl) { 
+  std::vector<Lit> clause;
+  if(!processClause(cl,clause))
+    clause_base.push_back(clause);
+}
+
+void MiniSatSolver::validate() {
+  vec<Lit> cl;
+  unsigned int i;
+  while(current < clause_base.size()) {
+    cl.clear();
+    for(i=0; i<clause_base[current].size(); ++i)
+      cl.push(clause_base[current][i]);
+    //displayClause(clause_base[current]);
+    Solver::addClause(cl);
+    ++current;
+  }
+}
+
 void MiniSatSolver::store_solution() {
+  
+#ifdef _DEBUGWRAP
+  std::cout << "store a new solution" << std::endl;
+#endif
+  
   ++nbSolutions;
   if(model.size() < nVars()) {
     model.growTo(nVars());
     for (int i = 0; i < nVars(); i++) model[i] = value(i);
   }
-  if(!cp_model) cp_model = new int[_variables.size()];
+  if(!cp_model) cp_model = new int[_expressions.size()];
   for(unsigned int i=0; i<_variables.size(); ++i) {
-    if(_variables[i])
-      cp_model[i] = _variables[i]->get_min();
-    else
-      cp_model[i] = 0;
+    if(_variables[i]) {
+      cp_model[_variables[i]->_ident] = _variables[i]->get_min();
+    } else
+      cp_model[_variables[i]->_ident] = 0;
   }
-
 }
 
 void MiniSatSolver::add(MiniSat_Expression* arg)
 {
-  
+
 #ifdef _DEBUGWRAP
   std::cout << "add an expression to the solver" << std::endl;
 #endif
@@ -3364,45 +1961,11 @@ lbool MiniSatSolver::truth_value(Lit x)
   }
 }
 
-// bool MiniSatSolver::not_false(Lit x)
-// {  
-//   int res =  (modelValue(x) != l_False);
-//   return res;
-// }
-
-Var MiniSatSolver::newVar(MiniSat_Expression* var, int val)
- {
-   Var x = SimpSolver::newVar();
-   //std::cout << x << " " << (_lit_to_var.size()) << std::endl;
-   assert(_lit_to_var.size() == (unsigned int)x);
-   _lit_to_var.push_back(var);
-   _lit_to_val.push_back(val);
-
-   return x;
- }
-
-// int MiniSatSolver::nVars()
-// {
-//   return nVars();
-// }
-
-// void MiniSatSolver::addClause(vec<Lit>& cl)
-//  {
-//    printClause(cl);
-
-//    Solver::addClause(cl);
-//  }
-
 int MiniSatSolver::solveAndRestart(const int policy, 
 				   const unsigned int base, 
 				   const double factor,
 				   const double decay)
 {
-//   if(decay>0 && decay<1) 
-//     var_decay = decay;
-//   clause_decay = decay;
-//   restart_first = base;
-//   restart_inc = factor;
   return solve();
 }
 
@@ -3415,7 +1978,6 @@ int MiniSatSolver::solve()
 
 #ifdef _DEBUGWRAP
   std::cout << "print to file" << std::endl;  
-  //if(verbosity > 1)  
   toDimacs("dimacs.out");
 #endif 
 
@@ -3423,27 +1985,17 @@ int MiniSatSolver::solve()
   std::cout << "solve!" << std::endl;  
 #endif 
 
- 
-  //solve(true, true);
-  //printStats(*minisolver);
-
-//   verbosity = 1;
-
   start_time = getRunTime();
   saved_level = init_level;
   if(init_level < decisionLevel())
     init_level = decisionLevel();
 
-  //solver_ptr = &minisolver;
   solver_ptr = this;
   signal(SIGINT,SIGINT_handler);
 
-  //std::cout << "c solve using MiniSat" << std::endl;
-
-
   if(minimise_obj) {
     vec<Lit> lits;
-    int objective = minimise_obj->_upper;
+    int objective = minimise_obj->getmax();
     
     result = SimpSolver::solve(true,true);
     
@@ -3452,40 +2004,26 @@ int MiniSatSolver::solve()
 
       store_solution();
       objective = minimise_obj->get_value()-1;
-      if(objective < minimise_obj->_lower) break;
+      if(objective < minimise_obj->getmin()) break;
 
       if(verbosity >= 0) {
 	std::cout << "c  new objective: " << objective+1 << std::endl;
       }
       
-//       for(; objective>minimise_obj->_lower; --objective) {
-
-// 	if(!value(minimise_obj->less_or_equal(objective-1))) 
-// 	  break;
-//       }
-
-//       //      std::cout << "current objective = " << objective << std::endl;
-
-//       --objective;
-
-      
       lits.clear();
       lits.push(minimise_obj->less_or_equal(objective));
-      addClause(lits);
+      Solver::addClause(lits);
 
       result = SimpSolver::solve(true,true);
 
-
-
-      if(result == l_False) {
+      if(result == l_True) {
 	++objective;
       }
     }
-    //if(is_sat()) result = true;
   }
   else if(maximise_obj) {
     vec<Lit> lits;
-    int objective = maximise_obj->_lower;
+    int objective = maximise_obj->getmin();
     
     result = SimpSolver::solve(true,true);
     
@@ -3494,33 +2032,21 @@ int MiniSatSolver::solve()
 
       store_solution();
       objective = maximise_obj->get_value()+1;
-      if(objective > maximise_obj->_upper) break;
+      if(objective > maximise_obj->getmax()) break;
 
       if(verbosity >= 0) {
 	std::cout << "c  new objective: " << objective-1 << std::endl;
       }
       
-//       for(; objective>minimise_obj->_lower; --objective) {
-
-// 	if(!value(minimise_obj->less_or_equal(objective-1))) 
-// 	  break;
-//       }
-
-//       //      std::cout << "current objective = " << objective << std::endl;
-
-//       --objective;
-
-      
       lits.clear();
       lits.push(maximise_obj->greater_than(objective-1));
-      addClause(lits);
-
+      Solver::addClause(lits);
+      
       result = SimpSolver::solve(true,true);
-      if(result == l_False) {
+      if(result == l_True) {
 	++objective;
       } 
     }
-    //if(is_sat()) result = true;
   }
   else {
     result = SimpSolver::solve(true,true);
@@ -3536,21 +2062,12 @@ int MiniSatSolver::solve()
       int res = modelValue(Lit(i)).toInt();
       std::cout << "** " << i << " = " << (res == 1) 
 		<< std::endl;
-	//<< " (x" << (_lit_to_var[i+1]->nbj_ident) << "/" <<  _lit_to_val[i+1] << ")" << std::endl;
     }
   else
     std::cout << "unsatisfiable" << std:: endl;
 #endif 
 
-
-  if(is_sat()) return true;
-  return false;
-  
-  //return result;
-
-  //std::cout << "finished" << std::endl;
-
-  //return 0;
+  return is_sat();
 }
 
 bool MiniSatSolver::propagate()
@@ -3573,54 +2090,22 @@ void MiniSatSolver::reset(bool full) {
 
   cancelUntil(backtrack_level);
 
-  //for(int i=0; i<learnts.size(); ++i)
-  // removeClause(*(learnts[i]));
-  //learnts.clear();
-
   model.clear();
   delete [] cp_model;
   cp_model = NULL;
 
-  //std::cout << decisionLevel() << std::endl;
   init_level = saved_level;
   ok = true;
 }
 
-int MiniSat_Expression::next(int v)
-{
-  int nxt = v;
-
-  int i=getind(v)+1;
-  if(_direct_encoding) {
-    for(; i<_size; ++i)
-      if(_solver->truth_value(equal(getval(i))) != l_False)
-	break;
-  } else if(_order_encoding) {
-    for(; i<_size; ++i)
-      if(_solver->truth_value(less_or_equal(getval(i))) != l_False)
-	break;
-  }
-
-  if(i < _size)
-    nxt = getval(i); 
-  return nxt;
-}
-
-
 bool MiniSatSolver::undo(const int nlevel)
 {
-
-  //std::cout << decisionLevel() << " -> " << decisionLevel()-nlevel << " / " << first_decision_level << std::endl;
-
-  //if (decisionLevel() == first_decision_level) return false;
-
   int okay = true;
   backtrack_level = decisionLevel()-nlevel;
   if(backtrack_level < first_decision_level) okay = false;
 
   learnt_clause.clear();
-  //backtrack_level = lvl-nlevel;
- 
+  
   if(backtrack_level < 0) backtrack_level = 0;
 
   for(int i=decisionLevel()-1; i>backtrack_level; --i) forced_decisions.pop();
@@ -3667,56 +2152,14 @@ bool MiniSatSolver::branch_right()
 
 void MiniSatSolver::deduce()
 {
-  //Lit p = forced_decisions.last();
-  //forced_decisions.pop();
-  //std::cout << "b lvl " << decisionLevel() << ": " << var(last_decision) << std::endl;
   uncheckedEnqueue(~(last_decision));
 }
 
-// void MiniSatSolver::learn()
-// {
-//   if (learnt_clause.size() > 0){
-//     if (learnt_clause.size() == 1){
-//       uncheckedEnqueue(learnt_clause[0]);
-//     }else{
-//       Clause* c = Clause_new(learnt_clause, true);
-//       learnts.push(c);
-//       attachClause(*c);
-//       claBumpActivity(*c);
-//       uncheckedEnqueue(learnt_clause[0], c);
-//     }
-
-//     varDecayActivity();
-//     claDecayActivity();
-
-//   }
-// }
-
-// void MiniSatSolver::branch_on(const char* op, MiniSat_Expression* x, int v)
-// {
-//   if(op[1] == 't') 
-//     if(op[0] == 'g') ++v;
-//     else --v;
-
-//   decisions++;
-
-//   Lit next = lit_Undef;
-//   switch(op[0]) {
-//   case 'e': next =  (x->equal(v)); break;
-//   case 'n': next = ~(x->equal(v)); break;
-//   case 'g': next =  (x->greater_than(v-1)); break;
-//   case 'l': next =  (x->less_or_equal(v )); break;
-//   }
-
-//   newDecisionLevel();
-//   uncheckedEnqueue(next);
-// }
 
 void MiniSatSolver::save()
 {
   decisions++;
   newDecisionLevel();
-  //std::cout << "saving: " << decisionLevel() << std::endl;
 }
 
 void MiniSatSolver::post(const char* op, MiniSat_Expression* x, int v)
@@ -3734,29 +2177,13 @@ void MiniSatSolver::post(const char* op, MiniSat_Expression* x, int v)
 
 
   switch(op[0]) {
-  case 'e': {
-//     for(i=0; i<x->_size; ++i) {
-//       k = x->getval(i);
-//       std::cout << v << " " << k << std::endl;
-//       if(k == v) learnt_clause.push(x->equal(v));
-//       else learnt_clause.push(~(x->equal(v)));
-//       //if(k < v) learnt_clause.push(x->greater_than(v));
-//       //else learnt_clause.push(x->less_or_equal(v));
-//     }
-    next =  (x->equal(v)); 
-  } break;
+  case 'e': next =  (x->equal(v)); break;
   case 'n': next = ~(x->equal(v)); break;
   case 'g': next =  (x->greater_than(v-1)); break;
   case 'l': next =  (x->less_or_equal(v )); break;
   }
 
   forced_decisions.push(next);
-  //std::cout << "a lvl " << lvl << ": " << var(next) << std::endl;
-  
-
-//   for(i=0; i<learnt_clause.size(); ++i)
-//     uncheckedEnqueue(learnt_clause[i]);
-//   learnt_clause.clear();
 
   uncheckedEnqueue(next);
 }
@@ -3886,5 +2313,30 @@ int MiniSatSolver::solveDimacs(const char *filename) {
   return solve();
 }
 
+void MiniSatSolver::displayClause(std::vector<Lit>& cl) {
+  if(cl.size()) {
+    for(unsigned int i=0; i<cl.size(); ++i) {
+      std::cout << " " ;
+      if(sign(cl[i])) std::cout << "~";
+      std::cout << (var(cl[i])+1);
+    }
+    std::cout << " / ";
+    std::cout.flush();
+    Lit p = cl[0];
+    displayLiteral(p);
+    for(unsigned int i=1; i<cl.size(); ++i) {
+      std::cout << " or ";
+      displayLiteral(cl[i]);
+    }
+    std::cout << std::endl;
+  } else std::cout << "{}" ;
+}
+
+void MiniSatSolver::displayLiteral(Lit p) { 
+  int x = var(p); 
+  if(x)
+    _atom_to_domain[x]->print_lit(p,_atom_to_type[x]); 
+  else std::cout << "false" ;
+}
 
 

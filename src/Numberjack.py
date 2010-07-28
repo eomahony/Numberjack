@@ -228,7 +228,8 @@ class Expression(object):
     def close(self):
         if self.has_children():
             for child in self.children:
-                if type(child) is not int and type(child) is not str:
+                tc = type(child)
+                if tc is not int and tc is not str and tc is not bool:
                     child.close()
 
     def get_domain(self, solver=None):
@@ -515,7 +516,8 @@ class Model(object):
     def add_expression(self, exp, level):
         ## \internal - add the Expression tree to the model and assign identifiers to the nodes
         # this expression is new, choose an identifiant for it
-        if type(exp) is not int and type(exp) is not str:
+        te = type(exp)
+        if te is not int and te is not str and te is not bool:
             if exp.ident == -1:            
                 if exp.get_children() is None:
                     if exp.is_var():
@@ -653,8 +655,11 @@ class Variable(Expression):
                 name = argopt1
             elif numeric(argopt1): 
                 ub = argopt1-1
-            else: domain = sorted(argopt1)
-            
+            else: 
+                domain = sorted(argopt1)
+                lb = domain[0]
+                ub = domain[-1]            
+
         if type(lb) is not int and type(lb) is not float:
             print "Warning lower bound of %s is not an int or a float" % name
             exit(1)
@@ -2395,6 +2400,8 @@ class NBJ_STD_Solver(object):
         #print 'load', expr
         if type(expr) is str:
             return self.model.string_map[expr]
+        if type(expr) is bool:
+            return int(expr)
         if type(expr) is int or type(expr) is float:
             # It is a constant, handle appropriatly
             return expr

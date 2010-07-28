@@ -49,6 +49,9 @@ const int UNKNOWN   =  2;
 const int LUBY      =  0;
 const int GEOMETRIC =  1;
 const int GLUBY     =  2;  
+const int SELF      =  0;
+const int DIRECT    =  1;
+const int ORDER     =  2;
 
 
 
@@ -67,31 +70,140 @@ public:
   int size() const { return _array.size(); }
   void add(T arg) { _array.push_back(arg); }
   T get_item(const int i) const { return _array[i]; }
-  //T& get_item(const int i) { return _array[i]; }
   void set_item(const int i, T item) { _array[i]=item; }
 };
 
 typedef MiniSatArray< int > MiniSatIntArray;
 typedef MiniSatArray< double > MiniSatDoubleArray;
 
-/**
-   Expression (Used to encode variables & constraints)
-*/
+
+
+
+
+
+
+class MiniSat_Expression;
 class MiniSatSolver;
-class MiniSat_Expression
-{
-    
+class AbstractDomain {
 public:
+  MiniSat_Expression *owner;
 
-  static const int NO    = 0;
-  static const int DIRECT= 1;
-  static const int ORDER = 2;
+  AbstractDomain(MiniSat_Expression *o) {owner = o;}
 
-  MiniSatSolver *_solver;
+  virtual int getval(int idx) const = 0;
+  virtual int getmin() const = 0;
+  virtual int getmax() const = 0;
+  virtual int getsize() const = 0;
 
-  // unique identifier
-  int _ident;
-  int nbj_ident;
+  virtual void encode(MiniSatSolver *solver) {}
+
+  virtual Lit less_or_equal(const int value, const int index) const = 0;
+  virtual Lit equal(const int value, const int index) const = 0;
+
+  virtual void print_lit(Lit p, const int type) const {
+    int atom = var(p);
+    std::cout << "(";
+    if(!sign(p)) std::cout << "~";
+    std::cout << atom << ")";
+  }
+  
+  virtual std::ostream& display(std::ostream& o) const = 0;
+};
+
+class OffsetDomain : public AbstractDomain {
+public:
+  AbstractDomain *_dom_ptr;
+  int offset;
+
+  OffsetDomain(MiniSat_Expression *o, AbstractDomain *d, const int o);
+
+  virtual int getval(int idx) const;
+  virtual int getmin() const;
+  virtual int getmax() const;
+  virtual int getsize() const {return _dom_ptr->getsize();}
+
+  virtual Lit less_or_equal(const int value, const int index) const;
+  virtual Lit equal(const int value, const int index) const;
+
+  virtual std::ostream& display(std::ostream& o) const;
+};
+
+class FactorDomain : public AbstractDomain {
+public:
+  AbstractDomain *_dom_ptr;
+  int factor;
+
+  FactorDomain(MiniSat_Expression *o, AbstractDomain *d, const int f);
+
+  virtual int getval(int idx) const;
+  virtual int getmin() const;
+  virtual int getmax() const;
+  virtual int getsize() const {return _dom_ptr->getsize();}
+
+  virtual Lit less_or_equal(const int value, const int index) const;
+  virtual Lit equal(const int value, const int index) const;
+
+  virtual std::ostream& display(std::ostream& o) const;
+};
+
+class EqDomain : public AbstractDomain {
+public:
+  AbstractDomain *_dom_ptr;
+  int value;
+  int spin;
+
+  EqDomain(MiniSat_Expression *o, AbstractDomain *d, const int v, const int s);
+
+  virtual int getval(int idx) const {assert(idx >=0 && idx <= 1); return idx;}
+  virtual int getmin() const {return 0;}
+  virtual int getmax() const {return 1;}
+  virtual int getsize() const {return 2;}
+
+  virtual Lit less_or_equal(const int value, const int index) const;
+  virtual Lit equal(const int value, const int index) const;
+
+  virtual std::ostream& display(std::ostream& o) const;
+};
+
+class LeqDomain : public AbstractDomain {
+public:
+  AbstractDomain *_dom_ptr;
+  int bound;
+  int spin;
+
+  LeqDomain(MiniSat_Expression *o, AbstractDomain *d, const int b, const int s);
+
+  virtual int getval(int idx) const {assert(idx >=0 && idx <= 1); return idx;}
+  virtual int getmin() const {return 0;}
+  virtual int getmax() const {return 1;}
+  virtual int getsize() const {return 2;}
+
+  virtual Lit less_or_equal(const int value, const int index) const;
+  virtual Lit equal(const int value, const int index) const;
+
+  virtual std::ostream& display(std::ostream& o) const;
+};
+
+class ConstantDomain : public AbstractDomain {
+public:
+  int value;
+
+  ConstantDomain(MiniSat_Expression *o, const int v) : AbstractDomain(o) {value = v;}
+
+  virtual int getval(int idx) const { assert(idx == 0); return value; }
+  virtual int getmin() const {return value;}
+  virtual int getmax() const {return value;}
+  virtual int getsize() const {return 1;}
+
+  virtual Lit less_or_equal(const int v, const int index) const; 
+  virtual Lit equal(const int v, const int index) const; 
+
+  virtual std::ostream& display(std::ostream& o) const;
+};
+
+class DomainEncoding : public AbstractDomain{
+
+private:
 
   // domain's lower bound
   int _lower;
@@ -102,57 +214,132 @@ public:
   // domain's size
   int _size;
 
+  /** 
+      if _values is left NULL, then _direct_encoding keeps the 
+      index of the first variable used for the direct encoding 
+      (similar for _order_encoding).
+      One can get the variable for a value v by adding and
+      substracting _lower.
+      A particular case is when _size = 2.
+      In that case, the variable is boolean and only one
+      SAT variable is used.
+
+      If _value is not NULL, then _direct_encoding
+      is the index of the first variable in 
+   */
   // domain's values (possibly null)
   int *_values;
 
   // mapping from values to direc encoding (possibly null)
-  Var *_direct_encoding;
+  int _direct_encoding;
 
   // mapping from values to interval encoding (possibly null)
-  Var *_order_encoding;
+  int _order_encoding;
 
-  // store the required encoding type
-  int _encoding_type;
+  // return the index of 'value', or the next index if value is not in the domain
+  int get_index_n(const int v) const {
+    int lb = 0, ub = _size-1, x;
+    while(lb < ub) {
+      x = (lb+ub)/2;
+      if(_values[x] == v) return x;
+      if(_values[x] < v) lb = x+1;
+      else ub = x;
+    }
+    return lb;
+  }
+
+  // return the index of 'value', or the prev index if value is not in the domain
+  int get_index_p(const int v) const {
+    int lb = 0, ub = _size-1, x;
+    while(lb < ub) {
+      x = (lb+ub)/2+((lb+ub)%2);
+      if(_values[x] == v) return x;
+      if(_values[x] > v) ub = x-1;
+      else lb = x;
+    }
+    return lb;
+  }
 
 
-  //virtual int get_lower() const;
-  //virtual int get_upper() const;
-  virtual int getNextEq(const int v) const;
-  virtual int getNext(const int v) const;
-  virtual int getPrevEq(const int v) const;
-  virtual int getPrev(const int v) const;
-  virtual int getval(const int i) const;
-  virtual int getind(const int v) const;
+public:
+
+  DomainEncoding(MiniSat_Expression *o);
+  DomainEncoding(MiniSat_Expression *o, const int nval);
+  DomainEncoding(MiniSat_Expression *o, const int lb, const int ub);
+  DomainEncoding(MiniSat_Expression *o, MiniSatIntArray& vals);
+
+  virtual ~DomainEncoding();
+
+
+  virtual void print_lit(Lit p, const int type) const;
+
+
+  virtual int getval(int idx) const {
+    if(_values) return _values[idx%_size];
+    else return _lower+idx;
+  }
+
+  virtual int getmin() const {return _lower;}
+  virtual int getmax() const {return _upper;}
+  virtual int getsize() const {return _size;}
+
+  void encode(MiniSatSolver *solver);
+
+  virtual Lit less_or_equal(const int value, const int index) const;
+  virtual Lit equal(const int value, const int index) const;
+
+  virtual std::ostream& display(std::ostream& o) const;
+
+};
+
+
+
+
+
+/**
+   Expression (Used to encode variables & constraints)
+*/
+class MiniSatSolver;
+class MiniSat_Expression
+{
+    
+public:
+  
+  MiniSatSolver *_solver;
+
+  // unique identifier
+  int _ident;
+  int nbj_ident;
+
+  AbstractDomain *domain;
 
   bool has_been_added() const;
-  virtual void setDirectEncoding();
-  virtual void setOrderEncoding();
 
-  virtual Lit less_or_equal(const int value) const;
-  virtual Lit greater_than(const int value) const;
-  virtual Lit equal(const int value) const;
-  //virtual Lit not_equal(const int value);
+  int getval(int idx) const { return domain->getval(idx); }
+  int getmin() const { return domain->getmin(); }
+  int getmax() const { return domain->getmax(); }
+  int getsize() const { return domain->getsize(); }
 
-  // returns the atom used to represent this value in the direct encoding
-  //virtual Var getDirectVar(const int value);
-  // returns the atom used to represent this value in the order encoding 
-  //virtual Var getInterVar(const int value); 
-  virtual void encode(MiniSatSolver* solver);
-  virtual void channel(MiniSatSolver* solver);
+  int get_value() const ;
+  int get_min() const ;
+  int get_max() const ;
+  int get_size() const ;
+  int next(const int value) const ;
+  bool contain(const int value) const ;
+
+
+  Lit greater_than(const int value, const int index=-1) const { return ~(domain->less_or_equal(value,index)); }
+  Lit less_or_equal(const int value, const int index=-1) const { return domain->less_or_equal(value,index); }
+  Lit equal(const int value, const int index=-1) const { return domain->equal(value,index); }
 
   void initialise();
+
   MiniSat_Expression();
   MiniSat_Expression(const int nval);
   MiniSat_Expression(const int lb, const int ub);
   MiniSat_Expression(MiniSatIntArray& vals);
   virtual ~MiniSat_Expression();
 
-  int next(int v);
-  int get_value() const;
-  virtual int get_min() const;
-  virtual int get_max() const;
-  virtual int get_size() const;
-  bool contain(const int v) const;
   virtual MiniSat_Expression* add(MiniSatSolver *solver, bool top_level);
 };
 
@@ -162,13 +349,11 @@ class MiniSat_IntVar : public MiniSat_Expression
 public:
   
   MiniSat_IntVar() : MiniSat_Expression() {}
-  //MiniSat_IntVar(const int nval) : MiniSat_Expression(nval) {}
   MiniSat_IntVar(const int lb, const int ub, const int ident) : MiniSat_Expression(lb, ub) {nbj_ident = ident;}
   MiniSat_IntVar(MiniSatIntArray& vals, const int ident) : MiniSat_Expression(vals) {nbj_ident = ident;}
 
 };
 
-//typedef MiniSat_Expression MiniSat_IntVar;
 
 typedef MiniSatArray< MiniSat_Expression* > MiniSatExpArray;
 
@@ -210,19 +395,6 @@ public:
   void initialise();
 
 
-  virtual Lit less_or_equal(const int value) const;
-  virtual Lit greater_than(const int value) const;
-  virtual Lit equal(const int value) const;
-  //virtual int get_min() const;
-  //virtual Lit not_equal(const int value);
-//   virtual Var getDirectVar(const int value);
-//   virtual Var getInterVar(const int value);
-
-  virtual int get_min() const;
-  virtual int get_max() const;
-  virtual int get_size() const;
-
-
   void addVar( MiniSat_Expression* v );
   void addWeight( const int w );
   void set_rhs( const int k );
@@ -239,8 +411,6 @@ protected:
   int _rhs;
   
 public:
-  virtual void setDirectEncoding();
-  virtual void setOrderEncoding();
   int arity() { return 1+(_vars[1]==NULL); }
   MiniSat_binop(MiniSat_Expression *var1, MiniSat_Expression *var2);
   MiniSat_binop(MiniSat_Expression *var1, int rhs);
@@ -253,40 +423,15 @@ public:
 class MiniSat_add : public MiniSat_binop
 {
 public:
-  //virtual int get_lower() const;
-  //virtual int get_upper() const;
-  virtual int getval(const int i) const;
-  virtual Lit less_or_equal(const int value) const;
-  virtual Lit greater_than(const int value) const;
-  virtual Lit equal(const int value) const;
-  virtual int get_min() const;
-  //virtual Lit not_equal(const int value);
   MiniSat_add( MiniSat_Expression* arg1, MiniSat_Expression* arg2 );
   MiniSat_add( MiniSat_Expression* arg1, const int arg2 );
   virtual ~MiniSat_add();
   virtual MiniSat_Expression* add(MiniSatSolver *solver, bool top_level);
 };
-// class MiniSat_sub : public MiniSat_binop
-// {
-// public:
-//   virtual Var getDirectVar(const int value);
-//   virtual Var getInterVar(const int value); 
-//   MiniSat_sub( MiniSat_Expression* arg1, MiniSat_Expression* arg2 );
-//   MiniSat_sub( MiniSat_Expression* arg1, const int arg2 );
-//   virtual ~MiniSat_sub();
-//   virtual MiniSat_Expression* add(MiniSatSolver *solver, bool top_level);
-// };
+
 class MiniSat_mul : public MiniSat_binop
 {
 public:
-  //virtual int get_lower() const;
-  // virtual int get_upper() const;
-  virtual int getval(const int i) const;
-  virtual Lit less_or_equal(const int value) const;
-  virtual Lit greater_than(const int value) const;
-  virtual Lit equal(const int value) const;
-  virtual int get_min() const;
-  //virtual Lit not_equal(const int value);
   MiniSat_mul( MiniSat_Expression* arg1, MiniSat_Expression* arg2 );
   MiniSat_mul( MiniSat_Expression* arg1, const int arg2 );
   virtual ~MiniSat_mul();
@@ -311,13 +456,13 @@ public:
   virtual MiniSat_Expression* add(MiniSatSolver *solver, bool top_level);
 };
 
+
+bool processClause(std::vector<Lit>& cl_in, std::vector<Lit>& cl_out);
+
+
 class MiniSat_eq: public MiniSat_binop
 {
 public:
-  virtual Lit less_or_equal(const int value) const;
-  virtual Lit greater_than(const int value) const;
-  virtual Lit equal(const int value) const;
-  //virtual Lit not_equal(const int value) const;
   MiniSat_eq(MiniSat_Expression *var1, MiniSat_Expression *var2);
   MiniSat_eq(MiniSat_Expression *var1, int rhs);
   virtual ~MiniSat_eq();
@@ -327,10 +472,6 @@ public:
 class MiniSat_ne: public MiniSat_binop
 {
 public:
-  virtual Lit less_or_equal(const int value) const;
-  virtual Lit greater_than(const int value) const;
-  virtual Lit equal(const int value) const;
-  //virtual Lit not_equal(const int value) const;
   MiniSat_ne(MiniSat_Expression *var1, MiniSat_Expression *var2);
   MiniSat_ne(MiniSat_Expression *var1, int rhs);
   virtual ~MiniSat_ne();
@@ -340,10 +481,6 @@ public:
 class MiniSat_le: public MiniSat_binop
 {
 public:
-  virtual Lit less_or_equal(const int value) const;
-  virtual Lit greater_than(const int value) const;
-  virtual Lit equal(const int value) const;
-  //virtual Lit not_equal(const int value) const;
   MiniSat_le(MiniSat_Expression *var1, MiniSat_Expression *var2);
   MiniSat_le(MiniSat_Expression *var1, int rhs);
   virtual ~MiniSat_le();
@@ -353,10 +490,6 @@ public:
 class MiniSat_ge: public MiniSat_binop
 {
 public:
-  virtual Lit less_or_equal(const int value) const;
-  virtual Lit greater_than(const int value) const;
-  virtual Lit equal(const int value) const;
-  //virtual Lit not_equal(const int value) const;
   MiniSat_ge(MiniSat_Expression *var1, MiniSat_Expression *var2);
   MiniSat_ge(MiniSat_Expression *var1, int rhs);
   virtual ~MiniSat_ge();
@@ -366,10 +499,6 @@ public:
 class MiniSat_lt: public MiniSat_binop
 {
 public:
-  virtual Lit less_or_equal(const int value) const;
-  virtual Lit greater_than(const int value) const;
-  virtual Lit equal(const int value) const;
-  //virtual Lit not_equal(const int value) const;
   MiniSat_lt(MiniSat_Expression *var1, MiniSat_Expression *var2);
   MiniSat_lt(MiniSat_Expression *var1, int rhs);
   virtual ~MiniSat_lt();
@@ -379,10 +508,6 @@ public:
 class MiniSat_gt: public MiniSat_binop
 {
 public:
-  virtual Lit less_or_equal(const int value) const;
-  virtual Lit greater_than(const int value) const;
-  virtual Lit equal(const int value) const;
-  //virtual Lit not_equal(const int value) const;
   MiniSat_gt(MiniSat_Expression *var1, MiniSat_Expression *var2);
   MiniSat_gt(MiniSat_Expression *var1, int rhs);
   virtual ~MiniSat_gt();
@@ -410,7 +535,6 @@ public:
 };
 
 
-
 /**
    The solver itself
 */
@@ -418,7 +542,7 @@ class MiniSatSolver : public SimpSolver
 {
 
 private:
-  //SimpSolver minisolver;
+  ////////////// MiniSat Specific ////////////////
   double STARTTIME;
   lbool result;
   int nbSolutions;
@@ -431,57 +555,46 @@ private:
   vec<Lit>    learnt_clause;
 
   int first_decision_level;
+  Lit last_decision;
+  int saved_level;
+  ////////////// MiniSat Specific ////////////////
 
 public:
 
   MiniSat_Expression *minimise_obj;
   MiniSat_Expression *maximise_obj;
+
+  // repository for all expressions
+  std::vector< MiniSat_Expression* > _expressions;
   std::vector< MiniSat_Expression* > _variables;
-  std::vector< MiniSat_Expression* > _lit_to_var;
-  std::vector< int >                 _lit_to_val;
-  int var_counter;
+  // link each atom to its domain
+  std::vector< DomainEncoding* > _atom_to_domain;
+  std::vector< int > _atom_to_type;
+
+  std::vector< std::vector<Lit> > clause_base;
+  unsigned int current;
+
   int *cp_model;
-  Lit last_decision;
-  
-  int saved_level;
+
 
   MiniSatSolver();
   virtual ~MiniSatSolver();
-
   int nbClauses() {return nClauses();}
-  void get_clause(int i) { learnt_clause.clear(); for(int j=0; j<clauses[i]->size(); ++j) learnt_clause.push((*(clauses[i]))[j]); }
-  int get_nogood_size() {return learnt_clause.size();}
-  int get_nogood_var(int i)  {return _lit_to_var[var(learnt_clause[i])]->nbj_ident;}
-  int get_nogood_val(int i)  {return ((_lit_to_val[var(learnt_clause[i])]) >> 1);}
-  int get_nogood_type(int i) {return (_lit_to_val[var(learnt_clause[i])] % 2);}
-  int get_nogood_sign(int i) {return sign(learnt_clause[i]);}
-
-  //int get_value(const int id);
-  //void store_solution();
-  int declare(MiniSat_Expression *exp);
-
-//   int nVars();
-  Var newVar(MiniSat_Expression* var, int val);
-  //void addClause(vec<Lit>& cl);
-  lbool truth_value(Lit x);
-
-  void reset(bool full);
-  bool propagate();
-  //void branch_on(const char* op, Mistral_Expression* x, const int v);
-  void save();
-  void post(const char* op, MiniSat_Expression* x, int v);
-  bool undo(const int nlevel);
-  //bool backjump();
-  void deduce();
-  bool branch_right();
-  //void analyze_conflict();
-  //void learn(vec<Lit>& learnt_cl);
-
-  void store_solution();
 
   // add an expression, in the case of a tree of expressions,
   // each node of the tree is added separately, depth first.
   void add(MiniSat_Expression* arg);
+  int declare(MiniSat_Expression* arg, const bool type);
+  int create_atom(DomainEncoding* dom, const int type);
+
+  void addClause(std::vector<Lit>& cl);
+  void validate();
+  void displayClause(std::vector<Lit>& cl); 
+  void displayLiteral(Lit p);
+
+
+  lbool truth_value(Lit x);
+
 
   // used to initialise search on a given subset of variables
   void initialise(MiniSatExpArray& arg);
@@ -497,6 +610,16 @@ public:
   int startNewSearch();
   int getNextSolution();
   int sacPreprocess(const int type);
+
+  void reset(bool full);
+  bool propagate();
+  void save();
+  void post(const char* op, MiniSat_Expression* x, int v);
+  bool undo(const int nlevel);
+  void deduce();
+  bool branch_right();
+
+  void store_solution();
   
   // parameter tuning methods
   void guide(MiniSatExpArray& vars, 

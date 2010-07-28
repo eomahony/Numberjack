@@ -228,7 +228,8 @@ class Expression(object):
     def close(self):
         if self.has_children():
             for child in self.children:
-                if type(child) is not int and type(child) is not str:
+                tc = type(child)
+                if tc is not int and tc is not str and tc is not bool:
                     child.close()
 
     def get_domain(self, solver=None):
@@ -515,7 +516,8 @@ class Model(object):
     def add_expression(self, exp, level):
         ## \internal - add the Expression tree to the model and assign identifiers to the nodes
         # this expression is new, choose an identifiant for it
-        if type(exp) is not int and type(exp) is not str:
+        te = type(exp)
+        if te is not int and te is not str and te is not bool:
             if exp.ident == -1:            
                 if exp.get_children() is None:
                     if exp.is_var():
@@ -653,8 +655,11 @@ class Variable(Expression):
                 name = argopt1
             elif numeric(argopt1): 
                 ub = argopt1-1
-            else: domain = sorted(argopt1)
-            
+            else: 
+                domain = sorted(argopt1)
+                lb = domain[0]
+                ub = domain[-1]            
+
         if type(lb) is not int and type(lb) is not float:
             print "Warning lower bound of %s is not an int or a float" % name
             exit(1)
@@ -763,7 +768,8 @@ class VarArray(list):
             ub = 1
             name = 'x'
             if optarg1 is not None:
-                if type(optarg1) is str:
+                #if type(optarg1) is str:
+                if hasattr(optarg1, '__iter__'):
                     name = optarg1
                 elif type(optarg2) is int or type(optarg2) is float:
                     lb = optarg1
@@ -777,10 +783,13 @@ class VarArray(list):
                         ub = domain[-1]
                     else: ub = optarg1-1
                     if optarg2 is not None: name = optarg2
+        names = name
+        if type(name) is str:
+            names = [name+str(i) for i in range(n)]
         if domain is None:
-            self.__init__([Variable(lb, ub, name+str(i)) for i in range(n)])
+            self.__init__([Variable(lb, ub, names[i]) for i in range(n)])
         else:
-            self.__init__([Variable(domain, name+str(i)) for i in range(n)])
+            self.__init__([Variable(domain, names[i]) for i in range(n)])
 
     ## Returns a string representing the initial definition of the content of the arrray 
     #@return string
@@ -1782,12 +1791,20 @@ class Gcc(Predicate):
 #
 class Max(Predicate):
 
-
     def __init__(self, vars):
         Predicate.__init__(self, vars, "Max")
-    
+
+    def decompose(self):
+        X = self.children
+        M = Variable(max([x.get_min() for x in X]), max([x.get_max() for x in X]), 'Max')
+        decomp = [M]
+        decomp.extend([M >= x for x in X])
+        decomp.append(Disjunction([M <= x for x in X]))
+        return decomp
+
     #def __str__(self):
     #    return " MAX ( " + " ".join(map(str, self.children)) + " ) "
+
 
 ## Min Constraint
 #
@@ -1800,6 +1817,14 @@ class Max(Predicate):
 class Min(Predicate):
     def __init__(self, vars):
         Predicate.__init__(self, vars, "Min")
+
+    def decompose(self):
+        X = self.children
+        M = Variable(min([x.get_min() for x in X]), min([x.get_max() for x in X]), 'Min')
+        decomp = [M]
+        decomp.extend([M <= x for x in X])
+        decomp.append(Disjunction([M >= x for x in X]))
+        return decomp
 
     #def __str__(self):
     #    return " MIN ( " + " ".join(map(str, self.children)) + " ) "
@@ -1930,6 +1955,15 @@ class Minimise(Predicate):
 def Minimize(var):
     return Minimise(var)
 ## @}
+
+
+class Disjunction(Predicate):
+
+    def __init__(self, vars):
+        Predicate.__init__(self, vars, "OR")
+
+    def decompose(self):
+        return [Sum(self.children) > 0]
 
 
 class Convex(Predicate):
@@ -2395,6 +2429,8 @@ class NBJ_STD_Solver(object):
         #print 'load', expr
         if type(expr) is str:
             return self.model.string_map[expr]
+        if type(expr) is bool:
+            return int(expr)
         if type(expr) is int or type(expr) is float:
             # It is a constant, handle appropriatly
             return expr

@@ -50,7 +50,7 @@ SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 
 MTL       = $(MINDIR)/minisat_src/mtl
 CORE      = $(MINDIR)/minisat_src/core
-CFLAGS    = -I$(MTL) $(HACK) -I$(CORE) -Wall -ffloat-store #-O3 -D NDEBUG #-D_DEBUGWRAP
+CFLAGS    = -I$(MTL) $(HACK) -I$(CORE) -Wall -ffloat-store -O3 -D NDEBUG #-D_DEBUGWRAP
 LFLAGS    = -lz
 
 
@@ -58,7 +58,7 @@ LFLAGS    = -lz
 # Rules
 #-----------------------------------------------------------------------------
 
-CXX = g++ -g -D_DEBUGWRAP
+CXX = g++ #-g -D_DEBUGWRAP
 
 
 wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/MiniSat.o 

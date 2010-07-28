@@ -11,7 +11,6 @@
 #include <scip/struct_stat.h>
 #include <scip/clock.h>
 
-
 const int UNSAT     =  0;
 const int SAT       =  1;
 const int UNKNOWN   =  2;
@@ -21,13 +20,11 @@ const int GEOMETRIC =  1;
 const int GLUBY     =  2;  
 
 
-
-
 /**
    Expression (Used to encode variables & constraints)
 */
 class SCIPSolver;
-class SCIP_Expression
+class Expression
 {
     
 public:
@@ -45,27 +42,34 @@ public:
   double _lower;
   double _upper;
   double _coef;
+  
   bool _continuous;
   
   int get_size();
   int get_max();
   int get_min();
 
+  Expression **_expr_encoding;
+
   // link to the set of Boolean scip vars used in the direct encoding
   SCIP_VAR **_encoding;
+  
   virtual void encode(SCIPSolver* solver);
 
   bool has_been_added() const;
 
   void initialise(bool c);
-  SCIP_Expression();
-  virtual ~SCIP_Expression();
+  Expression();
+  virtual ~Expression();
 
   virtual void add(SCIPSolver *solver, bool top_level);
+  
+  void display();
 };
 
+typedef Expression SCIP_Expression;
 
-class SCIP_FloatVar : public SCIP_Expression 
+class SCIP_FloatVar : public Expression 
 {
 public:
   SCIP_FloatVar();
@@ -93,10 +97,10 @@ public:
   T& get_item(const int i) { return _array[i]; }
 };
 
-typedef SCIPArray< SCIP_Expression* > SCIPExpArray;
+typedef SCIPArray< Expression* > SCIPExpArray;
 typedef SCIPArray< int > SCIPIntArray;
 
-class SCIP_IntVar : public SCIP_Expression 
+class SCIP_IntVar : public Expression 
 {
 private:
   SCIPIntArray _values;
@@ -133,14 +137,14 @@ public:
   virtual ~SCIP_Flow();
   virtual void add(SCIPSolver *solver, bool top_level);
   virtual void initbounds();
-  void addVar( SCIP_Expression* v );
+  void addVar( Expression* v );
 };
 
 class SCIP_AllDiff : public SCIP_Flow
 {
 public:
   SCIP_AllDiff(SCIPExpArray& vars);
-  SCIP_AllDiff(SCIP_Expression* arg1, SCIP_Expression* arg2);
+  SCIP_AllDiff(Expression* arg1, Expression* arg2);
   virtual ~SCIP_AllDiff();
 };
 
@@ -163,17 +167,17 @@ public:
   SCIP_Sum(SCIPExpArray& vars, 
 	   SCIPIntArray& weights, 
 	   const int offset=0);
-  SCIP_Sum(SCIP_Expression* arg1, 
-	   SCIP_Expression* arg2, 
+  SCIP_Sum(Expression* arg1, 
+	   Expression* arg2, 
 	   SCIPIntArray& weights,
 	   const int offset=0 );
-  SCIP_Sum(SCIP_Expression* arg, 
+  SCIP_Sum(Expression* arg, 
 	   SCIPIntArray& weights,
 	   const int offset=0 );
   SCIP_Sum();
   void initialise();
 
-  void addVar( SCIP_Expression* v );
+  void addVar( Expression* v );
   void addWeight( const int w );
   void set_rhs( const int k );
 
@@ -183,15 +187,15 @@ public:
 class SCIP_add : public SCIP_Sum
 {
 public:
-  SCIP_add( SCIP_Expression* arg1, SCIP_Expression* arg2 );
-  SCIP_add( SCIP_Expression* arg1, const int arg2 );
+  SCIP_add( Expression* arg1, Expression* arg2 );
+  SCIP_add( Expression* arg1, const int arg2 );
   virtual ~SCIP_add();
 };
 class SCIP_sub : public SCIP_Sum
 {
 public:
-  SCIP_sub( SCIP_Expression* arg1, SCIP_Expression* arg2 );
-  SCIP_sub( SCIP_Expression* arg1, const int arg2 );
+  SCIP_sub( Expression* arg1, Expression* arg2 );
+  SCIP_sub( Expression* arg1, const int arg2 );
   virtual ~SCIP_sub();
 };
 
@@ -199,13 +203,13 @@ public:
 class SCIP_binop: public SCIP_FloatVar
 {
 protected:
-  SCIP_Expression *_vars[2];
+  Expression *_vars[2];
   bool _is_proper_coef;
   double _rhs;
 
 public:
-  SCIP_binop(SCIP_Expression *var1, SCIP_Expression *var2);
-  SCIP_binop(SCIP_Expression *var1, double rhs);
+  SCIP_binop(Expression *var1, Expression *var2);
+  SCIP_binop(Expression *var1, double rhs);
   virtual ~SCIP_binop();
 
   virtual void add(SCIPSolver *solver, bool top_level) = 0;
@@ -216,7 +220,7 @@ class SCIP_NoOverlap : public SCIP_binop
 protected:
   SCIPIntArray _coefs;
 public:
-  SCIP_NoOverlap(SCIP_Expression *var1, SCIP_Expression *var2, SCIPIntArray &coefs);
+  SCIP_NoOverlap(Expression *var1, Expression *var2, SCIPIntArray &coefs);
   virtual ~SCIP_NoOverlap();
   virtual void add(SCIPSolver *solver, bool top_level);
 };
@@ -226,7 +230,7 @@ class SCIP_Precedence : public SCIP_binop
 protected:
     SCIPIntArray _coefs;
 public:
-    SCIP_Precedence(SCIP_Expression *var1, SCIP_Expression *var2, SCIPIntArray &coefs);
+    SCIP_Precedence(Expression *var1, Expression *var2, SCIPIntArray &coefs);
     virtual ~SCIP_Precedence();
     virtual void add(SCIPSolver *solver, bool top_level);
 };
@@ -234,8 +238,8 @@ public:
 class SCIP_eq: public SCIP_binop
 {
 public:
-  SCIP_eq(SCIP_Expression *var1, SCIP_Expression *var2);
-  SCIP_eq(SCIP_Expression *var1, double rhs);
+  SCIP_eq(Expression *var1, Expression *var2);
+  SCIP_eq(Expression *var1, double rhs);
   virtual ~SCIP_eq();
   virtual void add(SCIPSolver *solver, bool top_level);
 };
@@ -243,8 +247,8 @@ public:
 class SCIP_ne: public SCIP_binop
 {
 public:
-  SCIP_ne(SCIP_Expression *var1, SCIP_Expression *var2);
-  SCIP_ne(SCIP_Expression *var1, double rhs);
+  SCIP_ne(Expression *var1, Expression *var2);
+  SCIP_ne(Expression *var1, double rhs);
   virtual ~SCIP_ne();
   virtual void add(SCIPSolver *solver, bool top_level);
 };
@@ -252,8 +256,8 @@ public:
 class SCIP_le: public SCIP_binop
 {
 public:
-  SCIP_le(SCIP_Expression *var1, SCIP_Expression *var2);
-  SCIP_le(SCIP_Expression *var1, double rhs);
+  SCIP_le(Expression *var1, Expression *var2);
+  SCIP_le(Expression *var1, double rhs);
   virtual ~SCIP_le();
   virtual void add(SCIPSolver *solver, bool top_level);
 };
@@ -261,8 +265,8 @@ public:
 class SCIP_ge: public SCIP_binop
 {
 public:
-  SCIP_ge(SCIP_Expression *var1, SCIP_Expression *var2);
-  SCIP_ge(SCIP_Expression *var1, double rhs);
+  SCIP_ge(Expression *var1, Expression *var2);
+  SCIP_ge(Expression *var1, double rhs);
   virtual ~SCIP_ge();
   virtual void add(SCIPSolver *solver, bool top_level);
 };
@@ -270,8 +274,8 @@ public:
 class SCIP_lt: public SCIP_binop
 {
 public:
-  SCIP_lt(SCIP_Expression *var1, SCIP_Expression *var2);
-  SCIP_lt(SCIP_Expression *var1, double rhs);
+  SCIP_lt(Expression *var1, Expression *var2);
+  SCIP_lt(Expression *var1, double rhs);
   virtual ~SCIP_lt();
   virtual void add(SCIPSolver *solver, bool top_level);
 };
@@ -279,8 +283,8 @@ public:
 class SCIP_gt: public SCIP_binop
 {
 public:
-  SCIP_gt(SCIP_Expression *var1, SCIP_Expression *var2);
-  SCIP_gt(SCIP_Expression *var1, double rhs);
+  SCIP_gt(Expression *var1, Expression *var2);
+  SCIP_gt(Expression *var1, double rhs);
   virtual ~SCIP_gt();
   virtual void add(SCIPSolver *solver, bool top_level);
 };
@@ -288,7 +292,7 @@ public:
 class SCIP_not: public SCIP_binop
 {
 public:
-  SCIP_not(SCIP_Expression *var1);
+  SCIP_not(Expression *var1);
   virtual ~SCIP_not();
   virtual void add(SCIPSolver *solver, bool top_level);
 };
@@ -296,7 +300,7 @@ public:
 class SCIP_and: public SCIP_binop
 {
 public:
-  SCIP_and(SCIP_Expression *var1, SCIP_Expression *var2);
+  SCIP_and(Expression *var1, Expression *var2);
   virtual ~SCIP_and();
   virtual void add(SCIPSolver *solver, bool top_level);
 };
@@ -304,7 +308,7 @@ public:
 class SCIP_or: public SCIP_binop
 {
 public:
-  SCIP_or(SCIP_Expression *var1, SCIP_Expression *var2);
+  SCIP_or(Expression *var1, Expression *var2);
   virtual ~SCIP_or();
   virtual void add(SCIPSolver *solver, bool top_level);
 } ;
@@ -312,14 +316,14 @@ public:
 class SCIP_Minimise : public SCIP_eq
 {
 public:
-    SCIP_Minimise(SCIP_Expression *var1);
+    SCIP_Minimise(Expression *var1);
     virtual ~SCIP_Minimise();
 };
 
 class SCIP_Maximise : public SCIP_eq
 {
 public:
-    SCIP_Maximise(SCIP_Expression *var1);
+    SCIP_Maximise(Expression *var1);
     virtual ~SCIP_Maximise();
 };
 
@@ -331,7 +335,7 @@ class SCIPSolver
 private:
   std::vector< SCIP_VAR * > _scip_vars;
   std::vector< SCIP_CONS* > _scip_cons;
-  std::vector< SCIP_Expression * > _scip_exprs;
+  std::vector< Expression * > _scip_exprs;
   std::vector< SCIPIntArray * > _int_array;
   std::vector< SCIPExpArray * > _var_array;
   
@@ -346,11 +350,11 @@ public:
 
   // add an expression, in the case of a tree of expressions,
   // each node of the tree is added separately, depth first.
-  void add(SCIP_Expression* arg);
+  void add(Expression* arg);
   void add_scip_var (SCIP_VAR * v);
   void add_scip_cons(SCIP_CONS* c);
   
-  void add_scip_expr(SCIP_Expression *expr);
+  void add_scip_expr(Expression *expr);
   void add_scip_int_array(SCIPIntArray *arr);
   void add_scip_var_array(SCIPExpArray *arr);
   
@@ -390,6 +394,89 @@ public:
   int getPropags();
   double getTime();
 
+};
+
+/**
+ *
+ *
+ *
+ * This is the stuff to improve the SCIP wrapper and make things more generic
+ *
+ *
+ *
+ */
+
+/**
+ * View super class
+ */
+class LinearView : public Expression{
+  
+};
+
+/**
+ * View to handle such things as X+4
+ */
+class SumView : public Expression{
+  
+};
+
+/**
+ * View to handle things such X*4
+ */
+class ProductView : public Expression{
+  
+};
+
+class LinearConstraint{
+  
+  protected:
+    /**
+     * The variables in the scope of the constraint
+     */
+    std::vector<Expression*> _variables;
+    
+    /**
+     * The coefficients in the constraint
+     */
+    std::vector<double> _coefficients;
+    
+    /**
+     * Left hand side of the leq
+     */
+    double _lhs;
+    
+    /**
+     * Right hand side of the leq
+     */
+    double _rhs;
+    
+  public:
+    
+    /**
+     * Creates an empty linear constraint object
+     */
+    LinearConstraint(double lhs, double rhs);
+    
+    /**
+     * Destructor
+     */
+    virtual ~LinearConstraint();
+    
+    /**
+     * Add in a normal coefficient
+     */
+    virtual void add_coef(Expression* expr);
+    
+    /**
+     * Add in a coefficient that is a view (some reformulation required)
+     */
+    virtual void add_coef(LinearView* expr);
+    
+    /**
+     * Prints the linear constraint
+     */
+    void display();
+  
 };
 
 

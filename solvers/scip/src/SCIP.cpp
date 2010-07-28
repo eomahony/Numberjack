@@ -9,7 +9,7 @@
  ********************     EXPRESSION        *******************
  **************************************************************/
 
-void SCIP_Expression::initialise(bool c)
+void Expression::initialise(bool c)
 { 
   _ident = -1;
   _scip = NULL;
@@ -21,7 +21,7 @@ void SCIP_Expression::initialise(bool c)
   _continuous = c;
 }
 
-SCIP_Expression::SCIP_Expression()
+Expression::Expression()
 {
   initialise(true);
 
@@ -31,16 +31,20 @@ SCIP_Expression::SCIP_Expression()
 
 }
 
-int SCIP_Expression::get_size(){
+int Expression::get_size(){
   return _upper - _lower +1;
 }
 
-int SCIP_Expression::get_max(){
+int Expression::get_max(){
   return _upper;
 }
 
-int SCIP_Expression::get_min(){
+int Expression::get_min(){
   return _lower;
+}
+
+void Expression::display(){
+  std::cout << _coef << "*X" << _ident << " ";
 }
 
 // SCIP_IntVar::SCIP_IntVar(const int nval)
@@ -99,7 +103,7 @@ SCIP_IntVar::SCIP_IntVar(SCIPIntArray& values, const int ident){
 }
 
 void SCIP_IntVar::add(SCIPSolver* solver, bool top_level){
-  SCIP_Expression::add(solver, top_level);
+  Expression::add(solver, top_level);
   if(_has_holes_in_domain)
     encode(solver);
 }
@@ -214,7 +218,7 @@ void SCIP_IntVar::encode(SCIPSolver* solver){
     
     }
   }else {
-    SCIP_Expression::encode(solver);
+    Expression::encode(solver);
   }
 }
 
@@ -272,7 +276,7 @@ double SCIP_FloatVar::get_value() const
   return SCIPgetSolVal(_scip, sol, _var);
 }
 
-SCIP_Expression::~SCIP_Expression()
+Expression::~Expression()
 {
   if(_encoding) {
     _encoding += (int)_lower;
@@ -280,7 +284,7 @@ SCIP_Expression::~SCIP_Expression()
   }
 }
 
-void SCIP_Expression::encode(SCIPSolver *solver)
+void Expression::encode(SCIPSolver *solver)
 {
   _scip = solver->get_scip();
 
@@ -368,12 +372,12 @@ void SCIP_Expression::encode(SCIPSolver *solver)
   }
 }
 
-bool SCIP_Expression::has_been_added() const
+bool Expression::has_been_added() const
 {
   return (_scip != NULL);
 }
 
-void SCIP_Expression::add(SCIPSolver *solver, bool top_level){
+void Expression::add(SCIPSolver *solver, bool top_level){
 
 #ifdef _DEBUGWRAP
   std::cout << "add variable [" << _lower << ".." << _upper << "]" << std::endl;
@@ -415,7 +419,7 @@ void SCIP_Expression::add(SCIPSolver *solver, bool top_level){
   }
 }
 
-SCIP_add::SCIP_add(SCIP_Expression *arg1, SCIP_Expression *arg2)
+SCIP_add::SCIP_add(Expression *arg1, Expression *arg2)
   : SCIP_Sum()
 {
   addVar(arg1);
@@ -425,7 +429,7 @@ SCIP_add::SCIP_add(SCIP_Expression *arg1, SCIP_Expression *arg2)
   initialise();
 }
 
-SCIP_add::SCIP_add(SCIP_Expression *arg1, const int arg2)
+SCIP_add::SCIP_add(Expression *arg1, const int arg2)
   : SCIP_Sum()
 {
   addVar(arg1);
@@ -437,7 +441,7 @@ SCIP_add::SCIP_add(SCIP_Expression *arg1, const int arg2)
 SCIP_add::~SCIP_add() {}
 
 
-SCIP_sub::SCIP_sub(SCIP_Expression *arg1, const int arg2)
+SCIP_sub::SCIP_sub(Expression *arg1, const int arg2)
   : SCIP_Sum()
 {
   addVar(arg1);
@@ -446,7 +450,7 @@ SCIP_sub::SCIP_sub(SCIP_Expression *arg1, const int arg2)
   initialise();
 }
 
-SCIP_sub::SCIP_sub(SCIP_Expression *arg1, SCIP_Expression *arg2)
+SCIP_sub::SCIP_sub(Expression *arg1, Expression *arg2)
   : SCIP_Sum()
 {
   addVar(arg1);
@@ -459,7 +463,7 @@ SCIP_sub::SCIP_sub(SCIP_Expression *arg1, SCIP_Expression *arg2)
 SCIP_sub::~SCIP_sub() {}
 
 
-SCIP_AllDiff::SCIP_AllDiff( SCIP_Expression* arg1, SCIP_Expression* arg2 ) 
+SCIP_AllDiff::SCIP_AllDiff( Expression* arg1, Expression* arg2 ) 
   : SCIP_Flow()
 {
   addVar(arg1);
@@ -554,7 +558,7 @@ void SCIP_Flow::initbounds() {
 SCIP_Flow::~SCIP_Flow(){
 }
 
-void SCIP_Flow::addVar(SCIP_Expression* v){
+void SCIP_Flow::addVar(Expression* v){
   _vars.add(v);
 }
 
@@ -631,8 +635,8 @@ SCIP_Sum::SCIP_Sum(SCIPExpArray& vars,
   initialise();
 }
 
-SCIP_Sum::SCIP_Sum(SCIP_Expression *arg1, 
-		   SCIP_Expression *arg2, 
+SCIP_Sum::SCIP_Sum(Expression *arg1, 
+		   Expression *arg2, 
 		   SCIPIntArray& w, 
 		   const int offset)
   : SCIP_FloatVar() 
@@ -644,7 +648,7 @@ SCIP_Sum::SCIP_Sum(SCIP_Expression *arg1,
   initialise();
 }
 
-SCIP_Sum::SCIP_Sum(SCIP_Expression *arg, 
+SCIP_Sum::SCIP_Sum(Expression *arg, 
 		   SCIPIntArray& w, 
 		   const int offset)
   : SCIP_FloatVar() 
@@ -716,7 +720,7 @@ SCIP_Sum::~SCIP_Sum(){
 
 }
 
-void SCIP_Sum::addVar(SCIP_Expression* v){
+void SCIP_Sum::addVar(Expression* v){
   _vars.add(v);
 }
 
@@ -774,7 +778,7 @@ void SCIP_Sum::add(SCIPSolver *solver, bool top_level){
 // #endif
       
      
-      SCIP_Expression::add(solver, false);
+      Expression::add(solver, false);
       
       
       SCIP_VAR *var_array[_vars.size() + 1];
@@ -815,7 +819,7 @@ void SCIP_Sum::add(SCIPSolver *solver, bool top_level){
 
 /* Binary operators */
 
-SCIP_binop::SCIP_binop(SCIP_Expression *var1, SCIP_Expression *var2)
+SCIP_binop::SCIP_binop(Expression *var1, Expression *var2)
   : SCIP_FloatVar()
 {
   _vars[0] = var1;
@@ -831,7 +835,7 @@ SCIP_binop::SCIP_binop(SCIP_Expression *var1, SCIP_Expression *var2)
 
 }
 
-SCIP_binop::SCIP_binop(SCIP_Expression *var1, double rhs)
+SCIP_binop::SCIP_binop(Expression *var1, double rhs)
   : SCIP_FloatVar()
 {
   _vars[0] = var1;
@@ -857,7 +861,7 @@ SCIP_binop::~SCIP_binop(){
 
 }
 
-SCIP_NoOverlap::SCIP_NoOverlap(SCIP_Expression *var1, SCIP_Expression *var2, SCIPIntArray &coefs):
+SCIP_NoOverlap::SCIP_NoOverlap(Expression *var1, Expression *var2, SCIPIntArray &coefs):
   SCIP_binop(var1, var2), _coefs(coefs){
   // Nothing else to do
 }
@@ -881,13 +885,13 @@ void SCIP_NoOverlap::add(SCIPSolver *solver, bool top_level){
     arr2->add(_coefs.get_item(1));
     solver->add_scip_int_array(arr2);
     
-    SCIP_Expression *prec1 = new SCIP_Precedence(_vars[0], _vars[1], *arr1);
+    Expression *prec1 = new SCIP_Precedence(_vars[0], _vars[1], *arr1);
     solver->add_scip_expr(prec1);
     
-    SCIP_Expression *prec2 = new SCIP_Precedence(_vars[1], _vars[0], *arr2);
+    Expression *prec2 = new SCIP_Precedence(_vars[1], _vars[0], *arr2);
     solver->add_scip_expr(prec2);
     
-    SCIP_Expression *orexp = new SCIP_or(prec1, prec2);
+    Expression *orexp = new SCIP_or(prec1, prec2);
     solver->add_scip_expr(orexp);
     orexp->add(solver, true);
     
@@ -895,10 +899,10 @@ void SCIP_NoOverlap::add(SCIPSolver *solver, bool top_level){
     
     // Sort out b1 + b2 = 1
     
-    SCIP_Expression *b1 = new SCIP_IntVar(0, 1);
+    Expression *b1 = new SCIP_IntVar(0, 1);
     solver->add_scip_expr(b1);
     
-    SCIP_Expression *b2 = new SCIP_IntVar(0, 1);
+    Expression *b2 = new SCIP_IntVar(0, 1);
     solver->add_scip_expr(b2);
     
     SCIPExpArray *bs = new SCIPExpArray();
@@ -911,10 +915,10 @@ void SCIP_NoOverlap::add(SCIPSolver *solver, bool top_level){
     bcoefs->add(1);
     solver->add_scip_int_array(bcoefs);
     
-    SCIP_Expression *bequn = new SCIP_Sum(*bs, *bcoefs);
+    Expression *bequn = new SCIP_Sum(*bs, *bcoefs);
     solver->add_scip_expr(bequn);
     
-    SCIP_Expression *eq0 = new SCIP_eq(bequn, new SCIP_IntVar(1,1));
+    Expression *eq0 = new SCIP_eq(bequn, new SCIP_IntVar(1,1));
     solver->add_scip_expr(eq0);
     
     eq0->add(solver, true);
@@ -926,16 +930,16 @@ void SCIP_NoOverlap::add(SCIPSolver *solver, bool top_level){
     SCIP *scip = solver->get_scip();
     
     // X = x1 + y2
-    SCIP_Expression *x1 = new SCIP_FloatVar(-SCIPinfinity(scip), SCIPinfinity(scip));
+    Expression *x1 = new SCIP_FloatVar(-SCIPinfinity(scip), SCIPinfinity(scip));
     solver->add_scip_expr(x1);
     
-    SCIP_Expression *y2 = new SCIP_FloatVar(-SCIPinfinity(scip), SCIPinfinity(scip));
+    Expression *y2 = new SCIP_FloatVar(-SCIPinfinity(scip), SCIPinfinity(scip));
     solver->add_scip_expr(y2);
     
-    SCIP_Expression *addx1y2 = new SCIP_add(x1, y2);
+    Expression *addx1y2 = new SCIP_add(x1, y2);
     solver->add_scip_expr(addx1y2);
     
-    SCIP_Expression *equalX = new SCIP_eq(_vars[0], addx1y2);
+    Expression *equalX = new SCIP_eq(_vars[0], addx1y2);
     solver->add_scip_expr(equalX);
     
     equalX->add(solver, true);
@@ -943,16 +947,16 @@ void SCIP_NoOverlap::add(SCIPSolver *solver, bool top_level){
     //std::cout << "X = x1 + y1" << std::endl;
     
     // Y = x2 + y1
-    SCIP_Expression *x2 = new SCIP_FloatVar(-SCIPinfinity(scip), SCIPinfinity(scip));
+    Expression *x2 = new SCIP_FloatVar(-SCIPinfinity(scip), SCIPinfinity(scip));
     solver->add_scip_expr(x2);
     
-    SCIP_Expression *y1 = new SCIP_FloatVar(-SCIPinfinity(scip), SCIPinfinity(scip));
+    Expression *y1 = new SCIP_FloatVar(-SCIPinfinity(scip), SCIPinfinity(scip));
     solver->add_scip_expr(y1);
     
-    SCIP_Expression *addx2y1 = new SCIP_add(x2, y1);
+    Expression *addx2y1 = new SCIP_add(x2, y1);
     solver->add_scip_expr(addx2y1);
     
-    SCIP_Expression *equalY = new SCIP_eq(_vars[1], addx2y1);
+    Expression *equalY = new SCIP_eq(_vars[1], addx2y1);
     solver->add_scip_expr(equalY);
     
     equalY->add(solver, true);
@@ -974,10 +978,10 @@ void SCIP_NoOverlap::add(SCIPSolver *solver, bool top_level){
     coefs1->add(-_coefs.get_item(1));
     solver->add_scip_int_array(coefs1);
     
-    SCIP_Expression *sum1 = new SCIP_Sum(*vars1, *coefs1);
+    Expression *sum1 = new SCIP_Sum(*vars1, *coefs1);
     solver->add_scip_expr(sum1);
     
-    SCIP_Expression *equn1 = new SCIP_ge(sum1, 0.0);
+    Expression *equn1 = new SCIP_ge(sum1, 0.0);
     solver->add_scip_expr(equn1);
     
     equn1->add(solver, true);
@@ -998,10 +1002,10 @@ void SCIP_NoOverlap::add(SCIPSolver *solver, bool top_level){
     coefs2->add(-_coefs.get_item(0));
     solver->add_scip_int_array(coefs2);
     
-    SCIP_Expression *sum2 = new SCIP_Sum(*vars2, *coefs2);
+    Expression *sum2 = new SCIP_Sum(*vars2, *coefs2);
     solver->add_scip_expr(sum2);
     
-    SCIP_Expression *equn2 = new SCIP_ge(sum2, 0.0);
+    Expression *equn2 = new SCIP_ge(sum2, 0.0);
     solver->add_scip_expr(equn2);
     
     equn2->add(solver, true);
@@ -1018,7 +1022,7 @@ void SCIP_NoOverlap::add(SCIPSolver *solver, bool top_level){
   
 }
 
-SCIP_Precedence::SCIP_Precedence(SCIP_Expression *var1, SCIP_Expression *var2, SCIPIntArray &coefs):
+SCIP_Precedence::SCIP_Precedence(Expression *var1, Expression *var2, SCIPIntArray &coefs):
   SCIP_binop(var1, var2), _coefs(coefs){
   
 }
@@ -1033,10 +1037,10 @@ void SCIP_Precedence::add(SCIPSolver *solver, bool top_level){
   
   if(top_level){
     
-    SCIP_Expression *addlhs = new SCIP_add(_vars[0], _coefs.get_item(0));
+    Expression *addlhs = new SCIP_add(_vars[0], _coefs.get_item(0));
     solver->add_scip_expr(addlhs);
     
-    SCIP_Expression *equn = new SCIP_ge(_vars[1], addlhs);
+    Expression *equn = new SCIP_ge(_vars[1], addlhs);
     solver->add_scip_expr(equn);
     
     equn->add(solver, true);
@@ -1044,10 +1048,10 @@ void SCIP_Precedence::add(SCIPSolver *solver, bool top_level){
   } else {
     std::cout << "Precedence at top level not supported yet" << std::endl;
     
-    SCIP_Expression *addlhs = new SCIP_add(_vars[0], _coefs.get_item(0));
+    Expression *addlhs = new SCIP_add(_vars[0], _coefs.get_item(0));
     solver->add_scip_expr(addlhs);
     
-    SCIP_Expression *equn = new SCIP_ge(_vars[1], addlhs);
+    Expression *equn = new SCIP_ge(_vars[1], addlhs);
     solver->add_scip_expr(equn);
     
     equn->add(solver, false);
@@ -1058,7 +1062,7 @@ void SCIP_Precedence::add(SCIPSolver *solver, bool top_level){
   }
 }
 
-SCIP_eq::SCIP_eq(SCIP_Expression *var1, SCIP_Expression *var2)
+SCIP_eq::SCIP_eq(Expression *var1, Expression *var2)
   : SCIP_binop(var1,var2)
 {
 
@@ -1068,7 +1072,7 @@ SCIP_eq::SCIP_eq(SCIP_Expression *var1, SCIP_Expression *var2)
 
 }
 
-SCIP_eq::SCIP_eq(SCIP_Expression *var1, double rhs)
+SCIP_eq::SCIP_eq(Expression *var1, double rhs)
   : SCIP_binop(var1,rhs)
 {
 
@@ -1170,7 +1174,7 @@ void SCIP_eq::add(SCIPSolver *solver, bool top_level){
       // Create the variable
       _vars[1]->add(solver, false);
 
-      SCIP_Expression *c = new SCIP_IntVar(0, 1);
+      Expression *c = new SCIP_IntVar(0, 1);
       solver->add_scip_expr(c);
       
       SCIPIntArray *coef_array = new SCIPIntArray();
@@ -1178,7 +1182,7 @@ void SCIP_eq::add(SCIPSolver *solver, bool top_level){
       coef_array->add(1);
       solver->add_scip_int_array(coef_array);
 
-      SCIP_Expression *neq_reif = new SCIP_ne(_vars[0], _vars[1]);
+      Expression *neq_reif = new SCIP_ne(_vars[0], _vars[1]);
       neq_reif->add(solver, false);
       solver->add_scip_expr(neq_reif);
 
@@ -1187,7 +1191,7 @@ void SCIP_eq::add(SCIPSolver *solver, bool top_level){
       var_array->add(neq_reif);
       solver->add_scip_var_array(var_array);
 
-      SCIP_Expression *eqcon = new SCIP_eq(new SCIP_Sum(*var_array, 
+      Expression *eqcon = new SCIP_eq(new SCIP_Sum(*var_array, 
 							*coef_array), 1);
       eqcon->add(solver, true); // Cause it's gotta be true
       solver->add_scip_expr(eqcon);
@@ -1199,12 +1203,12 @@ void SCIP_eq::add(SCIPSolver *solver, bool top_level){
 
 /* Disequality operator */
 
-SCIP_ne::SCIP_ne(SCIP_Expression *var1, SCIP_Expression *var2)
+SCIP_ne::SCIP_ne(Expression *var1, Expression *var2)
   : SCIP_binop(var1,var2)
 {
 }
 
-SCIP_ne::SCIP_ne(SCIP_Expression *var1, double rhs)
+SCIP_ne::SCIP_ne(Expression *var1, double rhs)
   : SCIP_binop(var1,rhs)
 {
 }
@@ -1304,7 +1308,7 @@ void SCIP_ne::add(SCIPSolver *solver, bool top_level){
       // This is where we need to add the reification
       _vars[1]->add(solver, false);
       
-      SCIP_Expression *c = new SCIP_IntVar(0, 1);
+      Expression *c = new SCIP_IntVar(0, 1);
       c->add(solver, false);
       
       _vars[0]->encode(solver);
@@ -1423,7 +1427,7 @@ void SCIP_ne::add(SCIPSolver *solver, bool top_level){
 
 /* Leq operator */
 
-SCIP_le::SCIP_le(SCIP_Expression *var1, SCIP_Expression *var2)
+SCIP_le::SCIP_le(Expression *var1, Expression *var2)
   : SCIP_binop(var1,var2)
 { 
 
@@ -1433,7 +1437,7 @@ SCIP_le::SCIP_le(SCIP_Expression *var1, SCIP_Expression *var2)
 
 }
 
-SCIP_le::SCIP_le(SCIP_Expression *var1, double rhs)
+SCIP_le::SCIP_le(Expression *var1, double rhs)
   : SCIP_binop(var1,rhs)
 {
 }
@@ -1540,12 +1544,12 @@ void SCIP_le::add(SCIPSolver *solver, bool top_level){
 
 /* Geq operator */
 
-SCIP_ge::SCIP_ge(SCIP_Expression *var1, SCIP_Expression *var2)
+SCIP_ge::SCIP_ge(Expression *var1, Expression *var2)
   : SCIP_binop(var1,var2)
 {
 }
 
-SCIP_ge::SCIP_ge(SCIP_Expression *var1, double rhs)
+SCIP_ge::SCIP_ge(Expression *var1, double rhs)
   : SCIP_binop(var1,rhs)
 {
 
@@ -1664,7 +1668,7 @@ void SCIP_ge::add(SCIPSolver *solver, bool top_level){
       //std::cout << "Added in cvar" << std::endl;
       
       // Create variable to be reified
-      SCIP_Expression *b = new SCIP_IntVar(0, 1);
+      Expression *b = new SCIP_IntVar(0, 1);
       b->add(solver, false);
       solver->add_scip_expr(b);
       
@@ -1690,11 +1694,11 @@ void SCIP_ge::add(SCIPSolver *solver, bool top_level){
       exparr1->add(b);
       solver->add_scip_var_array(exparr1);
       
-      SCIP_Expression *sum1 = new SCIP_Sum(*exparr1, *intarr1);
+      Expression *sum1 = new SCIP_Sum(*exparr1, *intarr1);
       solver->add_scip_expr(sum1);
       
       // Put M as a variable here as SCIP did not like the neg coef on the RHS
-      SCIP_Expression *expr1 = new SCIP_ge(sum1, new SCIP_IntVar(-M, -M));
+      Expression *expr1 = new SCIP_ge(sum1, new SCIP_IntVar(-M, -M));
       solver->add_scip_expr(expr1);
       
       //std::cout << "About to add constraints" << std::endl;
@@ -1704,7 +1708,7 @@ void SCIP_ge::add(SCIPSolver *solver, bool top_level){
       //std::cout << "Starting equation 2" << std::endl;
       
       // equation 2
-      SCIP_Expression *expr2 = new SCIP_lt(sum1, 0.0);
+      Expression *expr2 = new SCIP_lt(sum1, 0.0);
       solver->add_scip_expr(expr2);
       
       expr2->add(solver, true);
@@ -1717,12 +1721,12 @@ void SCIP_ge::add(SCIPSolver *solver, bool top_level){
 
 /* Lt object */
 
-SCIP_lt::SCIP_lt(SCIP_Expression *var1, SCIP_Expression *var2)
+SCIP_lt::SCIP_lt(Expression *var1, Expression *var2)
   : SCIP_binop(var1,var2)
 {
 }
 
-SCIP_lt::SCIP_lt(SCIP_Expression *var1, double rhs)
+SCIP_lt::SCIP_lt(Expression *var1, double rhs)
   : SCIP_binop(var1,rhs)
 {
 }
@@ -1810,12 +1814,12 @@ void SCIP_lt::add(SCIPSolver *solver, bool top_level){
 
 /* Gt object */
 
-SCIP_gt::SCIP_gt(SCIP_Expression *var1, SCIP_Expression *var2)
+SCIP_gt::SCIP_gt(Expression *var1, Expression *var2)
   : SCIP_binop(var1,var2)
 {
 }
 
-SCIP_gt::SCIP_gt(SCIP_Expression *var1, double rhs)
+SCIP_gt::SCIP_gt(Expression *var1, double rhs)
   : SCIP_binop(var1,rhs)
 {
 }
@@ -1915,7 +1919,7 @@ void SCIP_gt::add(SCIPSolver *solver, bool top_level){
  *
  */
 
-SCIP_and::SCIP_and(SCIP_Expression *var1, SCIP_Expression *var2):
+SCIP_and::SCIP_and(Expression *var1, Expression *var2):
   SCIP_binop(var1, var2){
   // Nothing else to do?
 }
@@ -1941,16 +1945,16 @@ void SCIP_and::add(SCIPSolver *solver, bool top_level){
     coefs->add(1);
     solver->add_scip_int_array(coefs);
 
-    SCIP_Expression *sum = new SCIP_Sum(*exprs, *coefs);
+    Expression *sum = new SCIP_Sum(*exprs, *coefs);
     solver->add_scip_expr(sum);
 
-    SCIP_Expression *constraint = new SCIP_eq(sum, 2.0);
+    Expression *constraint = new SCIP_eq(sum, 2.0);
     constraint->add(solver, true);// Cause it's gotta be true
     solver->add_scip_expr(constraint);
 
   } else {
 
-    SCIP_Expression *c = new SCIP_IntVar(0, 1);
+    Expression *c = new SCIP_IntVar(0, 1);
     solver->add_scip_expr(c);
     
     SCIPExpArray *exprs = new SCIPExpArray();
@@ -1971,12 +1975,12 @@ void SCIP_and::add(SCIPSolver *solver, bool top_level){
     coefs2->add(2);
     solver->add_scip_int_array(coefs2);
 
-    SCIP_Expression *constraint2 = new SCIP_ge(new SCIP_Sum(*exprs, *coefs),
+    Expression *constraint2 = new SCIP_ge(new SCIP_Sum(*exprs, *coefs),
 					       new SCIP_Sum(*exprs2, *coefs2));
     constraint2->add(solver, true);
     solver->add_scip_expr(constraint2);
 
-    SCIP_Expression *constraint3 = new SCIP_ge(new SCIP_add(c, 1.0),
+    Expression *constraint3 = new SCIP_ge(new SCIP_add(c, 1.0),
 					       new SCIP_Sum(*exprs, *coefs));
     constraint3->add(solver, true);
     solver->add_scip_expr(constraint3);
@@ -1987,7 +1991,7 @@ void SCIP_and::add(SCIPSolver *solver, bool top_level){
   }
 }
 
-SCIP_or::SCIP_or(SCIP_Expression *var1, SCIP_Expression *var2):
+SCIP_or::SCIP_or(Expression *var1, Expression *var2):
   SCIP_binop(var1, var2){
   // Nothing else to do?
 }
@@ -2014,13 +2018,13 @@ void SCIP_or::add(SCIPSolver *solver, bool top_level){
     coefs->add(1);
     solver->add_scip_int_array(coefs);
 
-    SCIP_Expression *constraint = new SCIP_ge(new SCIP_Sum(*exprs, *coefs), 1.0);
+    Expression *constraint = new SCIP_ge(new SCIP_Sum(*exprs, *coefs), 1.0);
     constraint->add(solver, true);
     solver->add_scip_expr(constraint);
 
   } else {
 
-    SCIP_Expression *c = new SCIP_IntVar(0, 1);
+    Expression *c = new SCIP_IntVar(0, 1);
     solver->add_scip_expr(c);
     
     SCIPExpArray *exprs = new SCIPExpArray();
@@ -2035,7 +2039,7 @@ void SCIP_or::add(SCIPSolver *solver, bool top_level){
     coefs->add(-1);
     solver->add_scip_int_array(coefs);
         
-    SCIP_Expression *constraint = new SCIP_ge(new SCIP_Sum(*exprs, *coefs), 0.0);
+    Expression *constraint = new SCIP_ge(new SCIP_Sum(*exprs, *coefs), 0.0);
     constraint->add(solver, true);
     solver->add_scip_expr(constraint);
 
@@ -2045,7 +2049,7 @@ void SCIP_or::add(SCIPSolver *solver, bool top_level){
   }
 }
 
-SCIP_not::SCIP_not(SCIP_Expression *var1):
+SCIP_not::SCIP_not(Expression *var1):
   SCIP_binop(var1, 0.0){
   // Nothing else to do?
 }
@@ -2059,12 +2063,12 @@ void SCIP_not::add(SCIPSolver *solver, bool top_level){
 
   if(top_level){
     
-    SCIP_Expression *constraint = new SCIP_eq(_vars[0], 0.0);
+    Expression *constraint = new SCIP_eq(_vars[0], 0.0);
     constraint->add(solver, true);
 
   } else {
 
-    SCIP_Expression *c = new SCIP_IntVar(0, 1);
+    Expression *c = new SCIP_IntVar(0, 1);
 
     SCIPExpArray *exprs = new SCIPExpArray();
     exprs->add(_vars[0]);
@@ -2077,7 +2081,7 @@ void SCIP_not::add(SCIPSolver *solver, bool top_level){
     solver->add_scip_int_array(coefs);
     
 
-    SCIP_Expression *constraint = new SCIP_eq(new SCIP_Sum(*exprs, *coefs), 1);
+    Expression *constraint = new SCIP_eq(new SCIP_Sum(*exprs, *coefs), 1);
     constraint->add(solver, true);
     solver->add_scip_expr(constraint);
 
@@ -2090,7 +2094,7 @@ void SCIP_not::add(SCIPSolver *solver, bool top_level){
 
 // Minimise Class
 
-SCIP_Minimise::SCIP_Minimise(SCIP_Expression *arg1):
+SCIP_Minimise::SCIP_Minimise(Expression *arg1):
 SCIP_eq(arg1, new SCIP_FloatVar(arg1->_lower, arg1->_upper)){
   _vars[1]->_coef = -1;
 }
@@ -2100,7 +2104,7 @@ SCIP_Minimise::~SCIP_Minimise(){
 
 // Maximise Class
 
-SCIP_Maximise::SCIP_Maximise(SCIP_Expression *arg1):
+SCIP_Maximise::SCIP_Maximise(Expression *arg1):
 SCIP_eq(arg1, new SCIP_FloatVar(arg1->_lower, arg1->_upper)){
   _vars[1]->_coef = 1;
 }
@@ -2108,7 +2112,7 @@ SCIP_eq(arg1, new SCIP_FloatVar(arg1->_lower, arg1->_upper)){
 SCIP_Maximise::~SCIP_Maximise(){
 }
 
-// SCIP_Expression* SCIP_Minimise(SCIP_Expression* arg)
+// Expression* SCIP_Minimise(Expression* arg)
 // {
 //   std::cout << "create a minimisation ective" << std::endl;
   
@@ -2120,7 +2124,7 @@ SCIP_Maximise::~SCIP_Maximise(){
 //   return new SCIP_eq(arg, var);
 // }
 
-// SCIP_Expression* SCIP_Maximise(SCIP_Expression* arg)
+// Expression* SCIP_Maximise(Expression* arg)
 // {
 //   std::cout << "create a maximisation objective" << std::endl;
   
@@ -2187,7 +2191,7 @@ SCIPSolver::~SCIPSolver()
   _verbosity = 0;
 }
 
-void SCIPSolver::add(SCIP_Expression* arg)
+void SCIPSolver::add(Expression* arg)
 {
 
 #ifdef _DEBUGWRAP
@@ -2201,7 +2205,7 @@ void SCIPSolver::add(SCIP_Expression* arg)
 void SCIPSolver::add_scip_var (SCIP_VAR * v) {_scip_vars.push_back(v);}
 void SCIPSolver::add_scip_cons(SCIP_CONS* c) {_scip_cons.push_back(c);}
 
-void SCIPSolver::add_scip_expr(SCIP_Expression *expr){
+void SCIPSolver::add_scip_expr(Expression *expr){
   _scip_exprs.push_back(expr);
 }
 
@@ -2392,3 +2396,52 @@ double SCIPSolver::getTime()
   return SCIPclockGetTime(_scip->stat->solvingtime);
 }
 
+/**
+ *
+ *
+ *
+ * Stuff to improve SCIP
+ *
+ *
+ *
+ */
+
+
+/**
+ * Creates an empty linear constraint object
+ */
+LinearConstraint:: LinearConstraint(double lhs, double rhs):
+  _lhs(lhs), _rhs(rhs){
+}
+    
+/**
+ * Destructor
+ */
+LinearConstraint::~LinearConstraint(){}
+    
+/**
+ * Add in a normal coefficient
+ */
+void LinearConstraint::add_coef(Expression* expr){
+  _variables.push_back(expr);
+  _coefficients.push_back(expr->_coef);
+}
+    
+/**
+ * Add in a coefficient that is a view (some reformulation required)
+ */
+void LinearConstraint::add_coef(LinearView* expr){
+  
+}
+    
+/**
+ * Prints the linear constraint
+ */
+void LinearConstraint::display(){
+  std::cout << _lhs << " <= ";
+  for(int i = 0; i < _variables.size(); ++i){
+    _variables[i]->display();
+    if(i + 1 < _variables.size()) std::cout << "+ ";
+  }
+  std::cout << " <= " << _rhs << std::endl;
+}

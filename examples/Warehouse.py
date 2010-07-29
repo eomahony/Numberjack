@@ -30,7 +30,7 @@ def WareHousePlanning(data, lib, cutoff):
 
     solver = lib.Solver(model)
     solver.setVerbosity(1)
-    solver.setNodeLimit(cutoff)
+    #solver.setNodeLimit(cutoff)
     solver.setHeuristic('Impact')
     solver.solve()
 

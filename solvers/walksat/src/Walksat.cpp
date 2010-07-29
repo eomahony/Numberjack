@@ -1,8 +1,5 @@
 
-#include <iostream>
-#include "MiniSat.hpp"
-#include <math.h>
-#include <Sort.h>
+#include "Walksat.hpp"
 
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -16,134 +13,6 @@ static inline double cpuTime(void) {
     struct rusage ru;
     getrusage(RUSAGE_SELF, &ru);
     return (double)ru.ru_utime.tv_sec + (double)ru.ru_utime.tv_usec / 1000000; }
-
-void printStats(Solver& S)
-{
-    double   cpu_time = cpuTime();
-    uint64_t mem_used = 0;//memUsed();
-    reportf("restarts              : %lld\n", (unsigned long long int)(S.starts));
-    reportf("conflicts             : %-12lld   (%.0f /sec)\n", (unsigned long long int)(S.conflicts)   , S.conflicts   /cpu_time);
-    reportf("decisions             : %-12lld   (%4.2f %% random) (%.0f /sec)\n", (unsigned long long int)(S.decisions), (float)S.rnd_decisions*100 / (float)S.decisions, S.decisions   /cpu_time);
-    reportf("propagations          : %-12lld   (%.0f /sec)\n", (unsigned long long int)(S.propagations), S.propagations/cpu_time);
-    reportf("conflict literals     : %-12lld   (%4.2f %% deleted)\n", (unsigned long long int)(S.tot_literals), (S.max_literals - S.tot_literals)*100 / (double)S.max_literals);
-    if (mem_used != 0) reportf("Memory used           : %.2f MB\n", mem_used / 1048576.0);
-    reportf("CPU time              : %g s\n", cpu_time);
-}
-
-#define CHUNK_LIMIT 1048576
-
-class StreamBuffer {
-    gzFile  in;
-    char    buf[CHUNK_LIMIT];
-    int     pos;
-    int     size;
-
-    void assureLookahead() {
-        if (pos >= size) {
-            pos  = 0;
-            size = gzread(in, buf, sizeof(buf)); } }
-
-public:
-    StreamBuffer(gzFile i) : in(i), pos(0), size(0) {
-        assureLookahead(); }
-
-    int  operator *  () { return (pos >= size) ? EOF : buf[pos]; }
-    void operator ++ () { pos++; assureLookahead(); }
-};
-
-
-//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-template<class B>
-static void skipWhitespace(B& in) {
-    while ((*in >= 9 && *in <= 13) || *in == 32)
-        ++in; }
-
-template<class B>
-static void skipLine(B& in) {
-    for (;;){
-        if (*in == EOF || *in == '\0') return;
-        if (*in == '\n') { ++in; return; }
-        ++in; } }
-
-template<class B>
-static int parseInt(B& in) {
-    int     val = 0;
-    bool    neg = false;
-    skipWhitespace(in);
-    if      (*in == '-') neg = true, ++in;
-    else if (*in == '+') ++in;
-    if (*in < '0' || *in > '9') reportf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-    while (*in >= '0' && *in <= '9')
-        val = val*10 + (*in - '0'),
-        ++in;
-    return neg ? -val : val; }
-
-template<class B>
-static void readClause(B& in, SimpSolver& S, vec<Lit>& lits) {
-    int     parsed_lit, var;
-    lits.clear();
-    for (;;){
-        parsed_lit = parseInt(in);
-        if (parsed_lit == 0) break;
-        var = abs(parsed_lit)-1;
-        while (var >= S.nVars()) S.newVar();
-        lits.push( (parsed_lit > 0) ? Lit(var) : ~Lit(var) );
-    }
-}
-
-template<class B>
-static bool match(B& in, const char* str) {
-    for (; *str != 0; ++str, ++in)
-        if (*str != *in)
-            return false;
-    return true;
-}
-
-
-template<class B>
-static void parse_DIMACS_main(B& in, SimpSolver& S) {
-    vec<Lit> lits;
-    for (;;){
-        skipWhitespace(in);
-        if (*in == EOF) break;
-        else if (*in == 'p'){
-            if (match(in, "p cnf")){
-                int vars    = parseInt(in);
-                int clauses = parseInt(in);
-                reportf("|  Number of variables:  %-12d                                         |\n", vars);
-                reportf("|  Number of clauses:    %-12d                                         |\n", clauses);
-
-                // SATRACE'06 hack
-                if (clauses > 4000000)
-                    S.eliminate(true);
-            }else{
-                reportf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-            }
-        } else if (*in == 'c' || *in == 'p')
-            skipLine(in);
-        else{
-            readClause(in, S, lits);
-            S.addClause(lits); }
-    }
-}
-
-// Inserts problem into solver.
-//
-static void parse_DIMACS(gzFile input_stream, SimpSolver& S) {
-    StreamBuffer in(input_stream);
-    parse_DIMACS_main(in, S); }
-
-
-//=================================================================================================
-
-SimpSolver* solver_ptr;
-static void SIGINT_handler(int signum) {
-    reportf("\n"); reportf("*** INTERRUPTED ***\n");
-    printStats(*solver_ptr);
-    reportf("\n"); reportf("*** INTERRUPTED ***\n");
-    exit(1); }
-
 
 
 
@@ -187,7 +56,7 @@ std::ostream& ConstantDomain::display(std::ostream& o) const {
   return o;
 }
 
-DomainEncoding::DomainEncoding(MiniSat_Expression *o) : AbstractDomain(o) {
+DomainEncoding::DomainEncoding(Walksat_Expression *o) : AbstractDomain(o) {
   _lower = 0;
   _upper = 1;
   _size = 2;
@@ -198,7 +67,7 @@ DomainEncoding::DomainEncoding(MiniSat_Expression *o) : AbstractDomain(o) {
   _order_encoding = -1;
 }
 
-DomainEncoding::DomainEncoding(MiniSat_Expression *o, const int nval) : AbstractDomain(o) {
+DomainEncoding::DomainEncoding(Walksat_Expression *o, const int nval) : AbstractDomain(o) {
   _lower = 0;
   _upper = nval-1;
   _size = nval;
@@ -209,7 +78,7 @@ DomainEncoding::DomainEncoding(MiniSat_Expression *o, const int nval) : Abstract
   _order_encoding = -1;
 }
 
-DomainEncoding::DomainEncoding(MiniSat_Expression *o, const int lb, const int ub) : AbstractDomain(o) {
+DomainEncoding::DomainEncoding(Walksat_Expression *o, const int lb, const int ub) : AbstractDomain(o) {
   _lower = lb;
   _upper = ub;
   _size = ub-lb+1;
@@ -220,7 +89,7 @@ DomainEncoding::DomainEncoding(MiniSat_Expression *o, const int lb, const int ub
   _order_encoding = -1;
 }
 
-DomainEncoding::DomainEncoding(MiniSat_Expression *o, MiniSatIntArray& vals) : AbstractDomain(o) {
+DomainEncoding::DomainEncoding(Walksat_Expression *o, WalksatIntArray& vals) : AbstractDomain(o) {
   _size   = vals.size();
   _values = new int[_size]; 
   _lower = _upper = vals.get_item(0);
@@ -265,7 +134,7 @@ Lit DomainEncoding::equal(const int value, const int index) const {
   return Lit_False;
 } 
 
-void DomainEncoding::encode(MiniSatSolver *solver)
+void DomainEncoding::encode(WalksatSolver *solver)
 {
 
 #ifdef _DEBUGWRAP
@@ -332,7 +201,7 @@ void DomainEncoding::print_lit(Lit p, const int type) const {
     std::cout << ")";
 }
 
-OffsetDomain::OffsetDomain(MiniSat_Expression *o, AbstractDomain *d, const int os) : AbstractDomain(o) {
+OffsetDomain::OffsetDomain(Walksat_Expression *o, AbstractDomain *d, const int os) : AbstractDomain(o) {
   _dom_ptr = d;
   offset = os;
 }
@@ -348,7 +217,7 @@ Lit OffsetDomain::equal(const int value, const int index) const {
   return _dom_ptr->equal(value-offset,index);
 }
 
-FactorDomain::FactorDomain(MiniSat_Expression *o, AbstractDomain *d, const int f) : AbstractDomain(o) {
+FactorDomain::FactorDomain(Walksat_Expression *o, AbstractDomain *d, const int f) : AbstractDomain(o) {
   _dom_ptr = d;
   factor = f;
 }
@@ -380,7 +249,7 @@ Lit FactorDomain::equal(const int value, const int index) const {
   return _dom_ptr->equal(value/factor,-1);
 }
 
-EqDomain::EqDomain(MiniSat_Expression *o, AbstractDomain *d, const int v, const int s) : AbstractDomain(o) {
+EqDomain::EqDomain(Walksat_Expression *o, AbstractDomain *d, const int v, const int s) : AbstractDomain(o) {
   _dom_ptr = d;
   value = v;
   spin = s;
@@ -400,7 +269,7 @@ Lit EqDomain::equal(const int v, const int index) const {
   return ((v == spin) ? _dom_ptr->equal(value,-1) : ~(_dom_ptr->equal(value,-1)));
 }
 
-LeqDomain::LeqDomain(MiniSat_Expression *o, AbstractDomain *d, const int b, const int s) : AbstractDomain(o) {
+LeqDomain::LeqDomain(Walksat_Expression *o, AbstractDomain *d, const int b, const int s) : AbstractDomain(o) {
   _dom_ptr = d;
   bound = b;
   spin = s;
@@ -435,10 +304,10 @@ bool processClause(std::vector<Lit>& cl_in, std::vector<Lit>& cl_out) {
 }
 
 // (X + Y) == Z
-void additionEncoder(MiniSat_Expression *X,
-		     MiniSat_Expression *Y,
-		     MiniSat_Expression *Z,
-		     MiniSatSolver *solver) {
+void additionEncoder(Walksat_Expression *X,
+		     Walksat_Expression *Y,
+		     Walksat_Expression *Z,
+		     WalksatSolver *solver) {
   std::vector<Lit> lits;
   int i, j, x, y;
 
@@ -467,9 +336,9 @@ void additionEncoder(MiniSat_Expression *X,
 }
 
 // (X != Y)
-void disequalityEncoder(MiniSat_Expression *X,
-			MiniSat_Expression *Y,
-			MiniSatSolver *solver) {
+void disequalityEncoder(Walksat_Expression *X,
+			Walksat_Expression *Y,
+			WalksatSolver *solver) {
   std::vector<Lit> lits;
   int i=0, j=0, x, y;
   while( i<X->getsize() && j<Y->getsize() )
@@ -488,9 +357,9 @@ void disequalityEncoder(MiniSat_Expression *X,
 }
 
 // (X == Y)
-void equalityEncoder(MiniSat_Expression *X,
-		     MiniSat_Expression *Y,
-		     MiniSatSolver *solver) {
+void equalityEncoder(Walksat_Expression *X,
+		     Walksat_Expression *Y,
+		     WalksatSolver *solver) {
   std::vector<Lit> lits;
   int i=0, j=0, x, y;
   while( i<X->getsize() && j<Y->getsize() )
@@ -527,10 +396,10 @@ void equalityEncoder(MiniSat_Expression *X,
 }
 
 // (X == Y) <-> Z
-void equalityEncoder(MiniSat_Expression *X,
-		     MiniSat_Expression *Y,
-		     MiniSat_Expression *Z,
-		     MiniSatSolver *solver,
+void equalityEncoder(Walksat_Expression *X,
+		     Walksat_Expression *Y,
+		     Walksat_Expression *Z,
+		     WalksatSolver *solver,
 		     const bool spin) {
   unsigned int num_clauses = solver->clause_base.size();
   equalityEncoder(X,Y,solver);
@@ -543,10 +412,10 @@ void equalityEncoder(MiniSat_Expression *X,
 
 
 // X+K <= Y
-void precedenceEncoder(MiniSat_Expression *X,
-		       MiniSat_Expression *Y,
+void precedenceEncoder(Walksat_Expression *X,
+		       Walksat_Expression *Y,
 		       const int K,
-		       MiniSatSolver *solver) {
+		       WalksatSolver *solver) {
   std::vector<Lit> lits;
   int i=0, j=0, x=0, y=0;
   
@@ -554,6 +423,9 @@ void precedenceEncoder(MiniSat_Expression *X,
     {
       if(i<X->getsize()) x = X->getval(i);
       if(j<Y->getsize()) y = Y->getval(j);
+
+      std::cout << i << " " << j << " | " << x << " " << y << std::endl;
+
 
       if(x+K == y) {
 	lits.clear();
@@ -587,11 +459,11 @@ void precedenceEncoder(MiniSat_Expression *X,
 }
 
 // (X+K <= Y) <-> Z
-void precedenceEncoder(MiniSat_Expression *X,
-		       MiniSat_Expression *Y,
-		       MiniSat_Expression *Z,
+void precedenceEncoder(Walksat_Expression *X,
+		       Walksat_Expression *Y,
+		       Walksat_Expression *Z,
 		       const int K,
-		       MiniSatSolver *solver) {
+		       WalksatSolver *solver) {
   unsigned int num_clauses = solver->clause_base.size();
   precedenceEncoder(X,Y,K,solver);
   while(num_clauses < solver->clause_base.size()) 
@@ -606,18 +478,18 @@ void precedenceEncoder(MiniSat_Expression *X,
  ********************     EXPRESSION        *******************
  **************************************************************/
 
-void MiniSat_Expression::initialise() { 
+void Walksat_Expression::initialise() { 
   _ident = -1;
   _solver = NULL;
   domain = NULL;
 }
 
-MiniSat_Expression::MiniSat_Expression() {
+Walksat_Expression::Walksat_Expression() {
   initialise();
   domain = new DomainEncoding(this);
 }
 
-MiniSat_Expression::MiniSat_Expression(const int nval) {
+Walksat_Expression::Walksat_Expression(const int nval) {
   initialise();
   domain = new DomainEncoding(this,nval);
 
@@ -627,7 +499,7 @@ MiniSat_Expression::MiniSat_Expression(const int nval) {
 
 }
 
-MiniSat_Expression::MiniSat_Expression(const int lb, const int ub) {
+Walksat_Expression::Walksat_Expression(const int lb, const int ub) {
   initialise();
   domain = new DomainEncoding(this,lb,ub);
 
@@ -637,7 +509,7 @@ MiniSat_Expression::MiniSat_Expression(const int lb, const int ub) {
 
 }
 
-MiniSat_Expression::MiniSat_Expression(MiniSatIntArray& vals) {
+Walksat_Expression::Walksat_Expression(WalksatIntArray& vals) {
   initialise();
   domain = new DomainEncoding(this,vals);
 
@@ -647,11 +519,11 @@ MiniSat_Expression::MiniSat_Expression(MiniSatIntArray& vals) {
 
 }
 
-MiniSat_Expression::~MiniSat_Expression() {
+Walksat_Expression::~Walksat_Expression() {
   delete domain;
 }
 
-int MiniSat_Expression::get_size() const
+int Walksat_Expression::get_size() const
 {
   int i=0, domsize=0;
   for(i=0; i<getsize(); ++i)
@@ -659,7 +531,7 @@ int MiniSat_Expression::get_size() const
   return domsize;
 }
 
-int MiniSat_Expression::next(const int v) const
+int Walksat_Expression::next(const int v) const
 {
   int nxt = v;
   while( ++nxt <= getmax() ) 
@@ -668,7 +540,7 @@ int MiniSat_Expression::next(const int v) const
   return nxt;
 }
 
-int MiniSat_Expression::get_min() const
+int Walksat_Expression::get_min() const
 {
   for(int i=0; i<getsize(); ++i) {
     if(_solver->truth_value(equal(getval(i),i)) != l_False) return getval(i);
@@ -676,18 +548,18 @@ int MiniSat_Expression::get_min() const
   return getmin();
 }
 
-int MiniSat_Expression::get_max() const
+int Walksat_Expression::get_max() const
 {
   for(int i=getsize()-1; i>=0; --i)
     if(_solver->truth_value(equal(getval(i),i)) != l_False) return getval(i);
   return getmax();
 }
 
-bool MiniSat_Expression::contain(const int v) const {
+bool Walksat_Expression::contain(const int v) const {
   return (_solver->truth_value(equal(v)) != l_False);
 }
 
-int MiniSat_Expression::get_value() const
+int Walksat_Expression::get_value() const
 {
   if(_solver->cp_model) {
     return _solver->cp_model[_ident];
@@ -695,11 +567,11 @@ int MiniSat_Expression::get_value() const
     return get_min();
 }
 
-bool MiniSat_Expression::has_been_added() const {
+bool Walksat_Expression::has_been_added() const {
   return (_solver != NULL);
 }
 
-MiniSat_Expression* MiniSat_Expression::add(MiniSatSolver *solver, bool top_level) {
+Walksat_Expression* Walksat_Expression::add(WalksatSolver *solver, bool top_level) {
   if(!has_been_added()) {
 
     _solver = solver;
@@ -717,15 +589,15 @@ MiniSat_Expression* MiniSat_Expression::add(MiniSatSolver *solver, bool top_leve
 }
 
 
-MiniSat_add::MiniSat_add(MiniSat_Expression *arg1, MiniSat_Expression *arg2)
-  : MiniSat_binop(arg1, arg2) {
+Walksat_add::Walksat_add(Walksat_Expression *arg1, Walksat_Expression *arg2)
+  : Walksat_binop(arg1, arg2) {
   int _lower = arg1->getmin()+arg2->getmin();
   int _upper = arg1->getmax()+arg2->getmax();
   domain = new DomainEncoding(this, _lower, _upper);
 }
 
-MiniSat_add::MiniSat_add(MiniSat_Expression *arg1, const int arg2)
-  : MiniSat_binop(arg1, arg2) {
+Walksat_add::Walksat_add(Walksat_Expression *arg1, const int arg2)
+  : Walksat_binop(arg1, arg2) {
   domain = new OffsetDomain(this,arg1->domain, arg2);
 
 #ifdef _DEBUGWRAP
@@ -734,7 +606,7 @@ MiniSat_add::MiniSat_add(MiniSat_Expression *arg1, const int arg2)
 
 }
 
-MiniSat_Expression* MiniSat_add::add(MiniSatSolver *solver, bool top_level) {
+Walksat_Expression* Walksat_add::add(WalksatSolver *solver, bool top_level) {
   if(!has_been_added()){
     _solver = solver;
     _ident = _solver->declare(this, false);
@@ -774,24 +646,24 @@ MiniSat_Expression* MiniSat_add::add(MiniSatSolver *solver, bool top_level) {
   return this;
 }
 
-MiniSat_add::~MiniSat_add() {}
+Walksat_add::~Walksat_add() {}
 
-MiniSat_mul::MiniSat_mul(MiniSat_Expression *arg1, const int arg2)
-  : MiniSat_binop(arg1, arg2) {
+Walksat_mul::Walksat_mul(Walksat_Expression *arg1, const int arg2)
+  : Walksat_binop(arg1, arg2) {
 
   domain = new FactorDomain(this,arg1->domain, arg2);
 
 }
 
-MiniSat_mul::MiniSat_mul(MiniSat_Expression *arg1, MiniSat_Expression *arg2)
-  : MiniSat_binop(arg1, arg2) {
+Walksat_mul::Walksat_mul(Walksat_Expression *arg1, Walksat_Expression *arg2)
+  : Walksat_binop(arg1, arg2) {
 
   std::cerr << "c NOT SUPPORTED (multiplication) - exiting" << std::endl;
   exit(1);
 
 }
 
-MiniSat_Expression* MiniSat_mul::add(MiniSatSolver *solver, bool top_level) {
+Walksat_Expression* Walksat_mul::add(WalksatSolver *solver, bool top_level) {
   if(!has_been_added()) {
     _solver = solver;
     _ident = _solver->declare(this, false);
@@ -823,29 +695,29 @@ MiniSat_Expression* MiniSat_mul::add(MiniSatSolver *solver, bool top_level) {
   return this;
 }
 
-MiniSat_mul::~MiniSat_mul() {}
+Walksat_mul::~Walksat_mul() {}
 
-void MiniSat_AllDiff::addVar(MiniSat_Expression* v) {
+void Walksat_AllDiff::addVar(Walksat_Expression* v) {
   _vars.add(v);
 }
 
-MiniSat_AllDiff::MiniSat_AllDiff( MiniSat_Expression* arg1, MiniSat_Expression* arg2 ) 
-  : MiniSat_Expression() {
+Walksat_AllDiff::Walksat_AllDiff( Walksat_Expression* arg1, Walksat_Expression* arg2 ) 
+  : Walksat_Expression() {
   addVar(arg1);
   addVar(arg2);
 }
 
-MiniSat_AllDiff::MiniSat_AllDiff( MiniSatExpArray& vars ) 
-  : MiniSat_Expression() {
+Walksat_AllDiff::Walksat_AllDiff( WalksatExpArray& vars ) 
+  : Walksat_Expression() {
   _vars = vars;
 }
 
-MiniSat_AllDiff::~MiniSat_AllDiff() {
+Walksat_AllDiff::~Walksat_AllDiff() {
   for(unsigned int i=0; i<_clique.size(); ++i)
     delete _clique[i];
 }
 
-MiniSat_Expression* MiniSat_AllDiff::add(MiniSatSolver *solver, bool top_level) {
+Walksat_Expression* Walksat_AllDiff::add(WalksatSolver *solver, bool top_level) {
   if(!has_been_added()) {
     _solver = solver;
     _ident = _solver->declare(this, false);
@@ -860,10 +732,10 @@ MiniSat_Expression* MiniSat_AllDiff::add(MiniSatSolver *solver, bool top_level) 
       for(i=0; i<n; ++i) 
 	_vars.set_item(i, (_vars.get_item(i))->add(_solver,false));
 
-      MiniSat_Expression *exp;
+      Walksat_Expression *exp;
       for(i=1; i<n; ++i)
 	for(j=0; j<i; ++j) {
-	  exp = new MiniSat_ne(_vars.get_item(j), _vars.get_item(i));
+	  exp = new Walksat_ne(_vars.get_item(j), _vars.get_item(i));
 	  _solver->add(exp);
 	  _clique.push_back(exp);
 	}
@@ -880,21 +752,21 @@ MiniSat_Expression* MiniSat_AllDiff::add(MiniSatSolver *solver, bool top_level) 
 }
 
 
-MiniSat_Sum::MiniSat_Sum(MiniSatExpArray& vars, 
-				 MiniSatIntArray& weights, 
+Walksat_Sum::Walksat_Sum(WalksatExpArray& vars, 
+				 WalksatIntArray& weights, 
 				 const int offset)
-  : MiniSat_Expression() {
+  : Walksat_Expression() {
   _offset = offset;
   _vars = vars;
   _weights = weights;
   initialise();
 }
 
-MiniSat_Sum::MiniSat_Sum(MiniSat_Expression *arg1, 
-				 MiniSat_Expression *arg2, 
-				 MiniSatIntArray& w, 
+Walksat_Sum::Walksat_Sum(Walksat_Expression *arg1, 
+				 Walksat_Expression *arg2, 
+				 WalksatIntArray& w, 
 				 const int offset)
-  : MiniSat_Expression() {
+  : Walksat_Expression() {
   _offset = offset;
   _vars.add(arg1);
   _vars.add(arg2);
@@ -902,10 +774,10 @@ MiniSat_Sum::MiniSat_Sum(MiniSat_Expression *arg1,
   initialise();
 }
 
-MiniSat_Sum::MiniSat_Sum(MiniSat_Expression *arg, 
-				 MiniSatIntArray& w, 
+Walksat_Sum::Walksat_Sum(Walksat_Expression *arg, 
+				 WalksatIntArray& w, 
 				 const int offset)
-  : MiniSat_Expression() {
+  : Walksat_Expression() {
   _self = NULL;
   _offset = offset;
   _vars.add(arg);
@@ -913,12 +785,12 @@ MiniSat_Sum::MiniSat_Sum(MiniSat_Expression *arg,
   initialise();
 }
 
-MiniSat_Sum::MiniSat_Sum()
-  : MiniSat_Expression() {
+Walksat_Sum::Walksat_Sum()
+  : Walksat_Expression() {
   _offset = 0;
 }
 
-void MiniSat_Sum::initialise() {
+void Walksat_Sum::initialise() {
   if(_vars.size() == 2) {
     int _lower = 0;
     int _upper = 0;
@@ -948,7 +820,7 @@ void MiniSat_Sum::initialise() {
 
 }
 
-MiniSat_Sum::~MiniSat_Sum() {
+Walksat_Sum::~Walksat_Sum() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete sum" << std::endl;
@@ -959,19 +831,19 @@ MiniSat_Sum::~MiniSat_Sum() {
   }
 }
 
-void MiniSat_Sum::addVar(MiniSat_Expression* v) {
+void Walksat_Sum::addVar(Walksat_Expression* v) {
   _vars.add(v);
 }
 
-void MiniSat_Sum::addWeight(const int w) {
+void Walksat_Sum::addWeight(const int w) {
   _weights.add(w);
 }
 
-void MiniSat_Sum::set_rhs(const int k) {
+void Walksat_Sum::set_rhs(const int k) {
   _offset = k;
 }
 
-MiniSat_Expression* MiniSat_Sum::add(MiniSatSolver *solver, bool top_level){
+Walksat_Expression* Walksat_Sum::add(WalksatSolver *solver, bool top_level){
   if(!has_been_added()){
     _solver = solver;
     _ident = _solver->declare(this, false);
@@ -989,18 +861,18 @@ MiniSat_Expression* MiniSat_Sum::add(MiniSatSolver *solver, bool top_level){
       } else {
 
 	int w1, w2;
-	MiniSat_Expression *exp, *exp1, *exp2;
+	Walksat_Expression *exp, *exp1, *exp2;
 	for(int i=0; i+1<_vars.size(); i+=2) {
 	  w1 = _weights.get_item(i);
 	  w2 = _weights.get_item(i+1);
 
-	  if(w1 != 1) exp1 = new MiniSat_mul(_vars.get_item(i), w1);
+	  if(w1 != 1) exp1 = new Walksat_mul(_vars.get_item(i), w1);
 	  else exp1 = _vars.get_item(i);
 
-	  if(w2 != 1) exp2 = new MiniSat_mul(_vars.get_item(i+1), w2);
+	  if(w2 != 1) exp2 = new Walksat_mul(_vars.get_item(i+1), w2);
 	  else exp2 = _vars.get_item(i+1);
 
-	  exp = new MiniSat_add(exp1, exp2);
+	  exp = new Walksat_add(exp1, exp2);
 	  exp->add(_solver, false);
 
 	  _vars.add(exp);
@@ -1022,8 +894,8 @@ MiniSat_Expression* MiniSat_Sum::add(MiniSatSolver *solver, bool top_level){
 
 /* Binary operators */
 
-MiniSat_binop::MiniSat_binop(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_Expression() {
+Walksat_binop::Walksat_binop(Walksat_Expression *var1, Walksat_Expression *var2)
+  : Walksat_Expression() {
   _vars[0] = var1;
   _vars[1] = var2;
 
@@ -1033,8 +905,8 @@ MiniSat_binop::MiniSat_binop(MiniSat_Expression *var1, MiniSat_Expression *var2)
 
 }
 
-MiniSat_binop::MiniSat_binop(MiniSat_Expression *var1, int rhs)
-  : MiniSat_Expression() {
+Walksat_binop::Walksat_binop(Walksat_Expression *var1, int rhs)
+  : Walksat_Expression() {
   _vars[0] = var1;
   _vars[1] = NULL;
   _rhs = rhs;
@@ -1046,7 +918,7 @@ MiniSat_binop::MiniSat_binop(MiniSat_Expression *var1, int rhs)
 }
 
 
-MiniSat_binop::~MiniSat_binop() {
+Walksat_binop::~Walksat_binop() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete binary operator" << std::endl;
@@ -1054,8 +926,8 @@ MiniSat_binop::~MiniSat_binop() {
 
 }
 
-MiniSat_or::MiniSat_or(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_binop(var1,var2) {
+Walksat_or::Walksat_or(Walksat_Expression *var1, Walksat_Expression *var2)
+  : Walksat_binop(var1,var2) {
 
 #ifdef _DEBUGWRAP
   std::cout << "creating or predicate" << std::endl;
@@ -1065,8 +937,8 @@ MiniSat_or::MiniSat_or(MiniSat_Expression *var1, MiniSat_Expression *var2)
 
 }
 
-MiniSat_or::MiniSat_or(MiniSat_Expression *var1, int rhs)
-  : MiniSat_binop(var1,rhs) {
+Walksat_or::Walksat_or(Walksat_Expression *var1, int rhs)
+  : Walksat_binop(var1,rhs) {
 
 #ifdef _DEBUGWRAP
   std::cout << "creating or predicate" << std::endl;
@@ -1077,7 +949,7 @@ MiniSat_or::MiniSat_or(MiniSat_Expression *var1, int rhs)
 }
 
 
-MiniSat_or::~MiniSat_or() {
+Walksat_or::~Walksat_or() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete or" << std::endl;
@@ -1085,7 +957,7 @@ MiniSat_or::~MiniSat_or() {
 
 }
 
-MiniSat_Expression* MiniSat_or::add(MiniSatSolver *solver, bool top_level) {
+Walksat_Expression* Walksat_or::add(WalksatSolver *solver, bool top_level) {
   if(!has_been_added()) {
     _solver = solver;
     _ident = _solver->declare(this, false);
@@ -1159,8 +1031,8 @@ MiniSat_Expression* MiniSat_or::add(MiniSatSolver *solver, bool top_level) {
 
 
 
-MiniSat_and::MiniSat_and(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_binop(var1,var2) {
+Walksat_and::Walksat_and(Walksat_Expression *var1, Walksat_Expression *var2)
+  : Walksat_binop(var1,var2) {
 
 #ifdef _DEBUGWRAP
   std::cout << "creating or predicate" << std::endl;
@@ -1169,8 +1041,8 @@ MiniSat_and::MiniSat_and(MiniSat_Expression *var1, MiniSat_Expression *var2)
   domain = new DomainEncoding(this);
 }
 
-MiniSat_and::MiniSat_and(MiniSat_Expression *var1, int rhs)
-  : MiniSat_binop(var1,rhs) {
+Walksat_and::Walksat_and(Walksat_Expression *var1, int rhs)
+  : Walksat_binop(var1,rhs) {
 
 #ifdef _DEBUGWRAP
   std::cout << "creating or predicate" << std::endl;
@@ -1181,7 +1053,7 @@ MiniSat_and::MiniSat_and(MiniSat_Expression *var1, int rhs)
 }
 
 
-MiniSat_and::~MiniSat_and() {
+Walksat_and::~Walksat_and() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete or" << std::endl;
@@ -1189,7 +1061,7 @@ MiniSat_and::~MiniSat_and() {
 
 }
 
-MiniSat_Expression* MiniSat_and::add(MiniSatSolver *solver, bool top_level) {
+Walksat_Expression* Walksat_and::add(WalksatSolver *solver, bool top_level) {
   if(!has_been_added()) {
     _solver = solver;
     _ident = _solver->declare(this, false);
@@ -1265,18 +1137,18 @@ MiniSat_Expression* MiniSat_and::add(MiniSatSolver *solver, bool top_level) {
 }
 
 
-MiniSat_eq::MiniSat_eq(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_binop(var1,var2) {
+Walksat_eq::Walksat_eq(Walksat_Expression *var1, Walksat_Expression *var2)
+  : Walksat_binop(var1,var2) {
   domain = new DomainEncoding(this);
 }
 
-MiniSat_eq::MiniSat_eq(MiniSat_Expression *var1, int rhs)
-  : MiniSat_binop(var1,rhs) {
+Walksat_eq::Walksat_eq(Walksat_Expression *var1, int rhs)
+  : Walksat_binop(var1,rhs) {
   domain = new EqDomain(this,var1->domain, rhs, 1);
 }
 
 
-MiniSat_eq::~MiniSat_eq() {
+Walksat_eq::~Walksat_eq() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete eq" << std::endl;
@@ -1284,7 +1156,7 @@ MiniSat_eq::~MiniSat_eq() {
 
 }
 
-MiniSat_Expression* MiniSat_eq::add(MiniSatSolver *solver, bool top_level) {
+Walksat_Expression* Walksat_eq::add(WalksatSolver *solver, bool top_level) {
   if(!has_been_added()) {
     _solver = solver;
     _ident = _solver->declare(this, false);
@@ -1347,17 +1219,17 @@ MiniSat_Expression* MiniSat_eq::add(MiniSatSolver *solver, bool top_level) {
 
 /* Disequality operator */
 
-MiniSat_ne::MiniSat_ne(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_binop(var1,var2) {
+Walksat_ne::Walksat_ne(Walksat_Expression *var1, Walksat_Expression *var2)
+  : Walksat_binop(var1,var2) {
   domain = new DomainEncoding(this);
 }
 
-MiniSat_ne::MiniSat_ne(MiniSat_Expression *var1, int rhs)
-  : MiniSat_binop(var1,rhs) {
+Walksat_ne::Walksat_ne(Walksat_Expression *var1, int rhs)
+  : Walksat_binop(var1,rhs) {
   domain = new EqDomain(this,var1->domain, rhs, 0);
 }
 
-MiniSat_ne::~MiniSat_ne() {
+Walksat_ne::~Walksat_ne() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete notequal" << std::endl;
@@ -1365,7 +1237,7 @@ MiniSat_ne::~MiniSat_ne() {
 
 }
 
-MiniSat_Expression* MiniSat_ne::add(MiniSatSolver *solver, bool top_level) {
+Walksat_Expression* Walksat_ne::add(WalksatSolver *solver, bool top_level) {
   if(!has_been_added()) {
     _solver = solver;
     _ident = _solver->declare(this, false);
@@ -1421,8 +1293,8 @@ MiniSat_Expression* MiniSat_ne::add(MiniSatSolver *solver, bool top_level) {
 
 /* Leq operator */
 
-MiniSat_le::MiniSat_le(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_binop(var1,var2) { 
+Walksat_le::Walksat_le(Walksat_Expression *var1, Walksat_Expression *var2)
+  : Walksat_binop(var1,var2) { 
 #ifdef _DEBUGWRAP
   std::cout << "Creating Le constraint" << std::endl;
 #endif
@@ -1431,8 +1303,8 @@ MiniSat_le::MiniSat_le(MiniSat_Expression *var1, MiniSat_Expression *var2)
 
 }
 
-MiniSat_le::MiniSat_le(MiniSat_Expression *var1, int rhs)
-  : MiniSat_binop(var1,rhs) {
+Walksat_le::Walksat_le(Walksat_Expression *var1, int rhs)
+  : Walksat_binop(var1,rhs) {
 
 #ifdef _DEBUGWRAP
   std::cout << "Leq on constant constructor" << std::endl;
@@ -1442,7 +1314,7 @@ MiniSat_le::MiniSat_le(MiniSat_Expression *var1, int rhs)
 }
 
 
-MiniSat_le::~MiniSat_le() {
+Walksat_le::~Walksat_le() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete lessequal" << std::endl;
@@ -1450,7 +1322,7 @@ MiniSat_le::~MiniSat_le() {
 
 }
 
-MiniSat_Expression* MiniSat_le::add(MiniSatSolver *solver, bool top_level) {
+Walksat_Expression* Walksat_le::add(WalksatSolver *solver, bool top_level) {
   if(!has_been_added()) {
     _solver = solver;
     _ident = _solver->declare(this, false);
@@ -1511,8 +1383,8 @@ MiniSat_Expression* MiniSat_le::add(MiniSatSolver *solver, bool top_level) {
 
 /* Geq operator */
 
-MiniSat_ge::MiniSat_ge(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_binop(var1,var2) {
+Walksat_ge::Walksat_ge(Walksat_Expression *var1, Walksat_Expression *var2)
+  : Walksat_binop(var1,var2) {
 #ifdef _DEBUGWRAP
   std::cout << "Creating Ge constraint" << std::endl;
 #endif
@@ -1520,8 +1392,8 @@ MiniSat_ge::MiniSat_ge(MiniSat_Expression *var1, MiniSat_Expression *var2)
   domain = new DomainEncoding(this);
 }
 
-MiniSat_ge::MiniSat_ge(MiniSat_Expression *var1, int rhs)
-  : MiniSat_binop(var1,rhs) {
+Walksat_ge::Walksat_ge(Walksat_Expression *var1, int rhs)
+  : Walksat_binop(var1,rhs) {
 
 #ifdef _DEBUGWRAP
   std::cout << "Geq on constant constructor" << std::endl;
@@ -1530,7 +1402,7 @@ MiniSat_ge::MiniSat_ge(MiniSat_Expression *var1, int rhs)
   domain = new LeqDomain(this,var1->domain, rhs-1, 0);
 }
 
-MiniSat_ge::~MiniSat_ge() {
+Walksat_ge::~Walksat_ge() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete greaterequal" << std::endl;
@@ -1538,7 +1410,7 @@ MiniSat_ge::~MiniSat_ge() {
 
 }
 
-MiniSat_Expression* MiniSat_ge::add(MiniSatSolver *solver, bool top_level) { 
+Walksat_Expression* Walksat_ge::add(WalksatSolver *solver, bool top_level) { 
   if(!has_been_added()) {
     _solver = solver;
     _ident = _solver->declare(this, false);
@@ -1600,17 +1472,17 @@ MiniSat_Expression* MiniSat_ge::add(MiniSatSolver *solver, bool top_level) {
 
 /* Lt object */
 
-MiniSat_lt::MiniSat_lt(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_binop(var1,var2) {
+Walksat_lt::Walksat_lt(Walksat_Expression *var1, Walksat_Expression *var2)
+  : Walksat_binop(var1,var2) {
   domain = new DomainEncoding(this);
 }
 
-MiniSat_lt::MiniSat_lt(MiniSat_Expression *var1, int rhs)
-  : MiniSat_binop(var1,rhs) {
+Walksat_lt::Walksat_lt(Walksat_Expression *var1, int rhs)
+  : Walksat_binop(var1,rhs) {
   domain = new LeqDomain(this,var1->domain, rhs-1, 1);
 }
 
-MiniSat_lt::~MiniSat_lt() {
+Walksat_lt::~Walksat_lt() {
 
 #ifdef _DEBUGWRAP
   std::cout << "delete lessthan" << std::endl;
@@ -1618,7 +1490,7 @@ MiniSat_lt::~MiniSat_lt() {
 
 }
 
-MiniSat_Expression* MiniSat_lt::add(MiniSatSolver *solver, bool top_level) {
+Walksat_Expression* Walksat_lt::add(WalksatSolver *solver, bool top_level) {
   if(!has_been_added()) {
     _solver = solver;
     _ident = _solver->declare(this, false);
@@ -1680,20 +1552,20 @@ MiniSat_Expression* MiniSat_lt::add(MiniSatSolver *solver, bool top_level) {
 
 /* Gt object */
 
-MiniSat_gt::MiniSat_gt(MiniSat_Expression *var1, MiniSat_Expression *var2)
-  : MiniSat_binop(var1,var2) {
+Walksat_gt::Walksat_gt(Walksat_Expression *var1, Walksat_Expression *var2)
+  : Walksat_binop(var1,var2) {
   domain = new DomainEncoding(this);
 }
 
-MiniSat_gt::MiniSat_gt(MiniSat_Expression *var1, int rhs)
-  : MiniSat_binop(var1,rhs) {
+Walksat_gt::Walksat_gt(Walksat_Expression *var1, int rhs)
+  : Walksat_binop(var1,rhs) {
   domain = new LeqDomain(this, var1->domain, rhs, 0);
 }
 
-MiniSat_gt::~MiniSat_gt() {
+Walksat_gt::~Walksat_gt() {
 }
 
-MiniSat_Expression* MiniSat_gt::add(MiniSatSolver *solver, bool top_level) {
+Walksat_Expression* Walksat_gt::add(WalksatSolver *solver, bool top_level) {
   if(!has_been_added()) {
     _solver = solver;
     _ident = _solver->declare(this, false);
@@ -1755,15 +1627,15 @@ MiniSat_Expression* MiniSat_gt::add(MiniSatSolver *solver, bool top_level) {
 
 /* Minimise object */
 
-MiniSat_Minimise::MiniSat_Minimise(MiniSat_Expression *var)
-  : MiniSat_Expression() {
+Walksat_Minimise::Walksat_Minimise(Walksat_Expression *var)
+  : Walksat_Expression() {
   _obj = var;
 }
 
-MiniSat_Minimise::~MiniSat_Minimise(){
+Walksat_Minimise::~Walksat_Minimise(){
 }
 
-MiniSat_Expression* MiniSat_Minimise::add(MiniSatSolver *solver, bool top_level) {
+Walksat_Expression* Walksat_Minimise::add(WalksatSolver *solver, bool top_level) {
   if(!has_been_added()) {
     _solver = solver;
     _ident = _solver->declare(this, false);
@@ -1786,15 +1658,15 @@ MiniSat_Expression* MiniSat_Minimise::add(MiniSatSolver *solver, bool top_level)
 
 /* Maximise object */
 
-MiniSat_Maximise::MiniSat_Maximise(MiniSat_Expression *var)
-  : MiniSat_Expression() {
+Walksat_Maximise::Walksat_Maximise(Walksat_Expression *var)
+  : Walksat_Expression() {
   _obj = var;
 }
 
-MiniSat_Maximise::~MiniSat_Maximise(){
+Walksat_Maximise::~Walksat_Maximise(){
 }
 
-MiniSat_Expression* MiniSat_Maximise::add(MiniSatSolver *solver, bool top_level) {
+Walksat_Expression* Walksat_Maximise::add(WalksatSolver *solver, bool top_level) {
   if(!has_been_added()) {
     _solver = solver;
     _ident = _solver->declare(this, false);
@@ -1822,46 +1694,32 @@ MiniSat_Expression* MiniSat_Maximise::add(MiniSatSolver *solver, bool top_level)
  ********************     Solver        ***********************
  **************************************************************/
 
-MiniSatSolver::MiniSatSolver() : SimpSolver()
+WalksatSolver::WalksatSolver() 
 {
 
 #ifdef _DEBUGWRAP
   std::cout << "create a minisat solver" << std::endl;
 #endif
 
-  ////////////// MiniSat Specific ////////////////
+  ////////////// Walksat Specific ////////////////
   STARTTIME = cpuTime();
-  result = l_Undef;
   nbSolutions = 0;
-  
-  // search stuff
-  conflict_clause = NULL;
-  backtrack_level = 0;
-  conflictC = 0;
-
-  first_decision_level = -1;
-  last_decision = lit_Undef;
-  saved_level = -1;
-  ////////////// MiniSat Specific ////////////////
+  ////////////// Walksat Specific ////////////////
 
   minimise_obj = NULL;
   maximise_obj = NULL;
   cp_model = NULL;
 
-  vec<Lit> lits;
-  Lit dummy(Solver::newVar(),true);
+  Lit dummy(0,true);
   Lit_True = Lit(dummy);
   Lit_False = ~Lit(dummy);
-
-  lits.push(dummy);
-  Solver::addClause(lits);
 
   current = 0;
   _atom_to_domain.push_back(NULL);
   _atom_to_type.push_back(0);
 }
 
-MiniSatSolver::~MiniSatSolver()
+WalksatSolver::~WalksatSolver()
 {
 
 #ifdef _DEBUGWRAP
@@ -1870,53 +1728,34 @@ MiniSatSolver::~MiniSatSolver()
 
 }
 
-int MiniSatSolver::declare(MiniSat_Expression *exp, bool type) {
+int WalksatSolver::declare(Walksat_Expression *exp, bool type) {
   int id = _expressions.size(); 
   _expressions.push_back(exp); 
   return id;
 }
 
-int MiniSatSolver::create_atom(DomainEncoding* dom, const int type) {
-  unsigned int id = Solver::newVar();
-  assert(id == _atom_to_domain.size()); 
+int WalksatSolver::create_atom(DomainEncoding* dom, const int type) {
+  unsigned int id = _atom_to_domain.size(); 
   _atom_to_domain.push_back(dom); 
   _atom_to_type.push_back(type); 
   return id; 
 }
 
-void MiniSatSolver::addClause(std::vector<Lit>& cl) { 
+void WalksatSolver::addClause(std::vector<Lit>& cl) { 
   std::vector<Lit> clause;
   if(!processClause(cl,clause))
     clause_base.push_back(clause);
 }
 
-void MiniSatSolver::validate() {
-  vec<Lit> cl;
-  unsigned int i;
-  //std::vector<Lit> clause;
-  while(current < clause_base.size()) {
-    //if(!processClause(clause_base[current],clause)) {
-    cl.clear();
-    for(i=0; i<clause_base[current].size(); ++i)
-      cl.push(clause_base[current][i]);
-    //displayClause(clause_base[current]);
-    Solver::addClause(cl);
-    //}
-    ++current;
-  }
+void WalksatSolver::validate() {
 }
 
-void MiniSatSolver::store_solution() {
-  
+void WalksatSolver::store_solution() {
 #ifdef _DEBUGWRAP
   std::cout << "store a new solution" << std::endl;
 #endif
   
   ++nbSolutions;
-  if(model.size() < nVars()) {
-    model.growTo(nVars());
-    for (int i = 0; i < nVars(); i++) model[i] = value(i);
-  }
   if(!cp_model) cp_model = new int[_expressions.size()];
   for(unsigned int i=0; i<_variables.size(); ++i) {
     if(_variables[i]) {
@@ -1926,7 +1765,7 @@ void MiniSatSolver::store_solution() {
   }
 }
 
-void MiniSatSolver::add(MiniSat_Expression* arg)
+void WalksatSolver::add(Walksat_Expression* arg)
 {
 
 #ifdef _DEBUGWRAP
@@ -1937,34 +1776,120 @@ void MiniSatSolver::add(MiniSat_Expression* arg)
     arg->add(this, true);
 }
 
-void MiniSatSolver::initialise(MiniSatExpArray& arg)
+void WalksatSolver::initialise(WalksatExpArray& arg)
 {
+
+  initialise();
+
+}
+
+void WalksatSolver::initialise()
+{
+  int i, j;
+  
+  int *storeptr = NULL;
+  int freestore;
+  int lit;
+  //int simplified=0;
+
+  std::vector<Lit> clause;
 
 #ifdef _DEBUGWRAP
   std::cout << "initialise the solver" << std::endl;
 #endif
 
-}
-
-void MiniSatSolver::initialise()
-{
-
-#ifdef _DEBUGWRAP
-  std::cout << "initialise the solver" << std::endl;
+//   for(i=0; (unsigned int)i<clause_base.size(); ++i)
+//     {
+//       displayClause(clause_base[i]);
+//     }
+  
+  wsat.numatom = _atom_to_domain.size()-1;
+  wsat.numclause = clause_base.size();
+  
+#ifdef DYNAMIC
+  wsat.clause = (int **) malloc(sizeof(int *)*(wsat.numclause+1));
+  wsat.size = (int *) malloc(sizeof(int)*(wsat.numclause+1));
+  wsat.falsified = (int *) malloc(sizeof(int)*(wsat.numclause+1));
+  wsat.lowfalse = (int *) malloc(sizeof(int)*(wsat.numclause+1));
+  wsat.wherefalse = (int *) malloc(sizeof(int)*(wsat.numclause+1));
+  wsat.numtruelit = (int *) malloc(sizeof(int)*(wsat.numclause+1));
+#else
+  if(wsat.numclause > MAXCLAUSE)                     
+    {                                      
+      fprintf(stderr,"ERROR - too many clauses\n"); 
+      exit(-1);                              
+    }                                        
 #endif
 
+  freestore = 0;
+  wsat.numliterals = 0;
+  for(i = 0;i < 2*MAXATOM+1;i++)
+    wsat.numoccurence[i] = 0;
+
+
+  for(i = 0;i < wsat.numclause;i++)
+    {
+      //if(!processClause(clause_base[i],clause)) {
+      wsat.size[i] = -1;
+      if (freestore < MAXLENGTH)
+	{
+	  storeptr = (int *) malloc( sizeof(int) * STOREBLOCK );
+	  freestore = STOREBLOCK;
+	  fprintf(stderr,"allocating memory...\n");
+	}
+      wsat.clause[i] = storeptr;
+      if(clause_base[i].size() > MAXLENGTH)
+	{
+	  printf("ERROR - clause too long\n");
+	  exit(-1);
+	}
+      else 
+	{
+	  wsat.size[i] = clause_base[i].size();
+	  for(j = 0;j<wsat.size[i];j++)
+	    {
+	      lit = (sign(clause_base[i][j]) ? -1 : 1)*var(clause_base[i][j]);
+	      *(storeptr++) = lit;
+	      freestore--;
+	      wsat.numliterals++;
+	      wsat.numoccurence[lit+MAXATOM]++;
+	    }
+	}
+      //} else ++simplified;
+    }
+  //wsat.numclause -= simplified;
+  
+  for(i = 0;i < 2*MAXATOM+1;i++)
+    {
+      if (freestore < wsat.numoccurence[i])
+	{
+	  storeptr = (int *) malloc( sizeof(int) * STOREBLOCK );
+	  freestore = STOREBLOCK;
+	  fprintf(stderr,"allocating memory...\n");
+	}
+      wsat.occurence[i] = storeptr;
+      freestore -= wsat.numoccurence[i];
+      storeptr += wsat.numoccurence[i];
+      wsat.numoccurence[i] = 0;
+    }
+  
+  for(i = 0;i < wsat.numclause;i++)
+    {
+      for(j = 0;j < wsat.size[i];j++)
+	{
+	  wsat.occurence[wsat.clause[i][j]+MAXATOM]
+	    [wsat.numoccurence[wsat.clause[i][j]+MAXATOM]] = i;
+	  wsat.numoccurence[wsat.clause[i][j]+MAXATOM]++;
+	}
+    } 
 }
 
-lbool MiniSatSolver::truth_value(Lit x)
-{  
-  if(model.size() > 0) {
-    return modelValue(x);
-  } else {
-    return value(x);
-  }
+lbool WalksatSolver::truth_value(Lit x)
+{
+  return (wsat.solution[var(x)] == 1 ? l_True : l_False);
 }
 
-int MiniSatSolver::solveAndRestart(const int policy, 
+int WalksatSolver::solveAndRestart(const int policy, 
 				   const unsigned int base, 
 				   const double factor,
 				   const double decay)
@@ -1972,7 +1897,7 @@ int MiniSatSolver::solveAndRestart(const int policy,
   return solve();
 }
 
-int MiniSatSolver::solve()
+int WalksatSolver::solve()
 {
 
 #ifdef _DEBUGWRAP
@@ -1980,343 +1905,158 @@ int MiniSatSolver::solve()
 #endif 
 
 #ifdef _DEBUGWRAP
-  std::cout << "print to file" << std::endl;  
-  toDimacs("dimacs.out");
-#endif 
-
-#ifdef _DEBUGWRAP
   std::cout << "solve!" << std::endl;  
 #endif 
 
-  start_time = getRunTime();
-  saved_level = init_level;
-  if(init_level < decisionLevel())
-    init_level = decisionLevel();
+  STARTTIME = cpuTime();
 
-  solver_ptr = this;
-  signal(SIGINT,SIGINT_handler);
-
-  if(minimise_obj) {
-    vec<Lit> lits;
-    int objective = minimise_obj->getmax();
-    
-    result = SimpSolver::solve(true,true);
-    
-    while(result == l_True && !(limitsExpired())) {
-      cancelUntil(init_level);
-
-      store_solution();
-      objective = minimise_obj->get_value()-1;
-      if(objective < minimise_obj->getmin()) break;
-
-      if(verbosity >= 0) {
-	std::cout << "c  new objective: " << objective+1 << std::endl;
-      }
-      
-      lits.clear();
-      lits.push(minimise_obj->less_or_equal(objective));
-      Solver::addClause(lits);
-
-      result = SimpSolver::solve(true,true);
-
-      if(result == l_True) {
-	++objective;
-      }
-    }
-  }
-  else if(maximise_obj) {
-    vec<Lit> lits;
-    int objective = maximise_obj->getmin();
-    
-    result = SimpSolver::solve(true,true);
-    
-    while(result == l_True && !(limitsExpired())) {
-      cancelUntil(init_level);
-
-      store_solution();
-      objective = maximise_obj->get_value()+1;
-      if(objective > maximise_obj->getmax()) break;
-
-      if(verbosity >= 0) {
-	std::cout << "c  new objective: " << objective-1 << std::endl;
-      }
-      
-      lits.clear();
-      lits.push(maximise_obj->greater_than(objective-1));
-      Solver::addClause(lits);
-      
-      result = SimpSolver::solve(true,true);
-      if(result == l_True) {
-	++objective;
-      } 
-    }
-  }
-  else {
-    result = SimpSolver::solve(true,true);
-    if(result == l_True) {
-      store_solution();
-    }
-  }
-
-#ifdef _DEBUGWRAP
-  std::cout << "print results" << std::endl; 
-  if(is_sat())
-    for(int i=0; i<nVars(); ++i) {
-      int res = modelValue(Lit(i)).toInt();
-      std::cout << "** " << i << " = " << (res == 1) 
-		<< std::endl;
-    }
-  else
-    std::cout << "unsatisfiable" << std:: endl;
-#endif 
+  wsat.initialize_statistics();
+  wsat.print_statistics_header();
+  wsat.walk_solve();
 
   return is_sat();
 }
 
-bool MiniSatSolver::propagate()
+bool WalksatSolver::propagate()
 {
-  conflict_clause = NULL;
-  conflict_clause = SimpSolver::propagate();
-  if(conflict_clause) {
-    // CONFLICT
-    conflicts++; 
-    conflictC++;
-    return false;
-  } 
   return true;
 }
 
-void MiniSatSolver::reset(bool full) {
-  learnt_clause.clear();
-  backtrack_level = init_level;
-  forced_decisions.clear();
-
-  cancelUntil(backtrack_level);
-
-  model.clear();
-  delete [] cp_model;
-  cp_model = NULL;
-
-  init_level = saved_level;
-  ok = true;
+void WalksatSolver::reset(bool full) {
 }
 
-bool MiniSatSolver::undo(const int nlevel)
+bool WalksatSolver::undo(const int nlevel)
 {
-  int okay = true;
-  backtrack_level = decisionLevel()-nlevel;
-  if(backtrack_level < first_decision_level) okay = false;
-
-  learnt_clause.clear();
-  
-  if(backtrack_level < 0) backtrack_level = 0;
-
-  for(int i=decisionLevel()-1; i>backtrack_level; --i) forced_decisions.pop();
-  last_decision = forced_decisions.last();
-  forced_decisions.pop();
-  cancelUntil(backtrack_level);
-
-  return okay;
-}
-
-bool MiniSatSolver::branch_right()
-{
-  if (decisionLevel() == first_decision_level) return false;
-
-  learnt_clause.clear();
-  if(conflict_clause) 
-    analyze(conflict_clause, learnt_clause, backtrack_level);
-  else backtrack_level = decisionLevel()-1;
-
-  for(int i=decisionLevel()-1; i>backtrack_level; --i) forced_decisions.pop();
-  last_decision = forced_decisions.last();
-  forced_decisions.pop();
-
-  cancelUntil(backtrack_level);
-
-  if (learnt_clause.size() > 0){
-    if (learnt_clause.size() == 1){
-      uncheckedEnqueue(learnt_clause[0]);
-    }else{
-      Clause* c = Clause_new(learnt_clause, true);
-      learnts.push(c);
-      attachClause(*c);
-      claBumpActivity(*c);
-      uncheckedEnqueue(learnt_clause[0], c);
-    }
-
-    varDecayActivity();
-    claDecayActivity();
-
-  } else deduce();
-
   return true;
 }
 
-void MiniSatSolver::deduce()
+bool WalksatSolver::branch_right()
 {
-  uncheckedEnqueue(~(last_decision));
+  return true;
 }
 
-
-void MiniSatSolver::save()
+void WalksatSolver::deduce()
 {
-  decisions++;
-  newDecisionLevel();
 }
 
-void MiniSatSolver::post(const char* op, MiniSat_Expression* x, int v)
+void WalksatSolver::save()
 {
-  if(op[1] == 't') 
-    if(op[0] == 'g') ++v;
-    else --v;
-
-  int lvl = decisionLevel();
-  if(first_decision_level < 0) 
-    first_decision_level = lvl-1;
-
-  //learnt_clause.clear();
-  Lit next = lit_Undef;
-
-
-  switch(op[0]) {
-  case 'e': next =  (x->equal(v)); break;
-  case 'n': next = ~(x->equal(v)); break;
-  case 'g': next =  (x->greater_than(v-1)); break;
-  case 'l': next =  (x->less_or_equal(v )); break;
-  }
-
-  forced_decisions.push(next);
-
-  uncheckedEnqueue(next);
 }
 
-int MiniSatSolver::startNewSearch()
+void WalksatSolver::post(const char* op, Walksat_Expression* x, int v)
+{
+}
+
+int WalksatSolver::startNewSearch()
 {
   std::cout << "start a new interuptable search" << std::endl;
   return 0;
 }
 
-int MiniSatSolver::getNextSolution()
+int WalksatSolver::getNextSolution()
 {
   std::cout << "seek next solution" << std::endl;
   return 0;
 }
 
-int MiniSatSolver::sacPreprocess(const int type)
+int WalksatSolver::sacPreprocess(const int type)
 {
   std::cout << "enforces singleton arc consistency" << std::endl;
   return 0;
 }
 
-void MiniSatSolver::setHeuristic(const char* var_heuristic, const char* val_heuristic, const int rand)
+void WalksatSolver::setHeuristic(const char* var_heuristic, const char* val_heuristic, const int rand)
 {
   std::cout << "set the variable/value ordering" << std::endl;
 }
 
-void MiniSatSolver::setFailureLimit(const int cutoff)
+void WalksatSolver::setFailureLimit(const int cutoff)
 {
-  fail_limit = cutoff;
 }
 
-void MiniSatSolver::setNodeLimit(const int cutoff)
+void WalksatSolver::setNodeLimit(const int cutoff)
 {
-  node_limit = cutoff;
 }
 
-void MiniSatSolver::setTimeLimit(const double cutoff)
+void WalksatSolver::setTimeLimit(const double cutoff)
 {
-  time_limit = cutoff;
 }
 
-void MiniSatSolver::setVerbosity(const int degree)
+void WalksatSolver::setVerbosity(const int degree)
 {
-  //std::cout << "set the verbosity" << std::endl;
-  verbosity = degree-1;
+  std::cout << "set the verbosity" << std::endl;
 }
 
-void MiniSatSolver::setRandomized(const int degree)
+void WalksatSolver::setRandomized(const int degree)
 {
-  //std::cout << "set the type of randomization" << std::endl;
-  if(degree) SimpSolver::setRandomized();
+  std::cout << "set the type of randomization" << std::endl;
 }
 
-void MiniSatSolver::setRandomSeed(const int seed)
+void WalksatSolver::setRandomSeed(const int seed)
 {
-  setRandomSeed((double)seed);
+  //setRandomSeed((double)seed);
 }
 
-bool MiniSatSolver::is_sat()
+bool WalksatSolver::is_sat()
 {
-  //return (result == 1 || nbSolutions);
-  //return (model.size() > 0);
-  return (cp_model != NULL);
+  return wsat.numsuccesstry > 0;
 }
 
-bool MiniSatSolver::is_unsat()
+bool WalksatSolver::is_unsat()
 {
-  return (result == 0 && nbSolutions == 0);
+  return false;
 }
 
-bool MiniSatSolver::is_opt()
+bool WalksatSolver::is_opt()
 {
-  return (result == 0 && nbSolutions);
+  return false;
 }
 
-void MiniSatSolver::printStatistics()
+void WalksatSolver::printStatistics()
 {
-  //std::cout << "print a bunch of statistics" << std::endl;
-  //printStats(minisolver);
-  printStats(*this);
+  wsat.print_statistics_final();
 }
 
-int MiniSatSolver::getBacktracks()
+int WalksatSolver::getBacktracks()
 {
   std::cout << "print the number of backtracks" << std::endl;
   return 0;
 }
 
-int MiniSatSolver::getNodes()
+int WalksatSolver::getNodes()
 {
-  //std::cout << "print the number of nodes" << std::endl;
-  //return NULL;
-  return decisions;
+  std::cout << "print the number of nodes" << std::endl;
+  return 0;
 }
 
-int MiniSatSolver::getFailures()
+int WalksatSolver::getFailures()
 {
   std::cout << "print the number of failures" << std::endl;
   return 0;
 }
 
-int MiniSatSolver::getChecks()
+int WalksatSolver::getChecks()
 {
   std::cout << "print the number of checks" << std::endl;
   return 0;
 }
 
-int MiniSatSolver::getPropags()
+int WalksatSolver::getPropags()
 {
   std::cout << "print the number of propags" << std::endl;
   return 0;
 }
 
-double MiniSatSolver::getTime()
+double WalksatSolver::getTime()
 {
-  //std::cout << "print the cpu time" << std::endl;
-  //return NULL;
   return cpuTime() - STARTTIME;
 }
 
-int MiniSatSolver::solveDimacs(const char *filename) {
-  gzFile in = gzopen(filename, "rb");
-  //parse_DIMACS(in, minisolver);
-  parse_DIMACS(in, *this);
-  
-  return solve();
-}
+// int WalksatSolver::solveDimacs(const char *filename) {
+//   return solve();
+// }
 
-void MiniSatSolver::displayClause(std::vector<Lit>& cl) {
+void WalksatSolver::displayClause(std::vector<Lit>& cl) {
   if(cl.size()) {
     for(unsigned int i=0; i<cl.size(); ++i) {
       std::cout << " " ;
@@ -2335,7 +2075,7 @@ void MiniSatSolver::displayClause(std::vector<Lit>& cl) {
   } else std::cout << "{}" ;
 }
 
-void MiniSatSolver::displayLiteral(Lit p) { 
+void WalksatSolver::displayLiteral(Lit p) { 
   int x = var(p); 
   if(x)
     _atom_to_domain[x]->print_lit(p,_atom_to_type[x]); 

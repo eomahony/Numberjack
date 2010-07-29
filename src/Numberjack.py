@@ -1794,9 +1794,15 @@ class Max(Predicate):
     def __init__(self, vars):
         Predicate.__init__(self, vars, "Max")
 
+    def get_min(self, solver=None):
+        return max([x.get_min(solver) for x in self.children])
+
+    def get_max(self, solver=None):
+        return max([x.get_max() for x in self.children])
+
     def decompose(self):
         X = self.children
-        M = Variable(max([x.get_min() for x in X]), max([x.get_max() for x in X]), 'Max')
+        M = Variable(self.get_min(), self.get_max(), 'Max')
         decomp = [M]
         decomp.extend([M >= x for x in X])
         decomp.append(Disjunction([M <= x for x in X]))
@@ -1818,9 +1824,15 @@ class Min(Predicate):
     def __init__(self, vars):
         Predicate.__init__(self, vars, "Min")
 
+    def get_min(self, solver=None):
+        return min([x.get_min(solver) for x in self.children])
+
+    def get_max(self, solver=None):
+        return  min([x.get_max(solver) for x in self.children])
+
     def decompose(self):
         X = self.children
-        M = Variable(min([x.get_min() for x in X]), min([x.get_max() for x in X]), 'Min')
+        M = Variable(self.get_min(), self.get_max(), 'Min')
         decomp = [M]
         decomp.extend([M <= x for x in X])
         decomp.append(Disjunction([M >= x for x in X]))

@@ -27,8 +27,8 @@ MAINDIR = $(CURDIR)/../..
 # paths
 #-----------------------------------------------------------------------------
 
-SCIPDIR         =       /Users/eomahony/ziboptsuite-1.2.0/scip-1.2.0
-#SCIPDIR         =       /Users/ehebrard/work/dev/scip/ziboptsuite-1.1.0/scip-1.1.0
+#SCIPDIR         =       /Users/eomahony/ziboptsuite-1.2.0/scip-1.2.0
+SCIPDIR         =       /Users/ehebrard/work/dev/ziboptsuite-1.2.0/scip-1.2.0
 #SCIPDIR         =       /Users/eomahony/Documents/workspace/ziboptsuite-1.1.0/scip-1.1.0 
 #SCIPDIR         =       /Users/eoinomahony/ProgressiveParty/ziboptsuite-1.1.0/scip-1.1.0
 
@@ -137,10 +137,10 @@ $(PYTHON)/_%.so: $(OBJDIR) $(SCIPLIBFILE) $(LPILIBFILE) $(MAINOBJFILES) $(OBJDIR
 	$(LINKCXX) $(BUNDLE) -flat_namespace -Wno-long-double $(MAINOBJFILES) $(LINKCXX_L)$(SCIPDIR)/lib $(LINKCXX_l)$(SCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(OBJSCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(LPILIB)$(LINKLIBSUFFIX)  $(OFLAGS) $(LPSLDFLAGS) $(LDFLAGS)  python/SCIP_wrap.o $(LINKCXX_o)$@
 
 scip_lib: $(SCIPDIR)/done.txt
-	cd  /Users/eomahony/ziboptsuite-1.2.0; make ZIMPL=false READLINE=false
+	cd  $(SCIPDIR)/..; make ZIMPL=false READLINE=false
 
 $(SCIPDIR)/done.txt: 
-	cd /Users/eomahony/ziboptsuite-1.2.0; make ZIMPL=false READLINE=false	
+	cd $(SCIPDIR)/..; make ZIMPL=false READLINE=false	
 	@echo finished | cat > $(SCIPDIR)/done.txt
 
 #---- EOF --------------------------------------------------------------------

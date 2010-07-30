@@ -23,6 +23,8 @@ PYVERSION	:=	$(shell python -V 2>&1 | \
 			-e s/" 2.6."*/2.6/ )
 
 
+
+
 ifeq ($(OSTYPE),darwin)
 BUNDLE = -bundle -undefined suppress 
 HACK = -I/usr/lib/gcc/i686-apple-darwin9/4.2.1/include

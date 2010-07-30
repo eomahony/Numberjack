@@ -51,5 +51,15 @@ clean_swig: $(TARGET_CLEAN_SWIG)
 	@echo $(SOL)/$(@:_clean_swig=)
 	cd $(SOL)/$(@:_clean_swig=); make clean_swig
 
-release: clean
-	tools/mk_release.py
+DATE := $(shell date '+%y-%m-%d')
+release: Numberjack.0.1.$(DATE).bz2
+
+Numberjack.0.1.$(DATE).bz2: Numberjack.0.1.$(DATE)/src
+	@echo Build archive
+	tar -cjf Numberjack.0.1.$(DATE).bz2 Numberjack.0.1.$(DATE)
+	rm -rf Numberjack.0.1.$(DATE)
+
+Numberjack.0.1.$(DATE)/src: $(SOLVERS) src/Numberjack.py 
+	@echo Export Numberjack version 0.1.$(DATE)
+	mkdir Numberjack.0.1.$(DATE)
+	git archive master --format=tar | tar -x -C ./Numberjack.0.1.$(DATE)

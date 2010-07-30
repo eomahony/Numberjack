@@ -25,7 +25,9 @@ for line in update.stdout:
             svn_revision = splitted[2][:-1]
 """
 
-subprocess.Popen(['date', '"+%y-%m-%d"'], stdout=subprocess.PIPE).wait()
+command = ['date', '"+%y-%m-%d"']
+print command
+subprocess.Popen(command, stdout=subprocess.PIPE).wait()
 
 suffix = version_number+'.'+release_number+'.'+svn_revision
 

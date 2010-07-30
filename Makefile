@@ -9,7 +9,10 @@ TARGET_INSTALL = $(TARGETS:=_install)
 TARGET_LOCAL = $(TARGETS:=_local)
 TARGET_CLEAN = $(TARGETS:=_clean)
 TARGET_CLEAN_SWIG = $(TARGETS:=_clean_swig)
+TARGET_RELEASE = $(TARGETS:=_release)
 
+DATE := $(shell date '+%y-%m-%d')
+ACCOUNT := $(shell users)
 
 
 all: $(TARGET_LIB)
@@ -34,6 +37,11 @@ local_install: $(TARGET_LIB) $(TARGET_LOCAL)
 	cp $(SOL)/$(@:_local=)/python/*.py* ./local_lib/
 	cp $(SOL)/$(@:_local=)/python/_*.so* ./local_lib/
 
+%_release: $(SOL)/%
+	cp $(SOL)/$(@:_release=)/python/*.i Numberjack.0.1.$(DATE)/$(SOL)/$(@:_release=)/python/
+	cp $(SOL)/$(@:_release=)/python/*.py Numberjack.0.1.$(DATE)/$(SOL)/$(@:_release=)/python/
+	cp $(SOL)/$(@:_release=)/python/*.cxx Numberjack.0.1.$(DATE)/$(SOL)/$(@:_release=)/python/
+
 
 uninstall:
 	python tools/uninstall.py 
@@ -51,15 +59,14 @@ clean_swig: $(TARGET_CLEAN_SWIG)
 	@echo $(SOL)/$(@:_clean_swig=)
 	cd $(SOL)/$(@:_clean_swig=); make clean_swig
 
-DATE := $(shell date '+%y-%m-%d')
-ACCOUNT := $(shell users)
+
 
 cluster: release
 	scp Numberjack.0.1.$(DATE).bz2 4c131:/home/$(ACCOUNT)/
 
-release: Numberjack.0.1.$(DATE).bz2
+release: local_install Numberjack.0.1.$(DATE).bz2
 
-Numberjack.0.1.$(DATE).bz2: Numberjack.0.1.$(DATE)/src
+Numberjack.0.1.$(DATE).bz2: Numberjack.0.1.$(DATE)/src $(TARGET_RELEASE)
 	@echo Build archive
 	rm -rf Numberjack.0.1.$(DATE)/solvers/scip
 	tar -cjf Numberjack.0.1.$(DATE).bz2 Numberjack.0.1.$(DATE)

@@ -598,6 +598,7 @@ public:
   void setFailureLimit(const int cutoff);  
   void setNodeLimit(const int cutoff);  
   void setTimeLimit(const double cutoff);
+  void setRestartLimit(const int cutoff);
   void setVerbosity(const int degree);
   void setRandomized(const int degree);
   void setRandomSeed(const int seed);

@@ -1911,7 +1911,7 @@ int WalksatSolver::solve()
   STARTTIME = cpuTime();
 
   wsat.initialize_statistics();
-  wsat.print_statistics_header();
+  if(wsat.verbosity) wsat.print_statistics_header();
   wsat.walk_solve();
 
   return is_sat();
@@ -1972,29 +1972,36 @@ void WalksatSolver::setHeuristic(const char* var_heuristic, const char* val_heur
 
 void WalksatSolver::setFailureLimit(const int cutoff)
 {
+  wsat.cutoff = cutoff;
 }
 
 void WalksatSolver::setNodeLimit(const int cutoff)
 {
+  wsat.cutoff = cutoff;
 }
 
 void WalksatSolver::setTimeLimit(const double cutoff)
 {
+  wsat.time_cutoff = cutoff;
+}
+
+void WalksatSolver::setRestartLimit(const int cutoff)
+{
+  wsat.numrun = cutoff;
 }
 
 void WalksatSolver::setVerbosity(const int degree)
 {
-  std::cout << "set the verbosity" << std::endl;
+  wsat.verbosity = degree;
 }
 
 void WalksatSolver::setRandomized(const int degree)
 {
-  std::cout << "set the type of randomization" << std::endl;
 }
 
 void WalksatSolver::setRandomSeed(const int seed)
 {
-  //setRandomSeed((double)seed);
+  srandom(seed);
 }
 
 bool WalksatSolver::is_sat()

@@ -42,7 +42,7 @@ WalksatAlgorithm::WalksatAlgorithm() {
   
 
   /* Printing options */
-
+  verbosity = 0;
   printonlysol = FALSE;
   printsolcnf = FALSE;
   printfalse = FALSE;
@@ -72,6 +72,7 @@ WalksatAlgorithm::WalksatAlgorithm() {
 
   /* Statistics */
   
+  time_cutoff = 0.0;
   //expertime;
   //flips_this_solution;
   //lowbad;		/* lowest number of bad clauses during try */
@@ -178,7 +179,10 @@ int WalksatAlgorithm::walk_solve() {
   abort_flag = FALSE;
   (void) elapsed_seconds();
   
-  while (! abort_flag && numsuccesstry < numsol && numtry < numrun) {
+  while (! abort_flag && 
+	 numsuccesstry < numsol && numtry < numrun &&
+	 (time_cutoff != 0.0 ||
+	  time_cutoff <= elapsed_seconds())) {
     numtry++;
     init(initfile, initoptions);
     update_statistics_start_try();
@@ -187,7 +191,7 @@ int WalksatAlgorithm::walk_solve() {
     if (superlinear) cutoff = base_cutoff * super(numtry);
     
     while((numfalse > target) && (numflip < cutoff)) {
-      print_statistics_start_flip();
+      if(verbosity) print_statistics_start_flip();
       numflip++;
       //flipatom((pickcode[heuristic])());
       flipatom(pickbest());
@@ -196,7 +200,7 @@ int WalksatAlgorithm::walk_solve() {
     update_and_print_statistics_end_try();
   }
   expertime = elapsed_seconds();
-  print_statistics_final();
+  if(verbosity) print_statistics_final();
   return status_flag;
 }
 
@@ -522,39 +526,41 @@ void WalksatAlgorithm::update_and_print_statistics_end_try(void)
 	r = 0;
     }
 
-    printf(" %9li %9i %9.2f %9.2f %9.2f %9" BIGINTSTR " %9i",
-	   lowbad,numfalse,avgfalse, std_dev_avgfalse,ratio_avgfalse,numflip, (numsuccesstry*100)/numtry);
-    if (numsuccesstry > 0){
+    if(verbosity) {  
+      printf(" %9li %9i %9.2f %9.2f %9.2f %9" BIGINTSTR " %9i",
+	     lowbad,numfalse,avgfalse, std_dev_avgfalse,ratio_avgfalse,numflip, (numsuccesstry*100)/numtry);
+      if (numsuccesstry > 0){
 	printf(" %9" BIGINTSTR , totalsuccessflip/numsuccesstry);
 	printf(" %11.2f", mean_x);
 	if (numsuccesstry > 1){
-	    printf(" %11.2f", std_dev_x);
+	  printf(" %11.2f", std_dev_x);
 	}
-    }
-    printf("\n");
-
-    if (printhist){
+      }
+      printf("\n");
+      
+      if (printhist){
 	printf("histogram: ");
 	for (j=HISTMAX-1; tailhist[j] == 0; j--);
 	for (i=0; i<=j; i++){
-	    printf(" %li(%i)", tailhist[i], i);
-	    if ((i+1) % 10 == 0) printf("\n           ");
+	  printf(" %li(%i)", tailhist[i], i);
+	  if ((i+1) % 10 == 0) printf("\n           ");
 	}
 	if (j==HISTMAX-1) printf(" +++");
 	printf("\n");
-    }
-
-    if (numfalse>0 && printfalse)
+      }
+      
+      if (numfalse>0 && printfalse)
 	print_false_clauses(lowbad);
-    if (printlow && (!printonlysol || numfalse >= target))
+      if (printlow && (!printonlysol || numfalse >= target))
 	print_low_assign(lowbad);
-
-    if(numfalse == 0 && countunsat() != 0){
+      
+      if(numfalse == 0 && countunsat() != 0){
 	fprintf(stderr, "Program error, verification of solution fails!\n");
 	exit(-1);
+      }
+      
+      fflush(stdout);
     }
-
-    fflush(stdout);
 }
 
 void WalksatAlgorithm::update_statistics_end_flip(void)

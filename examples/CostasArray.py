@@ -21,10 +21,11 @@ def printCostasTriangle(sequence):
 
 
 
-param = input({'solver':'Mistral', 'N':6})
+param = input({'solver':'Mistral', 'N':6, 'verbosity':1})
 
 sequence,model = costas_array(param['N'])
 solver = model.load(param['solver'])
+solver.setVerbosity(param['verbosity'])
 solver.solve()
     
 printCostasTriangle(sequence)

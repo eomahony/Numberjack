@@ -236,7 +236,7 @@ public:
   
 
   /* Printing options */
-
+  int verbosity;
   int printonlysol;
   int printsolcnf;
   int printfalse;
@@ -266,6 +266,7 @@ public:
 
   /* Statistics */
   
+  double time_cutoff;
   double expertime;
   BIGINT flips_this_solution;
   long int lowbad;		/* lowest number of bad clauses during try */

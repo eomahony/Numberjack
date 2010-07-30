@@ -2167,9 +2167,10 @@ void MiniSatSolver::save()
 
 void MiniSatSolver::post(const char* op, MiniSat_Expression* x, int v)
 {
-  if(op[1] == 't') 
+  if(op[1] == 't') {
     if(op[0] == 'g') ++v;
     else --v;
+  }
 
   int lvl = decisionLevel();
   if(first_decision_level < 0) 

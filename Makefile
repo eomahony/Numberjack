@@ -52,10 +52,16 @@ clean_swig: $(TARGET_CLEAN_SWIG)
 	cd $(SOL)/$(@:_clean_swig=); make clean_swig
 
 DATE := $(shell date '+%y-%m-%d')
+ACCOUNT := $(shell users)
+
+cluster: release
+	scp Numberjack.0.1.$(DATE).bz2 4c131:/home/$(ACCOUNT)/
+
 release: Numberjack.0.1.$(DATE).bz2
 
 Numberjack.0.1.$(DATE).bz2: Numberjack.0.1.$(DATE)/src
 	@echo Build archive
+	rm -rf Numberjack.0.1.$(DATE)/solvers/scip
 	tar -cjf Numberjack.0.1.$(DATE).bz2 Numberjack.0.1.$(DATE)
 	rm -rf Numberjack.0.1.$(DATE)
 

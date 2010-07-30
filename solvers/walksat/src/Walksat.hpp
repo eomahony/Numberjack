@@ -94,7 +94,7 @@ public:
   AbstractDomain *_dom_ptr;
   int offset;
 
-  OffsetDomain(Walksat_Expression *o, AbstractDomain *d, const int o);
+  OffsetDomain(Walksat_Expression *os, AbstractDomain *d, const int of);
 
   virtual int getval(int idx) const;
   virtual int getmin() const;

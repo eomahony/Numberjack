@@ -45,7 +45,7 @@ SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 SATDIR    = $(MAINDIR)/solvers/sat
 MCORE     = $(MAINDIR)/solvers/sat/minisat_src/core
 MTL       = $(MAINDIR)/solvers/sat/minisat_src/mtl
-WALKSRC   = $(MINDIR)/walksat_src
+WALKSRC   = $(MAINDIR)/solvers/sat/walksat_src
 CFLAGS    = -I$(MCORE) -I$(MTL) -I$(SATDIR)/src/ -I$(WALKSRC) $(HACK) -Wall -ffloat-store -O3 -D NDEBUG #-D_DEBUGWRAP
 LFLAGS    = -lz
 

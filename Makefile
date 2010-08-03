@@ -38,7 +38,7 @@ local_install: $(TARGET_LIB) $(TARGET_LOCAL)
 	cp $(SOL)/$(@:_local=)/python/_*.so* ./local_lib/
 
 %_release: $(SOL)/%
-	cp rm N$(SOL)/$(@:_release=)/python/*.i Numberjack.0.1.$(DATE)/$(SOL)/$(@:_release=)/python/
+	cp $(SOL)/$(@:_release=)/python/*.i Numberjack.0.1.$(DATE)/$(SOL)/$(@:_release=)/python/
 	cp $(SOL)/$(@:_release=)/python/*.py Numberjack.0.1.$(DATE)/$(SOL)/$(@:_release=)/python/
 	cp $(SOL)/$(@:_release=)/python/*.cxx Numberjack.0.1.$(DATE)/$(SOL)/$(@:_release=)/python/
 

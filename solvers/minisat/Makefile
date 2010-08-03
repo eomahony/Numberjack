@@ -48,9 +48,10 @@ SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 #-----------------------------------------------------------------------------
 
 
-MTL       = $(MINDIR)/minisat_src/mtl
-CORE      = $(MINDIR)/minisat_src/core
-CFLAGS    = -I$(MTL) $(HACK) -I$(CORE) -Wall -ffloat-store -O3 -D NDEBUG #-D_DEBUGWRAP
+SATDIR    = $(MAINDIR)/solvers/sat
+MTL       = $(SATDIR)/minisat_src/mtl
+CORE      = $(SATDIR)/minisat_src/core
+CFLAGS    = -I$(SATDIR)/src/ -I$(MTL) $(HACK) -I$(CORE) -Wall -ffloat-store -O3 -D NDEBUG #-D_DEBUGWRAP
 LFLAGS    = -lz
 
 
@@ -66,6 +67,10 @@ wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/MiniSat.o
 $(CORE)/%.o: $(CORE)/%.C 
 	@echo Compiling: "$@ ( $< )"
 	$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
+
+$(SATDIR)/obj/%.o: $(SATDIR)/src/%.cpp
+	@echo Compiling: "$@ ( $< )"
+	gcc $(CFLAGS) -fPIC -c -o $@ $<
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
@@ -92,15 +97,15 @@ $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	
 	$(SWIG) -c++ -python $<
-	python $(MAINDIR)/tools/finalize.py $(<:.i=.py)
+	python $(MAINDIR)/tools/finalize.py $(<:.i=.py) SatWrapper
 
 $(PYTHON)/%.i: $(SRCDIR)/%.hpp
-	python $(MAINDIR)/tools/mk_interface.py $<
+	python $(MAINDIR)/tools/mk_subinterface.py sat SatWrapper $<
 
 
-$(PYTHON)/_%.so: $(AUXOBJFILES) $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(CORE)/Solver.o 
+$(PYTHON)/_%.so: $(AUXOBJFILES) $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(CORE)/Solver.o $(SATDIR)/obj/SatWrapper.o
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(LFLAGS) $(AUXOBJFILES) $(MAINOBJFILES) $(CORE)/Solver.o python/MiniSat_wrap.o -o $@
+	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(LFLAGS) $(AUXOBJFILES) $(MAINOBJFILES) $(CORE)/Solver.o $(SATDIR)/obj/SatWrapper.o python/MiniSat_wrap.o -o $@
 
 
 

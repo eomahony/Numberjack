@@ -2346,7 +2346,7 @@ class Nogood(object):
 
 ## Generic Solver Class
 class NBJ_STD_Solver(object):
-    def __init__(self, Library, model=None, X=None, FD=False):
+    def __init__(self, Library, Wrapper, model=None, X=None, FD=False):
 
         self.decomposition_store = []
 
@@ -2354,7 +2354,10 @@ class NBJ_STD_Solver(object):
                               Library+"Solver", None)()
         
         self.Library = Library
+        
+        self.Wrapper = Wrapper
 
+        """
         self.ExpArray = getattr(sys.modules[Library],
                                 Library+"ExpArray", None)
         
@@ -2369,7 +2372,24 @@ class NBJ_STD_Solver(object):
         
         self.FloatVar = getattr(sys.modules[Library],
                                 Library+"_FloatVar", None)
+        """
+           
+        self.ExpArray = getattr(sys.modules[Wrapper],
+                                Wrapper+"ExpArray", None)
+        
+        self.IntArray = getattr(sys.modules[Wrapper],
+                                Wrapper+"IntArray", None)
+        
+        self.DoubleArray = getattr(sys.modules[Wrapper],
+                                   Wrapper+"DoubleArray", None)
+        
+        self.IntVar = getattr(sys.modules[Wrapper],
+                              Wrapper+"_IntVar", None)
+        
+        self.FloatVar = getattr(sys.modules[Wrapper],
+                                Wrapper+"_FloatVar", None)
 
+                     
         self.free_memory = getattr(sys.modules["_"+Library],
                                    "delete_"+Library+"Solver", None)
         
@@ -2479,15 +2499,16 @@ class NBJ_STD_Solver(object):
                         var = self.getIntVar(w_array, expr.ident)
 
                     expr.setVar(self.solver_id, self.Library, var, self)
-                    #expr.var = var # Record that the var has been created
                     expr.solver = self
                     return var
             else:
                 raise Error("Problem, no such type exists in converting models")
         else:
-            factory = getattr(sys.modules[self.Library],
-                              "%s_%s" % (self.Library, expr.get_operator()), None)
-            
+#            factory = getattr(sys.modules[self.Library],
+#                              "%s_%s" % (self.Library, expr.get_operator()), None)
+            factory = getattr(sys.modules[self.Wrapper],
+                              "%s_%s" % (self.Wrapper, expr.get_operator()), None)
+
             if factory is not None:
             
                 arguments = None
@@ -2515,14 +2536,8 @@ class NBJ_STD_Solver(object):
                         else:
                             arguments.append(param)
     
-                #print "\n%s_%s" % (self.Library, expr.get_operator())
-                #print arguments
-                #print factory
-    
                 var = factory(*arguments)
                 expr.setVar(self.solver_id, self.Library, var, self)
-                #expr.var = var
-                
                 expr.solver = self
                 return var
             else:

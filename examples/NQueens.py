@@ -14,7 +14,7 @@ def solve_queens(param):
     solver = model.load(param['solver'])
     solver.setHeuristic(param['heuristic'], param['value'])
     solver.solve()
-    if param['print'] == 'yes':
+    if solver.is_sat() and param['print'] == 'yes':
         print_chessboard(queens)
     print 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
 

@@ -3,23 +3,27 @@
 try:
     import sys
 
-    print sys.argv[1]
-
     solver = open(sys.argv[1], 'a')
-    
+
+    sol_name = sys.argv[1][:-3].split("/")[-1]
+    wrap_name = sol_name
+    if len(sys.argv) > 2: wrap_name = sys.argv[2]
+
     solver_code = '''
     
 import Numberjack
 
 class Solver(Numberjack.NBJ_STD_Solver):
     def __init__(self, model=None, X=None, FD=False):
-        Numberjack.NBJ_STD_Solver.__init__(self, "%s", model, X, FD)
+        Numberjack.NBJ_STD_Solver.__init__(self, "%s", "%s", model, X, FD)
     
-                ''' % (sys.argv[1][:-3].split("/")[1])
+                ''' % (sol_name,wrap_name)
 
     #for line in footer:
     #    solver.write(line)
     solver.write(solver_code)
+    solver.close()
+
 
 except:
     print 'abort'

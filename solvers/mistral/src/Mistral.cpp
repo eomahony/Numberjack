@@ -1689,9 +1689,10 @@ void MistralSolver::save()
 
 void MistralSolver::post(const char* op, Mistral_Expression* x, int v)
 {
-  if(op[1] == 't') 
+  if(op[1] == 't') {
     if(op[0] == 'g') ++v;
     else --v;
+  }
 
   int lvl = solver->level;
   solver->decision[lvl] = x->_self->varptr_; //currentDecision;
@@ -1725,9 +1726,10 @@ void MistralSolver::post(const char* op, Mistral_Expression* x, int v)
 
 void MistralSolver::deduce(const char* op, Mistral_Expression* x, int v) {
 
-  if(op[1] == 't') 
+  if(op[1] == 't') {
     if(op[0] == 'g') ++v;
     else --v;
+  }
 
   VariableInt *lastDecision = x->_self->varptr_;
 

@@ -163,14 +163,14 @@ WalksatAlgorithm::WalksatAlgorithm() {
   seed = (unsigned int)(time());
 #endif
   
-  //heuristic_names = { "random", "best", "tabu", "novelty", "rnovelty", "novelty+", "rnovelty+"};
-  heuristic_names[0] = "random";
-  heuristic_names[1] = "best";
-  heuristic_names[2] = "tabu";
-  heuristic_names[3] = "novelty";
-  heuristic_names[4] = "rnovelty";
-  heuristic_names[5] = "novelty+";
-  heuristic_names[6] = "rnovelty+";
+  //  heuristic_names = 
+  heuristic_names[0] = (char*)"random";
+  heuristic_names[1] = (char*)"best";
+  heuristic_names[2] = (char*)"tabu";
+  heuristic_names[3] = (char*)"novelty";
+  heuristic_names[4] = (char*)"rnovelty";
+  heuristic_names[5] = (char*)"novelty+";
+  heuristic_names[6] = (char*)"rnovelty+";
 }
 
 int WalksatAlgorithm::walk_solve() {
@@ -773,7 +773,7 @@ void WalksatAlgorithm::init(char initfile[], int initoptions)
 {
     int i;
     int j;
-    int thetruelit;
+    int thetruelit=0;
 #ifdef _WATCH
     int truelit1;
     int truelit2;
@@ -905,7 +905,7 @@ void WalksatAlgorithm::initprob(void)
     int j;
     int lastc;
     int nextc;
-    int *storeptr;
+    int *storeptr=NULL;
     int freestore;
     int lit;
 
@@ -1422,7 +1422,7 @@ int WalksatAlgorithm::pickbest(void)
 int WalksatAlgorithm::picknovelty(void)
 {
   int var, diff, birthdate;
-  int youngest, youngest_birthdate, best, second_best, best_diff, second_best_diff;
+  int youngest=0, youngest_birthdate=0, best=0, second_best=0, best_diff=0, second_best_diff=0;
   int tofix, clausesize, i;
 
   tofix = falsified[random()%numfalse];
@@ -1464,7 +1464,7 @@ int WalksatAlgorithm::pickrnovelty(void)
 {
   int var, diff, birthdate;
   int diffdiff;
-  int youngest, youngest_birthdate, best, second_best, best_diff, second_best_diff;
+  int youngest=0, youngest_birthdate=0, best=0, second_best=0, best_diff=0, second_best_diff=0;
   int tofix, clausesize, i;
 
   tofix = falsified[random()%numfalse];
@@ -1550,7 +1550,7 @@ int WalksatAlgorithm::pickrnovelty(void)
 int WalksatAlgorithm::picknoveltyplus(void)
 {
   int var, diff, birthdate;
-  int youngest, youngest_birthdate, best, second_best, best_diff, second_best_diff;
+  int youngest=0, youngest_birthdate=0, best=0, second_best=0, best_diff=0, second_best_diff=0;
   int tofix, clausesize, i;
 
   tofix = falsified[random()%numfalse];
@@ -1595,7 +1595,7 @@ int WalksatAlgorithm::pickrnoveltyplus(void)
 {
   int var, diff, birthdate;
   int diffdiff;
-  int youngest, youngest_birthdate, best, second_best, best_diff, second_best_diff;
+  int youngest=0, youngest_birthdate=0, best=0, second_best=0, best_diff=0, second_best_diff=0;
   int tofix, clausesize, i;
 
   tofix = falsified[random()%numfalse];

@@ -151,6 +151,8 @@ class WalksatAlgorithm {
 
 public: 
 
+  //const char* heuristic_names[7] = {"random", "best", "tabu", "novelty", "rnovelty", "novelty+", "rnovelty+"};
+
   
   //static int (*pickcode[])(void) =
   //{pickrandom, pickbest, picktabu, picknovelty, pickrnovelty,
@@ -341,8 +343,7 @@ public:
   int samplefreq;
 
 
-  char * heuristic_names[7];
-
+  const char* heuristic_names[7]; // = {"random", "best", "tabu", "novelty", "rnovelty", "novelty+", "rnovelty+"};
 
   WalksatAlgorithm();
   ~WalksatAlgorithm() {}

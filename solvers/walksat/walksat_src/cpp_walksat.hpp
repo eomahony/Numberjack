@@ -343,7 +343,7 @@ public:
   int samplefreq;
 
 
-  const char* heuristic_names[7]; // = {"random", "best", "tabu", "novelty", "rnovelty", "novelty+", "rnovelty+"};
+  const char* heuristic_names[7]; 
 
   WalksatAlgorithm();
   ~WalksatAlgorithm() {}

@@ -38,7 +38,7 @@ model = Model(
     ## exactly one change between each block
     [Sum([design[i][j-1] > design[i][j] for i in range(v)]) == 1 for j in range(1,n)],
     [Sum([design[i][j-1] < design[i][j] for i in range(v)]) == 1 for j in range(1,n)],
-    
+
     ## each pair can occur between 1 and v-k times 
     [pairs[index[i][j]][x] == (design[i][x] & design[j][x]) for i in range(v) for j in range(i) for x in range(n)],
     [pair_occurrence[index[i][j]] == Sum(pairs[index[i][j]])],
@@ -84,6 +84,14 @@ model = Model(
 
     
         
+if param['solver'] == 'Mistral':
+    for i in range(k,v):
+        for j in range(i):
+            for x in range(i+1,v):
+                for y in range (j,x):
+                    print (i,j), '>=', (x,y)
+                    print index[i][j], '>=', index[x][y]
+                    #model.add( pairs[index[i][j]] >= pairs[index[x][y]] )
 
 
 #import Mistral
@@ -99,8 +107,13 @@ solver.setVerbosity(2)
 if solver.solve():
 
     print design
-    for i,row in enumerate(pairs):
-        print first[i], row, last[i]
+
+    for i in range(v-1):
+        for j in range(i+1,v):
+            print str((i,j)).ljust(5), first[index[i][j]], pairs[index[i][j]], last[index[i][j]]
+
+    #for i,row in enumerate(pairs):
+    #    print first[i], row, last[i]
 
     the_design = [[] for y in range(n)]
     for y in range(n):
@@ -112,6 +125,9 @@ if solver.solve():
         for y in range(n):
             print str(the_design[y][x]+1).rjust(2),
         print ''
+
+else:
+    print 'unsat!'
 
 
 print solver.getNodes(), solver.getTime()

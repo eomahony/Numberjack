@@ -2748,15 +2748,15 @@ void Solver::setRestartNogood()
 
 void Solver::printPython() const
 {
-  //print( cout );
+  print( cout );
 
-  for(int i = 0; i < variables.size; ++i)
-    {
-      std::cout << "\t" ;
-      variables[i]->print(std::cout);
-      std::cout << std::endl;
-    }
-  //o << endl;
+//   for(int i = 0; i < variables.size; ++i)
+//     {
+//       std::cout << "\t" ;
+//       variables[i]->print(std::cout);
+//       std::cout << std::endl;
+//     }
+//   //o << endl;
 
 }
 

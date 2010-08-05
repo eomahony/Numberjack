@@ -95,6 +95,30 @@ DomainEncoding::~DomainEncoding() {
   delete [] _values;
 }
 
+int DomainEncoding::contain(const int value) const {
+  if(_lower > value || _upper < value) return false;
+  else if(_size == 2) return value == _lower || value == _upper;
+  else if (!_values ) return true;
+  int x = get_index_p(value);
+  return (_values[x] == value);
+}
+
+int DomainEncoding::next(const int value, const int index) const {
+  int nxt = value;
+  if(nxt < _upper) {
+    if(_size == 2) return _upper;
+    if(_values) {
+      if(index >= 0) {
+	if(index < _size) return _values[index+1];
+      } else {
+	int x = get_index_p(value);
+	if(x < _size) return _values[x+1];
+      }
+    } else return ++nxt;
+  }
+  return value;
+}
+
 Lit DomainEncoding::less_or_equal(const int value, const int index) const {
   if(_lower > value) return Lit_False;
   else if(_upper <= value) return Lit_True;
@@ -522,9 +546,17 @@ int SatWrapper_Expression::get_size() const
 int SatWrapper_Expression::next(const int v) const
 {
   int nxt = v;
-  while( ++nxt <= getmax() ) 
-    if(_solver->truth_value(equal(nxt)) != l_False) break;
-  if(nxt > getmax()) nxt = v;
+  do nxt = domain->next(nxt);
+  while( _solver->truth_value(equal(nxt)) == l_False );
+
+//   if(v < getmin()) nxt=getmin();
+//   while( ++nxt <= getmax() ) 
+//     {
+//       //nxt = domain->next(nxt);
+//       if(domain->contain(nxt) && _solver->truth_value(equal(nxt)) != l_False) break;
+//     }
+//   if(nxt > getmax()) nxt = v;
+
   return nxt;
 }
 

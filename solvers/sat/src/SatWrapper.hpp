@@ -79,6 +79,8 @@ public:
   virtual int getmin() const = 0;
   virtual int getmax() const = 0;
   virtual int getsize() const = 0;
+  virtual int contain(const int v) const = 0;
+  virtual int next(const int v, const int idx=-1) const = 0;
 
   virtual void encode(SatWrapperSolver *solver) {}
 
@@ -106,6 +108,8 @@ public:
   virtual int getmin() const;
   virtual int getmax() const;
   virtual int getsize() const {return _dom_ptr->getsize();}
+  virtual int contain(const int v) const {return _dom_ptr->contain(v-offset);}
+  virtual int next(const int v, const int idx=-1) const {return _dom_ptr->next(v-offset,-1);}
 
   virtual Lit less_or_equal(const int value, const int index) const;
   virtual Lit equal(const int value, const int index) const;
@@ -124,6 +128,8 @@ public:
   virtual int getmin() const;
   virtual int getmax() const;
   virtual int getsize() const {return _dom_ptr->getsize();}
+  virtual int contain(const int v) const {return (!(v%factor) && _dom_ptr->contain(v/factor));}
+  virtual int next(const int v, const int idx=-1) const {return factor * (_dom_ptr->next(v/factor, -1));}
 
   virtual Lit less_or_equal(const int value, const int index) const;
   virtual Lit equal(const int value, const int index) const;
@@ -143,6 +149,8 @@ public:
   virtual int getmin() const {return 0;}
   virtual int getmax() const {return 1;}
   virtual int getsize() const {return 2;}
+  virtual int contain(const int v) const {return v == 0 || v == 1;}
+  virtual int next(const int v, const int idx=-1) const {return (v ? v : 1);}
 
   virtual Lit less_or_equal(const int value, const int index) const;
   virtual Lit equal(const int value, const int index) const;
@@ -162,6 +170,8 @@ public:
   virtual int getmin() const {return 0;}
   virtual int getmax() const {return 1;}
   virtual int getsize() const {return 2;}
+  virtual int contain(const int v) const {return v == 0 || v == 1;}
+  virtual int next(const int v, const int idx=-1) const {return (v ? v : 1);}
 
   virtual Lit less_or_equal(const int value, const int index) const;
   virtual Lit equal(const int value, const int index) const;
@@ -179,6 +189,8 @@ public:
   virtual int getmin() const {return value;}
   virtual int getmax() const {return value;}
   virtual int getsize() const {return 1;}
+  virtual int contain(const int v) const {return v == value;}
+  virtual int next(const int v, const int idx=-1) const {return v;}
 
   virtual Lit less_or_equal(const int v, const int index) const; 
   virtual Lit equal(const int v, const int index) const; 
@@ -267,6 +279,8 @@ public:
   virtual int getmin() const {return _lower;}
   virtual int getmax() const {return _upper;}
   virtual int getsize() const {return _size;}
+  virtual int contain(const int v) const;
+  virtual int next(const int v, const int idx=-1) const;
 
   void encode(SatWrapperSolver *solver);
 

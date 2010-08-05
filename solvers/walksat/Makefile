@@ -47,7 +47,6 @@ MCORE     = $(MAINDIR)/solvers/sat/minisat_src/core
 MTL       = $(MAINDIR)/solvers/sat/minisat_src/mtl
 WALKSRC   = $(MAINDIR)/solvers/sat/walksat_src
 CFLAGS    = -I$(MCORE) -I$(MTL) -I$(SATDIR)/src/ -I$(WALKSRC) $(HACK) -Wall -ffloat-store -O3 -D NDEBUG #-D_DEBUGWRAP
-LFLAGS    = -lz
 
 
 #-----------------------------------------------------------------------------
@@ -100,6 +99,6 @@ $(PYTHON)/%.i: $(SRCDIR)/%.hpp
 
 $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(WALKSRC)/cpp_walksat.o $(SATDIR)/obj/SatWrapper.o
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(PYTHON)/Walksat_wrap.o $(WALKSRC)/cpp_walksat.o $(SATDIR)/obj/SatWrapper.o -o $@
+	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(PYTHON)/Walksat_wrap.o $(WALKSRC)/cpp_walksat.o $(SATDIR)/obj/SatWrapper.o -o $@
 
 #---- EOF --------------------------------------------------------------------

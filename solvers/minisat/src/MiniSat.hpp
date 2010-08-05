@@ -99,8 +99,6 @@ public:
   int getFailures();
   int getPropags();
   double getTime();
-
-  int solveDimacs(const char*);
 };
 
 

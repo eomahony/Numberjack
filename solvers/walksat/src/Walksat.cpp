@@ -109,7 +109,11 @@ void WalksatSolver::initialise()
 
   for(i = 0;i < wsat.numclause;i++)
     {
-      //if(!processClause(clause_base[i],clause)) {
+//       //if(!processClause(clause_base[i],clause)) {
+
+//       std::cout << "clause " << (i+1) << " out of " << wsat.numclause << std::endl;
+//       displayClause(clause_base[i]);
+
       wsat.size[i] = -1;
       if (freestore < MAXLENGTH)
 	{
@@ -138,7 +142,7 @@ void WalksatSolver::initialise()
       //} else ++simplified;
     }
   //wsat.numclause -= simplified;
-  
+
   for(i = 0;i < 2*MAXATOM+1;i++)
     {
       if (freestore < wsat.numoccurence[i])
@@ -152,7 +156,7 @@ void WalksatSolver::initialise()
       storeptr += wsat.numoccurence[i];
       wsat.numoccurence[i] = 0;
     }
-  
+
   for(i = 0;i < wsat.numclause;i++)
     {
       for(j = 0;j < wsat.size[i];j++)

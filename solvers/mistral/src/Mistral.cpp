@@ -87,8 +87,12 @@ int Mistral_Expression::getVariableId() const
 
 int Mistral_Expression::next(int v)
 {
-  int nxt = _self->varptr_->getNext(v);
+  int nxt = v;
+
+  if(_self->varptr_) 
+    nxt = _self->varptr_->getNext(v);
   if(nxt == NOVAL) nxt = v;
+
   return nxt;
 }
 
@@ -314,6 +318,81 @@ Mistral_Expression* Mistral_Max::add(MistralSolver *solver, bool top_level) {
 
   return this;
 }
+
+
+Mistral_Table::Mistral_Table( MistralExpArray& vars, MistralIntArray& tuples, const char* type ) 
+  : Mistral_Expression() 
+{
+  _vars = vars;
+  _tuples = tuples;
+
+#ifdef _DEBUGWRAP
+  std::cout << "creating a table constraint" << std::endl;
+#endif
+  
+  spin = (!strcmp(type,"support"));
+
+}
+
+Mistral_Table::Mistral_Table( Mistral_Expression *var1, Mistral_Expression *var2, 
+			      MistralIntArray& tuples, const char* type ) 
+  : Mistral_Expression() 
+{
+  _vars.add(var1);
+  _vars.add(var2); 
+  _tuples = tuples;
+
+#ifdef _DEBUGWRAP
+  std::cout << "creating a binary table constraint" << std::endl;
+#endif
+
+  spin = (!strcmp(type,"support"));
+
+}
+
+Mistral_Table::~Mistral_Table()
+{
+
+#ifdef _DEBUGWRAP
+  std::cout << "delete alldiff" << std::endl;
+#endif
+
+}
+
+Mistral_Expression* Mistral_Table::add(MistralSolver *solver, bool top_level) {
+
+  if(!has_been_added()) {
+
+#ifdef _DEBUGWRAP
+    std::cout << "add a table constraint" << std::endl;
+#endif
+
+    _solver = solver;
+    
+    int i, j, n=_vars.size(), m=_tuples.size();  
+    for(i=0; i<n; ++i) 
+      _vars.get_item(i)->add(_solver,false);
+
+    BuildObject **scope = new BuildObject*[n+1];
+    for(i=0; i<n; ++i) scope[i] = _vars.get_item(i)->_self;
+    _self = CSP::_Table(scope, n, spin);
+
+    BuildObjectTable* tabptr_ = (BuildObjectTable*)(((BuildObjectPredicate*)_self)->relation);
+						    
+    int tuple[n];
+    for(int i=0; i<m; ++i) {
+      j = (i%n);
+      tuple[j] = _tuples.get_item(i);
+      if(j == n-1) tabptr_->add(tuple);
+    }
+    
+    if( top_level )
+      _solver->model->add( _self );
+  }
+
+  return this;
+}
+
 
 
 Mistral_AllDiff::Mistral_AllDiff( MistralExpArray& vars ) 

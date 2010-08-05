@@ -160,6 +160,22 @@ public:
   virtual Mistral_Expression* add(MistralSolver *solver, bool top_level);
 };
 
+class Mistral_Table : public Mistral_Expression
+{
+private:
+  MistralExpArray _vars;
+  MistralIntArray _tuples;
+  int spin;
+
+public:
+  Mistral_Table(MistralExpArray& vars, MistralIntArray& tuples, const char* type); 
+  Mistral_Table(Mistral_Expression *var1, Mistral_Expression *var2, MistralIntArray& tuples, const char* type);
+  virtual ~Mistral_Table();
+  
+  virtual void add(MistralIntArray& tuple);
+  virtual Mistral_Expression* add(MistralSolver *solver, bool top_level);
+};
+
 class Mistral_Gcc : public Mistral_Expression
 {
 private:

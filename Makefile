@@ -62,14 +62,15 @@ clean_swig: $(TARGET_CLEAN_SWIG)
 
 
 cluster: release
-	scp Numberjack.0.1.$(DATE).bz2 4c131:/home/$(ACCOUNT)/
+	scp Numberjack.0.1.$(DATE).zip 4c131:/home/$(ACCOUNT)/
 
-release: local_install Numberjack.0.1.$(DATE).bz2
+release: local_install Numberjack.0.1.$(DATE).zip
 
-Numberjack.0.1.$(DATE).bz2: Numberjack.0.1.$(DATE)/src $(TARGET_RELEASE)
+Numberjack.0.1.$(DATE).zip: Numberjack.0.1.$(DATE)/src $(TARGET_RELEASE)
 	@echo Build archive
 	rm -rf Numberjack.0.1.$(DATE)/solvers/scip
-	tar -cjf Numberjack.0.1.$(DATE).bz2 Numberjack.0.1.$(DATE)
+	#tar -cjf Numberjack.0.1.$(DATE).bz2 Numberjack.0.1.$(DATE)
+	zip -r Numberjack.0.1.$(DATE).zip Numberjack.0.1.$(DATE)
 	rm -rf Numberjack.0.1.$(DATE)
 
 Numberjack.0.1.$(DATE)/src: $(SOLVERS) src/Numberjack.py 

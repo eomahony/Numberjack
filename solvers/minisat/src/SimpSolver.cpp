@@ -86,10 +86,10 @@ lbool SimpSolver::solve(const vec<Lit>& assumps, bool do_simp, bool turn_off_sim
     lbool     result = l_True;
 
     do_simp &= use_simplification;
-
-    do_simp = false;
+    do_simp &= (decisionLevel() == 0);
 
     if (do_simp){
+
         // Assumptions must be temporarily frozen to run variable elimination:
         for (int i = 0; i < assumps.size(); i++){
             Var v = var(assumps[i]);

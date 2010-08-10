@@ -969,6 +969,7 @@ namespace Mistral {
 
     /**@name Parameters*/
     //@{ 
+    int type_;
     int domsize_;
     int weight_;
     PredicateDisjunctive **disjuncts;
@@ -977,15 +978,28 @@ namespace Mistral {
     /**@name Utils*/
     //@{ 
     inline bool operator<( VarSelectorOSP_DoBoolWeight& x ) const { 
-      return (domsize_ * x.weight_ < x.domsize_ * weight_) ;
+      return (type_ < x.type_ || (type_ == x.type_ && (domsize_ * x.weight_ < x.domsize_ * weight_))) ;
     }
     inline void operator=( VarSelectorOSP_DoBoolWeight& x ) { 
       weight_ = x.weight_; domsize_ = x.domsize_; 
     }
     inline void operator=( VariableInt    *x ) 
     { 
-      domsize_ = disjuncts[x->id]->domsize();
+
+      //x->print(std::cout);
+
+      int idx = x->id;
+      if(disjuncts[idx]) {
+	type_ = 1;
+	domsize_ = disjuncts[idx]->domsize();
+      } else {
+	domsize_ = x->domsize();
+	type_ = 2*(domsize_ > 2);
+      }
       weight_ = x->weight;
+
+      //std::cout << " dom = " << domsize_ << " weight = " << weight_ << std::endl;
+
     }
     //@}  
 

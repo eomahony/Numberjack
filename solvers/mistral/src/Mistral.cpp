@@ -393,6 +393,10 @@ Mistral_Expression* Mistral_Table::add(MistralSolver *solver, bool top_level) {
   return this;
 }
 
+void Mistral_Table::add(MistralIntArray& tuple) {
+  for(int i=0; i<tuple.size(); ++i)
+    _tuples.add(tuple.get_item(i));
+}
 
 
 Mistral_AllDiff::Mistral_AllDiff( MistralExpArray& vars ) 

@@ -11,8 +11,6 @@
 
 #include <vector>
 
-#define INFINITY INT_MAX
-
 const int UNSAT     =  0;
 const int SAT       =  1;
 const int UNKNOWN   =  2;
@@ -25,6 +23,13 @@ const int GLUBY     =  2;
    Expression (Used to encode variables & constraints)
 */
 class MipWrapperSolver;
+class MipWrapper_Expression;
+
+typedef struct linear_con_arg{
+  MipWrapper_Expression *expr;
+  double coef;
+  double offset;
+} LINEAR_ARG;
 
 class MipWrapper_Expression{    
 public:
@@ -55,7 +60,12 @@ public:
   virtual ~MipWrapper_Expression();
 
   virtual void encode(MipWrapperSolver* solver);
-  virtual MipWrapper_Expression* add(MipWrapperSolver *solver, bool top_level);
+  virtual MipWrapper_Expression* add(MipWrapperSolver *solver,
+				     bool top_level);
+  virtual LINEAR_ARG* for_linear();
+  virtual int for_linear_size();
+  
+  virtual double get_whatever_value();
 };
 
 /**
@@ -82,7 +92,8 @@ public:
   MipWrapper_FloatVar();
   MipWrapper_FloatVar(const double lb, const double ub);
   MipWrapper_FloatVar(const double lb, const double ub, const int ident);
-  double get_value() const;
+  virtual double get_value();
+  virtual double get_whatever_value();
 };
 
 class MipWrapper_IntVar : public MipWrapper_Expression {
@@ -96,7 +107,8 @@ class MipWrapper_IntVar : public MipWrapper_Expression {
     MipWrapper_IntVar(MipWrapperIntArray& values, const int ident);
     virtual void encode(MipWrapperSolver* solver);
     virtual MipWrapper_Expression* add(MipWrapperSolver* solver, bool top_level);
-    int get_value() const;
+    virtual int get_value();
+    virtual double get_whatever_value();
 };
 
 class MipWrapper_Flow : public MipWrapper_FloatVar{
@@ -159,6 +171,10 @@ public:
 
   virtual ~MipWrapper_Sum();
   virtual MipWrapper_Expression* add(MipWrapperSolver *solver, bool top_level);
+  virtual LINEAR_ARG *for_linear();
+  virtual int for_linear_size();
+  
+  virtual double get_value();
 };
 
 class MipWrapper_add: public MipWrapper_Sum{
@@ -291,32 +307,9 @@ public:
   virtual ~MipWrapper_Maximise();
 };
 
-
-/**
- * View super class
- */
-class LinearView : public MipWrapper_Expression{
-  
-};
-
-
-/**
- * View to handle such things as X+4
- */
-class SumView : public MipWrapper_Expression{
-  
-};
-
-/**
- * View to handle things such X*4
- */
-class ProductView : public MipWrapper_Expression{
-  
-};
-
 class LinearConstraint{
   
-  protected:
+  public:
     /**
      * The variables in the scope of the constraint
      */
@@ -337,8 +330,6 @@ class LinearConstraint{
      */
     double _rhs;
     
-  public:
-    
     /**
      * Creates an empty linear constraint object
      */
@@ -356,15 +347,9 @@ class LinearConstraint{
 			  double coef,
 			  bool use_encoding=true);
     
-    virtual void add_coef(MipWrapper_Sum* expr,
-			  double coef);
-    
-    /**
-     * Add in a coefficient that are views (some reformulation required)
-     */
-    virtual void add_coef(LinearView* expr, double coef);
-    virtual void add_coef(ProductView* expr, double coef);
-    virtual void add_coef(SumView *expr, double coef);
+    virtual void add_coef(LINEAR_ARG* arg_struct,
+			  double coef,
+			  bool use_encoding);
     
     /**
      * Prints the linear constraint
@@ -377,8 +362,7 @@ class LinearConstraint{
 /**
    The solver itself
 */
-class MipWrapperSolver
-{
+class MipWrapperSolver{
 private:
   std::vector< MipWrapper_Expression*> _exprs;
   std::vector< MipWrapperIntArray * > _int_array;
@@ -437,6 +421,9 @@ public:
   int getChecks();
   int getPropags();
   double getTime();
+  
+  // Value pass back stuff
+  virtual double get_value(void *ptr);
 
 };
 

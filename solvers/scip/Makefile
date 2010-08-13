@@ -27,8 +27,8 @@ MAINDIR = $(CURDIR)/../..
 # paths
 #-----------------------------------------------------------------------------
 
-#SCIPDIR         =       /Users/eomahony/ziboptsuite-1.2.0/scip-1.2.0
-SCIPDIR         =       /Users/ehebrard/work/dev/ziboptsuite-1.2.0/scip-1.2.0
+SCIPDIR         =       /Users/eomahony/ziboptsuite-1.2.0/scip-1.2.0
+#SCIPDIR         =       /Users/ehebrard/work/dev/ziboptsuite-1.2.0/scip-1.2.0
 #SCIPDIR         =       /Users/eomahony/Documents/workspace/ziboptsuite-1.1.0/scip-1.1.0 
 #SCIPDIR         =       /Users/eoinomahony/ProgressiveParty/ziboptsuite-1.1.0/scip-1.1.0
 
@@ -87,6 +87,9 @@ WXXFILE		= 	$(PYTHON)/$(MAINNAME)_wrap.cxx
 WOBFILE		= 	$(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 
+MIPDIR          =       $(MAINDIR)/solvers/mip
+MIPFLAGS        =       -I$(MIPDIR)/src/ 
+
 
 #-----------------------------------------------------------------------------
 # Rules
@@ -115,26 +118,34 @@ clean_all: clean clean_swig
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 		@echo "-> compiling $@"
-		$(CXX) $(NFLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) -fPIC -c $< $(CXX_o)$@
+		$(CXX) $(NFLAGS) $(MIPFLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) -fPIC -c $< $(CXX_o)$@
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 		@echo "-> compiling $@"
-		$(CXX) $(FLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) -I$(PYLIB) -fPIC -c $< $(CXX_o)$@
+		$(CXX) $(MIPFLAGS) $(FLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) -I$(PYLIB) -fPIC -c $< $(CXX_o)$@
 
 #$(PYTHON)/%.py: $(PYTHON)/%.i
 #	python tools/finalize.py $(<:.i=.py)
 
+#$(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
+#	$(SWIG) -c++ -python $<
+#	python $(MAINDIR)/tools/finalize.py $(<:.i=.py)
+
+#$(PYTHON)/%.i: $(SRCDIR)/%.hpp
+#	python $(MAINDIR)/tools/mk_interface.py $<
+
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
+	@echo "-> compiling $@"	
 	$(SWIG) -c++ -python $<
-	python $(MAINDIR)/tools/finalize.py $(<:.i=.py)
+	python $(MAINDIR)/tools/finalize.py $(<:.i=.py) MipWrapper
 
 $(PYTHON)/%.i: $(SRCDIR)/%.hpp
-	python $(MAINDIR)/tools/mk_interface.py $<
+	python $(MAINDIR)/tools/mk_subinterface.py mip MipWrapper $<
 
 
-$(PYTHON)/_%.so: $(OBJDIR) $(SCIPLIBFILE) $(LPILIBFILE) $(MAINOBJFILES) $(OBJDIR)/%.o $(PYTHON)/%_wrap.o
+$(PYTHON)/_%.so: $(OBJDIR) $(SCIPLIBFILE) $(LPILIBFILE) $(MAINOBJFILES) $(OBJDIR)/%.o  $(MIPDIR)/obj/MipWrapper.o $(PYTHON)/%_wrap.o
 	@echo "-> linking $@"
-	$(LINKCXX) $(BUNDLE) -flat_namespace -Wno-long-double $(MAINOBJFILES) $(LINKCXX_L)$(SCIPDIR)/lib $(LINKCXX_l)$(SCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(OBJSCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(LPILIB)$(LINKLIBSUFFIX)  $(OFLAGS) $(LPSLDFLAGS) $(LDFLAGS)  python/SCIP_wrap.o $(LINKCXX_o)$@
+	$(LINKCXX) $(BUNDLE) -flat_namespace -Wno-long-double $(MAINOBJFILES) $(LINKCXX_L)$(SCIPDIR)/lib $(LINKCXX_l)$(SCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(OBJSCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(LPILIB)$(LINKLIBSUFFIX)  $(OFLAGS) $(LPSLDFLAGS) $(LDFLAGS) $(MIPDIR)/obj/MipWrapper.o python/SCIP_wrap.o $(LINKCXX_o)$@
 
 scip_lib: $(SCIPDIR)/done.txt
 	cd  $(SCIPDIR)/..; make ZIMPL=false READLINE=false

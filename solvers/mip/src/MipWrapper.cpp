@@ -13,6 +13,7 @@ void MipWrapper_Expression::initialise(bool c){
   _ident = nbj_ident = -1;
   _expr_encoding = NULL;
   _solver = NULL;
+  _var = NULL;
   _continuous = c;
 }
 
@@ -41,7 +42,7 @@ MipWrapper_Expression::~MipWrapper_Expression(){}
 
 void MipWrapper_Expression::encode(MipWrapperSolver *solver){
   if(!_expr_encoding) {
-    DBG("Creating an encoding with over %d vars\n", get_size());
+    DBG("Creating an encoding %s\n", "");
     
     _expr_encoding = new MipWrapper_Expression*[get_size()];
     _expr_encoding -= (int)_lower;
@@ -54,8 +55,8 @@ void MipWrapper_Expression::encode(MipWrapperSolver *solver){
       eq_con->add_coef(_expr_encoding[i], i);
     }
     eq_con->add_coef(this, -1, false);
-    _solver->_constraints.push_back(con);
-    _solver->_constraints.push_back(eq_con);
+    solver->_constraints.push_back(con);
+    solver->_constraints.push_back(eq_con);
   }
 }
 
@@ -72,6 +73,18 @@ MipWrapper_Expression* MipWrapper_Expression::add(MipWrapperSolver *solver,
   }
   return this;
 }
+
+double MipWrapper_Expression::get_whatever_value(){ return 0; }
+
+LINEAR_ARG* MipWrapper_Expression::for_linear(){
+  LINEAR_ARG *larg = (LINEAR_ARG*) calloc(1, sizeof(LINEAR_ARG));
+  larg->expr = this;
+  larg->coef = 1;
+  larg->offset = 0;
+  return larg;
+}
+
+int MipWrapper_Expression::for_linear_size(){ return 1; }
 
 /**
  * IntVar stuff
@@ -149,10 +162,11 @@ void MipWrapper_IntVar::encode(MipWrapperSolver* solver){
   }
 }
 
-int MipWrapper_IntVar::get_value() const{
-  //TODO: Fix me!
-  return 0;
+int MipWrapper_IntVar::get_value(){
+  return (int)(round(_solver->get_value(_var)));
 }
+
+double MipWrapper_IntVar::get_whatever_value(){return get_value();}
 
 /**
  * FloatVar stuff
@@ -181,10 +195,8 @@ MipWrapper_FloatVar::MipWrapper_FloatVar(const double lb, const double ub, const
   DBG("Crearing continuous variable (%f .. %f)\n", _upper, _lower);
 }
 
-double MipWrapper_FloatVar::get_value() const{
-  //TODO: fix me
-  return 0.0;
-}
+double MipWrapper_FloatVar::get_value(){ return _solver->get_value(_var); }
+double MipWrapper_FloatVar::get_whatever_value(){ return get_value(); }
 
 /**
  * Constraint stuff
@@ -371,7 +383,6 @@ MipWrapper_Sum::MipWrapper_Sum()
 }
 
 void MipWrapper_Sum::initialise() {
-
   DBG("creating sum: size of params: %d\n", _vars.size());
   for(int i = 0; i < this->_vars.size(); ++i){
     int weight = this->_weights.get_item(i);
@@ -385,7 +396,7 @@ void MipWrapper_Sum::initialise() {
   }
   _lower += _offset;
   _upper += _offset;
-  DBG("Intermediate variable has domain [%f..%f]\n", _lower, _upper);    
+  DBG("Sum has domain [%f..%f]\n", _lower, _upper);    
 }
 
 MipWrapper_Sum::~MipWrapper_Sum(){}
@@ -400,29 +411,37 @@ MipWrapper_Expression* MipWrapper_Sum::add(MipWrapperSolver *solver,
 					   bool top_level){
   if(!this->has_been_added()){
     DBG("Adding sum constraint %s\n", "");
-    //MipWrapper_Expression::add(solver, false);
-    
     for(int i = 0; i < _vars.size(); ++i)
       _vars.set_item(i, _vars.get_item(i)->add(solver, false));
-    
     if(!top_level){
-      
-      //LinearConstraint *con = new LinearConstraint(-_offset, -_offset);
-      //con->add_coef(this, -1);
-      //for(int i = 0; i < _vars.size(); ++i){
-      //	_vars.set_item(i, _vars.get_item(i)->add(solver, false));
-      //	con->add_coef(_vars.get_item(i), _weights.get_item(i));	
-      //}
-      //solver->_constraints.push_back(con);
-      
+      // Do nothing at the moment
     } else {
-      std::cout << "Warning SUM constraint on top level not supporeted"
+      std::cout << "Warning SUM constraint on top level not supported"
 		<< std::endl;
       exit(1);
     }
   }
   return this;
 }
+
+double MipWrapper_Sum::get_value(){
+    double res = 0;
+    for(int i = 0; i < _vars.size(); ++i)
+        res += _vars.get_item(i)->get_whatever_value() * _weights.get_item(i);
+    return res;
+}
+
+LINEAR_ARG* MipWrapper_Sum::for_linear(){
+  LINEAR_ARG* largs = (LINEAR_ARG*) calloc(_vars.size(), sizeof(LINEAR_ARG));
+  for(int i = 0; i < _vars.size(); ++i){
+    largs[i].expr = _vars.get_item(i);
+    largs[i].coef = _weights.get_item(i);
+    largs[i].offset = _offset;
+  }
+  return largs;
+}
+
+int MipWrapper_Sum::for_linear_size(){ return _vars.size(); }
 
 /* Binary operators */
 
@@ -1037,6 +1056,8 @@ double MipWrapperSolver::getTime(){
   return 0;
 }
 
+double MipWrapperSolver::get_value(void *ptr){ return 0; }
+
 /**
  * Creates an empty linear constraint object
  */
@@ -1048,30 +1069,29 @@ LinearConstraint::~LinearConstraint(){}
 void LinearConstraint::add_coef(MipWrapper_Expression* expr,
 				double coef,
 				bool use_encoding){
-  DBG("Adding in expression to linear constraint type: %s\n",
-      typeid(expr).name());
-  if( use_encoding && expr->_expr_encoding != NULL){
+  DBG("Beginning to add in linear arguments\n%s", "");
+  
+  LINEAR_ARG* larg = expr->for_linear();
+  _lhs -= larg->offset * coef;
+  _rhs -= larg->offset * coef;
+  for(int i = 0; i < expr->for_linear_size(); ++i)
+    add_coef(larg+i, coef, use_encoding);
+}
+
+void LinearConstraint::add_coef(LINEAR_ARG* arg_struct,
+				double coef,
+				bool use_encoding){
+  DBG("Adding in expression to linear constraint %s\n", "");
+  if( use_encoding && arg_struct->expr->_expr_encoding != NULL){
     DBG("Adding in expression encoding %s\n", "");
-    for(int i = expr->_lower; i <= expr->_upper; ++i )
-      if(expr->_expr_encoding[i] != NULL) add_coef(expr->_expr_encoding[i],
-						   i*coef);
+    for(int i = arg_struct->expr->_lower; i <= arg_struct->expr->_upper; ++i )
+      if(arg_struct->expr->_expr_encoding[i] != NULL)
+	add_coef(arg_struct->expr->_expr_encoding[i], arg_struct->coef*i*coef);
   } else {
-    _variables.push_back(expr);
-    _coefficients.push_back(coef);
-  }
+    _variables.push_back(arg_struct->expr);
+    _coefficients.push_back(arg_struct->coef*coef);
+  }			  
 }
-
-void LinearConstraint::add_coef(MipWrapper_Sum* expr, double coef){
-  DBG("Adding in sum to linear constraint %s\n", "");
-  _lhs -= expr->_offset;
-  _rhs -= expr->_offset;
-  for(int i = 0; i < expr->_vars.size(); ++i)
-    add_coef(expr->_vars.get_item(i), expr->_weights.get_item(i)*coef);
-}
-
-void LinearConstraint::add_coef(LinearView* expr, double coef){}
-void LinearConstraint::add_coef(SumView* expr, double coef){}
-void LinearConstraint::add_coef(ProductView* expr, double coef){}
     
 /**
  * Prints the linear constraint

@@ -1119,7 +1119,6 @@ void WeighterRestartNogood::notifyRestart()
 
 
   Vector< Literal > clause;
-
   while( j<m && path[j] != choices[i] )
     ++j;
 
@@ -1161,6 +1160,63 @@ void WeighterRestartNogood::notifyRestart()
 //   if( path.size )
 //     exit(0);
 
+  path.clear();
+  lvl = 0;
+}
+
+
+WeighterRestartGenNogood::WeighterRestartGenNogood( Solver* s ) 
+  : Weighter(s), decision(s->decision.stack_)
+{
+  choices = new int[s->numvars+1];
+  lvl = 0;
+}
+
+WeighterRestartGenNogood::~WeighterRestartGenNogood() 
+{  
+  delete [] choices;
+}
+
+void WeighterRestartGenNogood::notifyFailure( Constraint *con )
+{
+
+  lvl = level;
+  if( level > init_level ) {
+    int failed = choices[level];
+    while( path.back() != failed ) {
+      path.pop();
+    }
+  } else {
+    path.clear();
+  }
+}
+
+
+void WeighterRestartGenNogood::notifyRestart() 
+{
+  int i=1, j=0, n=lvl, m=path.size;
+  choices[n] = 0;
+  Vector< Literal > clause;
+
+  while( j<m && path[j] != choices[i] )
+    ++j;
+
+  // find first disagreemnet between path and decision
+  while( i<n && choices[i] == path[j] ) {
+    ++i;
+    ++j;
+    // loop through all right 
+    while( j<m && path[j] != choices[i] ) {
+      clause.clear();
+      for(int x=1; x<i; ++x) {
+	clause.push(choices[x]);
+      }
+      clause.push( path[j] );
+      ++j;
+
+      //base->add( );
+    }
+  }
   path.clear();
   lvl = 0;
 }

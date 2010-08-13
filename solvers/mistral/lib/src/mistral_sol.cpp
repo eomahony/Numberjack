@@ -134,6 +134,9 @@ Weighter* Solver::setLearner( int wtype )
   if( wtype & Weighter::RNGD) {
     learners.push( new WeighterRestartNogood( this ) );
   }
+  if( wtype & Weighter::RGNGD) {
+    learners.push( new WeighterRestartGenNogood( this ) );
+  }
 
   return learners.back();
 }
@@ -2744,6 +2747,14 @@ void Solver::setRestartNogood()
     setLearner( Weighter::RNGD );
     ((WeighterRestartNogood*)(learners.back()))->sat = sat;
   }
+}
+
+void Solver::setRestartGenNogood()
+{
+  ConstraintNogoodBase* base = new ConstraintNogoodBase(this);
+  setLearner( Weighter::RGNGD );
+  ((WeighterRestartGenNogood*)(learners.back()))->base = base;
+
 }
 
 void Solver::printPython() const

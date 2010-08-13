@@ -5338,11 +5338,15 @@ int PredicateMul::check( const int* s ) const
 bool PredicateMul::propagate(const int changedIdx, const int e) 
 {
 
+//   if(scope[0]->id == 1079) {
 //     std::cout << "propagate " ;
+//     print(std::cout); 
+//     std::cout << " because of ";
 //     scope[changedIdx]->printshort(std::cout);
 //     std::cout << std::endl;
 //     print( std::cout );
 //     std::cout << std::endl;
+//   }
 
   int v;
   int i = (changedIdx+1)%3;
@@ -5351,6 +5355,7 @@ bool PredicateMul::propagate(const int changedIdx, const int e)
   int consistent, k=3;
   do consistent = pruneZeros(--k);
   while( consistent == 1 && k );
+
 
   if( consistent > 0 ) {
     /// first, we check the particular cases:
@@ -5378,17 +5383,23 @@ bool PredicateMul::propagate(const int changedIdx, const int e)
     else {
       switch( scope[i]->isGround() + 2*scope[j]->isGround() ) {
       case 0: {
-	//std::cout << "GAC" << std::endl;
+// 	if(scope[0]->id == 1079) {
+// 	  std::cout << "GAC" << std::endl;
+// 	}
 	consistent = (pruneTernary(i) && pruneTernary(j));
       } break;
       case 1: {
 	v = scope[i]->first();
-	//std::cout << "AC-2" << std::endl;
+// 	if(scope[0]->id == 1079) {
+// 	  std::cout << "AC-2" << std::endl;
+// 	}
 	consistent = pruneBinary(changedIdx, j, v);
       } break;
       case 2: {
 	v = scope[j]->first();
-	//std::cout << "AC-2" << std::endl;
+// 	if(scope[0]->id == 1079) {
+// 	  std::cout << "AC-2" << std::endl;
+// 	}
 	consistent = pruneBinary(changedIdx, i, v);
       } break;
       default: {
@@ -5397,18 +5408,23 @@ bool PredicateMul::propagate(const int changedIdx, const int e)
       }
       }
     }
-  } else {
-    //std::cout << "no need to check further" << std::endl;
   }
+//  else {
+//     if(scope[0]->id == 1079) {
+//       std::cout << "no need to check further" << std::endl;
+//     }
+//   }
   
-//   if( consistent ) {
+//   if(scope[0]->id == 1079) {
+//        if( consistent ) {
 //     print( std::cout );
 //      std::cout << " ok" << std::endl;
 //    } else {
 //      std::cout << "INCONSISTENT" << std::endl;
 //    }
 //   std::cout << std::endl;
-  
+//   }
+
   return consistent;
 }
 
@@ -5618,9 +5634,14 @@ bool PredicateMul::pruneBinary(const int otherIdx, const int reviseIdx, const in
 bool PredicateMul::pruneTernary(const int reviseIdx)
 {
 
-//   std::cout << "prune ternary " ;
-//   scope[reviseIdx]->print( std::cout );  
-//   std::cout << std::endl;
+//   if(scope[0]->id == 1079) {
+//     std::cout << "prune ternary " ;
+//     scope[reviseIdx]->print( std::cout );
+//     std::cout << ": ";
+//     print(std::cout);
+//     std::cout << std::endl;
+//   }
+
 
   if( reviseIdx == 2 || !scope[2]->contain(0) || !scope[1-reviseIdx]->contain(0) )
     {
@@ -5632,9 +5653,14 @@ bool PredicateMul::pruneTernary(const int reviseIdx)
 	{      
 	  bound[2*i] = scope[i]->min(); 
 	  bound[2*i+1] = scope[i]->max(); 
+
 	  zero[i] = 0;
 	  if(!bound[2*i]) { ++bound[2*i]; ++zero[i]; }
 	  if(!bound[2*i+1]) { --bound[2*i+1]; zero[i]+=2; }
+
+// 	  if(scope[0]->id == 1079) {
+// 	    std::cout << "{" << bound[2*i] << "," << bound[2*i+1] << "} " << zero[i] << std::endl;
+// 	  }
 	}
 
       if(reviseIdx == 2) {
@@ -5647,8 +5673,13 @@ bool PredicateMul::pruneTernary(const int reviseIdx)
 	y = 1-reviseIdx;
       }
 
-      for(i=0; i<4; ++i)
+      for(i=0; i<4; ++i) {
 	v[i] = oper(bound[2*x+i/2], bound[2*y+i%2], r);
+
+// 	  if(scope[0]->id == 1079) {
+// 	std::cout << bound[2*x+i/2] << " * " << bound[2*y+i%2] << " == " << v[i] << std::endl;
+// 	  }
+      }
 
       ub = 0;
       lb = 0;
@@ -5660,9 +5691,22 @@ bool PredicateMul::pruneTernary(const int reviseIdx)
       lb = v[lb];
       ub = v[ub];
   
-      if( (zero[reviseIdx] & 1) && lb > 0 ) lb = 0;
-      if( (zero[reviseIdx] & 2) && ub < 0 ) ub = 0;
-  
+// 	  if(scope[0]->id == 1079) {
+//       std::cout << "[" << lb << "," << ub << "]" << std::endl;
+// 	  }
+
+	  if(zero[reviseIdx]) {
+	    if(lb > 0) lb = 0;
+	    if(ub < 0) ub = 0;
+	  }
+	  // 	    // WARNING CHANGE, MAY BE BUGGY!!
+//       if( (zero[reviseIdx] & 1) && lb > 0 ) lb = 0;
+//       if( (zero[reviseIdx] & 2) && ub < 0 ) ub = 0;
+
+ // 	  if(scope[0]->id == 1079) {
+//       std::cout << "[" << lb << "," << ub << "]" << std::endl;
+// 	  }
+
       return ( (scope[reviseIdx]->setMin( lb )) &&
 	       (scope[reviseIdx]->setMax( ub )) );
     }

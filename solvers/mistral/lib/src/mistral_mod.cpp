@@ -156,7 +156,7 @@ void BuildObject::build(SatSolver *s, const int *idx)
 
 void BuildObject::build(Solver *s)
 {
-  if( !veqptr_ /*&& isReferenced()*/ ) {
+  if( !veqptr_ && isReferenced() ) {
     if( size_ == 1) {
       map<int,VariableInt*>::iterator iter = s->constants.find( (int)min_ );
       if( iter != s->constants.end() ) {

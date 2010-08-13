@@ -1916,6 +1916,8 @@ namespace Mistral {
     }
     /// Setup the nogoods on restart
     void setRestartNogood();
+    void setRestartGenNogood();
+    //void addNogood();
     /// Setup the forget utility for the clause base
     void setForgetfulness( const double f );
     /// Print statistics corresponding to the bitset stats

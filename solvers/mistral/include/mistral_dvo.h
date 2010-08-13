@@ -106,6 +106,7 @@ namespace Mistral {
     static const int PRU=32;
     static const int ISAC=64;
     static const int RNGD=128;
+    static const int RGNGD=256;
 
     int& level;
 
@@ -385,6 +386,34 @@ namespace Mistral {
     //@{ 
     virtual void notifyFailure( Constraint *con ) ;
     virtual void notifyChoice() ;
+    virtual void notifyRestart() ; 
+    //@}  
+  };
+
+
+  class WeighterRestartGenNogood : public Weighter
+  {
+  public:
+
+    /**@name Parameters*/
+    //@{
+    ConstraintNogoodBase *base;
+    VariableInt **decision;
+
+    int       *choices;
+    Vector< int > path;
+    int lvl;
+    //@}
+
+    /**@name Constructors*/
+    //@{
+    WeighterRestartGenNogood( Solver* s );  
+    virtual ~WeighterRestartGenNogood( );
+    //@}  
+
+    /**@name Utils*/
+    //@{ 
+    virtual void notifyFailure( Constraint *con ) ;
     virtual void notifyRestart() ; 
     //@}  
   };

@@ -1052,8 +1052,13 @@ void WeighterRestartNogood::notifyChoice()
   //path.push( decision[level] );  
   //polarity.push( decision[level]->equal(0) ? 1 : -1 );
 
-  int id = decision[level]->id+1;
-  choices[level] = ( decision[level]->equal(0) ? id : -id );
+  if(decision[level]) {
+    int id = decision[level]->id+1;
+    choices[level] = ( decision[level]->equal(0) ? id : -id );
+  } else {
+    choices[level] = 0;
+  }
+  
   path.push( choices[level] );
 
 //   std::cout << std::endl <<setw(2)<< level << "\t";
@@ -1081,18 +1086,18 @@ void WeighterRestartNogood::notifyRestart()
 {
 
 
-//   std::cout << std::endl <<setw(3)<< lvl << "   ";
-//   std::cout.flush();
-//   for(int i=1; i<lvl; ++i) {
-//     std::cout << " " << setw(2) << choices[i];
-//   }
-//   std::cout << std::endl;
-//   std::cout <<setw(3)<< (path.size) << "   ";
-//   std::cout.flush();
-//   for(int i=0; i<path.size; ++i) {
-//     std::cout << " " << setw(2) << path[i];
-//   }
-//   std::cout << std::endl ;
+  std::cout << std::endl <<std::setw(3)<< lvl << "   ";
+  std::cout.flush();
+  for(int i=1; i<lvl; ++i) {
+    std::cout << " " << std::setw(2) << choices[i];
+  }
+  std::cout << std::endl;
+  std::cout << std::setw(3)<< (path.size) << "   ";
+  std::cout.flush();
+  for(int i=0; i<path.size; ++i) {
+    std::cout << " " << std::setw(2) << path[i];
+  }
+  std::cout << std::endl ;
 
 
 
@@ -1158,7 +1163,7 @@ void WeighterRestartNogood::notifyRestart()
 
 
 //   if( path.size )
-//     exit(0);
+//  exit(0);
 
   path.clear();
   lvl = 0;

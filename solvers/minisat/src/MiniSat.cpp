@@ -250,15 +250,6 @@ int MiniSatSolver::solve()
   std::cout << "call solve" << std::endl;  
 #endif 
 
-#ifdef _DEBUGWRAP
-  std::cout << "print to file" << std::endl;  
-  toDimacs("dimacs.out");
-#endif 
-
-#ifdef _DEBUGWRAP
-  std::cout << "solve!" << std::endl;  
-#endif 
-
   start_time = getRunTime();
   saved_level = init_level;
   if(init_level < decisionLevel())
@@ -324,12 +315,16 @@ int MiniSatSolver::solve()
   }
   else {
     result = SimpSolver::solve(true,true);
+
+    std::cout << toInt(result) << std::endl;
+
+
     if(result == l_True) {
       store_solution();
     }
   }
 
-#ifdef _DEBUGWRAP
+  //#ifdef _DEBUGWRAP
   std::cout << "print results" << std::endl; 
   if(is_sat())
     for(int i=0; i<nVars(); ++i) {
@@ -339,9 +334,11 @@ int MiniSatSolver::solve()
     }
   else
     std::cout << "unsatisfiable" << std:: endl;
-#endif 
+  //#endif 
 
-  return is_sat();
+bool ret = is_sat();
+
+ return ret;
 }
 
 bool MiniSatSolver::propagate()

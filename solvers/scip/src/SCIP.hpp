@@ -20,7 +20,7 @@ private:
   SCIP * _scip;
   int _verbosity;
   SCIP* get_scip();
-  void add_in_constraint(LinearConstraint *con);
+  void add_in_constraint(LinearConstraint *con, double coef=0);
 
 public:
   int var_counter;

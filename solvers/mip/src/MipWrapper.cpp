@@ -39,7 +39,6 @@ void MipWrapper_Expression::display(){
   std::cout << _coef << "*X" << _ident << " ";
 }
 
-
 MipWrapper_Expression::~MipWrapper_Expression(){}
 
 void MipWrapper_Expression::encode(MipWrapperSolver *solver){
@@ -49,16 +48,16 @@ void MipWrapper_Expression::encode(MipWrapperSolver *solver){
     _expr_encoding = new MipWrapper_Expression*[get_size()];
     _expr_encoding -= (int)_lower;
     LinearConstraint *con = new LinearConstraint(1, 1);
-    LinearConstraint *eq_con = new LinearConstraint(0, 0);
+    //LinearConstraint *eq_con = new LinearConstraint(0, 0);
     for(int i = _lower; i <= _upper; ++i){
       _expr_encoding[i] = new MipWrapper_IntVar(0, 1);
       _expr_encoding[i]->add(solver, false);
       con->add_coef(_expr_encoding[i], 1);
-      eq_con->add_coef(_expr_encoding[i], i);
+      //eq_con->add_coef(_expr_encoding[i], i);
     }
-    eq_con->add_coef(this, -1, false);
+    //eq_con->add_coef(this, -1, false);
     solver->_constraints.push_back(con);
-    solver->_constraints.push_back(eq_con);
+    //solver->_constraints.push_back(eq_con);
   }
 }
 
@@ -148,24 +147,28 @@ void MipWrapper_IntVar::encode(MipWrapperSolver* solver){
       _expr_encoding -= (int)_lower;
       
       LinearConstraint *con = new LinearConstraint(1, 1);
-      LinearConstraint *eq_con = new LinearConstraint(0, 0);
+      //LinearConstraint *eq_con = new LinearConstraint(0, 0);
       for(int i = 0; i < _values.size(); ++i){
 	_expr_encoding[_values.get_item(i)] = new MipWrapper_IntVar(0, 1);
 	_expr_encoding[_values.get_item(i)]->add(solver, false);
 	con->add_coef(_expr_encoding[i], 1);
-	eq_con->add_coef(_expr_encoding[i], _values.get_item(i));
+	//eq_con->add_coef(_expr_encoding[i], _values.get_item(i));
       }
-      eq_con->add_coef(this, -1);
-      
+      //eq_con->add_coef(this, -1);
       _solver->_constraints.push_back(con);
-      _solver->_constraints.push_back(eq_con);
+      //_solver->_constraints.push_back(eq_con);
 
     } else MipWrapper_Expression::encode(solver);
   }
 }
 
 int MipWrapper_IntVar::get_value(){
-  return (int)(round(_solver->get_value(_var)));
+  if(_expr_encoding == NULL) return (int)(round(_solver->get_value(_var)));
+  double res = 0;
+  for(int i = _lower; i <= _upper; ++i)
+    if(_expr_encoding[i] != NULL)
+      res += i * _expr_encoding[i]->get_whatever_value();
+  return res;
 }
 
 double MipWrapper_IntVar::get_whatever_value(){return get_value();}
@@ -197,7 +200,15 @@ MipWrapper_FloatVar::MipWrapper_FloatVar(const double lb, const double ub, const
   DBG("Crearing continuous variable (%f .. %f)\n", _upper, _lower);
 }
 
-double MipWrapper_FloatVar::get_value(){ return _solver->get_value(_var); }
+double MipWrapper_FloatVar::get_value(){
+  if(_expr_encoding == NULL) return _solver->get_value(_var);  
+  double res = 0;
+  for(int i = _lower; i <= _upper; ++i)
+    if(_expr_encoding[i] != NULL)
+      res += i * _expr_encoding[i]->get_whatever_value();
+  return res;
+}
+
 double MipWrapper_FloatVar::get_whatever_value(){ return get_value(); }
 
 /**
@@ -651,7 +662,7 @@ MipWrapper_Expression* MipWrapper_ne::add(MipWrapperSolver *solver,
         int lb = std::max(this->_vars[0]->_lower, this->_vars[1]->_lower);
 	int ub = std::min(this->_vars[0]->_upper, this->_vars[1]->_upper);
         
-	for(int i = lb; i < ub; ++i)
+	for(int i = lb; i <= ub; ++i)
 	  if(_vars[0]->_expr_encoding[i] != NULL &&
 	     _vars[1]->_expr_encoding[i] != NULL){
 	    LinearConstraint *con = new LinearConstraint(0, 1);
@@ -912,18 +923,32 @@ MipWrapper_Expression* MipWrapper_not::add(MipWrapperSolver *solver,
 
 // Minimise Class
 MipWrapper_Minimise::MipWrapper_Minimise(MipWrapper_Expression *arg1):
-MipWrapper_eq(arg1, new MipWrapper_FloatVar(arg1->_lower, arg1->_upper)){
-  this->_vars[1]->_coef = -1;
-}
+  _obj(arg1){}
 MipWrapper_Minimise::~MipWrapper_Minimise(){}
+MipWrapper_Expression* MipWrapper_Minimise::add(MipWrapperSolver *solver,
+						bool top_level){
+  _obj = _obj->add(solver, false);
+  LinearConstraint *obj_con = new LinearConstraint(-INFINITY, INFINITY);
+  obj_con->add_coef(_obj, 1);
+  solver->_obj = obj_con;
+  solver->_obj_coef = -1;
+  return this;
+}
 
 // Maximise Class
 MipWrapper_Maximise::MipWrapper_Maximise(MipWrapper_Expression *arg1):
-MipWrapper_eq(arg1, new MipWrapper_FloatVar(arg1->_lower, arg1->_upper)){
-  this->_vars[1]->_coef = 1;
-}
+    _obj(arg1){}
 MipWrapper_Maximise::~MipWrapper_Maximise(){}
 
+MipWrapper_Expression* MipWrapper_Maximise::add(MipWrapperSolver *solver,
+						bool top_level){
+  _obj = _obj->add(solver, false);
+  LinearConstraint *obj_con = new LinearConstraint(-INFINITY, INFINITY);
+  obj_con->add_coef(_obj, 1);
+  solver->_obj = obj_con;
+   solver->_obj_coef = 1;
+  return this;
+}
 
 /**************************************************************
  ********************     Solver        ***********************
@@ -932,6 +957,7 @@ MipWrapper_Maximise::~MipWrapper_Maximise(){}
 MipWrapperSolver::MipWrapperSolver(){
   DBG("Create a MIP solver %s\n", "");
   var_counter = 0;
+  _obj = NULL;
 }
 
 MipWrapperSolver::~MipWrapperSolver(){ DBG("Delete a MIP Solver %s\n", "");}
@@ -959,10 +985,31 @@ void MipWrapperSolver::initialise(MipWrapperExpArray& arg){
 
 void MipWrapperSolver::initialise(){
   DBG("Initialise the Solver %s\n", "");
+  
+   // This is where I need to filter through the the linear constraints
+  // and deal with anything that
+  
+  for(unsigned int i = 0; i < _constraints.size(); ++i){
+    // For all constraints
+    for(unsigned int j = 0; j < _constraints[i]->_variables.size(); ++j){
+      if(_constraints[i]->_variables[j]->_expr_encoding != NULL){
+	double coef = _constraints[i]->_coefficients[j];
+	_constraints[i]->add_coef(_constraints[i]->_variables[j], coef);
+	
+	_constraints[i]->_variables.erase(
+			  _constraints[i]->_variables.begin()+j);
+	_constraints[i]->_coefficients.erase(
+			  _constraints[i]->_coefficients.begin()+j);
+      }
+    }
+  }
+  
 }
 
 int MipWrapperSolver::solve(){
   DBG("Solve %s\n", "");
+  
+  initialise();
   
   std::cout << "c solve with mip wrapper " << std::endl;
   for(unsigned int i = 0; i < _constraints.size(); ++i)

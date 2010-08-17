@@ -6,7 +6,7 @@
 #ifdef _DEBUGWRAP
   #define DBG(fmt, args...) printf("%s:%d "fmt,__FILE__,__LINE__,args)
 #else
-  #define DBG(fmt, args...)
+  #define DBG(fmt, args...) ;
 #endif
 
 #include <vector>
@@ -295,16 +295,23 @@ public:
   virtual MipWrapper_Expression* add(MipWrapperSolver *solver, bool top_level);
 };
 
-class MipWrapper_Minimise: public MipWrapper_eq{
+class MipWrapper_Minimise: public MipWrapper_Expression{
+private:  
+   MipWrapper_Expression* _obj;
 public:
     MipWrapper_Minimise(MipWrapper_Expression *var1);
     virtual ~MipWrapper_Minimise();
+    virtual MipWrapper_Expression* add(MipWrapperSolver *solver, bool top_level);
 };
 
-class MipWrapper_Maximise: public MipWrapper_eq{
+class MipWrapper_Maximise: public MipWrapper_Expression{
+private:  
+  MipWrapper_Expression* _obj;
 public:
   MipWrapper_Maximise(MipWrapper_Expression *var1);
   virtual ~MipWrapper_Maximise();
+  virtual MipWrapper_Expression* add(MipWrapperSolver *solver, bool top_level);
+
 };
 
 class LinearConstraint{
@@ -372,6 +379,8 @@ private:
 
 public:
   std::vector< LinearConstraint* > _constraints;
+  LinearConstraint* _obj;
+  double _obj_coef;
   
   int var_counter;
 

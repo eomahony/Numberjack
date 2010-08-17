@@ -27,8 +27,8 @@ MAINDIR = $(CURDIR)/../..
 # paths
 #-----------------------------------------------------------------------------
 
-#SCIPDIR         =       /Users/eomahony/ziboptsuite-1.2.0/scip-1.2.0
-SCIPDIR         =       /Users/ehebrard/work/dev/ziboptsuite-1.2.0/scip-1.2.0
+SCIPDIR         =       /Users/eomahony/ziboptsuite-1.2.0/scip-1.2.0
+#SCIPDIR         =       /Users/ehebrard/work/dev/ziboptsuite-1.2.0/scip-1.2.0
 #SCIPDIR         =       /Users/eomahony/Documents/workspace/ziboptsuite-1.1.0/scip-1.1.0 
 #SCIPDIR         =       /Users/eoinomahony/ProgressiveParty/ziboptsuite-1.1.0/scip-1.1.0
 

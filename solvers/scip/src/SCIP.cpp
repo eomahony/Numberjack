@@ -34,17 +34,18 @@ SCIP* SCIPSolver::get_scip() {return _scip;}
 void SCIPSolver::initialise(){
   DBG("initialise the solver%s\n", "");
   MipWrapperSolver::initialise();
+  if(_obj != NULL) add_in_constraint(_obj, _obj_coef);
   for(unsigned int i = 0; i < _constraints.size(); ++i)
     add_in_constraint(_constraints[i]);
 }
 
-void SCIPSolver::add_in_constraint(LinearConstraint *con){
+void SCIPSolver::add_in_constraint(LinearConstraint *con, double coef){
   DBG("Creating a SCIP representation of a constriant%s\n", "");
   
   double *weights = new double[con->_coefficients.size()];
   SCIP_VAR** vars = new SCIP_VAR*[con->_variables.size()];
   
-  for(int i = 0; i < con->_variables.size(); ++i){
+  for(unsigned int i = 0; i < con->_variables.size(); ++i){
     
     DBG("\tAdding variable to SCIP\n%s", "");
     
@@ -60,7 +61,7 @@ void SCIPSolver::add_in_constraint(LinearConstraint *con){
 				  "SCIP_Var",
 				  con->_variables[i]->_lower, // LB
 				  con->_variables[i]->_upper, // UB
-				  0, // ective
+				  coef, // ective
 				  type,
 				  TRUE, FALSE, NULL, NULL, NULL, NULL) );
       SCIP_CALL_EXC( SCIPaddVar(_scip, var_ptr) );
@@ -109,7 +110,7 @@ int SCIPSolver::solve(){
 void SCIPSolver::setTimeLimit(const int cutoff){
   SCIPsetRealParam(_scip, "limits/time", (double)cutoff);
 }
-
+ 
 void SCIPSolver::setVerbosity(const int degree){ _verbosity = degree; }
 
 bool SCIPSolver::is_sat(){

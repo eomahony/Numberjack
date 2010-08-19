@@ -244,7 +244,8 @@ MipWrapper_sub::MipWrapper_sub(MipWrapper_Expression *arg1, const int arg2)
   initialise();
 }
 
-MipWrapper_sub::MipWrapper_sub(MipWrapper_Expression *arg1, MipWrapper_Expression *arg2)
+MipWrapper_sub::MipWrapper_sub(MipWrapper_Expression *arg1,
+			       MipWrapper_Expression *arg2)
   : MipWrapper_Sum(){
   addVar(arg1);
   addVar(arg2);
@@ -543,7 +544,7 @@ MipWrapper_Expression* MipWrapper_Precedence::add(MipWrapperSolver *solver,
     solver->_constraints.push_back(con);
     return this;
   } else {
-    std::cout << "Precedence at top level not supported yet" << std::endl;
+    std::cout << "Precedence not at top level not supported yet" << std::endl;
     exit(1);
   }
   return this;
@@ -722,9 +723,43 @@ MipWrapper_Expression* MipWrapper_le::add(MipWrapperSolver *solver,
 	solver->_constraints.push_back(con);
       }
     } else {
-      std::cout << "Leq operator not in top level insupported at the moment"
-                << std::endl;
-      exit(1);
+      MipWrapper_Expression *C = new MipWrapper_IntVar(0, 1);
+      C = C->add(solver, false);
+      
+      if(_is_proper_coef){
+	double M = std::max( _vars[0]->_upper - _rhs,
+			     _rhs - _vars[0]->_lower);
+	
+	//TODO: Check this
+	LinearConstraint *con1 = new LinearConstraint(-M-_rhs, INFINITY);
+	con1->add_coef(_vars[0], -1);
+	con1->add_coef(C, -M);
+	solver->_constraints.push_back(con1);
+	
+	LinearConstraint *con2 = new LinearConstraint(1+_rhs, INFINITY);
+	con2->add_coef(_vars[0], 1);
+	con2->add_coef(C, M+1);
+	solver->_constraints.push_back(con2);
+	
+      } else {
+	_vars[1] = _vars[1]->add(solver, false);
+	double M = std::max( _vars[0]->_upper - _vars[1]->_lower,
+			     _vars[1]->_upper - _vars[0]->_lower);
+	
+	LinearConstraint *con1 = new LinearConstraint(-M, INFINITY);
+	con1->add_coef(_vars[1], 1);
+	con1->add_coef(_vars[0], -1);
+	con1->add_coef(C, -M);
+	solver->_constraints.push_back(con1);
+	
+	LinearConstraint *con2 = new LinearConstraint(1, INFINITY);
+	con2->add_coef(_vars[0], 1);
+	con2->add_coef(_vars[1], -1);
+	con2->add_coef(C, M+1);
+	solver->_constraints.push_back(con2);
+      }
+      return C;
+      
     }
   }
   return this;
@@ -758,9 +793,42 @@ MipWrapper_Expression* MipWrapper_ge::add(MipWrapperSolver *solver,
       }
       return this;
     } else {
-      std::cerr << "Ge not at top level currently unsupported "
-	        << std::endl;
-      exit(1);
+      MipWrapper_Expression *C = new MipWrapper_IntVar(0, 1);
+      C = C->add(solver, false);
+      
+      if(_is_proper_coef){
+	double M = std::max( _vars[0]->_upper - _rhs,
+			     _rhs - _vars[0]->_lower);
+	
+	//TODO: Check this
+	LinearConstraint *con1 = new LinearConstraint(-M+_rhs, INFINITY);
+	con1->add_coef(_vars[0], 1);
+	con1->add_coef(C, -M);
+	solver->_constraints.push_back(con1);
+	
+	LinearConstraint *con2 = new LinearConstraint(1-_rhs, INFINITY);
+	con2->add_coef(_vars[0], -1);
+	con2->add_coef(C, M+1);
+	solver->_constraints.push_back(con2);
+	
+      } else {
+	_vars[1] = _vars[1]->add(solver, false);
+	double M = std::max( _vars[0]->_upper - _vars[1]->_lower,
+			     _vars[1]->_upper - _vars[0]->_lower);
+	
+	LinearConstraint *con1 = new LinearConstraint(-M, INFINITY);
+	con1->add_coef(_vars[0], 1);
+	con1->add_coef(_vars[1], -1);
+	con1->add_coef(C, -M);
+	solver->_constraints.push_back(con1);
+	
+	LinearConstraint *con2 = new LinearConstraint(1, INFINITY);
+	con2->add_coef(_vars[1], 1);
+	con2->add_coef(_vars[0], -1);
+	con2->add_coef(C, M+1);
+	solver->_constraints.push_back(con2);
+      }
+      return C;
     }
   }
   return this;
@@ -793,9 +861,42 @@ MipWrapper_Expression* MipWrapper_lt::add(MipWrapperSolver *solver,
 	solver->_constraints.push_back(con);
       }
     } else {
-      std::cout << "Lt operator not in top level insupported at the moment"
-	        << std::endl;
-      exit(1);
+      MipWrapper_Expression *C = new MipWrapper_IntVar(0, 1);
+      C = C->add(solver, false);
+      
+      if(_is_proper_coef){
+	double M = std::max( _vars[0]->_upper - _rhs,
+			     _rhs - _vars[0]->_lower);
+	
+	//TODO: Check this
+	LinearConstraint *con1 = new LinearConstraint(-M-_rhs, INFINITY);
+	con1->add_coef(_vars[0], -1);
+	con1->add_coef(C, -(M+1));
+	solver->_constraints.push_back(con1);
+	
+	LinearConstraint *con2 = new LinearConstraint(0+_rhs, INFINITY);
+	con2->add_coef(_vars[0], 1);
+	con2->add_coef(C, M+1);
+	solver->_constraints.push_back(con2);
+	
+      } else {
+	_vars[1] = _vars[1]->add(solver, false);
+	double M = std::max( _vars[0]->_upper - _vars[1]->_lower,
+			     _vars[1]->_upper - _vars[0]->_lower);
+	
+	LinearConstraint *con1 = new LinearConstraint(-M, INFINITY);
+	con1->add_coef(_vars[1], 1);
+	con1->add_coef(_vars[0], -1);
+	con1->add_coef(C, -(M+1));
+	solver->_constraints.push_back(con1);
+	
+	LinearConstraint *con2 = new LinearConstraint(0, INFINITY);
+	con2->add_coef(_vars[1], -1);
+	con2->add_coef(_vars[0], 1);
+	con2->add_coef(C, M+1);
+	solver->_constraints.push_back(con2);
+      }
+      return C;
     }
   }
   return this;
@@ -828,9 +929,42 @@ MipWrapper_Expression* MipWrapper_gt::add(MipWrapperSolver *solver,
 	solver->_constraints.push_back(con);
       }
     } else {
-      std::cout << "Gt operator not in top level insupported at the moment"
-	        << std::endl;
-      exit(1);
+      MipWrapper_Expression *C = new MipWrapper_IntVar(0, 1);
+      C = C->add(solver, false);
+      
+      if(_is_proper_coef){
+	double M = std::max( _vars[0]->_upper - _rhs,
+			     _rhs - _vars[0]->_lower);
+	
+	//TODO: Check this
+	LinearConstraint *con1 = new LinearConstraint(-M+_rhs, INFINITY);
+	con1->add_coef(_vars[0], 1);
+	con1->add_coef(C, -(M+1));
+	solver->_constraints.push_back(con1);
+	
+	LinearConstraint *con2 = new LinearConstraint(0-_rhs, INFINITY);
+	con2->add_coef(_vars[0], -1);
+	con2->add_coef(C, M+1);
+	solver->_constraints.push_back(con2);
+	
+      } else {
+	_vars[1] = _vars[1]->add(solver, false);
+	double M = std::max( _vars[0]->_upper - _vars[1]->_lower,
+			     _vars[1]->_upper - _vars[0]->_lower);
+	
+	LinearConstraint *con1 = new LinearConstraint(-M, INFINITY);
+	con1->add_coef(_vars[0], 1);
+	con1->add_coef(_vars[1], -1);
+	con1->add_coef(C, -(M+1));
+	solver->_constraints.push_back(con1);
+	
+	LinearConstraint *con2 = new LinearConstraint(0, INFINITY);
+	con2->add_coef(_vars[0], -1);
+	con2->add_coef(_vars[1], 1);
+	con2->add_coef(C, M+1);
+	solver->_constraints.push_back(con2);
+      }
+      return C;
     }
   }
   return this;
@@ -858,9 +992,17 @@ MipWrapper_Expression* MipWrapper_and::add(MipWrapperSolver *solver,
       _vars[0]->_lower = 1;
       _vars[1]->_lower = 1;
     } else {
-      std::cerr << "And constraint not in top level not supported "
-		<< std::endl;
-      exit(1);
+      MipWrapper_Expression *C = new MipWrapper_IntVar(0, 1);
+      C = C->add(solver, false);
+      (new MipWrapper_le(C, _vars[0]))->add(solver, true);
+      (new MipWrapper_le(C, _vars[1]))->add(solver, true);
+       
+      LinearConstraint *con = new LinearConstraint(1, INFINITY);
+      con->add_coef(_vars[0], 1);
+      con->add_coef(_vars[1], 1);
+      con->add_coef(C, -1);
+      solver->_constraints.push_back(con);
+      return C;
     }
   }
   return this;
@@ -885,9 +1027,17 @@ MipWrapper_Expression* MipWrapper_or::add(MipWrapperSolver *solver,
       con->add_coef(_vars[1], 1);
       solver->_constraints.push_back(con);
     } else {
-      std::cerr << "Or constraint not in top level not supported "
-		<< std::endl;
-      exit(1);
+      MipWrapper_Expression *C = new MipWrapper_IntVar(0, 1);
+      C = C->add(solver, false);
+      (new MipWrapper_ge(C, _vars[0]))->add(solver, true);
+      (new MipWrapper_ge(C, _vars[1]))->add(solver, true);
+      
+      LinearConstraint *con = new LinearConstraint(0, INFINITY);
+      con->add_coef(_vars[0], 1);
+      con->add_coef(_vars[1], 1);
+      con->add_coef(C, -1);
+      solver->_constraints.push_back(con);
+      return C;
     }
   }
   return this;

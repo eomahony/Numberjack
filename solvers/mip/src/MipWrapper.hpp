@@ -46,6 +46,13 @@ public:
   double _upper;
   double _coef;
   
+  virtual void leq(double value, MipWrapperSolver* solver);
+  virtual void lt( double value, MipWrapperSolver* solver);
+  virtual void geq(double value, MipWrapperSolver* solver);
+  virtual void gt( double value, MipWrapperSolver* solver);
+  virtual void eq( double value, MipWrapperSolver* solver);
+  virtual void neq(double value, MipWrapperSolver* solver);
+  
   bool _continuous;
   
   int get_size();
@@ -164,6 +171,13 @@ public:
 	   const int offset=0 );
   MipWrapper_Sum();
   
+  virtual void leq(double value, MipWrapperSolver* solver);
+  //virtual void lt( double value, MipWrapperSolver* solver);
+  virtual void geq(double value, MipWrapperSolver* solver);
+  //virtual void gt( double value, MipWrapperSolver* solver);
+  virtual void eq( double value, MipWrapperSolver* solver);
+  virtual void neq(double value, MipWrapperSolver* solver);
+  
   void initialise();
   void addVar( MipWrapper_Expression* v );
   void addWeight( const int w );
@@ -195,9 +209,9 @@ public:
 class MipWrapper_binop: public MipWrapper_FloatVar{
 protected:
   MipWrapper_Expression *_vars[2];
+  MipWrapper_Expression *_repr;
   bool _is_proper_coef;
   double _rhs;
-
 public:
   MipWrapper_binop(MipWrapper_Expression *var1, MipWrapper_Expression *var2);
   MipWrapper_binop(MipWrapper_Expression *var1, double rhs);
@@ -220,10 +234,12 @@ class MipWrapper_Precedence: public MipWrapper_binop{
 protected:
     MipWrapperIntArray _coefs;
 public:
-    MipWrapper_Precedence(MipWrapper_Expression *var1, MipWrapper_Expression *var2,
+    MipWrapper_Precedence(MipWrapper_Expression *var1,
+			  MipWrapper_Expression *var2,
 			  MipWrapperIntArray &coefs);
     virtual ~MipWrapper_Precedence();
-    virtual MipWrapper_Expression* add(MipWrapperSolver *solver, bool top_level);
+    virtual MipWrapper_Expression* add(MipWrapperSolver *solver,
+				       bool top_level);
 };
 
 class MipWrapper_eq: public MipWrapper_binop{

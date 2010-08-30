@@ -30,12 +30,18 @@ int MipWrapper_Expression::get_max(){ return _upper; }
 int MipWrapper_Expression::get_min(){ return _lower; }
 
 void MipWrapper_Expression::leq(double value, MipWrapperSolver* solver){
-  // TODO: Check this
   if(_expr_encoding != NULL){
     for(int i = _upper; i >= value && i >= _lower; ++i)
-      if(_expr_encoding[i] != NULL)
-	_expr_encoding[i]->_upper = 0;
-  } else if(value < _upper) _upper = value;
+      if(_expr_encoding[i] != NULL){
+	LinearConstraint *con = new LinearConstraint(0, 0);
+	con->add_coef(_expr_encoding[i], 1);
+	solver->_constraints.push_back(con);
+      }
+  } else if(value < _upper){
+    LinearConstraint *con = new LinearConstraint(-INFINITY, value);
+    con->add_coef(this, 1);
+    solver->_constraints.push_back(con);
+  }
 }
 
 void MipWrapper_Expression::lt(double value, MipWrapperSolver* solver){
@@ -45,9 +51,16 @@ void MipWrapper_Expression::lt(double value, MipWrapperSolver* solver){
 void MipWrapper_Expression::geq(double value, MipWrapperSolver* solver){
   if(_expr_encoding != NULL){
     for(int i = _lower; i <= value && i <= _upper; ++i)
-      if(_expr_encoding[i] != NULL)
-	_expr_encoding[i]->_upper = 0;
-  } else if(value > _lower) _lower = value;
+      if(_expr_encoding[i] != NULL){
+	LinearConstraint *con = new LinearConstraint(0, 0);
+	con->add_coef(_expr_encoding[i], 1);
+	solver->_constraints.push_back(con);
+      }
+  } else if(value > _lower){
+    LinearConstraint *con = new LinearConstraint(value, INFINITY);
+    con->add_coef(this, 1);
+    solver->_constraints.push_back(con);
+  }
 }
 
 void MipWrapper_Expression::gt(double value, MipWrapperSolver* solver){
@@ -58,23 +71,26 @@ void MipWrapper_Expression::eq(double value, MipWrapperSolver* solver){
   // TODO: Check this
   if(_expr_encoding != NULL){
     if(value >= _lower && value <= _upper &&
-       _expr_encoding[(int)value] != NULL)
-      _expr_encoding[(int)value]->_lower = 1;
-  } else if(value >= _lower && value <= _upper){
-    _lower = value;
-    _upper = value;
-  } else {
-    // This has to be UNSAT
-    _lower = value + 1;
-    _upper = value;
+       _expr_encoding[(int)value] != NULL){
+      LinearConstraint *con = new LinearConstraint(1, 1);
+      con->add_coef(_expr_encoding[(int) value], 1);
+      solver->_constraints.push_back(con);
+    }
+  }  else {
+    LinearConstraint *con = new LinearConstraint(value, value);
+    con->add_coef(this, 1);
+    solver->_constraints.push_back(con);
   }
 }
 
 void MipWrapper_Expression::neq(double value, MipWrapperSolver* solver){
   if(value >= _lower && value <= _upper)
   encode(solver);
-  if(value >= _lower && value <= _upper && _expr_encoding[(int)value] != NULL)
-    _expr_encoding[(int)value]->_upper = 0;
+  if(value >= _lower && value <= _upper && _expr_encoding[(int)value] != NULL){
+    LinearConstraint *con = new LinearConstraint(0, 0);
+    con->add_coef(_expr_encoding[(int)value], 1);
+    solver->_constraints.push_back(con);
+  }
 }
 
 void MipWrapper_Expression::display(){
@@ -226,8 +242,7 @@ MipWrapper_FloatVar::MipWrapper_FloatVar(const double lb, const double ub){
 
 MipWrapper_FloatVar::MipWrapper_FloatVar(const double lb,
 					 const double ub,
-					 const int ident)
-{
+					 const int ident){
   initialise(true);
   _upper = ub;
   _lower = lb;
@@ -522,6 +537,15 @@ void MipWrapper_Sum::neq(double value, MipWrapperSolver* solver){
   var->neq(value, solver);
 }
 
+void MipWrapper_Sum::encode(MipWrapperSolver* solver){
+  MipWrapper_Expression::encode(solver);
+  LinearConstraint *con = new LinearConstraint(0, 0);
+  for(int i = _lower; i <= _upper; ++i)
+    con->add_coef(_expr_encoding[i], -i);
+  con->add_coef(this, 1, false);
+  solver->_constraints.push_back(con);
+}
+
 /* Binary operators */
 
 MipWrapper_binop::MipWrapper_binop(MipWrapper_Expression *var1,
@@ -550,8 +574,12 @@ MipWrapper_binop::~MipWrapper_binop(){}
 
 MipWrapper_NoOverlap::MipWrapper_NoOverlap(MipWrapper_Expression *var1,
 		      MipWrapper_Expression *var2,
-		      MipWrapperIntArray &coefs):
-  MipWrapper_binop(var1, var2), _coefs(coefs){}
+		      int d1, int d2):
+  MipWrapper_binop(var1, var2){
+  _coefs = *(new MipWrapperIntArray());
+  _coefs.add(d1);
+  _coefs.add(d2);  
+}
 
 MipWrapper_NoOverlap::~MipWrapper_NoOverlap(){}
 
@@ -615,6 +643,9 @@ MipWrapper_Expression* MipWrapper_Precedence::add(MipWrapperSolver *solver,
      solver->_constraints.push_back(con);
      return this;
    } else {
+    
+    
+    
      std::cout << "Precedence not at top level not supported yet" << std::endl;
      exit(1);
    }

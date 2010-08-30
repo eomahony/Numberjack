@@ -10,6 +10,8 @@
 #endif
 
 #include <vector>
+#include <stdlib.h>
+#include <climits>
 
 const int UNSAT     =  0;
 const int SAT       =  1;
@@ -172,11 +174,11 @@ public:
   MipWrapper_Sum();
   
   virtual void leq(double value, MipWrapperSolver* solver);
-  //virtual void lt( double value, MipWrapperSolver* solver);
   virtual void geq(double value, MipWrapperSolver* solver);
-  //virtual void gt( double value, MipWrapperSolver* solver);
   virtual void eq( double value, MipWrapperSolver* solver);
   virtual void neq(double value, MipWrapperSolver* solver);
+  
+  virtual void encode(MipWrapperSolver* solver);
   
   void initialise();
   void addVar( MipWrapper_Expression* v );
@@ -225,7 +227,7 @@ protected:
   MipWrapperIntArray _coefs;
 public:
   MipWrapper_NoOverlap(MipWrapper_Expression *var1, MipWrapper_Expression *var2,
-		       MipWrapperIntArray &coefs);
+		       int d1, int d2);
   virtual ~MipWrapper_NoOverlap();
   virtual MipWrapper_Expression* add(MipWrapperSolver *solver, bool top_level);
 };

@@ -1315,7 +1315,8 @@ Variable::Variable( const BitSet& d, const int length,
 
 VariableInt *Variable::getVariable() 
 {
-  return var_ptr_->getVariable();
+  if(var_ptr_) return var_ptr_->getVariable();
+  else return NULL;
 }
 
 void Variable::printshort(std::ostream& o) const 

@@ -3616,6 +3616,194 @@ void ConstraintWeightedSum::printFull(std::ostream& o) const
 
 
 
+/**********************************************
+ * LinearCoef Constraint 
+ **********************************************/
+
+ConstraintLinearCoef::ConstraintLinearCoef(Solver *s, VariableInt** v, 
+					   const int n, 
+					   const double ub, const double lb,
+					   const double *w,
+					   const int wp, const int wn
+					   )
+  : Constraint(s, v, n, RANGETRIGGER)
+{
+  weights = new double[n+1];
+  int i;
+  for(i=0; i<=n; ++i) 
+    weights[i] = w[i];
+  wpos = wp;
+  wneg = wn;
+  for(i=wneg; i<arity; ++i) weights[i] = -weights[i];
+  lo_bound = new double[n];
+  up_bound = new double[n];
+  UB = ub;
+  LB = lb;
+}
+
+ConstraintLinearCoef::~ConstraintLinearCoef()
+{
+  delete [] weights;
+  delete [] lo_bound;
+  delete [] up_bound;
+}
+
+int ConstraintLinearCoef::check( const int* s ) const 
+{
+  int i, total=0;
+  for(i=0; i<wpos; ++i)
+    total += s[i];
+  for(i=wpos; i<wneg; ++i)
+    total += (weights[i] * s[i]);
+  for(i=wneg; i<arity; ++i)
+    total -= (weights[i] * s[i]);
+
+  if( LB <= total && total <= UB ) return 0;
+  else return ( LB <= total ? total - UB : LB - total );
+}
+
+
+void ConstraintLinearCoef::checkBounds()
+{
+}
+
+bool ConstraintLinearCoef::propagate(const int changedIdx, const int e) 
+{
+  return propagate();
+}
+
+bool ConstraintLinearCoef::propagate() 
+{
+  int i;
+  // compute the max and th min
+  double smin=0, smax=0, maxspan=0, span;
+  int consistent = true;
+
+  for(i=0; i<wpos; ++i) {
+    smax += (up_bound[i] = (double)(scope[i]->max()));
+    smin += (lo_bound[i] = (double)(scope[i]->min()));
+    span = (up_bound[i]-lo_bound[i]);
+    if( span > maxspan ) maxspan = span;
+  }
+  for(i=wpos; i<wneg; ++i) {
+    smax += weights[i] * (up_bound[i] = (double)(scope[i]->max()));
+    smin += weights[i] * (lo_bound[i] = (double)(scope[i]->min()));
+    span = weights[i] * (up_bound[i]-lo_bound[i]);
+    if( span > maxspan ) maxspan = span;
+  }
+  for(i=wneg; i<arity; ++i) {
+    smax -= weights[i] * (lo_bound[i] = (double)(scope[i]->min()));
+    smin -= weights[i] * (up_bound[i] = (double)(scope[i]->max()));
+    span = weights[i] * (up_bound[i]-lo_bound[i]);
+    if( span > maxspan ) maxspan = span;
+  }
+
+  /// check inconsistency
+  if( smax < LB || smin > UB ) consistent = false;
+  else {
+    smax -= LB;
+    smin = (UB - smin);
+  
+    /// prune with respect to the lower bound?
+    if( smin < maxspan ) {
+
+      for(i=0; consistent && i<wpos; ++i) 
+	if( smin < (up_bound[i] - lo_bound[i]) ) 
+	  consistent = scope[i]->setMax( (int)(lo_bound[i] + smin) );
+
+      for(i=wpos; consistent && i<wneg; ++i) 
+	if( smin < (up_bound[i] - lo_bound[i]) * weights[i] ) 
+	  consistent = scope[i]->setMax( (int)(lo_bound[i] + smin/weights[i]) );
+      
+      for(i=wneg; consistent && i<arity; ++i) 
+	if( smin < (up_bound[i] - lo_bound[i]) * weights[i] )
+	  consistent = scope[i]->setMin( (int)(up_bound[i] - smin/weights[i]) );
+
+    }
+  
+    /// prune with respect to the upwer bound?
+    if( smax < maxspan ) {
+
+      for(i=0; consistent && i<wpos; ++i) 
+	if( smax < (up_bound[i] - lo_bound[i]) ) 
+	  consistent = scope[i]->setMin( (int)(up_bound[i] - smax) );
+
+      for(i=wpos; consistent && i<wneg; ++i) 
+	if( smax < (up_bound[i] - lo_bound[i]) * weights[i] ) 
+	  consistent = scope[i]->setMin( (int)(up_bound[i] - smax/weights[i]) );
+
+      for(i=wneg; consistent && i<arity; ++i) 
+	if( smax < (up_bound[i] - lo_bound[i]) * weights[i] ) 	  
+	  consistent = scope[i]->setMax( (int)(lo_bound[i] + smax/weights[i]) );
+
+      }
+
+  }
+  
+  return consistent;
+}
+
+void ConstraintLinearCoef::print(std::ostream& o) const
+{ 
+  int i;
+  o<< "(" ;
+  for(i=0; i<wpos; ++i) {
+    if(i) o << " + ";
+    scope[i]->printshort( o );
+  }
+  for(i=wpos; i<wneg; ++i) {
+    if(i) o << " + " ;
+    o << weights[i];
+    scope[i]->printshort( o );
+  }
+  for(i=wneg; i<arity; ++i) {
+    if(i) o << " - " ;
+    if(weights[i] != 1) o << weights[i];
+    scope[i]->printshort( o );
+  }
+  if( LB == UB )
+    o << ") = " << UB ;
+  else if( LB == -NOVAL/2 )
+    o << ") < " << (UB+1) ;
+  else if( UB == NOVAL/2 )
+    o << ") > " << (LB-1) ;
+  else 
+    o << ") in [" << LB << ".." << UB << "]" ;
+
+}
+
+void ConstraintLinearCoef::printFull(std::ostream& o) const
+{ 
+  int i;
+  o<< "(" ;
+  for(i=0; i<wpos; ++i) {
+    if(i) o << " + ";
+    scope[i]->print( o );
+  }
+  for(i=wpos; i<wneg; ++i) {
+    if(i) o << " + " ;
+    o << weights[i];
+    scope[i]->print( o );
+  }
+  for(i=wneg; i<arity; ++i) {
+    if(i) o << " - " ;
+    o << weights[i];
+    scope[i]->print( o );
+  }
+  o << ") " ;
+  //o << ") " << = " << weights[arity];
+  if( LB == UB )
+    o << "= " << UB ;
+  else if( LB == -NOVAL/2 )
+    o << "< " << (UB+1) ;
+  else if( UB == NOVAL/2 )
+    o << "> " << (LB-1) ;
+  else 
+    o << " in [" << LB << ".." << UB << "]" ;
+}
+
+
+
 // /**********************************************
 //  * SumLess Constraint 
 //  **********************************************/

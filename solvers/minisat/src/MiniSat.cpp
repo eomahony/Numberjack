@@ -194,13 +194,16 @@ int MiniSatSolver::create_atom(DomainEncoding* dom, const int type) {
 }
 
 void MiniSatSolver::validate() {
+
+  std::cout << "validate" << std::endl;
+
   vec<Lit> cl;
   unsigned int i;
   while(current < clause_base.size()) {
     cl.clear();
     for(i=0; i<clause_base[current].size(); ++i)
       cl.push(clause_base[current][i]);
-    //displayClause(clause_base[current]);
+    displayClause(clause_base[current]);
     Solver::addClause(cl);
     ++current;
   }
@@ -315,16 +318,12 @@ int MiniSatSolver::solve()
   }
   else {
     result = SimpSolver::solve(true,true);
-
-    std::cout << toInt(result) << std::endl;
-
-
     if(result == l_True) {
       store_solution();
     }
   }
 
-  //#ifdef _DEBUGWRAP
+#ifdef _DEBUGWRAP
   std::cout << "print results" << std::endl; 
   if(is_sat())
     for(int i=0; i<nVars(); ++i) {
@@ -334,7 +333,7 @@ int MiniSatSolver::solve()
     }
   else
     std::cout << "unsatisfiable" << std:: endl;
-  //#endif 
+#endif 
 
 bool ret = is_sat();
 

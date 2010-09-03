@@ -1633,8 +1633,9 @@ namespace Mistral {
 
     /**@name Constructors*/
     //@{
-    ValSelectorGuided( VariableInt *x, int i ) : ValSelector(x) { 
-      ideal=i; 
+    ValSelectorGuided( VariableInt *x, int i, const int pb ) : ValSelector(x) { 
+      ideal = i; 
+      planB = pb;
       decision.init(0,8);
     } 
     //@}   
@@ -1644,20 +1645,103 @@ namespace Mistral {
     Vector< int > decision;
     int ideal;
     int val;
+    int planB;
     //@}   
 
     /**@name Utils*/ 
     //@{  
     inline int getBest() { return ideal; }
+    inline void setSecondBest() {
+      int i=1, dir=1;
+      while(true) {
+	val = ideal + (dir*i);
+	if(_X->contain(val)) break;
+	if(dir < 0) ++i;
+	dir*=-1;
+      }
+      decision.push(val);
+
+      _X->print(std::cout);
+      std::cout << " <- " << val << " (" << ideal << ")" << std::endl;
+
+      _X->setDomain(val);
+    }
+    inline void bestSplit() {
+      val = ((_X->max() + _X->min()) >> 1); 
+      decision.push(val);
+      if(ideal < val) _X->setMax( val ); 
+      else _X->setMin( val+1 ); 
+    }
+    inline void worstSplit() {
+      val = ((_X->max() + _X->min()) >> 1); 
+      if(ideal < val) _X->setMin( val+1 ); 
+      else _X->setMax( val ); 
+    }
     inline void left() { 
-      val=(_X->contain(ideal) ? ideal : _X->min()); 
-      _X->setDomain( val ); 
+      if(_X->contain(ideal)) {
+	decision.push(ideal);
+	_X->setDomain(ideal);
+      } else {
+	if(planB == 0) {
+	  val = _X->min();
+	  decision.push(val);
+	  _X->setDomain(val);
+	} else if(planB == 1) {
+	  setSecondBest();
+	} else if(planB == 2) {
+	  bestSplit();
+	}
+      }
+    } 
+    inline void right() {
+      val = decision.pop();
+      if(val != ideal && planB == 2) worstSplit();
+      else _X->remove( val ); 
+    } 
+    inline void reverse_left() {
+      val = (_X->contain(ideal) ? ideal : _X->min());
+      decision.push( val );
+      _X->remove( val ); 
+    }
+    inline void reverse_right() { 
+      val = decision.pop();
+      _X->setDomain( val );
+    }
+    void postCut( const int p ) { val = p; }
+    //@}   
+  };
+
+  class ValSelectorBoolean : public ValSelector 
+  { 
+  public: 
+
+    /**@name Constructors*/
+    //@{
+    ValSelectorBoolean( VariableInt *x, VariableInt *b ) : ValSelector(x) { 
+      earlybool=b; 
+      decision.init(0,8);
+    } 
+    //@}   
+
+    /**@name Parameters*/
+    //@{
+    Vector< int > decision;
+    VariableInt* earlybool;
+    int val;
+    //@}   
+
+    /**@name Utils*/ 
+    //@{  
+    inline int getBest() { if(earlybool->min()) return _X->max(); else return _X->min(); }
+    inline void left() { 
+      val = getBest();
+      _X->setDomain(val);
     } 
     inline void right() { 
       _X->remove( val ); 
     } 
     inline void reverse_left() {
-      val = (_X->contain(ideal) ? ideal : _X->min());
+      val = getBest();
       decision.push( val );
       _X->remove( val ); 
     }
@@ -2836,6 +2920,9 @@ namespace Mistral {
     {    
       VariableInt *var=*first, **var_iterator;
       best = var; 
+
+      //std::cout << "number of unassigned vars: " << (last-first) << std::endl;
+
       for( var_iterator = first+1; var_iterator != last; ++var_iterator ) 
 	{  
 	

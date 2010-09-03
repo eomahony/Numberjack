@@ -1323,6 +1323,56 @@ namespace Mistral {
 
 
 
+  /**********************************************
+   * LinearCoef Constraint
+   **********************************************/
+  /*! \class ConstraintLinearCoef
+    \brief  Constraint on a sum of variables (a1 * x1 + ... + an * xn = total)
+  */
+  class ConstraintLinearCoef : public Constraint {
+
+  public:
+    /**@name Parameters*/
+    //@{ 
+    double *weights;
+    double UB;
+    double LB;
+    double *up_bound;
+    double *lo_bound;
+    int wpos;
+    int wneg;
+    //@}
+
+    /**@name Constructors*/
+    //@{
+    ConstraintLinearCoef(Solver*, 
+			  VariableInt** v,
+			  const int n,
+			  const double u,
+			  const double l,
+			  const double *s,
+			  const int wp,
+			  const int wn);
+    virtual ~ConstraintLinearCoef();
+    //@}
+
+    /**@name Solving*/
+    //@{
+    void checkBounds();
+    inline int check( const int* ) const ;
+    inline bool propagate();
+    inline bool propagate(const int changedIdx, const int e);
+    //@}
+
+    /**@name Miscellaneous*/
+    //@{  
+    virtual void print(std::ostream& o) const ;
+    void printFull(std::ostream& o) const ;
+    //@}
+  };
+
+
+
   // /**********************************************
   //  * SumLess Constraint
   //  **********************************************/

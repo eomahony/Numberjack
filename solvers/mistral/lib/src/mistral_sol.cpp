@@ -819,6 +819,7 @@ int Solver::solve()
     if( verbosity > 0 )
       cout << "c ===============[ Mistral - solve ]===============" << endl;
     if( randomizedRestart ) randomizeSequence();
+    if( init_level < level ) init_level = level;
     if( status == UNKNOWN ) {
       STARTTIME = getRunTime();
       if( presolve() == UNKNOWN ) {
@@ -1575,6 +1576,8 @@ int Solver::solve_and_restart( const int policy,
   unsigned int iteration = 0;
 
   try {
+    if( init_level < level ) init_level = level;
+
     if( status == UNKNOWN ) {
       ////////////////////////////////////////////////////////////
       //double PRESOLVETIME = getRunTime();
@@ -1601,10 +1604,12 @@ int Solver::solve_and_restart( const int policy,
       STARTTIME = getRunTime();
       if( presolve() == UNKNOWN ) {
 
-	// 	std::cout << "AFTER PRESOLVE AT LEVEL " << level << " ";
+	std::cout << "AFTER PRESOLVE AT LEVEL " << level << " " << init_level << std::endl;
+
 	// 	variables[41]->print(std::cout);
 	// 	std::cout << std::endl;
 
+	
 
 	//  	print(cout);
 	// 	cout << endl;
@@ -1727,11 +1732,7 @@ int Solver::solve_and_restart( const int policy,
 	  }
 
 	}
-      } else {
-
-	cout << status << " " << UNKNOWN << " " << SAT << " " << UNSAT << " " << OPT << endl;
-
-      }
+      } 
 
       closeSearch();
       //stopWatch();
@@ -3399,15 +3400,18 @@ void Solver::setUpperBounds(BuildObject **bvar, const int l, int* ub) {
 }
 
 
-void Solver::setGuidedOrdering(VarArray& scope, int* ideal) {
+void Solver::setGuidedOrdering(VarArray& scope, int* ideal, const char*planb) {
   BuildObject *bvar[scope.size()];
-  int i, l = scope.size();
+  int i, l = scope.size(),pb=0;
   for(i=0; i<l; ++i)
     bvar[i] = scope[i].var_ptr_;
-  setGuidedOrdering(bvar, l, ideal);
+  if(!strcmp(planb,"std")) pb = 0;
+  else if(!strcmp(planb,"2nd")) pb = 1;
+  else if(!strcmp(planb,"spl")) pb = 2;
+  setGuidedOrdering(bvar, l, ideal, pb);
 }
 
-void Solver::setGuidedOrdering(BuildObject **bvar, const int l, int* ideal) {
+void Solver::setGuidedOrdering(BuildObject **bvar, const int l, int* ideal, const int pb) {
   VariableInt *x;
   BuildObject *bv;
 
@@ -3432,7 +3436,7 @@ void Solver::setGuidedOrdering(BuildObject **bvar, const int l, int* ideal) {
       //       std::cout << std::endl;
 
       delete x->branch;
-      x->branch = new ValSelectorGuided( x, ideal[i] );
+      x->branch = new ValSelectorGuided( x, ideal[i], pb );
     }
   }
 }

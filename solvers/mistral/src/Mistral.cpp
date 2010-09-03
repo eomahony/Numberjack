@@ -1766,7 +1766,7 @@ void MistralSolver::save()
     solver->STARTTIME = getRunTime();
     solver->presolve();
   }
-  solver->save_state();
+  solver->save();
   valuation_size.push(valuation.size);
 }
 

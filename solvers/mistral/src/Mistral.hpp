@@ -527,7 +527,6 @@ public:
   void test_x60();
   void printPython();
 
-  /*
   void load_xml(const char* filename, const int type=4);
   const char* get_feature_name(int i);
   double get_feature(int i);
@@ -535,7 +534,6 @@ public:
   void get_features();
   int num_vars();
   int get_degree(int i);
-  */
 };
 
 

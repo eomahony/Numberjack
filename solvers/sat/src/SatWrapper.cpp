@@ -123,7 +123,9 @@ Lit DomainEncoding::less_or_equal(const int value, const int index) const {
   if(_lower > value) return Lit_False;
   else if(_upper <= value) return Lit_True;
   else if(_size == 2) return ~Lit(_direct_encoding);
-  else if(index >= 0) return Lit(_order_encoding+index);
+  else if(index >= 0 && index < _size-1) {
+    return Lit(_order_encoding+index);
+  }
   else if(!_values) return Lit(_order_encoding+value-_lower);
 
   // We need to search for the right variable, the index of 'value' 
@@ -139,7 +141,7 @@ Lit DomainEncoding::equal(const int value, const int index) const {
     if(_upper == value) return Lit(_direct_encoding);
     return Lit_False;
   } else {
-    if(index >= 0) {return Lit(_direct_encoding+index);}
+    if(index >= 0 && index < _size) {return Lit(_direct_encoding+index);}
     if(!_values) return Lit(_direct_encoding+value-_lower);
 
     // We need to search for the right variable,: the index of 'value' 
@@ -176,7 +178,7 @@ void DomainEncoding::encode(SatWrapperSolver *solver)
 
     for(int i=0; i<_size; ++i) {
       // chain the bounds x<=i -> x<=i+1
-      if(i) {
+      if(i && i<_size-1) {
 	lits.clear();
 	lits.push_back(~(less_or_equal(getval(i-1),i-1)));
 	lits.push_back(less_or_equal(getval(i),i));
@@ -1757,8 +1759,9 @@ int SatWrapperSolver::create_atom(DomainEncoding* dom, const int type) {
 
 void SatWrapperSolver::addClause(std::vector<Lit>& cl) { 
   std::vector<Lit> clause;
-  if(!processClause(cl,clause))
+  if(!processClause(cl,clause)) {
     clause_base.push_back(clause);
+  }
 }
 
 void SatWrapperSolver::validate() {
@@ -2114,8 +2117,9 @@ void SatWrapperSolver::displayClause(std::vector<Lit>& cl) {
 
 void SatWrapperSolver::displayLiteral(Lit p) { 
   int x = var(p); 
-  if(x)
+  if(x>=0) {
     _atom_to_domain[x]->print_lit(p,_atom_to_type[x]); 
+  }
   else std::cout << "false" ;
 }
 

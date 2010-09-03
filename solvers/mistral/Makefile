@@ -87,13 +87,12 @@ OBJDIR = ./obj
 SRCDIR = ./src
 PYTHON = ./python
 
-XMLLIBS= `xml2-config --libs`
 
 CFLAGS = -I$(INC) \
-#`xml2-config --cflags`
+`xml2-config --cflags`
 
 LFLAGS = -L$(OBJ) \
-#$(XMLLIBS) \
+`xml2-config --libs`
 
 
 #-----------------------------------------------------------------------------

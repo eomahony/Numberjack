@@ -1,17 +1,17 @@
 
 #include "Mistral.hpp"
 
-//#include "../models/src/xcsp/XMLParser_libxml2.hh"
-//#include "../models/src/xcsp/MistralCallback.hh"
+#include "../models/src/xcsp/XMLParser_libxml2.hh"
+#include "../models/src/xcsp/MistralCallback.hh"
 ////#include "../models/src/xcsp/CSPParserCallback.hh"
 
 #include <mistral_sol.h>
 
-//using namespace CSPXMLParser;
+using namespace CSPXMLParser;
 using namespace Mistral;
 
-//MistralCallback *cb; 
-//XMLParser_libxml2<MistralCallback> *parser;
+MistralCallback *cb; 
+XMLParser_libxml2<MistralCallback> *parser;
 
 
 /**************************************************************
@@ -1552,7 +1552,7 @@ void MistralSolver::initialise()
   saved_level = solver->init_level;
 }
 
-  /*
+
 void MistralSolver::load_xml(const char* filename, const int type) 
 {
 
@@ -1668,8 +1668,6 @@ void MistralSolver::get_features()
   feature_ready = true;
   //
 }
-
-  */
 
 int MistralSolver::solveAndRestart(const int policy, 
 				   const unsigned int base, 

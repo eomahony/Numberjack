@@ -194,16 +194,13 @@ int MiniSatSolver::create_atom(DomainEncoding* dom, const int type) {
 }
 
 void MiniSatSolver::validate() {
-
-  std::cout << "validate" << std::endl;
-
   vec<Lit> cl;
   unsigned int i;
   while(current < clause_base.size()) {
-    cl.clear();
+    cl.clear(false);
     for(i=0; i<clause_base[current].size(); ++i)
       cl.push(clause_base[current][i]);
-    displayClause(clause_base[current]);
+    //displayClause(clause_base[current]);
     Solver::addClause(cl);
     ++current;
   }

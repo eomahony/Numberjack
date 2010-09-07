@@ -7,7 +7,7 @@ def QG(t,a,b,x):
     elif t == 6 : return (x[x[a,b],b] == x[a,x[a,b]])
     elif t == 7 : return (x[x[b,a],b] == x[a,x[b,a]])
 
-def model_quasigroup(T,N):
+def get_model(T,N):
     matrix = Matrix(N,N,N)
     model = Model(
         [AllDiff(row) for row in matrix.row], # latin square (rows)
@@ -18,8 +18,8 @@ def model_quasigroup(T,N):
     )
     return (matrix,model)
 
-def solve_quasigroup(param):
-    (matrix,model) = model_quasigroup(param['T'], param['N'])
+def solve(param):
+    (matrix,model) = get_model(param['T'], param['N'])
     solver = model.load(param['solver'])
     if solver.solve():
         print matrix.solution()
@@ -27,5 +27,10 @@ def solve_quasigroup(param):
         print 'no such quasigroup'
     print 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
 
-solve_quasigroup(input({'solver':'Mistral', 'N':8, 'T':3}))
 
+solvers = ['Mistral']
+default = {'solver':'Mistral', 'N':8, 'T':3}
+
+if __name__ == '__main__':
+    param = input(default) 
+    solve(param)

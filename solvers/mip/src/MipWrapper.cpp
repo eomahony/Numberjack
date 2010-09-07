@@ -1334,6 +1334,8 @@ void MipWrapperSolver::setFailureLimit(const int cutoff){
 
 void MipWrapperSolver::setTimeLimit(const int cutoff){}
 
+void MipWrapperSolver::setNodeLimit(const int cutoff){}
+
 void MipWrapperSolver::setVerbosity(const int degree){
   _verbosity = degree;
 }

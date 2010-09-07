@@ -1,6 +1,6 @@
 from Numberjack import *
 
-def model_steel_mill(data):
+def get_model(data):
     orders = Matrix(data.get("Orders"), data.get("Orders"))
     colours = Matrix(data.get("Colours"), data.get("Orders"))
     slabs = VarArray(data.get("Orders"), data.get("SlabSizes"))
@@ -19,10 +19,14 @@ def model_steel_mill(data):
             for (col_order, row_colour) in zip(orders, colours.col)],
     )
 
+    print model
+
     return (orders, colours, slabs, model)
 
-def solve_steel_mill(data,param):
-    (orders, colours, slabs, model) = model_steel_mill(data)
+def solve(param):
+    data = SteelMillData()
+
+    (orders, colours, slabs, model) = get_model(data)
     if param['solver'] == 'Mistral':
         # Break symmetries
         model.add([slabs[i] <= slabs[i+1] for i in range(0, data.get("Orders")-1)])
@@ -49,5 +53,12 @@ class SteelMillData:
             return getattr(self, name)
         print "No Such Data!"
         return None
-    
-solve_steel_mill(SteelMillData(), input({'solver':'Mistral'}))
+
+
+solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
+default = {'solver':'Mistral'}
+
+if __name__ == '__main__':
+    param = input(default) 
+    solve(param)
+

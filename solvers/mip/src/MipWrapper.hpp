@@ -434,6 +434,7 @@ public:
 		    const int rand);
   void setFailureLimit(const int cutoff);  
   void setTimeLimit(const int cutoff);
+  void setNodeLimit(const int cutoff);
   void setVerbosity(const int degree);
   void setRandomized(const int degree);
   void setRandomSeed(const int seed);

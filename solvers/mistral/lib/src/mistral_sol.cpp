@@ -1604,8 +1604,6 @@ int Solver::solve_and_restart( const int policy,
       STARTTIME = getRunTime();
       if( presolve() == UNKNOWN ) {
 
-	std::cout << "AFTER PRESOLVE AT LEVEL " << level << " " << init_level << std::endl;
-
 	// 	variables[41]->print(std::cout);
 	// 	std::cout << std::endl;
 

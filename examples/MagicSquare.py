@@ -1,6 +1,6 @@
 from Numberjack import *
 
-def model_magic_square(N):
+def get_model(N):
     sum_val = N*(N*N+1)/2 # This is what all the columns, rows and diagonals must add up tp
 
     square = Matrix(N,N,1,N*N)
@@ -15,8 +15,8 @@ def model_magic_square(N):
             )
     return (square,model)
     
-def solve_magic_square(param):
-    (square,model) = model_magic_square(param['N'])
+def solve(param):
+    (square,model) = get_model(param['N'])
     solver = model.load(param['solver'])
     solver.setVerbosity(param['verbose'])
     solver.setHeuristic(param['var'], param['val'], param['rand'])
@@ -29,5 +29,11 @@ def solve_magic_square(param):
     print square
     print 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
 
-solve_magic_square(input({'solver':'Mistral', 'N':4, 'var':'MinDomain',
-                          'val':'RandomMinMax', 'restart':'yes', 'rand':2, 'verbose':0}))
+
+solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
+default = {'solver':'Mistral', 'N':4, 'var':'MinDomain',
+           'val':'RandomMinMax', 'restart':'yes', 'rand':2, 'verbose':0}
+
+if __name__ == '__main__':
+    param = input(default) 
+    solve(param)

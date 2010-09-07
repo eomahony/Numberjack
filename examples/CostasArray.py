@@ -1,6 +1,6 @@
 from Numberjack import *
 
-def costas_array(N):
+def get_model(N):
     # Create the variables
     sequence = VarArray(N,1,N)
     
@@ -19,15 +19,21 @@ def printCostasTriangle(sequence):
         print ''.join([str(int(sequence[j].get_value())-int(sequence[j+i+1].get_value())).rjust(3) 
                        for j in range(N-i-1)])
 
-
-
-param = input({'solver':'Mistral', 'N':6, 'verbosity':1})
-
-sequence,model = costas_array(param['N'])
-solver = model.load(param['solver'])
-solver.setVerbosity(param['verbosity'])
-solver.solve()
+def solve(param):
+    sequence,model = get_model(param['N'])
+    solver = model.load(param['solver'])
+    solver.setVerbosity(param['verbosity'])
+    solver.solve()
     
-printCostasTriangle(sequence)
-print '\n\t', solver.getNodes(), 'nds  ', solver.getTime(), 's'
+    printCostasTriangle(sequence)
+    print '\n\t', solver.getNodes(), 'nds  ', solver.getTime(), 's'    
+
+
+solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
+default = {'solver':'Mistral', 'N':6, 'verbosity':1}
+
+if __name__ == '__main__':
+    param = input(default) 
+    solve(param)
+
 

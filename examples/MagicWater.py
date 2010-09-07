@@ -193,22 +193,26 @@ def solve_wall(param):
 
 
 
-param = input({'N':5, 'var':'DomainOverWDegree', 'proba':0.8,
-               'val':'RandomSplit', 'restart':'yes', 'rand':5, 
-               'verbose':2, 'cutoff':30000, 'factor':1.2, 'base':64, 
-               'decay':0.0,'algo':'basic','solver':'Mistral', 'print':'no'})
-print param
+def solve(param):
+    square,water = None,None
+    if param['algo'] == 'basic':
+        square,water = basic_solve(param)
+        if param['print'] == 'yes': print_water([square],[water])
+    elif param['algo'] == 'wall':
+        square,water = solve_wall(param)
+        if param['print'] == 'yes': print_water([square],[water])
+    else:
+        square1,water1 = basic_solve(param)
+        square2,water2 = solve_wall(param)
+        if param['print'] == 'yes': print_water([square1,square2],[water1,water2])
 
 
-square,water = None,None
-if param['algo'] == 'basic':
-    square,water = basic_solve(param)
-    if param['print'] == 'yes': print_water([square],[water])
-elif param['algo'] == 'wall':
-    square,water = solve_wall(param)
-    if param['print'] == 'yes': print_water([square],[water])
-else:
-    square1,water1 = basic_solve(param)
-    square2,water2 = solve_wall(param)
-    if param['print'] == 'yes': print_water([square1,square2],[water1,water2])
+solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
+default = {'N':5, 'var':'DomainOverWDegree', 'proba':0.8,
+           'val':'RandomSplit', 'restart':'yes', 'rand':5, 
+           'verbose':2, 'cutoff':30000, 'factor':1.2, 'base':64, 
+           'decay':0.0,'algo':'basic','solver':'Mistral', 'print':'no'}
 
+if __name__ == '__main__':
+    param = input(default) 
+    solve(param)

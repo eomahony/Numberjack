@@ -1,62 +1,50 @@
 from Numberjack import *
 
+def get_model(k,v,n):
+    design = Matrix(v,n)
+    pairs = Matrix(v*(v-1)/2,n)
+    index = [[0 for i in range(v)] for j in range(v)]
+    a  = 0
+    for i in range(v-1):
+        for j in range(i+1,v):
+            index[i][j] = a
+            index[j][i] = a
+            a += 1
 
-param = input({'k':3, 'v':6, 'solver':'MiniSat'})
+    pair_occurrence = VarArray(v*(v-1)/2,1,v-k)
 
-k = param['k']
-v = param['v']
-n = (v*(v-1)/2 - k*(k-1)/2)/(k-1)+1
-
-design = Matrix(v,n)
-#block = VarArray(n,2**k-1,2**v-2**(v-k))
-pairs = Matrix(v*(v-1)/2,n)
-index = [[0 for i in range(v)] for j in range(v)]
-a  = 0
-for i in range(v-1):
-    for j in range(i+1,v):
-        index[i][j] = a
-        index[j][i] = a
-        a += 1
-
-#for i,(a,b) in enumerate(pair_of(range(v))):
-#    print i, a, b
-#    index[a][b] = i
-#    index[b][a] = i
-
-#exit(1)
-
-pair_occurrence = VarArray(v*(v-1)/2,1,v-k)
-
-first = VarArray(v*(v-1)/2,n)
-last = VarArray(v*(v-1)/2,n)
+    first = VarArray(v*(v-1)/2,n)
+    last = VarArray(v*(v-1)/2,n)
 
 
-model = Model(
-    ## each block is a k-tuple
-    [Sum(col) == k for col in design.col],
-  
-    ## exactly one change between each block
-    [Sum([design[i][j-1] > design[i][j] for i in range(v)]) == 1 for j in range(1,n)],
-    [Sum([design[i][j-1] < design[i][j] for i in range(v)]) == 1 for j in range(1,n)],
+    model = Model(
+        ## each block is a k-tuple
+        [Sum(col) == k for col in design.col],
 
-    ## each pair can occur between 1 and v-k times 
-    [pairs[index[i][j]][x] == (design[i][x] & design[j][x]) for i in range(v) for j in range(i) for x in range(n)],
-    [pair_occurrence[index[i][j]] == Sum(pairs[index[i][j]])],
+        ## exactly one change between each block
+        [Sum([design[i][j-1] > design[i][j] for i in range(v)]) == 1 for j in range(1,n)],
+        [Sum([design[i][j-1] < design[i][j] for i in range(v)]) == 1 for j in range(1,n)],
 
-    ## consecutive ones (convex rows)
-    [pairs[index[i][j]][x] <= (first[index[i][j]] <= x) for i in range(v) for j in range(i) for x in range(n)],
-    [pairs[index[i][j]][x] <= ( last[index[i][j]] >= x) for i in range(v) for j in range(i) for x in range(n)],
-    [((first[index[i][j]] <= x) & (x <= last[index[i][j]])) <= pairs[index[i][j]][x] for x in range(n) for i in range(v) for j in range(i)],
-    [first[index[i][j]] <= last[index[i][j]] for i in range(v) for j in range(i)],
+        ## each pair can occur between 1 and v-k times 
+        [pairs[index[i][j]][x] == (design[i][x] & design[j][x]) for i in range(v) for j in range(i) for x in range(n)],
+        [pair_occurrence[index[i][j]] == Sum(pairs[index[i][j]])],
 
-    # implied constraint (we know the number of pairs in in each column)
-    [Sum(col) == (k*(k-1)/2) for col in pairs.col],
+        ## consecutive ones (convex rows)
+        [pairs[index[i][j]][x] <= (first[index[i][j]] <= x) for i in range(v) for j in range(i) for x in range(n)],
+        [pairs[index[i][j]][x] <= ( last[index[i][j]] >= x) for i in range(v) for j in range(i) for x in range(n)],
+        [((first[index[i][j]] <= x) & (x <= last[index[i][j]])) <= pairs[index[i][j]][x] for x in range(n) for i in range(v) for j in range(i)],
+        [first[index[i][j]] <= last[index[i][j]] for i in range(v) for j in range(i)],
 
-    ## symmetry breaking
-    [design[i][0] == 1 for i in range(k)],
-    design[k-1][1] == 0,
-    design[k][1] == 1,
-)
+        # implied constraint (we know the number of pairs in in each column)
+        [Sum(col) == (k*(k-1)/2) for col in pairs.col],
+
+        ## symmetry breaking
+        [design[i][0] == 1 for i in range(k)],
+        design[k-1][1] == 0,
+        design[k][1] == 1,
+    )
+    
+    return first,pairs,last,design,index,model
 
 '''
 
@@ -83,7 +71,7 @@ model = Model(
 '''
 
     
-        
+'''     
 if param['solver'] == 'Mistral':
     for i in range(k,v):
         for j in range(i):
@@ -92,47 +80,62 @@ if param['solver'] == 'Mistral':
                     print (i,j), '>=', (x,y)
                     print index[i][j], '>=', index[x][y]
                     #model.add( pairs[index[i][j]] >= pairs[index[x][y]] )
+'''
 
+def solve(param):
 
-#import Mistral
-#solver = Mistral.Solver(model, design)
+    k = param['k']
+    v = param['v']
+    n = (v*(v-1)/2 - k*(k-1)/2)/(k-1)+1
 
-#import MiniSat
-solver = model.load(param['solver']) #MiniSat.Solver(model)
+    first,pairs,last,design,index,model = get_model(k,v,n)
 
-solver.setHeuristic('DomainOverWDegree','Random',1)
-solver.setVerbosity(2)
+    #import Mistral
+    #solver = Mistral.Solver(model, design)
 
-#if solver.solveAndRestart():
-if solver.solve():
+    #import MiniSat
+    solver = model.load(param['solver']) #MiniSat.Solver(model)
 
-    print design
+    solver.setHeuristic('DomainOverWDegree','Random',1)
+    solver.setVerbosity(2)
 
-    for i in range(v-1):
-        for j in range(i+1,v):
-            print str((i,j)).ljust(5), first[index[i][j]], pairs[index[i][j]], last[index[i][j]]
+    #if solver.solveAndRestart():
+    if solver.solve():
 
-    #for i,row in enumerate(pairs):
-    #    print first[i], row, last[i]
+        print design
 
-    the_design = [[] for y in range(n)]
-    for y in range(n):
-        for x in range(v):
-            if design[x][y].get_value() > 0:
-                the_design[y].append(x)
+        for i in range(v-1):
+            for j in range(i+1,v):
+                print str((i,j)).ljust(5), first[index[i][j]], pairs[index[i][j]], last[index[i][j]]
 
-    for x in range(k):
+        #for i,row in enumerate(pairs):
+        #    print first[i], row, last[i]
+
+        the_design = [[] for y in range(n)]
         for y in range(n):
-            print str(the_design[y][x]+1).rjust(2),
-        print ''
+            for x in range(v):
+                if design[x][y].get_value() > 0:
+                    the_design[y].append(x)
 
-else:
-    print 'unsat!'
+        for x in range(k):
+            for y in range(n):
+                print str(the_design[y][x]+1).rjust(2),
+            print ''
+
+    else:
+        print 'unsat!'
 
 
-print solver.getNodes(), solver.getTime()
+    print solver.getNodes(), solver.getTime()
 
 
+
+solvers = ['Mistral', 'MiniSat', 'Walksat']
+default = {'k':3, 'v':6, 'solver':'MiniSat'}
+
+if __name__ == '__main__':
+    param = input(default) 
+    solve(param)
 
 
 """

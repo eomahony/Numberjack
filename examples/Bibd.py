@@ -1,6 +1,6 @@
 from Numberjack import *
 
-def model_bibd(v, b, r, k, l):
+def get_model(v, b, r, k, l):
     matrix = Matrix(v,b)
     model = Model( 
         [Sum(row) == k for row in matrix.row], # every row adds up to k        
@@ -13,17 +13,25 @@ def model_bibd(v, b, r, k, l):
 
     return (matrix,model)
 
-def solve_bibd(param):
-    (matrix,model) = model_bibd(*param('v','b','r','k','l')) 
+def solve(param):
+    (matrix,model) = get_model(param['v'],param['b'],param['r'],param['k'],param['l']) 
 
     if param['solver'] == 'Mistral':
         model += [matrix.row[i] <= matrix.row[i+1] for i in range(param['v']-1)]
         model += [matrix.col[i] <= matrix.col[i+1] for i in range(param['b']-1)]
 
     solver = model.load(param['solver'])
+    solver.setVerbosity(1)
+    solver.setTimeLimit(3)
     if solver.solve():
         print matrix
     print 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
 
-solve_bibd(input({'solver':'Mistral','v':7,'b':7,'r':3,'k':3,'l':1}))
+
+solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
+default = {'solver':'Mistral','v':7,'b':7,'r':3,'k':3,'l':1}
+
+if __name__ == '__main__':
+    param = input(default) 
+    solve(param)
 

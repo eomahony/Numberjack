@@ -1,6 +1,6 @@
 from Numberjack import *
 
-def model_langford_sequence(M,N):
+def get_model(M,N):
     X = [Variable(1, N*M-(i+2)*(M-1)) for i in range(N)]
     
     model = Model(
@@ -9,8 +9,8 @@ def model_langford_sequence(M,N):
     )
     return (X,model)
 
-def compute_langford_number(param):
-    (X,model) = model_langford_sequence(param['M'],param['N'])
+def solve(param):
+    (X,model) = get_model(param['M'],param['N'])
     solver = model.load(param['solver'])
 
     if param['solver'] == 'Mistral':
@@ -34,5 +34,10 @@ def printLangford(M,X):
             sequence[X[i].get_value()+j*(i+2)-1] = (i+1)
     print sequence
 
-compute_langford_number(input({'solver':'Mistral', 'N':10, 'M':3}))
+
+default = {'solver':'Mistral', 'N':10, 'M':3}
+
+if __name__ == '__main__':
+    param = input(default) 
+    solve(param)
 

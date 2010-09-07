@@ -1,6 +1,6 @@
 from Numberjack import *
 
-def model_queens(N):
+def get_model(N):
     queens = [Variable(N) for i in range(N)]
     model  = Model( 
         AllDiff( queens ),
@@ -9,8 +9,8 @@ def model_queens(N):
         )
     return (queens,model)
 
-def solve_queens(param):
-    (queens,model) = model_queens(param['N'])
+def solve(param):
+    (queens,model) = get_model(param['N'])
     solver = model.load(param['solver'])
     solver.setHeuristic(param['heuristic'], param['value'])
     solver.solve()
@@ -25,6 +25,10 @@ def print_chessboard(queens):
         print '|   '*queen.get_value()+'| Q |'+'   |'*(len(queens)-1-queen.get_value())
     print separator
 
-solve_queens(input({'solver':'Mistral', 'N':10, 'heuristic':'MinDomainMinVal',
-                    'print':'yes', 'value':'Lex'}))
+solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
+default = {'solver':'Mistral', 'N':10, 'heuristic':'MinDomainMinVal',
+           'print':'yes', 'value':'Lex'}
 
+if __name__ == '__main__':
+    param = input(default) 
+    solve(param)

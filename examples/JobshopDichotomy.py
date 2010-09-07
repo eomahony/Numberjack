@@ -76,7 +76,7 @@ class JSP_Model(Model):
 ###############################################
 ##############  function solve   ##############
 ###############################################
-def solve(model, solver, C_max, best_solution, cutoff):
+def dichotomic_step(model, solver, C_max, best_solution, cutoff):
     solver.save()
     for task in model.tasks:
         solver.post(task < C_max)
@@ -119,7 +119,7 @@ def dichotomic_search(model, solver, max_infeasible, min_feasible, cutoff):
         
         print 'c   current bounds:', ('['+str(lb+1)+'..'+str(ub)+']').rjust(16), ' solve', str(C_max).ljust(6),
 
-        (feasible, solution, C_max) = solve(model, solver, C_max, best_solution, cutoff)
+        (feasible, solution, C_max) = dichotomic_step(model, solver, C_max, best_solution, cutoff)
 
         if feasible:
             ub = C_max
@@ -223,10 +223,17 @@ def schedule(jsp, lib, plot):
         pylab.show()
 
         
+def solve(param):
+    jsp = JSP(param['data'])
+    schedule(jsp, param['solver'], (param['print'] == 'yes'))
 
-param = input({'solver':'Mistral', 'data':'data/tiny_jsp.txt', 'print':'no'})
-jsp = JSP(param['data'])
-schedule(jsp, param['solver'], (param['print'] == 'yes'))
+
+solvers = ['Mistral', 'MiniSat']
+default = {'solver':'Mistral', 'data':'data/tiny_jsp.txt', 'print':'no'}
+
+if __name__ == '__main__':
+    param = input(default) 
+    solve(param)
 
 
 

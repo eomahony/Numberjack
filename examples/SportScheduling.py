@@ -1,7 +1,6 @@
 from Numberjack import *
 
-def model_round_robin_tournament(nbTeams):
-    print nbTeams
+def get_model(nbTeams):
     Teams   = range(nbTeams)
     Weeks   = range(nbTeams-1)
     EWeeks  = range(nbTeams)
@@ -26,8 +25,8 @@ def model_round_robin_tournament(nbTeams):
 
     return (team, Weeks, Periods, model)
 
-def solve_round_robin_tournament(param):
-    (team, Weeks, Periods, model) = model_round_robin_tournament(param['teams'])
+def solve(param):
+    (team, Weeks, Periods, model) = get_model(param['teams'])
     solver = model.load(param['solver'])
     if solver.solve():
         print_schedule(team, Weeks, Periods)
@@ -40,8 +39,13 @@ def print_schedule(team, Weeks, Periods):
     for p in Periods:
         print ('period '+str(p)+':').ljust(10), ''.join([(str(team[w][p]['home']).rjust(2)+' vs '+str(team[w][p]['away']).ljust(2)).ljust(9) for w in Weeks]) 
 
-solve_round_robin_tournament(input({'solver':'Mistral', 'teams':8}))
 
+solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
+default = {'solver':'Mistral', 'teams':8}
+
+if __name__ == '__main__':
+    param = input(default) 
+    solve(param)
 
 
 

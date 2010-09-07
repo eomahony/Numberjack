@@ -3,7 +3,11 @@
 from Numberjack import *
 
 
-def WareHousePlanning(data, lib, cutoff):
+def solve(param):
+    data = WareHouseParser(param['data'])
+    lib = __import__(param['solver'])
+    cutoff = param['cutoff']
+
     WareHouseOpen = VarArray(data.get("NumberOfWarehouses"))
     
     ShopSupplied = Matrix(data.get("NumberOfShops"),
@@ -30,7 +34,7 @@ def WareHousePlanning(data, lib, cutoff):
 
     solver = lib.Solver(model)
     solver.setVerbosity(1)
-    #solver.setNodeLimit(cutoff)
+    solver.setNodeLimit(cutoff)
     solver.setHeuristic('Impact')
     solver.solve()
 
@@ -58,6 +62,9 @@ class WareHouseParser:
         return None
     
 
-param = input({'solver':'Mistral', 'data':'data/cap44.dat.txt', 'cutoff':25000})
+solvers = ['Mistral', 'SCIP']
+default = {'solver':'Mistral', 'data':'data/cap44.dat.txt', 'cutoff':5000}
 
-WareHousePlanning(WareHouseParser(param['data']), __import__(param['solver']), param['cutoff'])
+if __name__ == '__main__':
+    param = input(default) 
+    solve(param)

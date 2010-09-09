@@ -31,6 +31,12 @@ SCIPSolver::~SCIPSolver(){ DBG("delete wrapped solver\n%s", ""); }
 
 SCIP* SCIPSolver::get_scip() {return _scip;}
 
+void SCIPSolver::initialise(MipWrapperExpArray& arg){
+  DBG("Initialise the Solver with search vars %s\n", "");
+
+  initialise();
+}
+
 void SCIPSolver::initialise(){
   DBG("initialise the solver%s\n", "");
   MipWrapperSolver::initialise();
@@ -90,9 +96,9 @@ void SCIPSolver::add_in_constraint(LinearConstraint *con, double coef){
 int SCIPSolver::solve(){
   DBG("solve!%s\n", "");
 
-  if(_verbosity == 1){
+  if(_verbosity > 0 && _verbosity < 3){
     // Do nothing extra
-  } else if(_verbosity == 2){
+  } else if(_verbosity >= 3){
     SCIP_CALL_EXC(SCIPprintOrigProblem(_scip, NULL, NULL, FALSE));
   } else {
       // disable scip output to stdout

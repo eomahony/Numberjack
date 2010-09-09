@@ -1263,6 +1263,8 @@ void MipWrapperSolver::add_var_array(MipWrapperExpArray *arr){
 
 void MipWrapperSolver::initialise(MipWrapperExpArray& arg){
   DBG("Initialise the Solver with search vars %s\n", "");
+
+  initialise();
 }
 
 void MipWrapperSolver::initialise(){

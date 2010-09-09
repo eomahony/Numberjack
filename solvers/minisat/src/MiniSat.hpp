@@ -44,7 +44,8 @@ private:
   Clause*     conflict_clause;
   int         backtrack_level;
   int         conflictC;
-  vec<Lit>    forced_decisions;
+  //vec<Lit>    forced_decisions;
+  std::vector<Lit>    forced_decisions;
   vec<Lit>    learnt_clause;
 
   int first_decision_level;

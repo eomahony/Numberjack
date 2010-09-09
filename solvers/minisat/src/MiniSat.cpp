@@ -351,9 +351,22 @@ bool MiniSatSolver::propagate()
 }
 
 void MiniSatSolver::reset(bool full) {
+  nbSolutions = 0;
+
   learnt_clause.clear();
   backtrack_level = init_level;
-  forced_decisions.clear();
+  //forced_decisions.clear();
+  
+//   //if(forced_decisions.size()) {
+//   for(int i=decisionLevel()-1; i>backtrack_level; --i) {
+
+//     std::cout << "UNDOpop "  << (forced_decisions.size()) << std::endl;
+
+
+//   //forced_decisions.pop();
+//   forced_decisions.pop_back();
+//   }
+
 
   cancelUntil(backtrack_level);
 
@@ -375,9 +388,15 @@ bool MiniSatSolver::undo(const int nlevel)
   
   if(backtrack_level < 0) backtrack_level = 0;
 
-  for(int i=decisionLevel()-1; i>backtrack_level; --i) forced_decisions.pop();
-  last_decision = forced_decisions.last();
-  forced_decisions.pop();
+  for(int i=decisionLevel()-1; i>backtrack_level; --i) {
+    forced_decisions.pop_back();
+  }
+
+  //last_decision = forced_decisions.last();
+  last_decision = forced_decisions.back();
+
+  forced_decisions.pop_back();
+
   cancelUntil(backtrack_level);
 
   return okay;
@@ -392,9 +411,14 @@ bool MiniSatSolver::branch_right()
     analyze(conflict_clause, learnt_clause, backtrack_level);
   else backtrack_level = decisionLevel()-1;
 
-  for(int i=decisionLevel()-1; i>backtrack_level; --i) forced_decisions.pop();
-  last_decision = forced_decisions.last();
-  forced_decisions.pop();
+  for(int i=decisionLevel()-1; i>backtrack_level; --i) {
+    forced_decisions.pop_back();
+  }
+
+  //last_decision = forced_decisions.last();
+  last_decision = forced_decisions.back();
+  //forced_decisions.pop();
+  forced_decisions.pop_back();
 
   cancelUntil(backtrack_level);
 
@@ -425,8 +449,12 @@ void MiniSatSolver::deduce()
 
 void MiniSatSolver::save()
 {
+  
   decisions++;
   newDecisionLevel();
+  //forced_decisions.push(lit_Undef);
+  forced_decisions.push_back(lit_Undef);
+
 }
 
 void MiniSatSolver::post(const char* op, SatWrapper_Expression* x, int v)
@@ -451,7 +479,9 @@ void MiniSatSolver::post(const char* op, SatWrapper_Expression* x, int v)
   case 'l': next =  (x->less_or_equal(v )); break;
   }
 
-  forced_decisions.push(next);
+  //forced_decisions.push(next);
+  //forced_decisions.last() = next;
+  forced_decisions.back() = next;
 
   uncheckedEnqueue(next);
 }
@@ -493,12 +523,12 @@ bool MiniSatSolver::is_sat()
 
 bool MiniSatSolver::is_unsat()
 {
-  return (result == 0 && nbSolutions == 0);
+  return (result == l_False && nbSolutions == 0);
 }
 
 bool MiniSatSolver::is_opt()
 {
-  return (result == 0 && nbSolutions);
+  return (result == l_False && nbSolutions);
 }
 
 void MiniSatSolver::printStatistics()

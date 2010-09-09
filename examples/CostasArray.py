@@ -23,10 +23,12 @@ def solve(param):
     sequence,model = get_model(param['N'])
     solver = model.load(param['solver'])
     solver.setVerbosity(param['verbosity'])
+    solver.setTimeLimit(3)
     solver.solve()
     
-    printCostasTriangle(sequence)
-    print '\n\t', solver.getNodes(), 'nds  ', solver.getTime(), 's'    
+    if solver.is_sat():
+        printCostasTriangle(sequence)
+        print '\n\t', solver.getNodes(), 'nds  ', solver.getTime(), 's'    
 
 
 solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']

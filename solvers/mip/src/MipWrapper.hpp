@@ -407,48 +407,48 @@ public:
 
   // add an expression, in the case of a tree of expressions,
   // each node of the tree is added separately, depth first.
-  void add(MipWrapper_Expression* arg);
+  virtual void add(MipWrapper_Expression* arg);
   
   void add_expr(MipWrapper_Expression *expr);
   void add_int_array(MipWrapperIntArray *arr);
   void add_var_array(MipWrapperExpArray *arr);
 
   // used to initialise search on a given subset of variables
-  void initialise(MipWrapperExpArray& arg);
+  virtual void initialise(MipWrapperExpArray& arg);
   // initialise the solver before solving (no more calls to add after this)
-  void initialise();
+  virtual void initialise();
 
   // solving methods
-  int solve();
-  int solveAndRestart(const int policy = GEOMETRIC, 
+  virtual int solve();
+  virtual int solveAndRestart(const int policy = GEOMETRIC, 
 		      const unsigned int base = 32, 
 		      const double factor = 1.3333333,
 		      const double decay = 0.0);
-  int startNewSearch();
-  int getNextSolution();
-  int sacPreprocess(const int type);
+  virtual int startNewSearch();
+  virtual int getNextSolution();
+  virtual int sacPreprocess(const int type);
   
   // parameter tuning methods
-  void setHeuristic(const char* var_heuristic,
-		    const char* val_heuristic,
-		    const int rand);
-  void setFailureLimit(const int cutoff);  
-  void setTimeLimit(const int cutoff);
-  void setNodeLimit(const int cutoff);
-  void setVerbosity(const int degree);
-  void setRandomized(const int degree);
-  void setRandomSeed(const int seed);
+  virtual void setHeuristic(const char* var_heuristic,
+			    const char* val_heuristic,
+			    const int rand);
+  virtual void setFailureLimit(const int cutoff);  
+  virtual void setTimeLimit(const int cutoff);
+  virtual void setNodeLimit(const int cutoff);
+  virtual void setVerbosity(const int degree);
+  virtual void setRandomized(const int degree);
+  virtual void setRandomSeed(const int seed);
 
   // statistics methods
-  bool is_sat();
-  bool is_unsat();
-  void printStatistics();
-  int getBacktracks();
-  int getNodes();
-  int getFailures();
-  int getChecks();
-  int getPropags();
-  double getTime();
+  virtual bool is_sat();
+  virtual bool is_unsat();
+  virtual void printStatistics();
+  virtual int getBacktracks();
+  virtual int getNodes();
+  virtual int getFailures();
+  virtual int getChecks();
+  virtual int getPropags();
+  virtual double getTime();
   
   // Value pass back stuff
   virtual double get_value(void *ptr);

@@ -1,5 +1,6 @@
 
 #include "cpp_walksat.hpp"
+#include <iostream>
 
 WalksatAlgorithm *current_solver;
 void handle_interrupt(int sig)
@@ -73,7 +74,7 @@ WalksatAlgorithm::WalksatAlgorithm() {
   /* Statistics */
   
   time_cutoff = 0.0;
-  //expertime;
+  expertime = 0.0;
   //flips_this_solution;
   //lowbad;		/* lowest number of bad clauses during try */
   totalflip = 0;		/* total number of flips in all tries so far */
@@ -181,8 +182,9 @@ int WalksatAlgorithm::walk_solve() {
   
   while (! abort_flag && 
 	 numsuccesstry < numsol && numtry < numrun &&
-	 (time_cutoff != 0.0 ||
-	  time_cutoff <= elapsed_seconds())) {
+	 (time_cutoff == 0.0 ||
+	  time_cutoff > expertime)) {
+
     numtry++;
     init(initfile, initoptions);
     update_statistics_start_try();
@@ -198,8 +200,10 @@ int WalksatAlgorithm::walk_solve() {
       update_statistics_end_flip();
     }
     update_and_print_statistics_end_try();
+
+    expertime += elapsed_seconds();
   }
-  expertime = elapsed_seconds();
+  //expertime = elapsed_seconds();
   if(verbosity) print_statistics_final();
   return status_flag;
 }

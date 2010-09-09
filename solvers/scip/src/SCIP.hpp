@@ -29,6 +29,7 @@ public:
   virtual ~SCIPSolver();
   
   // initialise the solver before solving (no more calls to add after this)
+  void initialise(MipWrapperExpArray& arg);
   void initialise();
 
   // solving methods

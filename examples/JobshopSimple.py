@@ -122,6 +122,7 @@ def solve(param):
 ###############################################
 ##############      Input        ##############
 ###############################################
+solvers = ['Mistral', 'MiniSat']
 default = {'solver':'Mistral', 'data':'data/tiny_jsp.txt', 'print':'no'}
 
 if __name__ == '__main__':

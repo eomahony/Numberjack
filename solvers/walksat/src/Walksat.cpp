@@ -119,7 +119,7 @@ void WalksatSolver::initialise()
 	{
 	  storeptr = (int *) malloc( sizeof(int) * STOREBLOCK );
 	  freestore = STOREBLOCK;
-	  fprintf(stderr,"allocating memory...\n");
+	  //fprintf(stderr,"allocating memory...\n");
 	}
       wsat.clause[i] = storeptr;
       if(clause_base[i].size() > MAXLENGTH)

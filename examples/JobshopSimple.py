@@ -69,7 +69,7 @@ def get_model(jsp):
         Minimise( C_max )
         )
 
-    return model
+    return C_max,Jobs,model
 
 
 def solve(param):
@@ -78,11 +78,11 @@ def solve(param):
     ###############################################
     jsp = JSP(param['data'])
 
-    model = get_model(jsp)
+    C_max,Jobs,model = get_model(jsp)
     solver = model.load(param['solver'])
 
-    solver.setVerbosity(2)
-    solver.setTimeLimit(10)
+    solver.setVerbosity(param['verbose'])
+    solver.setTimeLimit(param['tcutoff'])
 
     if sys.argv[-1] == 'scheduling':
         solver.setHeuristic('Scheduling', 'Promise', 2)
@@ -90,21 +90,20 @@ def solve(param):
     else:
         solver.solve()
 
+    schedule = [[-1]*C_max.get_value() for job in jsp.job]
+    index = 0
+    for machine in jsp.machine:
+        index += 1
+        for m in machine:
+            for i in range(Jobs[m].duration):
+                start = Jobs[m].get_value()
+                schedule[m[0]][start+i] = index
 
     ###############################################
     ############# Output (Matplotlib) #############
     ###############################################
     if param['print'] == 'yes':
         print '\n display schedule'
-        schedule = [[-1]*C_max.get_value() for job in jsp.job]
-        index = 0
-        for machine in jsp.machine:
-            index += 1
-            for m in machine:
-                for i in range(Jobs[m].duration):
-                    start = Jobs[m].get_value()
-                    schedule[m[0]][start+i] = index
-
         width = 60
         print_schedule = []
         for row in schedule:
@@ -118,14 +117,20 @@ def solve(param):
         #pylab.colorbar()
         pylab.show()
 
+    out = ''
+    if solver.is_sat():
+        out = str(schedule)
+    out += ('\nNodes: ' + str(solver.getNodes()))
+    return out    
+
 
 ###############################################
 ##############      Input        ##############
 ###############################################
 solvers = ['Mistral', 'MiniSat']
-default = {'solver':'Mistral', 'data':'data/tiny_jsp.txt', 'print':'no'}
+default = {'solver':'Mistral', 'data':'data/tiny_jsp.txt', 'print':'no', 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':
     param = input(default) 
-    solve(param)
+    print solve(param)
 

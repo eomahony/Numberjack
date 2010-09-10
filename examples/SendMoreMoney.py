@@ -25,18 +25,21 @@ def solve(param):
 
     # Load up model into solver
     solver = Mistral.Solver(model)
+    solver.setVerbosity(param['verbose'])
 
     # Now Solve
+    out = ''
     if solver.solve():
-        print "   ", s,e,n,d
-        print " + ", m,o,r,e
-        print  "=", m,o,n,e,y
+        out += "     " + str(s) + ' ' + str(e) + ' ' + str(n) + ' ' + str(d) + ' ' +  '\n'
+        out += " +  " + ' ' + str(m) + ' ' + str(o) + ' ' + str(r) + ' ' + str(e) + ' ' +  '\n'
+        out +=  "= " + ' ' + str(m) + ' ' + str(o) + ' ' + str(n) + ' ' + str(e) + ' ' + str(y) + ' ' +  '\n'
+    return out
 
 
 solvers = ['Mistral']
-default = {}
+default = {'solver':'Mistral', 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':
     param = input(default) 
-    solve(param)
+    print solve(param)
 

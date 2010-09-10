@@ -26,23 +26,27 @@ def get_model(param):
 def solve(param):
     marks,model = get_model(param)
 
-    s = model.load( param['solver'], marks )
-    s.setHeuristic('Impact')
-    s.setTimeLimit(10)
-    s.setVerbosity(2)
-    s.solve()
+    solver = model.load( param['solver'], marks )
+    solver.setHeuristic(param['heuristic'])
+    solver.setVerbosity(param['verbose'])
+    solver.setTimeLimit(param['tcutoff'])
 
-    print "Search nodes:", s.getNodes(), "Search time:", s.getTime()
-    print  marks
+    solver.solve()
+
+    out = ''
+    if solver.is_sat():
+        out = str(marks)
+    out += ('\nNodes: ' + str(solver.getNodes()))
+    return out
 
 
 ruler = (0,1,3,6,11,17,25,34,44,55,72,85,106,127)
 solvers = ['Mistral', 'MiniSat', 'SCIP']
-default = {'solver':'Mistral', 'marks':6}
+default = {'solver':'Mistral', 'marks':6, 'heuristic':'Impact', 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':
     param = input(default) 
-    solve(param)
+    print solve(param)
 
 
 

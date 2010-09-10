@@ -21,16 +21,20 @@ def get_model(T,N):
 def solve(param):
     (matrix,model) = get_model(param['T'], param['N'])
     solver = model.load(param['solver'])
-    if solver.solve():
-        print matrix.solution()
-    else:
-        print 'no such quasigroup'
-    print 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
+    solver.setVerbosity(param['verbose'])
+    solver.setTimeLimit(param['tcutoff'])
+    solver.solve()
+
+    out = ''
+    if solver.is_sat():
+        out = str(matrix)
+    out += ('\nNodes: ' + str(solver.getNodes()))
+    return out    
 
 
 solvers = ['Mistral']
-default = {'solver':'Mistral', 'N':8, 'T':3}
+default = {'solver':'Mistral', 'N':8, 'T':3, 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':
     param = input(default) 
-    solve(param)
+    print solve(param)

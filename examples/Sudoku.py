@@ -18,13 +18,22 @@ def solve(param):
     grid,sudoku = get_model(N,clues)
 
     solver = sudoku.load(param['solver'])
+    solver.setVerbosity(param['verbose'])
+    solver.setTimeLimit(param['tcutoff'])
+
     solver.solve()
-    print grid
+
+    out = ''
+    if solver.is_sat():
+        out = str(grid)
+    out += ('\nNodes: ' + str(solver.getNodes()))
+    return out  
+
 
 
 solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
-default = {'N':3,'solver':'Mistral','file':'data/sdk.txt'}
+default = {'N':3,'solver':'Mistral','file':'data/sdk.txt', 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':
     param = input(default) 
-    solve(param)
+    print solve(param)

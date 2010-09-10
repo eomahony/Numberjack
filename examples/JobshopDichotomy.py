@@ -76,7 +76,7 @@ class JSP_Model(Model):
 ###############################################
 ##############  function solve   ##############
 ###############################################
-def dichotomic_step(model, solver, C_max, best_solution, cutoff):
+def dichotomic_step(model, solver, C_max, best_solution, verb, cutoff):
     solver.save()
     for task in model.tasks:
         solver.post(task < C_max)
@@ -88,14 +88,14 @@ def dichotomic_step(model, solver, C_max, best_solution, cutoff):
     outcome = (None, None, C_max)
     if solver.is_sat():
         outcome = (True, solver.get_solution(), max([task.get_min() + task.duration for task in model.tasks]))
-        print '   SAT :-)', 
+        if verb>0: print '   SAT :-)', 
     elif solver.is_unsat():
         outcome = (False, None, C_max)
-        print ' UNSAT :-)', 
+        if verb>0: print ' UNSAT :-)', 
     else:
-        print ' ABORT :-(', 
+        if verb>0: print ' ABORT :-(', 
 
-    print str(solver.getTime()).rjust(8), 's', str(solver.getNodes()).rjust(10), 'nds'
+    if verb>0: print str(solver.getTime()).rjust(8), 's', str(solver.getNodes()).rjust(10), 'nds'
  
     solver.reset()
 
@@ -107,8 +107,8 @@ def dichotomic_step(model, solver, C_max, best_solution, cutoff):
 ###############################################
 ########  function dichotomic search   ########
 ###############################################
-def dichotomic_search(model, solver, max_infeasible, min_feasible, cutoff):
-    print 'start dichotmic search', cutoff
+def dichotomic_search(model, solver, max_infeasible, min_feasible, verb, cutoff):
+    if verb>0: print 'start dichotmic search', cutoff
 
     lb = max_infeasible
     ub = min_feasible
@@ -117,9 +117,9 @@ def dichotomic_search(model, solver, max_infeasible, min_feasible, cutoff):
     while lb+1 < ub:
         C_max = int((lb + ub) / 2)
         
-        print 'c   current bounds:', ('['+str(lb+1)+'..'+str(ub)+']').rjust(16), ' solve', str(C_max).ljust(6),
+        if verb>0: print 'c   current bounds:', ('['+str(lb+1)+'..'+str(ub)+']').rjust(16), ' solve', str(C_max).ljust(6),
 
-        (feasible, solution, C_max) = dichotomic_step(model, solver, C_max, best_solution, cutoff)
+        (feasible, solution, C_max) = dichotomic_step(model, solver, C_max, best_solution, verb, cutoff)
 
         if feasible:
             ub = C_max
@@ -136,7 +136,7 @@ def dichotomic_search(model, solver, max_infeasible, min_feasible, cutoff):
 ###############################################
 ########   function branch and bound   ########
 ###############################################
-def branch_and_bound(model, lib, max_infeasible, min_feasible, best=None):
+def branch_and_bound(model, lib, max_infeasible, min_feasible, verb, best=None):
     C_max = Variable(max_infeasible+1, min_feasible)
     for task in model.tasks: 
         model.add(task < C_max)
@@ -145,7 +145,7 @@ def branch_and_bound(model, lib, max_infeasible, min_feasible, best=None):
     if lib == 'Mistral': solver = model.load( lib, model.sequence )
     else: solver = model.load( lib )
 
-    solver.setVerbosity(1)
+    solver.setVerbosity(verb-1)
     solver.setHeuristic('Scheduling')
     if best is not None: solver.guide(best)
 
@@ -157,10 +157,10 @@ def branch_and_bound(model, lib, max_infeasible, min_feasible, best=None):
         best = solver.get_solution()
 
     if solver.is_opt():
-        print 'c   Found optimal solution:', C_max.solution()
+        if verb>0: print 'c   Found optimal solution:', C_max.solution()
         outcome = (C_max.get_value(), C_max.get_value(), best)
     else:
-        print 'c   Best C_max:', C_max.solution()
+        if verb>0: print 'c   Best C_max:', C_max.solution()
         outcome = (max_infeasible+1, C_max.get_value(), best)
     return outcome
 
@@ -168,21 +168,24 @@ def branch_and_bound(model, lib, max_infeasible, min_feasible, best=None):
 ###############################################
 ###########  main solver function   ###########
 ###############################################
-def schedule(jsp, lib, plot):
-    print 'build model'
+def solve(param):
+    jsp = JSP(param['data'])
+    lib = param['solver']
+    verb = param['verbose']
+
     model = JSP_Model(jsp)
     
     if lib == 'Mistral': solver = model.load(lib, model.sequence)
     else: solver = model.load(lib)
 
     solver.setHeuristic('Scheduling', 'Promise')
+    solver.setVerbosity(param['verbose']-1)
 
     (lb, ub) = (jsp.lower_bound()-1, jsp.upper_bound())
 
-    cutoff = 10000
-    (lb, ub, best) = dichotomic_search(model, solver, lb, ub, cutoff)    
-    print 'start branch & bound in ['+str(lb)+'..'+str(ub)+']'
-    if lb+1 < ub: (lb, ub, best) = branch_and_bound(model, lib, lb, ub, best)
+    (lb, ub, best) = dichotomic_search(model, solver, lb, ub, verb, param['tcutoff'])
+    if verb>0: print 'start branch & bound in ['+str(lb)+'..'+str(ub)+']'
+    if lb+1 < ub: (lb, ub, best) = branch_and_bound(model, lib, lb, ub, verb, best)
 
     ## finalize the solution (tasks)
     solver.reset()
@@ -195,19 +198,27 @@ def schedule(jsp, lib, plot):
     best = solver.get_solution()
 
 
-    if plot:
+    schedule = [[-1]*ub for job in jsp.job]
+    index = 0
+    for machine in jsp.machine:
+        index += 1
+        for m in machine:
+            start = model.Jobs[m].get_value()
+            for i in range(model.Jobs[m].duration):
+                schedule[m[0]][start+i] = index
+
+    out = ''
+    if solver.is_sat():
+        out = str(schedule)
+    out += ('\nNodes: ' + str(solver.getNodes()))
+    return out    
+
+
+    if param['print'] == 'yes':
         ###############################################
         ############# Output (Matplotlib) #############
         ###############################################
         print '\n display schedule'
-        schedule = [[-1]*ub for job in jsp.job]
-        index = 0
-        for machine in jsp.machine:
-            index += 1
-            for m in machine:
-                start = model.Jobs[m].get_value()
-                for i in range(model.Jobs[m].duration):
-                    schedule[m[0]][start+i] = index
 
         width = 60
         print_schedule = []
@@ -222,18 +233,13 @@ def schedule(jsp, lib, plot):
         #pylab.colorbar()
         pylab.show()
 
-        
-def solve(param):
-    jsp = JSP(param['data'])
-    schedule(jsp, param['solver'], (param['print'] == 'yes'))
-
 
 solvers = ['Mistral', 'MiniSat']
-default = {'solver':'Mistral', 'data':'data/tiny_jsp.txt', 'print':'no'}
+default = {'solver':'Mistral', 'data':'data/tiny_jsp.txt', 'print':'no', 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':
     param = input(default) 
-    solve(param)
+    print solve(param)
 
 
 

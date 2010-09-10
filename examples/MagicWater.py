@@ -57,11 +57,12 @@ def basic_solve(param):
     solver.setVerbosity(param['verbose'])
     solver.setHeuristic(param['var'], param['val'], abs(param['rand']))
     solver.setNodeLimit(param['cutoff'])
+    solver.setTimeLimit(param['tcutoff'])
 
     solver.solveAndRestart(GEOMETRIC, param['base'], param['factor'], param['decay']);
         
-    print 'Objective:', objective.get_value(), 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
-    return (Solution(square),Solution(water))
+    #print 'Objective:', objective.get_value(), 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
+    return (Solution(square),Solution(water),solver)
     
 
 def print_water_level(water_level):
@@ -120,11 +121,6 @@ def print_water(squares, waters):
 
 
 
-
-
-
-
-
 def get_wall(square):
     N = len(square.row) ## order of the magic square
     No3 = int(float(N)/3) ## floor of N/3
@@ -154,6 +150,7 @@ def solve_wall(param):
 
     solver.setVerbosity(param['verbose'])
     solver.setHeuristic(param['var'], param['val'], abs(param['rand']))
+    solver.setTimeLimit(param['tcutoff'])
 
     square_sol = None
     water_sol = None
@@ -161,7 +158,7 @@ def solve_wall(param):
     water_level = 0
     margin = 0
     while margin <= 1:
-        print '\n\nsolve with margin', margin
+        #print '\n\nsolve with margin', margin
         solver.setNodeLimit(param['cutoff']/2)
 
         ## save 
@@ -186,33 +183,38 @@ def solve_wall(param):
         solver.undo()
         margin += 1
 
-        
-    print 'Objective:', (water_level), 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
-    return (square_sol,water_sol)
+    #print 'Objective:', (water_level), 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
+    return (square_sol,water_sol,solver)
 
 
 
 
 def solve(param):
-    square,water = None,None
+    square,water,solver = None,None,None
     if param['algo'] == 'basic':
-        square,water = basic_solve(param)
+        square,water,solver = basic_solve(param)
         if param['print'] == 'yes': print_water([square],[water])
     elif param['algo'] == 'wall':
-        square,water = solve_wall(param)
+        square,water,solver = solve_wall(param)
         if param['print'] == 'yes': print_water([square],[water])
     else:
-        square1,water1 = basic_solve(param)
-        square2,water2 = solve_wall(param)
+        square1,water1,solver = basic_solve(param)
+        square2,water2,solver = solve_wall(param)
         if param['print'] == 'yes': print_water([square1,square2],[water1,water2])
+    out = ''
+    if solver.is_sat():
+        out = str(square)+'\n\n'+str(water)+'\n'
+    out += ('\nNodes: ' + str(solver.getNodes()))
+    return out   
 
 
-solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
-default = {'N':5, 'var':'DomainOverWDegree', 'proba':0.8,
+solvers = ['Mistral']
+default = {'N':4, 'var':'DomainOverWDegree', 'proba':0.8,
            'val':'RandomSplit', 'restart':'yes', 'rand':5, 
-           'verbose':2, 'cutoff':30000, 'factor':1.2, 'base':64, 
-           'decay':0.0,'algo':'basic','solver':'Mistral', 'print':'no'}
+           'verbose':1, 'cutoff':30000, 'factor':1.2, 'base':64, 
+           'decay':0.0,'algo':'basic','solver':'Mistral', 
+           'print':'no','tcutoff':3}
 
 if __name__ == '__main__':
     param = input(default) 
-    solve(param)
+    print solve(param)

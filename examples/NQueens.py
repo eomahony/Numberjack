@@ -13,22 +13,26 @@ def solve(param):
     (queens,model) = get_model(param['N'])
     solver = model.load(param['solver'])
     solver.setHeuristic(param['heuristic'], param['value'])
+    solver.setVerbosity(param['verbose'])
+    solver.setTimeLimit(param['tcutoff'])
     solver.solve()
+
+    out = ''
     if solver.is_sat() and param['print'] == 'yes':
-        print_chessboard(queens)
-    print 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
+        out += print_chessboard(queens)
+    out += ('\nNodes: ' + str(solver.getNodes()))
+    return out    
 
 def print_chessboard(queens):
-    separator = '+---'*len(queens)+'+'
+    out = '+---'*len(queens)+'+\n'
     for queen in queens:
-        print separator
-        print '|   '*queen.get_value()+'| Q |'+'   |'*(len(queens)-1-queen.get_value())
-    print separator
+        out += ('|   '*queen.get_value()+'| Q |'+'   |'*(len(queens)-1-queen.get_value())+'\n'+'+---'*len(queens)+'+\n')
+    return out
 
 solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
 default = {'solver':'Mistral', 'N':10, 'heuristic':'MinDomainMinVal',
-           'print':'yes', 'value':'Lex'}
+           'print':'yes', 'value':'Lex', 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':
     param = input(default) 
-    solve(param)
+    print solve(param)

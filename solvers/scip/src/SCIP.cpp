@@ -128,7 +128,7 @@ bool SCIPSolver::is_unsat(){ return ! is_sat(); }
 void SCIPSolver::printStatistics(){
   std::cout << "\td Time: " << getTime() << "\tNodes:" << getNodes()
 	    << std::endl;
-  if(_verbosity == 2){
+  if(_verbosity > 1){
     SCIP_CALL_EXC(SCIPprintStatistics(_scip, NULL));
   }
 }

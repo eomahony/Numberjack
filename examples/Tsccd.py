@@ -97,16 +97,20 @@ def solve(param):
     solver = model.load(param['solver']) #MiniSat.Solver(model)
 
     solver.setHeuristic('DomainOverWDegree','Random',1)
-    solver.setVerbosity(2)
+    solver.setVerbosity(param['verbose'])
+    solver.setTimeLimit(param['tcutoff'])
 
     #if solver.solveAndRestart():
-    if solver.solve():
+    solver.solve()
 
-        print design
+
+    out = ''
+    if solver.is_sat():
+        out += str(design)+'\n'
 
         for i in range(v-1):
             for j in range(i+1,v):
-                print str((i,j)).ljust(5), first[index[i][j]], pairs[index[i][j]], last[index[i][j]]
+                out += (str((i,j)).ljust(5) + ' ' + str(first[index[i][j]]) + ' ' + str(pairs[index[i][j]]) + ' ' + str(last[index[i][j]]) + '\n')
 
         #for i,row in enumerate(pairs):
         #    print first[i], row, last[i]
@@ -119,23 +123,20 @@ def solve(param):
 
         for x in range(k):
             for y in range(n):
-                print str(the_design[y][x]+1).rjust(2),
-            print ''
+                out += (str(the_design[y][x]+1).rjust(2) + ' ')
+            out += '\n'
 
-    else:
-        print 'unsat!'
-
-
-    print solver.getNodes(), solver.getTime()
+    out += ('\nNodes: ' + str(solver.getNodes()))
+    return out  
 
 
 
 solvers = ['Mistral', 'MiniSat', 'Walksat']
-default = {'k':3, 'v':6, 'solver':'MiniSat'}
+default = {'k':3, 'v':6, 'solver':'MiniSat', 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':
     param = input(default) 
-    solve(param)
+    print solve(param)
 
 
 """

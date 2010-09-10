@@ -21,17 +21,22 @@ def solve(param):
         model += [matrix.col[i] <= matrix.col[i+1] for i in range(param['b']-1)]
 
     solver = model.load(param['solver'])
-    solver.setVerbosity(1)
-    solver.setTimeLimit(3)
-    if solver.solve():
-        print matrix
-    print 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
+    solver.setVerbosity(param['verbose'])
+    solver.setTimeLimit(param['tcutoff'])
+    solver.solve()
+
+    out = ''
+    if solver.is_sat():
+         out += str(matrix)
+    out += ('\nNodes: ' + str(solver.getNodes()))
+    return out
 
 
 solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
-default = {'solver':'Mistral','v':7,'b':7,'r':3,'k':3,'l':1}
+default = {'solver':'Mistral', 'v':7, 'b':7, 'r':3, 'k':3, 'l':1, 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':
     param = input(default) 
-    solve(param)
+    print solve(param)
+
 

@@ -1239,6 +1239,7 @@ MipWrapper_Expression* MipWrapper_Maximise::add(MipWrapperSolver *solver,
 MipWrapperSolver::MipWrapperSolver(){
   DBG("Create a MIP solver %s\n", "");
   var_counter = 0;
+  _verbosity = 0;
   _obj = NULL;
 }
 
@@ -1295,7 +1296,7 @@ int MipWrapperSolver::solve(){
   
   initialise();
   
-  std::cout << "c solve with mip wrapper " << std::endl;
+  if(_verbosity) std::cout << "c solve with mip wrapper " << std::endl;
   for(unsigned int i = 0; i < _constraints.size(); ++i)
     _constraints[i]->display();
   
@@ -1310,28 +1311,28 @@ int MipWrapperSolver::solveAndRestart(const int policy,
 }
 
 int MipWrapperSolver::startNewSearch(){
-  std::cout << "c start a new interuptable search" << std::endl;
+  if(_verbosity) std::cout << "c start a new interuptable search" << std::endl;
   return 0;
 }
 
 int MipWrapperSolver::getNextSolution(){
-  std::cout << "c seek next solution" << std::endl;
+  if(_verbosity) std::cout << "c seek next solution" << std::endl;
   return 0;
 }
 
 int MipWrapperSolver::sacPreprocess(const int type){
-  std::cout << "c enforces singleton arc consistency" << std::endl;
+  if(_verbosity) std::cout << "c enforces singleton arc consistency" << std::endl;
   return 0;
 }
 
 void MipWrapperSolver::setHeuristic(const char* var_heuristic,
 				    const char* val_heuristic,
 				    const int rand){
-  std::cout << "c set the variable/value ordering (ignored)" << std::endl;
+  if(_verbosity) std::cout << "c set the variable/value ordering (ignored)" << std::endl;
 }
 
 void MipWrapperSolver::setFailureLimit(const int cutoff){
-  std::cout << "c set a cutoff on failures" << std::endl;
+  if(_verbosity) std::cout << "c set a cutoff on failures" << std::endl;
 }
 
 void MipWrapperSolver::setTimeLimit(const int cutoff){}
@@ -1343,11 +1344,11 @@ void MipWrapperSolver::setVerbosity(const int degree){
 }
 
 void MipWrapperSolver::setRandomized(const int degree){
-  std::cout << "c set the type of randomization" << std::endl;
+  if(_verbosity) std::cout << "c set the type of randomization" << std::endl;
 }
 
 void MipWrapperSolver::setRandomSeed(const int seed){
-  std::cout << "c set the random seed" << std::endl;
+  if(_verbosity) std::cout << "c set the random seed" << std::endl;
 }
 
 bool MipWrapperSolver::is_sat(){
@@ -1359,12 +1360,12 @@ bool MipWrapperSolver::is_unsat(){
 }
 
 void MipWrapperSolver::printStatistics(){
-  std::cout << "\td Time: " << getTime() << "\tNodes:" << getNodes()
+  if(_verbosity) std::cout << "\td Time: " << getTime() << "\tNodes:" << getNodes()
 	    << std::endl;
 }
 
 int MipWrapperSolver::getBacktracks(){
-  std::cout << "c print the number of backtracks" << std::endl;
+  if(_verbosity) std::cout << "c print the number of backtracks" << std::endl;
   return 0;
 }
 
@@ -1373,17 +1374,17 @@ int MipWrapperSolver::getNodes(){
 }
 
 int MipWrapperSolver::getFailures(){
-  std::cout << "c print the number of failures" << std::endl;
+  if(_verbosity) std::cout << "c print the number of failures" << std::endl;
   return 0;
 }
 
 int MipWrapperSolver::getChecks(){
-  std::cout << "c print the number of checks" << std::endl;
+  if(_verbosity) std::cout << "c print the number of checks" << std::endl;
   return 0;
 }
 
 int MipWrapperSolver::getPropags(){
-  std::cout << "c print the number of propags" << std::endl;
+  if(_verbosity) std::cout << "c print the number of propags" << std::endl;
   return 0;
 }
 

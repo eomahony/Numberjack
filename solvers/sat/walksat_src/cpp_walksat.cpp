@@ -425,7 +425,7 @@ void WalksatAlgorithm::initialize_statistics(void)
 	open_hamming_data(hamming_data_file);
     }
     tail_start_flip = tail * numatom;
-    printf("tail starts after flip = %i\n", tail_start_flip);
+    if(verbosity) printf("tail starts after flip = %i\n", tail_start_flip);
     numnullflip = 0;
 
 
@@ -954,7 +954,7 @@ void WalksatAlgorithm::initprob(void)
 	    {
 		storeptr = (int *) malloc( sizeof(int) * STOREBLOCK );
 		freestore = STOREBLOCK;
-		fprintf(stderr,"allocating memory...\n");
+		//fprintf(stderr,"allocating memory...\n");
 	    }
 	  clause[i] = storeptr;
 	  do
@@ -992,7 +992,7 @@ void WalksatAlgorithm::initprob(void)
 	    {
 		storeptr = (int *) malloc( sizeof(int) * STOREBLOCK );
 		freestore = STOREBLOCK;
-		fprintf(stderr,"allocating memory...\n");
+		//fprintf(stderr,"allocating memory...\n");
 	    }
 	  occurence[i] = storeptr;
 	  freestore -= numoccurence[i];

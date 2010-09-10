@@ -12,19 +12,23 @@ def get_model(M,N):
 def solve(param):
     (X,model) = get_model(param['M'],param['N'])
     solver = model.load(param['solver'])
+    solver.setVerbosity(param['verbose'])
+    solver.setTimeLimit(param['tcutoff'])
 
+    out = '' 
     if param['solver'] == 'Mistral':
         solver.startNewSearch();
         langford_number = 0
         while solver.getNextSolution() == SAT:
-            printLangford(param['M'],X)
+            out += (printLangford(param['M'],X)+'\n')
             langford_number += 1
-        print 'L('+str(param['M'])+','+str(param['N'])+') =', langford_number
+        out += ('L('+str(param['M'])+','+str(param['N'])+') = '+str(langford_number)+'\n')
     else:
-        if solver.solve(): printLangford(param['M'],X)
-        else: print 'No solution'
+        if solver.solve(): out += (printLangford(param['M'],X)+'\n')
+        else: out += 'No solution\n'
+    out += ('Nodes: ' + str(solver.getNodes()))
+    return out    
 
-    print 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
 
 def printLangford(M,X):
     N = len(X)
@@ -32,13 +36,13 @@ def printLangford(M,X):
     for i in range(N):
         for j in range(M):
             sequence[X[i].get_value()+j*(i+2)-1] = (i+1)
-    print sequence
+    return str(sequence)
 
 
 solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
-default = {'solver':'Mistral', 'N':10, 'M':3}
+default = {'solver':'Mistral', 'N':7, 'M':2, 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':
     param = input(default) 
-    solve(param)
+    print solve(param)
 

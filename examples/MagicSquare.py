@@ -20,20 +20,23 @@ def solve(param):
     solver = model.load(param['solver'])
     solver.setVerbosity(param['verbose'])
     solver.setHeuristic(param['var'], param['val'], param['rand'])
+    solver.setTimeLimit(param['cutoff'])
 
     if param['restart'] == 'yes':
         solver.solveAndRestart();
     else:
         solver.solve()
-        
-    print square
-    print 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
 
+    out = ''
+    if solver.is_sat():
+        out = str(square)
+    out += ('\nNodes: ' + str(solver.getNodes()))
+    return out    
 
 solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
 default = {'solver':'Mistral', 'N':4, 'var':'MinDomain',
-           'val':'RandomMinMax', 'restart':'yes', 'rand':2, 'verbose':0}
+           'val':'RandomMinMax', 'restart':'yes', 'rand':2, 'verbose':1, 'cutoff':4}
 
 if __name__ == '__main__':
     param = input(default) 
-    solve(param)
+    print solve(param)

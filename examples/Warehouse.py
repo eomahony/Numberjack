@@ -33,12 +33,13 @@ def solve(param):
     )
 
     solver = lib.Solver(model)
-    solver.setVerbosity(1)
     solver.setNodeLimit(cutoff)
     solver.setHeuristic('Impact')
+    solver.setVerbosity(param['verbose'])
+    solver.setTimeLimit(param['tcutoff'])
     solver.solve()
 
-    print "\nFINAL COST:", obj.get_value()
+    return "\nFINAL COST: " + str(obj.get_value())
     
 class WareHouseParser:
     
@@ -63,8 +64,8 @@ class WareHouseParser:
     
 
 solvers = ['Mistral', 'SCIP']
-default = {'solver':'Mistral', 'data':'data/cap44.dat.txt', 'cutoff':5000}
+default = {'solver':'Mistral', 'data':'data/cap44.dat.txt', 'cutoff':5000, 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':
     param = input(default) 
-    solve(param)
+    print solve(param)

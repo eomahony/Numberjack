@@ -28,24 +28,30 @@ def get_model(nbTeams):
 def solve(param):
     (team, Weeks, Periods, model) = get_model(param['teams'])
     solver = model.load(param['solver'])
-    if solver.solve():
-        print_schedule(team, Weeks, Periods)
-    else:
-        print 'no such tournament'
-    print 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
+    solver.setVerbosity(param['verbose'])
+    solver.setTimeLimit(param['tcutoff'])
+    solver.solve()
+
+    out = ''
+    if solver.is_sat():
+        out = str(print_schedule(team, Weeks, Periods))
+    out += ('\nNodes: ' + str(solver.getNodes()))
+    return out
+
 
 def print_schedule(team, Weeks, Periods):
-    print '           ', ''.join([('week '+str(w+1)).ljust(9) for w in Weeks])
+    out = '            ' + ''.join([('week '+str(w+1)).ljust(9) for w in Weeks]) + '\n'
     for p in Periods:
-        print ('period '+str(p)+':').ljust(10), ''.join([(str(team[w][p]['home']).rjust(2)+' vs '+str(team[w][p]['away']).ljust(2)).ljust(9) for w in Weeks]) 
+        out += ('period '+str(p)+':').ljust(10) + ' ' + ''.join([(str(team[w][p]['home']).rjust(2)+' vs '+str(team[w][p]['away']).ljust(2)).ljust(9) for w in Weeks]) + '\n'
+    return out
 
 
 solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
-default = {'solver':'Mistral', 'teams':8}
+default = {'solver':'Mistral', 'teams':8, 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':
     param = input(default) 
-    solve(param)
+    print solve(param)
 
 
 

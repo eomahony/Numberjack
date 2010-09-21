@@ -2,10 +2,10 @@
 
 LOCAL_LIB=`pwd`/local_lib
 
-echo  '  Remember to add the following lines to your .profile or .bashrc:\n'
+echo  '  Remember to add the following lines to your .profile or .bashrc:'
 echo  '    PYTHONPATH='$LOCAL_LIB':$PYTHONPATH'
-echo  '    export PYTHONPATH\n'
+echo  '    export PYTHONPATH'
 echo  '  and'
 echo  '    PATH='$LOCAL_LIB':$PATH'
-echo  '    export PATH\n'
+echo  '    export PATH'
 echo  '  then run "source ~/.profile" or "source ~/.bashrc"'

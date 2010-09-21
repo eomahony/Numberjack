@@ -5,6 +5,7 @@ import subprocess
 
 ls = subprocess.Popen(['ls', '-1'], stdout=subprocess.PIPE)
 
+param = input({'update':'no'})
 
 outcome = {}
 
@@ -48,6 +49,9 @@ for lib in reference.keys():
                     print reference[lib][solver]
                     print 'now:'
                     print outcome[lib][solver]
+                    if param['update'] == 'yes': 
+                        print '... saving'
+                        reference[lib][solver] = outcome[lib][solver]
                 else:
                     print 'ok'
 

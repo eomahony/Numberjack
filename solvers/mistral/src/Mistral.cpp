@@ -13,6 +13,7 @@ using namespace Mistral;
 MistralCallback *cb; 
 XMLParser_libxml2<MistralCallback> *parser;
 
+const int num_features = 36;
 
 /**************************************************************
  ********************     EXPRESSION        *******************
@@ -1585,7 +1586,7 @@ void MistralSolver::load_xml(const char* filename, const int type)
 }
  
 
-const char*feature_names[36] = {"log_constants", "log_booleans", "log_ranges", 
+const char*feature_names[num_features] = {"log_constants", "log_booleans", "log_ranges", 
 				"log_bits", "log_lists", "log_values", 
 				"log_extra_booleans", "log_extra_ranges", 
 				"log_extra_bits", "log_extra_values", 
@@ -1630,7 +1631,7 @@ int MistralSolver::get_degree(int i) {
 void MistralSolver::get_features(MistralDoubleArray& features)
 {
   if(!feature_ready) get_features();
-  for(int i=0; i<36; ++i)
+  for(int i=0; i<num_features; ++i)
     features.add(cb->features_vec[i]);
 }
 

@@ -579,8 +579,10 @@ namespace Mistral {
 
   public:  
 
-    ReversibleBool& domain_b1;
-    ReversibleBool& domain_b2;
+    //ReversibleBool& domain_b1;
+    //ReversibleBool& domain_b2;
+    int& domain_b1;
+    int& domain_b2;
 
     /**@name Constructors*/
     //@{
@@ -2331,12 +2333,15 @@ namespace Mistral {
 
   public:
 
-    static const int is_true = 0;
-    static const int is_false = 0;
+    //static const int is_true = 0;
+    //static const int is_false = 0;
 
-    ReversibleBool& domain_x;
-    ReversibleBool& domain_y;
-    ReversibleBool& domain_z;
+    //ReversibleBool& domain_x;
+    //ReversibleBool& domain_y;
+    //ReversibleBool& domain_z;
+    int& domain_x;
+    int& domain_y;
+    int& domain_z;
 
     /**@name Constructors*/
     //@{

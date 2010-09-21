@@ -29,6 +29,10 @@
 
 using namespace Mistral;
 
+
+//VariableBool is_true(NULL,1);
+//VariableBool is_false(NULL,0);
+
 /**********************************************
  * Relations described in extension
  **********************************************/
@@ -1170,8 +1174,10 @@ void ConstraintInverse::print(std::ostream& o) const
 // 3/ (b[i] = b[i+1] = 0) => (x[i] = y[i])
 ConstraintLex::ConstraintLex(Solver *s, VariableInt** v)
   : Constraint(s, v, 4, DOMAINTRIGGER),
-    domain_b1( ((VariableBool*)(v[2]))->domain ),
-    domain_b2( ((VariableBool*)(v[3]))->domain )
+    //domain_b1( ((VariableBool*)(v[2]))->domain ),
+    //domain_b2( ((VariableBool*)(v[3]))->domain )
+    domain_b1(v[2]->getIntDomain()),
+    domain_b2(v[3]->getIntDomain())
 {  
 }
 
@@ -4829,12 +4835,26 @@ void PredicateMember::print(std::ostream& o) const
 /// x0 &?& x1
 PredicateAnd::PredicateAnd(Solver *s, VariableInt** v) 
   : Constraint(s, v, 3, DOMAINTRIGGER, WEIGHTTHREE), 
+    domain_x(v[0]->getIntDomain()),
+    domain_y(v[1]->getIntDomain()),
+    domain_z(v[2]->getIntDomain())
+
+    /*
     domain_x(((VariableBool*)(v[0]))->domain),
     domain_y(((VariableBool*)(v[1]))->domain),
     domain_z(((VariableBool*)(v[2]))->domain)
-    //domain_z((v[2]->getType() == VariableInt::CONST ? (((Constant*)(v[2]))->val ? is_true : is_false) : ((VariableBool*)(v[2]))->domain ))
+    domain_z((v[2]->getType() == VariableInt::CONST ? (((Constant*)(v[2]))->val ? is_true : is_false) : ((VariableBool*)(v[2]))->domain ))
+    */
 {
-  if(v[2]->getType() == VariableInt::CONST) domain_z.state = (((Constant*)(v[2]))->val + 1);
+
+  //std::cout << (domain_x) << " " << (domain_y) << " " << (domain_z) << " " << std::endl;
+
+  //std::cout << sizeof(Constant) << " " << std::endl;
+  //std::cout << sizeof(VariableBool) << " " << std::endl;
+
+  //std::cout << (&domain_z) << " " << std::endl;
+  //std::cout << (domain_z.state) << " " << std::endl;
+  //if(v[2]->getType() == VariableInt::CONST) domain_z.state = (((Constant*)(v[2]))->val + 1);
   //std::cout << domain_z.state << std::endl;
   //exit(1);
 }
@@ -4880,11 +4900,40 @@ bool PredicateAnd::propagate(const int changedIdx, const int e)
 //   }
 
 
-  bool consistent = true;
-  if( domain_z.state == 2 ) {
+//   bool consistent = true;
+//   if( domain_z.state == 2 ) {
 
-//     if( !(domain_x.state & 2) || 
-// 	!(domain_y.state & 2) ) consistent = false;
+// //     if( !(domain_x.state & 2) || 
+// // 	!(domain_y.state & 2) ) consistent = false;
+// //     else {
+// //       scope[0]->setDomain(1);
+// //       scope[1]->setDomain(1);
+// //     }
+
+//      if( !scope[0]->setDomain( 1 ) ||
+// 	 !scope[1]->setDomain( 1 ) )
+//        consistent = false;
+
+//   } else if( domain_z.state == 1 ) {
+//     if( (domain_x.state == 2 && !scope[1]->setDomain( 0 ))
+// 	||
+// 	(domain_y.state == 2 && !scope[0]->setDomain( 0 )) )
+//       consistent = false;
+//   }
+//   if( consistent ) {
+//     if( (domain_x.state == 1 || domain_y.state == 1) &&
+// 	!scope[2]->setDomain( 0 ) ) consistent = false;
+//     else if( domain_x.state == 2 && domain_y.state == 2 &&
+// 	     !scope[2]->setDomain( 1 ) ) consistent = false;
+//   } 
+//   return consistent;
+
+
+  bool consistent = true;
+  if( domain_z == 2 ) {
+
+//     if( !(domain_x & 2) || 
+// 	!(domain_y & 2) ) consistent = false;
 //     else {
 //       scope[0]->setDomain(1);
 //       scope[1]->setDomain(1);
@@ -4894,16 +4943,16 @@ bool PredicateAnd::propagate(const int changedIdx, const int e)
 	 !scope[1]->setDomain( 1 ) )
        consistent = false;
 
-  } else if( domain_z.state == 1 ) {
-    if( (domain_x.state == 2 && !scope[1]->setDomain( 0 ))
+  } else if( domain_z == 1 ) {
+    if( (domain_x == 2 && !scope[1]->setDomain( 0 ))
 	||
-	(domain_y.state == 2 && !scope[0]->setDomain( 0 )) )
+	(domain_y == 2 && !scope[0]->setDomain( 0 )) )
       consistent = false;
   }
   if( consistent ) {
-    if( (domain_x.state == 1 || domain_y.state == 1) &&
+    if( (domain_x == 1 || domain_y == 1) &&
 	!scope[2]->setDomain( 0 ) ) consistent = false;
-    else if( domain_x.state == 2 && domain_y.state == 2 &&
+    else if( domain_x == 2 && domain_y == 2 &&
 	     !scope[2]->setDomain( 1 ) ) consistent = false;
   } 
   return consistent;

@@ -184,6 +184,7 @@ namespace Mistral {
     /// View
     static const int VIRTUAL = 6;
     virtual int getType() const = 0;
+    virtual int& getIntDomain() = 0;
     //@}
 
     /*!@name Static value for non-value*/

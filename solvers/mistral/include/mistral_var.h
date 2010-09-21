@@ -1069,6 +1069,7 @@ namespace Mistral {
     //@{
     VariableDomain( Solver *s ) ;
     virtual ~VariableDomain() {}
+    virtual int& getIntDomain();
 
     void setVariable(const int low, const int up);
     void setVariable(BitSet *s, const int length, 
@@ -2966,6 +2967,7 @@ namespace Mistral {
     /*!@name Constructors*/
     //@{
     VariableBool(Solver *s); 
+    virtual int& getIntDomain();
     virtual ~VariableBool();
     //@}
 
@@ -3827,6 +3829,7 @@ namespace Mistral {
     //@{
     VariableVirtual(Solver *s); 
     virtual ~VariableVirtual();
+    virtual int& getIntDomain();
     //@}
 
     /*!@name Accessors and Iterators*/
@@ -4715,6 +4718,7 @@ namespace Mistral {
 
     Constant(Solver *s, const int v );
     virtual ~Constant(); 
+    virtual int& getIntDomain();
 
     /*!@name Accessors and Iterators*/
     //@{
@@ -5107,6 +5111,8 @@ namespace Mistral {
     VariableRange(Solver *s); 
 
     virtual ~VariableRange();
+
+    virtual int& getIntDomain();
     //@}
 
     /*!@name Accessors and Iterators*/

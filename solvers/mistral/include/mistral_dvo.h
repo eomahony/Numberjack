@@ -1661,8 +1661,8 @@ namespace Mistral {
       }
       decision.push(val);
 
-      _X->print(std::cout);
-      std::cout << " <- " << val << " (" << ideal << ")" << std::endl;
+      //_X->print(std::cout);
+      //std::cout << " <- " << val << " (" << ideal << ")" << std::endl;
 
       _X->setDomain(val);
     }

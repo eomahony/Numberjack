@@ -101,7 +101,7 @@ class Domain(list):
             y = x
             idx += 1
             while idx < len(self):
-                if self[idx] == y+1: y=self[idx]
+                if type(self[idx]) is int and self[idx] == y+1: y=self[idx]
                 else: break
                 idx += 1
             return (x,y,idx)
@@ -112,7 +112,7 @@ class Domain(list):
             if idx > 0: ret_str += ','
             (x,y,idx) = extend(idx)
             ret_str += str(x)
-            if x+1 < y: ret_str += ('..'+str(y))
+            if type(x) is int and x+1 < y: ret_str += ('..'+str(y))
             elif x != y: ret_str += (','+str(y))
 
         return ret_str+'}'
@@ -660,11 +660,11 @@ class Variable(Expression):
                 lb = domain[0]
                 ub = domain[-1]            
 
-        if type(lb) is not int and type(lb) is not float:
-            print "Warning lower bound of %s is not an int or a float" % name
+        if type(lb) is not int and type(lb) is not float and type(lb) is not str:
+            print "Warning lower bound of %s is not an int or a float or a string" % name
             exit(1)
-        elif type(ub) is not int and type(ub) is not float:
-            print "Warning upper bound of %s is not an int or a float" % name
+        elif type(ub) is not int and type(ub) is not float and type(lb) is not str:
+            print "Warning upper bound of %s is not an int or a float or a string" % name
             exit(1)
         elif type(name) is not str:
             print "Warning name variable is not a string"

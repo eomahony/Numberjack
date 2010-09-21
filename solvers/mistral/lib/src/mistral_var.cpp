@@ -327,6 +327,10 @@ void VariableDomain::setVariable(const int lo, const int up)
   values.init(lo, up, BitSet::full);
 }
 
+int& VariableDomain::getIntDomain()
+{
+  return ((int*)values.table)[0];
+}
 
 /**********************************************
  * VariableBit
@@ -1237,8 +1241,13 @@ void VariableList::printDomain(std::ostream& o) const
 VariableBool::VariableBool(Solver *s) : VariableInt(s) 
 {
   //domain.init(s);
-  s->binds( domain );
+  if(s) s->binds( domain );
   if( !static_bool_domain_it ) static_bool_domain_it = new BoolIterator();
+}
+
+int& VariableBool::getIntDomain()
+{
+  return domain.state;
 }
 
 DomainIterator *VariableBool::begin()
@@ -1706,6 +1715,12 @@ VariableRange::~VariableRange()
   static_range_domain_it = NULL;
 }
 
+int& VariableRange::getIntDomain()
+{
+  // BUGGY!
+  return vmin.value;
+}
+
 void VariableRange::setVariable(const int low, const int up) 
 {
   vmax.setValue(up);
@@ -1895,6 +1910,12 @@ Constant::~Constant() {
   static_constant_domain_it = NULL;
 }
 
+int& Constant::getIntDomain()
+{
+  return val;
+}
+
+
 DomainIterator *Constant::begin()
 { 
   static_constant_domain_it->curval = val;
@@ -1918,6 +1939,12 @@ VariableVirtual::~VariableVirtual()
     delete static_reference_domain_it;
   static_reference_domain_it = NULL;
   delete conversion;
+}
+
+int& VariableVirtual::getIntDomain()
+{
+  // BUGGY!
+  return reference->getIntDomain();
 }
 
 DomainIterator *VariableVirtual::begin()

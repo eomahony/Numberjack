@@ -14,15 +14,16 @@
 
 using namespace std;
 
-int large_number = 10000;
+
 int bufsize = 10000;
 
 int **duration=NULL, **machine=NULL, **family=NULL, nMachines, nJobs, nFamilies,
   lb, opt, *jsp_duration=NULL, *jsp_machine=NULL, *jsp_duedate=NULL, *jsp_releasedate=NULL, *jsp_earlycost=NULL, *jsp_latecost=NULL,
-*dynjsp_taskspermachine=NULL, *dynjsp_tasksperjob=NULL, *tasks_beforejob=NULL,
+*dynjsp_taskspermachine=NULL, *dynjsp_tasksperjob=NULL, *tasks_beforejob=NULL, *job_durations=NULL, 
   ***setup_time=NULL, *max_setup=NULL, **family_matrix=NULL,
   **release_date=NULL, **due_date=NULL, **time_lag[2] = {NULL, NULL},
   **set_of_tasks_per_machine=NULL;
+double *dynjsp_floatwts=NULL;
 int *best_solution=NULL, *zeros=NULL, *ones=NULL, *probability=NULL, *range=NULL;
 vector< int* > solutions;
 vector< int* > disjunct_weights;
@@ -61,7 +62,11 @@ long unsigned int total_solutions     = 0;
 double            avg_distance        = 0;
 int               min_distance        = NOVAL;
 int               max_distance        = 0;
+
 int taskcounter = 0;
+double dynetjsp_normalizer;
+double floatcost;
+double normalized_cost;
 
 int        num_weight_updates  = 0;
 double avg_disjunct_avg_weight = 0;
@@ -117,24 +122,21 @@ const int nsa = 11;
 const char* str_ident[nsa] = {"-heuristic", "-restart", "-factor", "-decay", "-type", "-value", "-algo", "-dvalue", "-ivalue", "-skew", "-key"};
 const char* str_param[nsa];
 
+
 using namespace Mistral;
 
-
 void addEarlyTardyValueHeuristic(VarArray& tasks, VarArray& bools) {
-  VariableInt *x, *b;
-  for(int i=0; i<tasks.size(); ++i) {
-    if(bools[i].var_ptr_ && tasks[i].var_ptr_) {
-      x = tasks[i].getVariable();
-      b = bools[i].getVariable();
-
-      if(x && b) {
-	std::cout << x << " " << b << std::endl;
-
-	delete x->branch;
-	x->branch = new ValSelectorBoolean(x,b);
-      }
-    }
-  }
+	VariableInt *x, *b;
+	for(int i=0; i<tasks.size(); ++i) {
+		if(bools[i].var_ptr_ && tasks[i].var_ptr_) {
+			x = tasks[i].getVariable();
+			b = bools[i].getVariable();
+			if (x && b){
+			delete x->branch;
+			x->branch = new ValSelectorBoolean(x,b);
+		}
+		}
+	}
 }
 
 void addHeuristic( Solver& s, string Heu, 
@@ -616,13 +618,16 @@ void dynetjsp_readData( char* filename )
 	jsp_machine = new int[nJobs*nMachines];
 	jsp_duedate = new int[nJobs];
 	jsp_releasedate = new int[nJobs];
-//	jsp_earlycost = new int[nJobs];
+	jsp_earlycost = new int[nJobs];
 	jsp_latecost = new int[nJobs];
 	dynjsp_tasksperjob = new int[nJobs];
 	dynjsp_taskspermachine = new int[nMachines];
+	dynjsp_floatwts = new double[nJobs];
 	tasks_beforejob = new int[nJobs];
+	job_durations = new int[nJobs];
 	taskcounter = 0;
 	ndisjuncts = 0;
+	dynetjsp_normalizer = 0.0;
 	
 	std::fill(dynjsp_taskspermachine, dynjsp_taskspermachine+nMachines, 0);
 	std::fill(dynjsp_tasksperjob, dynjsp_tasksperjob+nJobs, 0);
@@ -660,7 +665,9 @@ void dynetjsp_readData( char* filename )
 		infile >> jsp_duedate[i];
 		infile >> jsp_releasedate[i];
 		infile >> jsp_latecost[i];
-//		jsp_earlycost[i] = jsp_latecost[i];
+		infile >> dynjsp_floatwts[i];
+//		cout << dynjsp_floatwts[i] << endl;
+		jsp_earlycost[i] = jsp_latecost[i];
 	}
 	
 	ndisjuncts = 0;
@@ -672,12 +679,24 @@ void dynetjsp_readData( char* filename )
 	}
 
 	tasks_beforejob[i]=0;
-	for(i=1; i<nJobs; ++i){
+	for(i=1; i<nJobs; ++i) {
 			for(j=0; j<i; ++j)
 				tasks_beforejob[i] += dynjsp_tasksperjob[j];
 	}
 	
-//	cout << "Data read in, ndisjuncts  " <<  ndisjuncts << endl;
+	j = 0;
+	for(i=0; i<taskcounter; ++i) {
+		job_durations[j] += jsp_duration[i];
+		if(i == (dynjsp_tasksperjob[j] + tasks_beforejob[j] - 1))
+			j += 1;	
+			}
+	
+	for(i=0; i<nJobs; ++i)
+		dynetjsp_normalizer += double(job_durations[i]) * dynjsp_floatwts[i];
+	
+	cout << dynetjsp_normalizer << endl;
+	
+	//	cout << "Data read in, ndisjuncts  " <<  ndisjuncts << endl;
 }
 	
 void sds_readData( char* filename )
@@ -933,7 +952,7 @@ int jsp_upperbound() {
 
 
 int etjsp_upperbound() {
-  int i, j, cost=large_number, task;
+  int i, j, cost=100000, task;
 	
   int boundJob[nJobs], boundMachine[nMachines]; 
   std::fill(boundJob, boundJob+nJobs, 0);
@@ -951,6 +970,28 @@ int etjsp_upperbound() {
     }
   
   return cost;
+}
+
+
+int dynetjsp_upperbound() {
+	int i, j, cost=1000000000, task;
+	
+	int boundJob[nJobs], boundMachine[nMachines]; 
+	std::fill(boundJob, boundJob+nJobs, 0);
+	std::fill(boundMachine, boundMachine+nMachines, 0);
+	
+	for(i=0; i<nMachines; ++i)
+    {
+		for(j=0; j<nJobs; ++j)
+		{
+			task = std::max( boundJob[j], boundMachine[machine[j][i]] );
+			task += duration[j][i];
+			boundJob[j] = task;
+			boundMachine[machine[j][i]] = task;
+		}
+    }
+	
+	return cost;
 }
 
 
@@ -1344,7 +1385,7 @@ int etjsp_setup(CSP& model, VarArray& disjuncts, VarArray& tasks, VarArray& last
       //From old jsp code:
       //if(due_date && due_date[i][j] < ub) ub = due_date[i][j];
       //ub -= duration[i][j];
-      ub = large_number;
+      ub = 100000;
 			
       if(lb <= ub)
 	tasks.add( Variable(lb, ub) );
@@ -1458,7 +1499,7 @@ int etjsp_setup(CSP& model, VarArray& disjuncts, VarArray& tasks, VarArray& last
   }
 
   for(i=0; i<nJobs; ++i) {
-    Variable x(0, large_number-jsp_duedate[i]);
+    Variable x(0, 10000-jsp_duedate[i]);
     model.add(x == (latebool[i]*(lasttasks[i] + (duration[i][nMachines-1] - jsp_duedate[i]))));
     sum_scope.add(x);
     weights[nJobs+i] = jsp_latecost[i];
@@ -1482,7 +1523,7 @@ int etjsp_setup(CSP& model, VarArray& disjuncts, VarArray& tasks, VarArray& last
 }
 
 int dynetjsp_setup(CSP& model, VarArray& disjuncts, VarArray& tasks, VarArray& lasttasks, VarArray& earlybool, VarArray& latebool, Variable Cost) {
-	int i, j, k, lb, ub, per_machine[nJobs*nMachines];
+	int i, j, k, lb, ub;
 	
 		
 	// tasks' start-time
@@ -1492,7 +1533,7 @@ int dynetjsp_setup(CSP& model, VarArray& disjuncts, VarArray& tasks, VarArray& l
 			//			if (machine[i][j] != -1){	
 			
 			lb = jsp_releasedate[i];
-			ub = large_number;
+			ub = 100000;
 			
 			if(lb <= ub)
 				tasks.add( Variable(lb, ub) );
@@ -1570,31 +1611,30 @@ int dynetjsp_setup(CSP& model, VarArray& disjuncts, VarArray& tasks, VarArray& l
 	int weights[2*nJobs+1];
 	
 	for(i=0; i<nJobs; ++i) {
-//		cout << "Early wt sum " << i << " duration " << jsp_duration[tasks_beforejob[i+1]-1] << " due date " << jsp_duedate[i] << " tb4j " << tasks_beforejob[i+1] << " rdate " << jsp_releasedate[i] << " latecost " << jsp_latecost[i] << endl;
-//		if (i == (nJobs - 1))
-//			cout << " Final duration " << tasks_beforejob[i]+dynjsp_tasksperjob[i]-1 << " " << taskcounter << " " << jsp_duration[taskcounter-1] << endl;
 		Variable x(0, jsp_duedate[i]-1);
-//		cout << " Adding var x " << i << " Var " << x << " earlybool " << earlybool[i] << " lasttasks " << lasttasks[i] << endl;
 		if (i == (nJobs - 1))
 			model.add(x == (earlybool[i]*((lasttasks[i]*-1) - (jsp_duration[taskcounter-1] - jsp_duedate[i]))));
 		else
 			model.add(x == (earlybool[i]*((lasttasks[i]*-1) - (jsp_duration[tasks_beforejob[i+1]-1] - jsp_duedate[i]))));
-//		cout << " Adding sum scope " << i << " Var " << x << endl;
+
 		sum_scope.add(x);
-//		cout << " Adding wt " << i << " " << jsp_latecost[i] << endl;
 		weights[i] = jsp_latecost[i];
 	}
 	
 	
 	for(i=0; i<nJobs; ++i) {
-		Variable x(0, large_number-jsp_duedate[i]);
-		model.add(x == (latebool[i]*(lasttasks[i] + (jsp_duration[tasks_beforejob[i]] - jsp_duedate[i]))));
+		Variable x(0, 10000-jsp_duedate[i]);
+		if (i == (nJobs - 1))
+			model.add(x == (latebool[i]*(lasttasks[i] + (jsp_duration[taskcounter-1] - jsp_duedate[i]))));
+		else
+			model.add(x == (latebool[i]*(lasttasks[i] + (jsp_duration[tasks_beforejob[i+1]-1] - jsp_duedate[i]))));
 		sum_scope.add(x);
 		weights[nJobs+i] = jsp_latecost[i];
 	}
 	
 	weights[2*nJobs] = 0;
-	
+
+ 
 	model.add( Cost == Sum(sum_scope, weights) );
 	
 	return UNKNOWN;
@@ -2240,7 +2280,7 @@ public:
 
 bool check_etjsp_solution(Solver& s, VarArray& tasks, VarArray& lasttasks, 
 			  Variable Cost, int objective = -1) {
-  std::cout << "c checking the solution";
+//  std::cout << "c checking the solution";
 
   bool ok = true;
   int starting_time[nJobs*nMachines];
@@ -2262,8 +2302,8 @@ bool check_etjsp_solution(Solver& s, VarArray& tasks, VarArray& lasttasks,
       
       if(!s.filtering()) return false;
       
-      if(!(i%nMachines)) std::cout << std::endl << "c";
-      std::cout << " " << setw(4) << starting_time[i];
+//    if(!(i%nMachines)) std::cout << std::endl << "c";
+//    std::cout << " " << setw(4) << starting_time[i];
     }
     
     for(int i=0; i<tasks.size(); ++i) {
@@ -2293,40 +2333,34 @@ bool check_etjsp_solution(Solver& s, VarArray& tasks, VarArray& lasttasks,
       
       if(!s.filtering()) return false;
       
-      if(!(i%nMachines)) std::cout << std::endl << "c";
-      std::cout << " " << setw(4) << starting_time[i] ;
+//      if(!(i%nMachines)) std::cout << std::endl << "c";
+//      std::cout << " " << setw(4) << starting_time[i];
     }
   }
-  std::cout << std::endl;
+//  std::cout << std::endl;
 
 
   // 
-  std::cout << "c check precedences" ;
-  for(int i=0; i<nJobs; ++i) {
-    for(int j=0; j<nMachines; ++j) if(machine[i][j] >= 0) {
-      int k=j+1;
-      while(k<nMachines && machine[i][k]<0) ++k;
-      
-      if(starting_time[i*nMachines+j]+duration[i][j] > starting_time[i*nMachines+k]) {
+//  std::cout << "c check precedences" ;
+  for(int i=0; i<nJobs; ++i)
+    for(int j=1; j<nMachines; ++j) {
+      if(starting_time[i*nMachines+j-1]+duration[i][j-1] > starting_time[i*nMachines+j]) {
 	std::cout << "\nc WARNING: precedence constraint does not check!" << std::endl;
 	//exit(1);
 	ok = false;
-      } else std::cout << ".";
-      }
-  }
+      } // else std::cout << ".";
+    }
   
-  std::cout << "ok" << std::endl;
-
+//  std::cout << "ok" << std::endl;
 
   // 
   for(int i=0; i<nJobs; ++i)
     for(int j=0; j<nMachines; ++j) 
       per_machine[i*nMachines+machine[i][j]] = (i*nMachines+j);
   for(int k=0; k<nMachines; ++k) {
-    std::cout << "c check resource " << (k+1) ;
-    for(int i=0; i<nJobs; ++i) if(machine[i][k] >= 0)
-      for(int j=i+1; j<nJobs; ++j) if(machine[j][k] >= 0) {
-	
+//    std::cout << "c check resource " << (k+1) ;
+    for(int i=0; i<nJobs; ++i) 
+      for(int j=i+1; j<nJobs; ++j) {
 	int x = per_machine[i*nMachines+k]/nMachines;
 	int y = per_machine[i*nMachines+k]%nMachines;
 	int u = per_machine[j*nMachines+k]/nMachines;
@@ -2336,23 +2370,23 @@ bool check_etjsp_solution(Solver& s, VarArray& tasks, VarArray& lasttasks,
 	  std::cout << "\nc WARNING: resource constraint does not check!" << std::endl;
 	  //exit(1);
 	  ok = false;
-	} else std::cout << ".";
+	} // else std::cout << ".";
       }
-    std::cout << "ok" << std::endl;
+//    std::cout << "ok" << std::endl;
   } 
 
-  std::cout << "c check objective (" << cost << ") = " ;
+//  std::cout << "c check objective (" << cost << ") = " ;
   for(int i=0; i<lasttasks.size(); ++i) {
     int release_date = starting_time[(i+1)*nMachines-1]+duration[i][nMachines-1];
     if(release_date < jsp_duedate[i]) {
-      std::cout << (jsp_duedate[i] - release_date) << "*" << jsp_earlycost[i] << " ";
+//      std::cout << (jsp_duedate[i] - release_date) << "*" << jsp_earlycost[i] << " ";
       cost -= (jsp_duedate[i] - release_date)*jsp_earlycost[i];
     }
     else if(release_date > jsp_duedate[i]) {
-      std::cout << (release_date - jsp_duedate[i]) << "*" << jsp_latecost[i] << " ";
+//      std::cout << (release_date - jsp_duedate[i]) << "*" << jsp_latecost[i] << " ";
       cost -= (release_date - jsp_duedate[i])*jsp_latecost[i];
     }
-    else std::cout << ". ";
+//    else std::cout << ". ";
   }
 
   if(cost) {
@@ -2360,11 +2394,164 @@ bool check_etjsp_solution(Solver& s, VarArray& tasks, VarArray& lasttasks,
     //s.print(std::cout);
     //exit(1);
     ok = false;
-  } else std::cout << "ok" << std::endl;
+  } else std::cout << "c Solution ok" << std::endl;
 
-  std::cout << std::endl;
+//  std::cout << std::endl;
 
   return ok;
+}
+
+
+
+bool check_dynetjsp_solution(Solver& s, VarArray& tasks, VarArray& lasttasks, 
+						  Variable Cost, int objective = -1) {
+//	std::cout << "c checking the solution of dynetjsp";
+	
+	bool ok = true;
+	floatcost = 0.0;
+	normalized_cost = 0.0;
+	int starting_time[nJobs*nMachines];
+	int cost = objective;
+	
+	if(objective == -1) {
+		cost = Cost.min();
+		
+//		cout << " min cost " << Cost.min() << " " << Cost.max() << endl; 
+		
+		/// Finalize the solution (decide a starting time for each task)
+		for(int i=0; i<tasks.size(); ++i) {
+			s.save();
+			s.decision[s.level] = tasks[i].var_ptr_->varptr_;
+			starting_time[i] = s.decision[s.level]->min();
+			s.decision[s.level]->setDomain(starting_time[i]);
+			int j=s.learners.size;
+			while( j-- )
+				s.learners[j]->notifyChoice( );
+			
+			if(!s.filtering()) return false;
+	
+//			if(i==0)
+//				 std::cout << std::endl << "c";
+			
+//			for(int j=0; j< nJobs; ++j)
+//			if(i == (tasks_beforejob[j])) std::cout << std::endl << "c";
+//			std::cout << " " << setw(4) << starting_time[i];
+		}
+		
+		for(int i=0; i<tasks.size(); ++i) {
+			s.backtrackTo(s.level-1);
+		}
+		
+	} else {
+		
+		s.reset(true);
+		//s.goal->upper_bound == objective;
+		
+		s.save();
+		for(int i=0; i<s.length; ++i) {
+			s.variables[i]->setDomain(s.solution[i]);
+			if(!s.filtering()) return false;
+		}
+		
+		
+		for(int i=0; i<tasks.size(); ++i) {
+			s.save();
+			s.decision[s.level] = tasks[i].var_ptr_->varptr_;
+			starting_time[i] = s.decision[s.level]->min();
+			s.decision[s.level]->setDomain(starting_time[i]);
+			int j=s.learners.size;
+			while( j-- )
+				s.learners[j]->notifyChoice( );
+			
+			if(!s.filtering()) return false;
+			
+/*			if(i==0)
+				std::cout << std::endl << "c";
+			
+			for(int j=0; j< nJobs; ++j)
+			if(i == (tasks_beforejob[j]+1)) std::cout << std::endl << "c";
+			std::cout << " " << setw(4) << starting_time[i]; */
+		}
+	}
+//	std::cout << std::endl;
+	
+	bool check_precedence = true;
+	
+	// 
+//	std::cout << "c check precedences";
+	for(int i=0; i<tasks.size(); ++i){
+		check_precedence = true;
+			for(int k=1; k<nJobs; ++k){
+				if (i == (tasks_beforejob[k]-1))
+					check_precedence = false;
+			}
+		if(i == (tasks_beforejob[nJobs-1] + dynjsp_tasksperjob[nJobs-1] -1))
+			check_precedence = false;			
+	if(check_precedence){
+			if(starting_time[i]+jsp_duration[i] > starting_time[i+1]) {
+				std::cout << "\nc WARNING: precedence constraint does not check!" << std::endl;
+				//exit(1);
+				ok = false;
+			}
+//			else std::cout << ".";
+		}
+	}
+	
+//	std::cout << "ok" << std::endl;
+	
+	
+	for(int k=0; k<nMachines; ++k) {
+//		std::cout << "c check resource " << (k+1) ;
+		for(int i=0; i<taskcounter; ++i){
+			if(jsp_machine[i] == k) 
+				for(int j=i+1; j<taskcounter; ++j){
+					if(jsp_machine[j] == k) {
+						if(starting_time[i]+jsp_duration[i] > starting_time[j] &&
+						   starting_time[j]+jsp_duration[j] > starting_time[i]) {
+							std::cout << "\nc WARNING: resource constraint does not check!" << std::endl;
+							//exit(1);
+							ok = false;
+						} // else std::cout << ".";
+					}
+					}
+				}
+//		std::cout << "ok" << std::endl;
+		}
+	
+
+	int release_date = 0;
+//	std::cout << "c check objective (" << cost << ") = " ;
+	for(int i=0; i<lasttasks.size(); ++i) {
+		if(i == (nJobs-1))
+			release_date = starting_time[(tasks_beforejob[i]+dynjsp_tasksperjob[i]-1)] + jsp_duration[(tasks_beforejob[i]+dynjsp_tasksperjob[i]-1)];
+		else
+			release_date = starting_time[(tasks_beforejob[i+1] -1)] + jsp_duration[(tasks_beforejob[i+1] -1)];
+				
+		if(release_date < jsp_duedate[i]) {
+			cost -= (jsp_duedate[i] - release_date)*jsp_earlycost[i];
+			floatcost += double(jsp_duedate[i] - release_date)*dynjsp_floatwts[i];
+		}
+		else if(release_date > jsp_duedate[i]) {
+			cost -= (release_date - jsp_duedate[i])*jsp_latecost[i];
+			floatcost += double(release_date - jsp_duedate[i])*dynjsp_floatwts[i];
+		}
+	}
+	
+	if(cost) {
+		std::cout << "\nc WARNING: objective does not check! " << cost <<std::endl;
+		//s.print(std::cout);
+		//exit(1);
+		ok = false;
+	}  else std::cout << "c Solution ok" << std::endl;
+	
+//	std::cout << std::endl;
+
+	normalized_cost =  floatcost/dynetjsp_normalizer;
+	cout << left << setw(30) << "c Normalizer" << ":" << right << setw(20) << dynetjsp_normalizer << endl;
+	cout << left << setw(30) << "c normalized cost" << ":" << right << setw(20) << normalized_cost << endl;
+	
+	
+	return ok;
 }
 
 
@@ -2402,8 +2589,7 @@ void dichotomic_search()
     Variable Cost(minfsble, makespan);
     CSP model;
     Result = UNKNOWN;
-       
-
+		
     if(Type == "osp")
       osp_setup(model, disjuncts, tasks);
     else if(Type == "jtl0")
@@ -2413,17 +2599,16 @@ void dichotomic_search()
     else if(Type == "etjsp") {
       Result = etjsp_setup(model, disjuncts, tasks, lasttasks, earlybool, latebool, Cost);
     }
-    else
+	else
       Result = jsp_setup(model, disjuncts, tasks);     
 		
     //assert(disjuncts.size() == n_disjuncts);    
 		
 		
     if(Result == UNKNOWN) {
-
       Solver s(model, disjuncts);
 			
-      //s.print(std::cout);
+      // s.print(std::cout);
       //       //std::cout << std::endl << n_disjuncts << std::endl;
 			
       //       //exit(0);
@@ -2503,14 +2688,12 @@ void dichotomic_search()
 				
 	if(Weight>0)
 	  setWeights(s,tasks);
-			
-	
+				
 	Result = s.solve_and_restart(PolicyRestart, Base, Factor, Decay);
       }
 			
       if( Result == SAT ) {
-			       
-
+				
 	updateBestSolution(disjuncts, tasks);
 				
 	new_makespan = (get_makespan(tasks));
@@ -2652,6 +2835,8 @@ void etjsp_dichotomic_search()
     CSP model;
     Result = UNKNOWN;
 		
+	  
+	  
     if(Type == "osp")
       osp_setup(model, disjuncts, tasks);
     else if(Type == "jtl0")
@@ -2693,10 +2878,9 @@ void etjsp_dichotomic_search()
 		
 		
     if(Result == UNKNOWN) {
-
       Solver s(model, searchVars);
 
-      s.print(std::cout);	
+//      s.print(std::cout);	
 		       			
       if(s.status == UNKNOWN) {
 				
@@ -2746,15 +2930,14 @@ void etjsp_dichotomic_search()
 				
 	if(Weight>0)
 	  setWeights(s,tasks);
-
-
-	addEarlyTardyValueHeuristic(lasttasks, earlybool);
 			
+	addEarlyTardyValueHeuristic(lasttasks, earlybool);
+		  
 	Result = s.solve_and_restart(PolicyRestart, Base, Factor, Decay);
       }
 			
       if( Result == SAT ) {
-
+				
 	updateBestSolution(searchVars, tasks);
 				
 	//new_makespan = (get_makespan(tasks));
@@ -2763,12 +2946,15 @@ void etjsp_dichotomic_search()
 
       
 	new_makespan = Cost.min();
-	cout << left << setw(30) << "c solutions's makespan" << ":" << right << setw(20) << new_makespan << endl;
-
 
 	if(Type == "etjsp")
-	  solution_checked &= check_etjsp_solution(s, tasks, lasttasks, Cost);
+		solution_checked &= check_etjsp_solution(s, tasks, lasttasks, Cost);
+	else if (Type == "dynetjsp")
+		solution_checked &= check_dynetjsp_solution(s, tasks, lasttasks, Cost);
 
+	cout << left << setw(30) << "c solutions's cost" << ":" << right << setw(20) << new_makespan << endl;
+	  
+		  
 	dsopttime = (getRunTime() - total_time);
       } 
 			
@@ -2827,8 +3013,11 @@ void etjsp_dichotomic_search()
 	
   cout << "c =================[ statistics ]==================" << endl;
   cout << left << setw(30) << "d DSLOWERBOUND "    << right << setw(21) << (max_infeasible+1) << endl
-       << left << setw(30) << "d DSOBJECTIVE "     << right << setw(21) << maxfsble << endl 
-       << left << setw(30) << "d DSRUNTIME "       << right << setw(21) << dsrun_time << endl
+	<< left << setw(30) << "d DSOBJECTIVE "     << right << setw(21) << maxfsble << endl; 
+	
+		if (Type == "dynetjsp")
+			cout << left << setw(30) << "d DSNORMALIZEDCOST " << right << setw(21) << normalized_cost << endl;
+	cout << left << setw(30) << "d DSRUNTIME "       << right << setw(21) << dsrun_time << endl
        << left << setw(30) << "d DSOPTTIME "       << right << setw(21) << dsopttime << endl
        << left << setw(30) << "d DSIDSTIME "       << right << setw(21) << maxidstime << endl
        << left << setw(30) << "d DSNODES "         << right << setw(21) << total_nodes << endl
@@ -3217,22 +3406,28 @@ void mks_dec_search()
 void branch_and_bound()
 {
 	int i, j;
+		
 	
 	VarArray disjuncts;
 	VarArray tasks;
+	Variable endlasttask(max_infeasible+1, maxfsble-1);
+
+//	if (Type == "etjsp" || Type == "dynetjsp"){
 	VarArray lasttasks;
 	VarArray earlybool;
 	VarArray latebool;
 	//VarArray endlasttask( (Type == "osp" ? nJobs*nMachines : nJobs), max_infeasible+1, maxfsble-1 );
-	Variable endlasttask(max_infeasible+1, maxfsble-1);
 	Variable Cost(max_infeasible+1, maxfsble-1);
 	VarArray searchVars;
 	//new_makespan = maxfsble-1;
+//	}
+
+
 	
 	CSP model;
 	int ds_objective = maxfsble;
 	makespan = maxfsble-1;
-	
+
 	if(Type == "osp")
 		osp_setup(model, disjuncts, tasks);
 	else if(Type == "jtl0")
@@ -3256,7 +3451,7 @@ void branch_and_bound()
 	}
 	else if(Type == "dynetjsp") {
 		
-		Result = etjsp_setup(model, disjuncts, tasks, lasttasks, earlybool, latebool, Cost);     
+		Result = dynetjsp_setup(model, disjuncts, tasks, lasttasks, earlybool, latebool, Cost);     
 		for(int k=0; k<disjuncts.size(); ++k) {
 			searchVars.add(disjuncts[k]);
 		}
@@ -3283,17 +3478,15 @@ void branch_and_bound()
 				duration_ += duration[i][j];
 			model.add( tasks[i] + duration_ <= endlasttask );
 		}
-	else if( Type != "etjsp" )
+	else if( (Type != "etjsp") && (Type != "dynetjsp"))
 		for(i=0; i<nJobs; ++i)
 			model.add( tasks[(i+1)*nMachines-1] + duration[i][nMachines-1] <= endlasttask );
-	
-	
+		
 	if( Type == "etjsp" || Type == "dynetjsp")
 		model.add( Minimise(Cost) );
 	else
 		model.add( Minimise(endlasttask) );
-	
-	
+		
 	Solver s(model, searchVars);
 	
 	//if( Reset ) s.function = new ResetBase( &s );
@@ -3337,6 +3530,10 @@ void branch_and_bound()
 		<< left << setw(30) << "c search for (in sec.)" << ":" << right << setw(20) << TIME << endl;
 		s.setTimeLimit( TIME );
 		s.setVerbosity(Verbose);
+		
+//		if((Type == "etjsp") || (Type == "dynetjsp"))
+//			addEarlyTardyValueHeuristic(lasttasks, earlybool);
+
 		Result = s.solve_and_restart(PolicyRestart, Base, Factor, Decay);
 		
 		//Solved = ( Result != LIMITOUT && Result != UNKNOWN );
@@ -3347,8 +3544,7 @@ void branch_and_bound()
 		if( Solved ) {
 			max_infeasible = maxfsble-1;
 
-	if(Type == "etjsp")
-			solution_checked &= check_etjsp_solution(s, tasks, lasttasks, Cost);
+			//solution_checked &= check_etjsp_solution(s, tasks, lasttasks, Cost);
 			
 #ifdef _WEIGHT_STATS
 			std::ostringstream ostr;
@@ -3362,8 +3558,10 @@ void branch_and_bound()
 
 		if(maxfsble < ds_objective) {
 
-		  //solution_checked &= check_etjsp_solution(s, tasks, lasttasks, Cost, maxfsble);
-
+			if (Type == "etjsp")
+				solution_checked &= check_etjsp_solution(s, tasks, lasttasks, Cost, maxfsble);
+			else if (Type == "dynetjsp")
+				solution_checked &= check_dynetjsp_solution(s, tasks, lasttasks, Cost, maxfsble);
 		}
 
 		
@@ -3387,6 +3585,7 @@ void branch_and_bound()
 		total_bts += s.BACKTRACKS;
 		total_propags += s.PROPAGS;
 		total_restarts += s.BTSLIST.size;
+		
 		
 		//// END BRANCH & BOUND ///////////////
 	} else {

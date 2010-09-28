@@ -138,6 +138,13 @@ namespace CSPXMLParser {
       if( continuous // && res
 	  && arity == 2 ) {
 	int i, j, k, length = pred->arity-arity;
+
+	//std::cout << pred->arity << " " << arity << std::endl;
+
+	//pred->print(std::cout);
+	
+	//std::cout << std::endl;
+
 	int assignment[length];
 	int vars[length];
 	BuildObject **scope = pred->scope;
@@ -192,7 +199,7 @@ namespace CSPXMLParser {
 	trash.push( new BuildObjectPredTree(t,n) ); 
 	//var_ptr_ = new BuildObjectPredicate( scope, n+m, 0, 1, trash.back(), NULL)
 	// the following might be buggy!!!;
-	var_ptr_ = new BuildObjectPredicate( scope, n, 0, 1, trash.back(), NULL);
+	var_ptr_ = new BuildObjectPredicate( scope, n+m, 0, 1, trash.back(), NULL);
       }
   
   };
@@ -1662,7 +1669,6 @@ namespace CSPXMLParser {
 	}
       else if( ext_feature ) 
 	{
-	  
 	  features_vec = new double[36];
 	      
 	  features_vec[0] = (nconstants ? (log2(nconstants)) : -1);
@@ -2075,11 +2081,13 @@ namespace CSPXMLParser {
       //Solver s;
 
       //s.prebuild( model );
-
       int result = UNKNOWN;
       if( model.preBuild() != UNSAT )
 	{
 	  if( revert_sat && model.isSatCompatible() ) {
+
+	    std::cout << "SOLVE WITH SAT" << std::endl;
+
 	    solveWithSAT( result );
 	  } else {
 	    solveWithCP( result );
@@ -2088,6 +2096,11 @@ namespace CSPXMLParser {
       else
 	{
 	  result = UNSAT;
+	  if( ext_feature ) 
+	    {
+	      features_vec = new double[36];
+	      std::fill(features_vec, features_vec+36, -1);
+	    }
 	}
 
       return result;

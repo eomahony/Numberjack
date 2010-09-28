@@ -129,6 +129,9 @@ BuildObject* BuildObject::getBuildObject()
 
 const BuildObject* BuildObject::getConstBuildObject() const
 {
+
+  //std::cout << veqptr_ << std::endl;
+
   return (veqptr_ ? veqptr_->getConstBuildObject() : this);
 }
 

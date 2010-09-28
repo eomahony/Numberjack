@@ -155,8 +155,11 @@ int main( int argc, char** argv )
 	} else if(Type == "jtl0") {
 		if(UBinit < 0) maxfsble = jsp_upperbound();
 		minfsble = jsp_lowerbound();
-	} else if(Type == "etjsp" || Type == "dynetjsp") {
+	} else if(Type == "etjsp") {
 		if(UBinit < 0) maxfsble = etjsp_upperbound();
+		minfsble = etjsp_lowerbound();
+	} else if(Type == "dynetjsp") {
+		if(UBinit < 0) maxfsble = dynetjsp_upperbound();
 		minfsble = etjsp_lowerbound();
 	} else { //if(Type == "jsp") {
 		if(UBinit < 0) maxfsble = jsp_upperbound();
@@ -235,8 +238,12 @@ int main( int argc, char** argv )
 	<< left << setw(30) << "d INITLB "      << right << setw(21) << init_lb << endl
 	<< left << setw(30) << "d LOWERBOUND "  << right << setw(21) << (max_infeasible+1) << endl
 	<< left << setw(30) << "d OBJECTIVE "   << right << setw(21) << maxfsble << endl 
-	<< left << setw(30) << "d BESTKNOWN "   << right << setw(21) << opt << endl
-	<< left << setw(30) << "d RUNTIME "     << right << setw(21) << total_time << endl
+	<< left << setw(30) << "d BESTKNOWN "   << right << setw(21) << opt << endl;
+	
+	if(Type == "dynetjsp")
+		cout << left << setw(30) << "d NORMALIZEDCOST "    << right << setw(21) << normalized_cost << endl;
+	
+	cout << left << setw(30) << "d RUNTIME "     << right << setw(21) << total_time << endl
 	<< left << setw(30) << "d OPTTIME "     << right << setw(21) << opt_time << endl	
 	<< left << setw(30) << "d PROOFTIME "   << right << setw(21) << proof_time << endl	
 	<< left << setw(30) << "d NODES "       << right << setw(21) << total_nodes << endl

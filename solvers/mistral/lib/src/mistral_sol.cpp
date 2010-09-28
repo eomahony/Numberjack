@@ -297,6 +297,9 @@ void Solver::initSearch( VarArray& X, const int maxsize )
   // remove from x the variables that are "non-searchable"
   VariableInt *temp;
   BuildObject *bvar;
+
+  //cout << variables.size << endl;
+
   while( i<n ) {
 #ifdef _NARRAY
     bvar = X.array_[i];
@@ -304,30 +307,48 @@ void Solver::initSearch( VarArray& X, const int maxsize )
     bvar = X.array_[i].var_ptr_;
 #endif
 
+
     if(bvar != bvar->getBuildObject())
       bvar = bvar->getBuildObject();
 
+
     if( bvar->isSearchable() &&
 	((temp = bvar->getVariable()) != NULL) ) {
+      
+      bool is_not_in = true;
+      for(int x=0; x<j && is_not_in; ++x)
+	is_not_in = (variables[x] != temp);
 
+      if(is_not_in) {
+// 	temp->print( cout );
+// 	cout << " / ";
+// 	cout.flush();
+	
+	idx = temp->id;
+	if( idx != j ) {
+	  
+// 	  cout << " swap ";
+// 	  variables[idx]->print(cout);
+	  
+// 	  cout << " and ";
+// 	  variables[j]->print(cout);
+	  
+// 	  cout << endl;
+	  
+	  
+	  variables[idx] = variables[j];
+	  variables[j] = temp;
+	  
+	  variables[j]->id = j;
+	  variables[idx]->id = idx;
+	}
 
-      //        bvar->print( cout );
-      //        cout << " / ";
-      //        bvar->getVariable()->print( cout );
-      //        cout << " ";
-      //        cout << bvar;
-      //        cout << endl;
+// 	temp->print( cout );
+// 	cout << endl;
+      
 
-      idx = temp->id;
-      if( idx != j ) {
-	variables[idx] = variables[j];
-	variables[j] = temp;
-
-	variables[j]->id = j;
-	variables[idx]->id = idx;
+	++j;
       }
-
-      ++j;
     }
     ++i;
   }
@@ -340,6 +361,8 @@ void Solver::initSearch( VarArray& X, const int maxsize )
   //     }
 
   //   //  exit(0);
+
+  //cout << "HERE" << endl;
 
   initSearch( n, maxsize, false );
 }
@@ -2395,6 +2418,28 @@ int Solver::solutionFound(int init_level)
 
   return status;
 }
+
+
+/*
+VariableInt *x, *y;
+
+Constraint *con = NULL;
+MistralNode<Constraint*> *nd;
+nd = x->constraintsOnValue();
+while( nextNode(nd) ) {
+  con = nd->elt;
+  for(int i=0; i<con->arity; ++i) {
+    y = con->_scope[i];
+    
+    y->id;
+    //
+  }
+ }
+
+
+0 
+cp_solver->variables.size;
+*/
 
 bool Solver::filtering()
 {

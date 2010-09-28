@@ -1984,7 +1984,7 @@ namespace CSPXMLParser
   virtual BuildObject* getPredicate( VarArray& scope )
   {
     return CSP::_And( args[0]->getPredicate( scope ),
-		     args[1]->getPredicate( scope ) );
+		      args[1]->getPredicate( scope ) );
 
     //    BuildObject **x = new BuildObject*[3];
     //  x[0] = args[0]->getPredicate( scope );

@@ -1069,6 +1069,19 @@ int jtl0_setup(CSP& model, VarArray& disjuncts, VarArray& tasks) {
     } else
       return UNSAT;
   }
+
+//   for(int x=0; x<nJobs; ++x) {
+//     for(int y=0; y<nMachines; ++y) {
+//       int release_xy = 0;
+//       for(int z=0; z<y; ++z) {
+// 	release_xy += duration[x][z];
+//       }
+//       std::cout << release_xy << "+t" << (x*nMachines+y) << "+" << duration[x][y] << " ";
+//     }
+//     std::cout << std::endl;
+//   }
+
+//   //exit(1);
  
   // non-overlapping reified constraints
   for(i=0; i<nJobs; ++i)
@@ -1809,10 +1822,10 @@ void dichotomic_search()
     if(Result == UNKNOWN) {
       Solver s(model, disjuncts);
 
-      s.print(std::cout);
+      //      s.print(std::cout);
 //       //std::cout << std::endl << ndisjuncts << std::endl;
 
-      exit(0);
+//      exit(0);
 
 //       BitSet jobpair[nJobs*nJobs];
 //       for(int x=0; x<nJobs*nJobs; ++x) {

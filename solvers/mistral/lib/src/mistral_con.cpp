@@ -10299,14 +10299,21 @@ void ConstraintClauseBase::analyzeConflict()
       //case CSP: {
       //} break;
     case SAT: {
-      btLevel = analyze( conflict, p, use_learning );
+      
+      //std::cout << *level << " " << solver->init_level << std::endl;
+      
+      //std::cout << conflict << std::endl;
+
+      btLevel = *level-1;//analyze( conflict, p, use_learning );
+      /*
       if( use_backjump || use_learning ) {
 	a = atom(p);
 	solver->decision[*level] = X[a];
 	X[a]->postCut( p!=a );
 	if( use_backjump )
 	  solver->backtrackLevel = btLevel+1;
-      }   
+      }
+      */   
     } break;
     case DTP: {
 
@@ -11236,7 +11243,7 @@ void ConstraintClauseBase::initialise()
     std::fill(atom_id, atom_id+m, -1);
   
     if( disjuncts.empty() ) {
-      initScope( solver->variables.stack_, solver->length, VALUETRIGGER, 0 );
+      initScope( solver->variables.stack_, solver->variables.size, VALUETRIGGER, 0 );
       if( solver->constraints.size == 1 )
 	mode = SAT;
 	//mode = CSP;

@@ -1604,7 +1604,7 @@ const char*feature_names[num_features] = {"log_constants", "log_booleans", "log_
 				"perten_avg_predsize", "perten_avg_predarity"};
 
 const char* MistralSolver::get_feature_name(int i) {
-//   std::cout << "c (wrapper) get feature name " << feature_names[i] << std::endl;
+  //   std::cout << "c (wrapper) get feature name " << feature_names[i] << std::endl;
   return feature_names[i];
 }
 
@@ -1638,7 +1638,7 @@ void MistralSolver::get_features(MistralDoubleArray& features)
 void MistralSolver::get_features()
 {
   
-//   std::cout << "c (wrapper) extract features " << std::endl; 
+  //std::cout << "c (wrapper) extract features " << std::endl; 
 
   cb->setHeuristic    ( "dom/wldeg" );      
   cb->setRestartPolicy( "dyn" );

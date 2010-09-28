@@ -251,6 +251,7 @@ namespace MistralScheduler {
     Variable C_max;
     Variable L_sum;
 
+    SchedulingModel() : CSP() {}
     SchedulingModel(Instance& prob, const int C_max);
     virtual void setup(Instance& inst, const int C_max);
     virtual ~SchedulingModel();
@@ -267,7 +268,8 @@ namespace MistralScheduler {
   class C_max_Model : public SchedulingModel {
   public:
 
-    C_max_Model(Instance& prob, const int C_max) : SchedulingModel(prob, C_max) { }
+    C_max_Model() : SchedulingModel() {}
+    C_max_Model(Instance& prob, const int C_max) { setup(prob, C_max); }
     virtual ~C_max_Model() {}
 
     virtual int get_lb();
@@ -280,7 +282,8 @@ namespace MistralScheduler {
   class L_sum_Model : public SchedulingModel {
   public:
 
-    L_sum_Model(Instance& prob, const int L_sum) : SchedulingModel(prob, L_sum) { }
+    L_sum_Model() : SchedulingModel() {}
+    L_sum_Model(Instance& prob, const int L_sum) { setup(prob, L_sum); }
     virtual ~L_sum_Model() {}
 
     virtual int get_lb();
@@ -290,10 +293,11 @@ namespace MistralScheduler {
     virtual int  set_objective(const int obj);
   };
 
-  class No_wait_Model : public SchedulingModel {
+  class No_wait_Model : public C_max_Model {
   public:
  
-    No_wait_Model(Instance& prob, const int C_max) : SchedulingModel(prob, C_max) {}
+    No_wait_Model() : C_max_Model() {} 
+    No_wait_Model(Instance& prob, const int C_max) : C_max_Model() { setup(prob, C_max); }
     virtual void setup(Instance& prob, const int C_max);
     virtual ~No_wait_Model() {}
   };
@@ -464,6 +468,7 @@ namespace MistralScheduler {
     
 
     void dichotomic_search();
+    //void branch_and_bound();
 
   };
 

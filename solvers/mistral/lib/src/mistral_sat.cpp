@@ -108,10 +108,10 @@ SatSolver::SatSolver(CSP& model)
 
 SatSolver::~SatSolver() 
 {
-  isWatchedBy -= numAtoms;
+  isWatchedBy -= (numAtoms+1);
   delete [] isWatchedBy;
   delete [] polarity;
-  activity -= numAtoms;
+  activity -= (numAtoms+1);
   delete [] activity;
   delete [] reason;
   delete [] lvl;
@@ -373,20 +373,24 @@ void SatSolver::init(const int n, const int m)
   assumptions.init(1, numAtoms);
   learnt.init(0, m);
 
-  isWatchedBy = new Vector<Clause*>[2*numAtoms+1];
-  isWatchedBy += numAtoms;
+  isWatchedBy = new Vector<Clause*>[2*numAtoms+3];
+  isWatchedBy += (numAtoms+1);
 
-  polarity = new int[numAtoms+1];
-  activity = new double[2*numAtoms+1];
-  activity += numAtoms;
-  reason = new Clause*[numAtoms+1];
-  lvl = new int[numAtoms+1];
-  for(int i=0; i<=numAtoms; ++i) {
+  polarity = new int[numAtoms+2];
+  activity = new double[2*numAtoms+3];
+  activity += (numAtoms+1);
+  reason = new Clause*[numAtoms+2];
+  lvl = new int[numAtoms+2];
+  for(int i=0; i<=numAtoms+1; ++i) {
     polarity[i] = i;
     activity[i] = 0;
     activity[-i] = 0;
     reason[i] = NULL;
-    lvl[i] = numAtoms+1;
+    lvl[i] = numAtoms+2;
+    if(i) {
+      isWatchedBy[i].init(0,512);
+      isWatchedBy[-i].init(0,512);
+    }
   }
   if( base.empty() )
     base.init(0, m);
@@ -395,8 +399,19 @@ void SatSolver::init(const int n, const int m)
   int i, j=base.size;
   for(i=0; i<j; ++i) {
     Clause& clause = *(base[i]);
+
+//     std::cout << clause.size << " " << numAtoms << std::endl;
+
+//     std::cout << clause[0] << std::endl;
+//     std::cout << clause[1] << std::endl;
+    
+//     //std::cout << (isWatchedBy+clause[0]) << std::endl;
+//     //std::cout << (isWatchedBy+clause[1]) << std::endl;
+
     isWatchedBy[clause[0]].push(base[i]);
     isWatchedBy[clause[1]].push(base[i]);
+
+//     std::cout << "here" << std::endl;
   }
 } 
 

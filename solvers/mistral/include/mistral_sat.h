@@ -107,6 +107,7 @@ namespace Mistral {
 
     /// for each Literal, the list of clauses it is watched by
     Vector<Clause*> *isWatchedBy;
+    //std::vector<Clause*> *isWatchedBy;
 
     /// Literal Activity 
     double *activity;
@@ -353,6 +354,9 @@ inline void SatSolver::addClause( Vector<Clause*>& clauseList,
     clauseList.push( cl );
     isWatchedBy[conflict[0]].push(cl);
     isWatchedBy[conflict[1]].push(cl);
+    
+    //isWatchedBy[conflict[0]].push_back(cl);
+    //isWatchedBy[conflict[1]].push_back(cl);
       
     double size = clauseList.size;
     avgsize = (avgsize*(size-1) + double(conflict.size))/size;
@@ -508,106 +512,113 @@ inline int SatSolver::analyze( Clause *conflict, int& lit, const bool learn )
   int pathC = 0, index = assumptions.size;
   Literal p=0, q;
   Atom a;
-  learnt_clause.push(p);
+
+  //if(conflict->size) {
+
+    learnt_clause.push(p);
     
-  do {
-    // add the parents of the conflict to the current set of visited atoms
-    Clause& con = *conflict;
+    do {
+
+      //std::cout << conflict << std::endl;
+
+      // add the parents of the conflict to the current set of visited atoms
+      Clause& con = *conflict;
 
 #ifdef _DEBUGNOGOOD
-    printClause( std::cout, conflict );
-    std::cout << std::endl;
+      printClause( std::cout, conflict );
+      std::cout << std::endl;
 #endif
 
-    for(j=0; j<con.size; ++j) {
-      q = con[j];
-      a = atom(q);
+      for(j=0; j<con.size; ++j) {
+	q = con[j];
+	a = atom(q);
 
 #ifdef _DEBUGNOGOOD
-      std::cout << "\t" << q << ": ";
+	std::cout << "\t" << q << ": ";
 #endif
 
-      if( !visited.fastMember(a) ) {
-	activity[q] += params.activity_increment;
-	visited.fastInsert(a);
-	// we'll need to replace 'a' by its parents since its level is too high
-	if(lvl[a] >= decisions.size) {
+	if( !visited.fastMember(a) ) {
+	  activity[q] += params.activity_increment;
+	  visited.fastInsert(a);
+	  // we'll need to replace 'a' by its parents since its level is too high
+	  if(lvl[a] >= decisions.size) {
 
 #ifdef _DEBUGNOGOOD
-	  std::cout << "expend" << std::endl;
+	    std::cout << "expend" << std::endl;
 #endif
 
-	  ++pathC;
-	} else {
-	  // q's level is below the current level, hence we are not expending it further
+	    ++pathC;
+	  } else {
+	    // q's level is below the current level, hence we are not expending it further
 
 #ifdef _DEBUGNOGOOD
-	  std::cout << "add to the clause" << std::endl;
+	    std::cout << "add to the clause" << std::endl;
 #endif
 
-	  learnt_clause.push(q);
-	  if(lvl[a] > backtrackLevel)
-	    backtrackLevel = lvl[a];
+	    learnt_clause.push(q);
+	    if(lvl[a] > backtrackLevel)
+	      backtrackLevel = lvl[a];
+	  }
 	}
-      }
 
+#ifdef _DEBUGNOGOOD
+	else {
+	  std::cout << "visited" << std::endl;
+	}
+#endif
+
+      }
+      // jump to the next visited atom that need be further expended
+      while(!visited.fastMember(assumptions[--index]));
+      a = assumptions[index];
+      p = polarity[a];
+
+#ifdef _DEBUGNOGOOD
+      std::cout << "explore " << p << " ";
+      std::cout.flush();
+#endif
+
+      if( pathC > 1 ) {
+	// there are still atoms to expand, we start with 'a'
+	conflict = reason[a];
+	visited.fastInsert(a);
+      } 
 #ifdef _DEBUGNOGOOD
       else {
-	std::cout << "visited" << std::endl;
+	std::cout << std::endl;
       }
 #endif
 
-    }
-    // jump to the next visited atom that need be further expended
-    while(!visited.fastMember(assumptions[--index]));
-    a = assumptions[index];
-    p = polarity[a];
+    } while( --pathC );
+    // p is the last decision, since all atoms above it in the
+    // assumption stack have been skipped or expended.
+    learnt_clause[0] = -p;    
 
 #ifdef _DEBUGNOGOOD
-    std::cout << "explore " << p << " ";
-    std::cout.flush();
-#endif
-
-    if( pathC > 1 ) {
-      // there are still atoms to expand, we start with 'a'
-      conflict = reason[a];
-      visited.fastInsert(a);
-    } 
-#ifdef _DEBUGNOGOOD
-    else {
-      std::cout << std::endl;
-    }
-#endif
-
-  } while( --pathC );
-  // p is the last decision, since all atoms above it in the
-  // assumption stack have been skipped or expended.
-  learnt_clause[0] = -p;    
-
-#ifdef _DEBUGNOGOOD
-  std::cout << "add the negation of the last decision: " << -p << std::endl;
-  std::cout << "(";
-  for(int i=0; i<learnt_clause.size; ++i)
-    std::cout << " " << learnt_clause[i];
-  std::cout << " )" << std::endl;
+    std::cout << "add the negation of the last decision: " << -p << std::endl;
+    std::cout << "(";
+    for(int i=0; i<learnt_clause.size; ++i)
+      std::cout << " " << learnt_clause[i];
+    std::cout << " )" << std::endl;
 #endif
 
 
       
-  if( learn && learnt_clause.size != 1 ) {
-    addClause( learnt, learnt_clause, stats.learnt_avg_size );
-    reason[atom(p)] = learnt.back();
-  }
-  visited.clear();
-  lit = -p;    
+    if( learn && learnt_clause.size != 1 ) {
+      addClause( learnt, learnt_clause, stats.learnt_avg_size );
+      reason[atom(p)] = learnt.back();
+    }
+    visited.clear();
+    lit = -p;    
 
 #ifdef _DEBUGNOGOOD
-  std::cout << "backtraclLevel = " << backtrackLevel << "/" << (decisions.size) << std::endl;
+    std::cout << "backtraclLevel = " << backtrackLevel << "/" << (decisions.size) << std::endl;
 #endif
 
-  ++stats.conflicts;
+    ++stats.conflicts;
 
-  //std::cout << (decisions.size - backtrackLevel) << std::endl;
+    //std::cout << (decisions.size - backtrackLevel) << std::endl;
+    //}
 
   return backtrackLevel;
 }

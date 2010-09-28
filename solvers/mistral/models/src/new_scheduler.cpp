@@ -203,7 +203,7 @@ ParameterList::ParameterList(int length, char **commandline) {
     Cutoff      = 30;
     Objective = "makespan";
     Heuristic = "osp-t";
-  } else if(Type == "jtl0") {
+  } else if(Type == "now") {
     Cutoff      = 30;
     Objective = "makespan";
     Heuristic = "osp-dw";
@@ -293,7 +293,7 @@ Instance::Instance(const ParameterList& params) {
     sds_readData( params.data_file );
   } else if(params.Type == "jtl") {
     jtl_readData( params.data_file );
-  } else if(params.Type == "jtl0") {
+  } else if(params.Type == "now") {
     jtl_readData( params.data_file );
   } else if(params.Type == "jla") {
     jla_readData( params.data_file );
@@ -861,6 +861,8 @@ void Instance::dyn_readData( const char* filename ) {
   jsp_earlycost = new int[nJobs];
   jsp_latecost = new int[nJobs];
   
+
+  double *float_weights = new double[nJobs];
   
   for(i=0; i<nJobs; ++i) {
     k = release_date.size();
@@ -878,6 +880,7 @@ void Instance::dyn_readData( const char* filename ) {
     infile >> jsp_duedate[i];
     infile >> j;
     infile >> jsp_latecost[i];
+    infile >> float_weights[i];
 
     std::cout << (k) << " " << release_date.size() << std::endl;
     setReleaseDate(k, j);
@@ -1039,7 +1042,10 @@ SchedulingModel::~SchedulingModel() {}
 
 void No_wait_Model::setup(Instance& inst, const int max_makespan) {
 
-  int i,j,k, lb, ub, ti, tj;
+  //std::cout << "nowait setup" << std::endl;
+  //exit(1);
+
+  int i,j,k, lb, ub, ti=0, tj=0;
   std::vector<int> offset;
   //**offset=new int*[inst.nJobs()];
   for(i=0; i<inst.nJobs(); ++i) {
@@ -1049,7 +1055,7 @@ void No_wait_Model::setup(Instance& inst, const int max_makespan) {
     //offset[i][j+1] = (offset[i][j] + inst.getDuration(inst.getJobTask(i,j)));
 
     offset.push_back(0);
-    for(j=0; j<inst.nTasksInJob(i); ++j)
+    for(j=0; j<inst.nTasksInJob(i)-1; ++j)
       offset.push_back(offset.back() + inst.getDuration(inst.getJobTask(i,j)));
   }
 
@@ -1059,9 +1065,16 @@ void No_wait_Model::setup(Instance& inst, const int max_makespan) {
   if(max_makespan < 0) {
     ub_C_max = 0;
     for(i=0; i<inst.nJobs(); ++i) {
-      ub_C_max += offset[i][inst.nTasksInJob(i)];
+
+      //std::cout << offset.size() << " " << i << " " << ((i+1)*inst.nTasksInJob(i)-1) << std::endl;
+
+      //ub_C_max += (offset[(i+1)*inst.nTasksInJob(i)-1] + inst.getDuration(inst.getLastTaskofJob(i)));
+      ub_C_max += (offset[inst.getLastTaskofJob(i)] + inst.getDuration(inst.getLastTaskofJob(i)));
     }
   } else ub_C_max = max_makespan;
+
+
+  //exit(1);
 
   //lb_L_sum = inst.getEarlinessTardinessLowerBound(ub_C_max);
   //ub_L_sum = inst.getEarlinessTardinessUpperBound(ub_C_max);
@@ -1070,9 +1083,12 @@ void No_wait_Model::setup(Instance& inst, const int max_makespan) {
 
   // create one variable per task
   for(i=0; i<inst.nJobs(); ++i) {
+
     lb = inst.getReleaseDate(inst.getJobTask(i,0));
     ub = std::min(ub_C_max, inst.getDueDate(inst.getLastTaskofJob(i))) 
-      - offset[i][inst.nTasksInJob(i)];
+      //- (offset[(i+1)*inst.nTasksInJob(i)-1] + inst.getDuration(inst.getLastTaskofJob(i)));
+      - (offset[inst.getLastTaskofJob(i)] + inst.getDuration(inst.getLastTaskofJob(i)));
+
 
     if(lb > ub) {
       std::cout << "INCONSISTENT" << std::endl;
@@ -1109,69 +1125,22 @@ void No_wait_Model::setup(Instance& inst, const int max_makespan) {
   Variable x_cmax(lb_C_max, ub_C_max);
   C_max = x_cmax;
   for(i=0; i<inst.nJobs(); ++i) {
-    add(Precedence(tasks[i], inst.getDuration(ti), C_max));
-  }
-
-  if(inst.hasJobDueDate()) {
-    // early/late bools - whether the last tasks are early or late
-    for(i=0; i<inst.nJobs(); ++i) {
-      ti = inst.getLastTaskofJob(i);
-      if(inst.hasEarlyCost())
-	earlybool.add(tasks[ti] < (inst.getJobDueDate(i) - inst.getDuration(ti)));
-      if(inst.hasLateCost())
-	latebool.add(tasks[ti] > (inst.getJobDueDate(i) - inst.getDuration(ti)));
-    }
-    
-    //DG Added for calculating cost
-    VarArray sum_scope;
-    int weights[2*inst.nJobs()+1];
-    int sum_ub = 0;
-    int n_weights = 0;
-
-    k=0;
-    if(inst.hasEarlyCost()) {
-      for(i=0; i<inst.nJobs(); ++i) {
-	ti = inst.getLastTaskofJob(i);
-	Variable x(0, inst.getJobDueDate(i)-inst.getDuration(ti)); // amount of "earliness"
-	add(x == (earlybool[i]*((tasks[ti]*-1) - (inst.getDuration(ti) - inst.getJobDueDate(i)))));
-	sum_scope.add(x);
-	weights[k++] = inst.getJobEarlyCost(i);
-	sum_ub += ((inst.getJobDueDate(i) - (inst.getReleaseDate(ti) + inst.getDuration(ti)))*inst.getJobEarlyCost(i));
-      }
-      n_weights += inst.nJobs();
-    }
-    
-    if(inst.hasLateCost()) {
-      for(i=0; i<inst.nJobs(); ++i) {
-	ti = inst.getLastTaskofJob(i);
-	Variable x(0, ub_C_max-inst.getJobDueDate(i));
-	add(x == (latebool[i]*(tasks[ti] + (inst.getDuration(ti) - inst.getJobDueDate(i)))));
-	sum_scope.add(x);
-	weights[k++] = inst.getJobLateCost(i);
-	sum_ub += ((ub_C_max - inst.getJobDueDate(i))*inst.getJobLateCost(i));
-      }
-      n_weights += inst.nJobs();
-    }
-
-    
-    weights[n_weights] = 0;
-    
-    Variable x(0, sum_ub);
-    L_sum = x;
-    add( L_sum == Sum(sum_scope, weights) );
-  }
-
-
-  // initialise last tasks
-  for(i=0; i<inst.nJobs(); ++i) last_tasks.add(tasks[inst.getLastTaskofJob(i)]);
-
-  // initialise searched vars
-  if(data->hasJobDueDate()) {
-    for(int i=0; i<earlybool.size(); ++i) SearchVars.add(earlybool[i]);
-    for(int i=0; i< latebool.size(); ++i) SearchVars.add(latebool [i]);
-    for(int i=0; i<data->nJobs(); ++i) SearchVars.add(tasks[data->getLastTaskofJob(i)]);
+    ti = inst.getLastTaskofJob(i);
+    k = inst.getDuration(ti) + offset[ti];
+    add(Precedence(tasks[i], k, C_max));
   }
   for(int i=0; i<disjuncts.size(); ++i) SearchVars.add(disjuncts[i]);
+
+//   for(i=0; i<inst.nJobs(); ++i) {
+//     for(j=0; j<inst.nTasksInJob(i); ++j) {
+//       ti = inst.getJobTask(i,j);
+//       std::cout << offset[ti] << "+t" << ti << "+" << inst.getDuration(ti) << " ";
+//     }
+//     std::cout << std::endl;
+//   }
+
+//   //exit(1);
+
 }
 
 
@@ -1267,14 +1236,14 @@ int L_sum_Model::get_objective() {
   return L_sum.value();
 }
 int C_max_Model::get_objective() {
-  int obj=0, aux, ti;
-  for(int i=0; i<data->nJobs(); ++i) {
-    ti = data->getLastTaskofJob(i);
-    aux = (tasks[ti].value() + data->getDuration(ti));
-    if(aux > obj) obj = aux;
-  }
-  return obj;
-//  return C_max.value();
+//   int obj=0, aux, ti;
+//   for(int i=0; i<data->nJobs(); ++i) {
+//     ti = data->getLastTaskofJob(i);
+//     aux = (tasks[ti].value() + data->getDuration(ti));
+//     if(aux > obj) obj = aux;
+//   }
+//   return obj;
+  return C_max.value();
 }
 
 
@@ -1458,12 +1427,13 @@ int main( int argc, char** argv )
 
   Instance jsp(params);
   
-  //jsp.print(std::cout);
+  jsp.print(std::cout);
 
   SchedulingModel *model;
   if(params.Objective == "makespan") {
     std::cout << "c Minimising Makespan" << std::endl;
-    model = new C_max_Model(jsp, -1);
+    if(params.Type == "now") model = new No_wait_Model(jsp, -1);
+    else model = new C_max_Model(jsp, -1);
   } else if(params.Objective == "tardiness") {
     std::cout << "c Minimising Tardiness" << std::endl;
     model = new L_sum_Model(jsp, -1);
@@ -1473,8 +1443,10 @@ int main( int argc, char** argv )
   }
   SchedulingSolver solver(model, params, stats);
   
-  //solver.print(std::cout);
-  solver.dichotomic_search();
+  solver.print(std::cout);
+
+  if(solver.status == UNKNOWN) solver.dichotomic_search();
+  //if(solver.status == UNKNOWN) solver.banch_and_bound();
 
   stats.print(std::cout, "DS");
   

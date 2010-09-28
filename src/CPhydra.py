@@ -10,7 +10,6 @@ CPhydra module in python
 import sys
 from Numberjack import *
 import Mistral
-import SCIP
 import cPickle
 import os
 

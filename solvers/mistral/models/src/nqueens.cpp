@@ -104,15 +104,13 @@ int main(int argc, char *argv[]) {
 
     // the solver
     MinDomMin heuristic;
-
     //Solver s( model, queens, heuristic );
     Solver s( model );
     s.add( heuristic );
-
     
 
-//     s.print( cout );
-//     cout<< endl;
+//      s.print( cout );
+//      cout<< endl;
 
 //     s.startNewSearch();
 //     while( s.getNextSolution() != Solver::UNSAT )
@@ -123,6 +121,9 @@ int main(int argc, char *argv[]) {
 
     //s.print( cout );
     //cout << endl;
+
+
+     //s.setVerbosity(3);
 
     //s.solve_and_restart(GEOMETRIC, 32, 2);
     s.solve();

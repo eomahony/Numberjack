@@ -440,6 +440,8 @@ public:
   Vector< int > valuation_size;
   Vector< Mistral_Expression* > decisions;
 
+  std::vector< std::vector<int> > graph;
+
   int first_decision_level;
   int saved_level;
 
@@ -534,6 +536,10 @@ public:
   void get_features();
   int num_vars();
   int get_degree(int i);
+  void extract_graph();
+  int numNodes();
+  int degree(const int x);
+  int get_neighbor(const int x, const int y);
 };
 
 

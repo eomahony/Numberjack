@@ -26,12 +26,12 @@ for example in ls.stdout:
         print '******', lib_str
         print '**************************************'
         lib = __import__(lib_str)
-        param = lib.default
-        param['verbose'] = 0
+        lib_param = lib.default
+        lib_param['verbose'] = 0
         for solver in lib.solvers:
             print 'run', lib_str, 'with', solver
-            param['solver'] = solver
-            outcome[lib_str][solver] = lib.solve(param)
+            lib_param['solver'] = solver
+            outcome[lib_str][solver] = lib.solve(lib_param)
 
 for lib in reference.keys():
     print 'checking', lib+':'

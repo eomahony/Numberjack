@@ -35,6 +35,13 @@ StatisticList::StatisticList() {
 
 StatisticList::~StatisticList() {}
 
+int StatisticList::get_total_time() {
+  double total_time  = 0.0;
+  for(unsigned int i=0; i<time.size(); ++i)
+    total_time += time[i];
+  return total_time;
+}
+
 void StatisticList::add_info(SchedulingSolver *s, const int objective) {
 
   DBG("Update statistics%s\n", "");
@@ -1160,13 +1167,19 @@ int C_max_Model::get_ub() {
   return ub_C_max;
 }
 
-void L_sum_Model::add_objective() {
-  add(Minimise(L_sum));
+VariableInt* L_sum_Model::get_objective_var() {
+  return L_sum.getVariable();
 }
+// void L_sum_Model::add_objective() {
+//   add(Minimise(L_sum));
+// }
 
-void C_max_Model::add_objective() {
-  add(Minimise(C_max));
+VariableInt* C_max_Model::get_objective_var() {
+  return C_max.getVariable();
 }
+// void C_max_Model::add_objective() {
+//   add(Minimise(C_max));
+// }
 
 int L_sum_Model::set_objective(const int obj) {
   //return UNKNOWN;
@@ -1337,8 +1350,7 @@ void SchedulingSolver::decay_weights(const double decay) {
 void SchedulingSolver::dichotomic_search()
 {
   
-  bool first_step = true;
-  bool first_solution = true;
+  int iteration = 0;
   
   int minfsble = lower_bound;
   int maxfsble = upper_bound;
@@ -1353,7 +1365,8 @@ void SchedulingSolver::dichotomic_search()
   
   
   ////////// dichotomic search ///////////////
-  if(status == UNKNOWN) while( minfsble < maxfsble ) {
+  if(status == UNKNOWN) 
+    while( minfsble < maxfsble && iteration < params.Dichotomy ) {
       setRandomSeed( params.Seed );
       
       objective = (int)(floor(((double)minfsble + (double)maxfsble)/2));
@@ -1369,7 +1382,7 @@ void SchedulingSolver::dichotomic_search()
       save();
       status = model->set_objective(objective);
 
-      if(!first_solution) pool->getBestSolution()->guide_search();
+      if(pool->size()) pool->getBestSolution()->guide_search();
       
       if(status == UNKNOWN) {
 	solve_and_restart(params.PolicyRestart, params.Base, params.Factor, params.Decay);
@@ -1381,9 +1394,8 @@ void SchedulingSolver::dichotomic_search()
 	maxfsble = new_objective;
 	pool->add(new Solution(model, this));
 	
-	if(first_solution) {
+	if(pool->size()) {
 	  addHeuristic( params.Heuristic, params.Randomized, params.DValue );
-	  first_solution = false;
 	}
 	
 	std::cout << std::left << std::setw(30) << "c solutions's objective" << ":" << std::right << std::setw(20) << new_objective << std::endl;
@@ -1405,16 +1417,57 @@ void SchedulingSolver::dichotomic_search()
       
       std::cout << "c =============[ end dichotomic step ]=============" << std::endl;
       
-      first_step = false;
+      ++iteration;
     } 
       
   std::cout << std::endl;
   
-  Solved = (maxfsble == lower_bound);
+  upper_bound = maxfsble;
+
+  Solved = (upper_bound == lower_bound);
   
 }
 
 
+void SchedulingSolver::branch_and_bound()
+{
+  int Solved = false;
+
+  addObjective();
+
+  setRandomSeed( params.Seed );
+  setTimeLimit( params.Optimise - stats.get_total_time() ); 
+  function = new SolutionGuidedSearch( this, pool );
+
+  save();
+  model->set_objective(upper_bound-1);
+     
+  std::cout << "c ============[ start branch & bound ]============" << std::endl;
+  std::cout << std::left << std::setw(30) << "c current range" << ":" 
+	    << std::right << std::setw(6) << " " << std::setw(5) << lower_bound 
+	    << " to " << std::setw(5) << upper_bound << std::endl;
+
+  if(pool->size()) pool->getBestSolution()->guide_search();
+  
+  if(status == UNKNOWN) {
+    solve_and_restart(params.PolicyRestart, params.Base, params.Factor, params.Decay);
+  }
+  if( status == OPT ) {
+    lower_bound = goal->upper_bound+1;
+  }
+
+  upper_bound = this->goal->upper_bound+1;
+  stats.add_info(this, upper_bound);
+      
+  printStatistics(std::cout, (RUNTIME + BTS + PPGS + OUTCOME) );
+      
+  reset(true);
+  std::cout << "c =============[ end branch & bound ]=============" << std::endl;
+  
+  Solved = (upper_bound == lower_bound);
+
+}
+  
 
 int main( int argc, char** argv )
 {
@@ -1446,7 +1499,7 @@ int main( int argc, char** argv )
   solver.print(std::cout);
 
   if(solver.status == UNKNOWN) solver.dichotomic_search();
-  //if(solver.status == UNKNOWN) solver.banch_and_bound();
+  if(solver.status == UNKNOWN) solver.branch_and_bound();
 
   stats.print(std::cout, "DS");
   

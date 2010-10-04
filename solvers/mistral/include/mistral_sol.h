@@ -157,57 +157,6 @@ namespace Mistral {
 
 
 
-  class SimpleUnaryConstraint {
-  public:
-    // 'r' -> removal
-    // 'l' -> lower bound
-    // 'u' -> upper bound
-    // 'a' -> assignment
-    char type;
-    int val;
-    VariableInt* var;
-
-    SimpleUnaryConstraint(const char t, const int v, VariableInt *x) {
-      type = t;
-      val = v;
-      var = x;
-    }
-
-    virtual ~SimpleUnaryConstraint() {
-    }
-
-    bool propagate() {
-      switch(type) {
-      case 'r': return var->remove(val);
-      case 'a': return var->setDomain(val);
-      case 'l': return var->setMin(val);
-      case 'u': return var->setMax(val);
-      }
-      return true;
-    }
-
-    std::ostream& print(std::ostream& os) const {
-      var->print(os);
-      switch(type) {
-      case 'r': {
-	os << " =/= " << val;
-      } break;
-      case 'a': {
-	os << " == " << val;
-      } break;
-      case 'l': {
-	os << " >= " << val;
-      } break;
-      case 'u': {
-	os << " <= " << val;
-      } break;
-      }
-
-      return os;
-    }
-
-  };
-
 
 //   class VarValuation {
     
@@ -286,6 +235,8 @@ namespace Mistral {
 
     /// The array of variables for which a decision has been taken
     Vector< VariableInt* > decision;
+    Vector< SimpleUnaryConstraint > branching_decision;
+
     //Vector< VarValuation > valuation;
     /// An array to store the mins for last solution found
     int     *solution;
@@ -467,37 +418,31 @@ namespace Mistral {
       auxv.push( auxilliary  );
       lvl_.push( store.size );
 
-      decision.push( heuristic->select() );
 
+      VariableInt *x = heuristic->select();
+      decision.push( x );
+
+      SimpleUnaryConstraint dec( x );
+      branching_decision.push( dec );
+
+      //decision[level]->branch->left();
+
+      branching_decision[level].make();
+      branching_decision[level].left();
 
 #ifdef _DEBUGSEARCH
       if(verbosity > 2) {
 	std::cout << "c";
 	for(int k=0; k<=level; ++k) std::cout << " ";
-	decision[level]->print(std::cout);
-      }
-#endif
-
-#ifdef _DRAW_EXPLORATION
-      if((*expFile)) {
-	(*expFile) << "+ newNode\n";
-	decision[level]->print(*expFile);
-      }
-#endif
-
-      decision[level]->branch->left();
-
-#ifdef _DEBUGSEARCH
-      if(verbosity > 2) {
-	decision[level]->branch->printLeft( std::cout );
+	branching_decision[level].print(std::cout);
 	std::cout << std::endl;
       }
 #endif
 
 #ifdef _DRAW_EXPLORATION
       if((*expFile)) {
-	decision[level]->branch->printLeft(*expFile);
-	(*expFile) << std::endl;
+	(*expFile) << "+ newNode\n";
+	branching_decision[level].print(*expFile);
       }
 #endif
 
@@ -516,33 +461,29 @@ namespace Mistral {
       auxv.push( auxilliary  );
       lvl_.push( store.size );
 
+      SimpleUnaryConstraint dec(currentDecision);
+      branching_decision.push( dec );
+
       decision.push( currentDecision );
 
+      //decision[level]->branch->left();
+
+      branching_decision[level].make();
+      branching_decision[level].left();
 
 #ifdef _DEBUGSEARCH
-      std::cout << "c";
-      for(int k=0; k<=level; ++k) std::cout << " ";
-      decision[level]->print(std::cout);
+      if(verbosity > 2) {
+	std::cout << "c";
+	for(int k=0; k<=level; ++k) std::cout << " ";
+	branching_decision[level].print(std::cout);
+	std::cout << std::endl;
+      }
 #endif
 
 #ifdef _DRAW_EXPLORATION
       if((*expFile)) {
 	(*expFile) << "+ newNode\n";
-	decision[level]->print(*expFile);
-      }
-#endif
-
-      decision[level]->branch->left();
-
-#ifdef _DEBUGSEARCH
-      decision[level]->branch->printLeft( std::cout );
-      std::cout << std::endl;
-#endif
-
-#ifdef _DRAW_EXPLORATION
-      if((*expFile)) {
-	decision[level]->branch->printLeft(*expFile);
-	(*expFile) << std::endl;
+	branching_decision[level].print(*expFile);
       }
 #endif
 
@@ -563,140 +504,10 @@ namespace Mistral {
 
       ++NODES;
       decision.push(NULL);
+      SimpleUnaryConstraint no_decision;
+      branching_decision.push( no_decision );
     }
 
-//     inline void decide(VariableInt *currentDecision, const char op, const int val)
-//     {
-
-//       decision[level] = currentDecision;
-
-// #ifdef _DEBUGSEARCH
-//       std::cout << "c";
-//       for(int k=0; k<=level; ++k) std::cout << " ";
-//       decision[level]->print(std::cout);
-// #endif
-      
-// #ifdef _DRAW_EXPLORATION
-//       if((*expFile)) {
-// 	(*expFile) << "+ newNode\n";
-// 	decision[level]->print(*expFile);
-//       }
-// #endif
-
-//       if(op == 'e') {
-// 	decision[level]->setDomain(val);
-//       } else if(op == 'n') {
-// 	decision[level]->remove(val);
-//       } else if(op == 'g') {
-// 	decision[level]->setMin(val);
-//       } else if(op == 'l') {
-// 	decision[level]->setMax(val);
-//       }
-
-//       VarValuation vv(val, op);
-//       valuation.push(vv);
-    
-// #ifdef _DEBUGSEARCH
-//       decision[level]->branch->printLeft( std::cout );
-//       std::cout << std::endl;
-// #endif
-      
-// #ifdef _DRAW_EXPLORATION
-//       if((*expFile)) {
-// 	decision[level]->branch->printLeft(*expFile);
-// 	(*expFile) << std::endl;
-//       }
-// #endif
-
-//       int i=learners.size;
-//       while( i-- )
-// 	learners[i]->notifyChoice( );
-
-//     }
-
-//     inline void newNode(VariableInt *currentDecision, const char op, const int val)
-//     {
-//       if(level++ > init_level) learnSuccess();
-      
-//       past.push( future );
-//       auxv.push( auxilliary  );
-//       lvl_.push( store.size );
-      
-//       decision.push( currentDecision );
-      
-      
-// #ifdef _DEBUGSEARCH
-//       std::cout << "c";
-//       for(int k=0; k<=level; ++k) std::cout << " ";
-//       decision[level]->print(std::cout);
-// #endif
-      
-// #ifdef _DRAW_EXPLORATION
-//       if((*expFile)) {
-// 	(*expFile) << "+ newNode\n";
-// 	decision[level]->print(*expFile);
-//       }
-// #endif
-
-//       if(op == 'e') {
-// 	decision[level]->setDomain(val);
-//       } else if(op == 'n') {
-// 	decision[level]->remove(val);
-//       } else if(op == 'g') {
-// 	decision[level]->setMin(val);
-//       } else if(op == 'l') {
-// 	decision[level]->setMax(val);
-//       }
-
-//       VarValuation vv(val, op);
-//       valuation.push(vv);
-    
-
-//       //decision[level]->branch->left();
-
-// #ifdef _DEBUGSEARCH
-//       decision[level]->branch->printLeft( std::cout );
-//       std::cout << std::endl;
-// #endif
-      
-// #ifdef _DRAW_EXPLORATION
-//       if((*expFile)) {
-// 	decision[level]->branch->printLeft(*expFile);
-// 	(*expFile) << std::endl;
-//       }
-// #endif
-
-//       ++NODES;
-//       int i=learners.size;
-//       while( i-- )
-// 	learners[i]->notifyChoice( );
-//     }
-
-//     inline bool undo()
-//     {
-//       //if(level == init_level) return false;
-//       //VarValuation vv = 
-//       valuation.pop();
-//       backtrackTo( level-1 );
-//       return true;
-//     }
-
-//     inline void deduce()
-//     {
-//       VariableInt *lastDecision = decision[level+1];
-//       //VarValuation vv = valuation.pop();
-//       VarValuation vv = valuation[valuation.size];
-
-//       if(vv.type == 'e') {
-// 	lastDecision->remove(vv.value);
-//       } else if(vv.type == 'n') {
-// 	lastDecision->setDomain(vv.value);
-//       } else if(vv.type == 'g') {
-// 	lastDecision->setMax(vv.value-1);
-//       } else if(vv.type == 'l') {
-// 	lastDecision->setMin(vv.value+1);
-//       }
-//     }
 
     inline void reverseNewNode( )
     {
@@ -790,67 +601,76 @@ namespace Mistral {
     inline int iterative_dfs()
     {
       VariableInt *lastDecision;
+      SimpleUnaryConstraint last_decision;
+      
       while( status == UNKNOWN ) {
+
+	//checkDecisions();
+
 	if( filtering() ) {
+
+// 	  for(int i=0; i<length; ++i) {
+// 	    variables[i]->print(std::cout);
+// 	    std::cout << std::endl;
+// 	  }
+	  
 	  if( future == empty ) {
 	    solutionFound(init_level);
 	  } else {
 	    newNode();
 	  }
 	} else {
+	  
+	  //	  std::cout << "FAIL" << std::endl;
 
 	  if( level <= init_level ) {
-
+	    
 #ifdef _DEBUGSEARCH
-      if(verbosity > 2) {
-	    std::cout << "c UNSAT!" << std::endl;
-      }
+	    if(verbosity > 2) {
+	      std::cout << "c UNSAT!" << std::endl;
+	    }
 #endif
-
+	    
 	    status = UNSAT;
 	  } else if( limitsExpired() ) {
-
+	    
 #ifdef _DEBUGSEARCH
-      if(verbosity > 2) {
-	    std::cout << "c";
-	    for(int k=0; k<=level; ++k) std::cout << " ";
-	    std::cout << " limit expired at level " << level << std::endl;
-      }
-#endif
-
-	    status = LIMITOUT;
-	  } else {
-	    lastDecision = decision[level];
-
-#ifdef _DEBUGSEARCH
-      if(verbosity > 2) {
-	    if( level > backtrackLevel+1 ) {
+	    if(verbosity > 2) {
 	      std::cout << "c";
 	      for(int k=0; k<=level; ++k) std::cout << " ";
-	      std::cout << " backjump to level " << backtrackLevel << std::endl;
+	      std::cout << " limit expired at level " << level << std::endl;
 	    }
-      }
 #endif
-
-	    backtrackTo( backtrackLevel );
+	    
+	    status = LIMITOUT;
+	  } else {
+	    //lastDecision = decision[level];
+	    last_decision = branching_decision[level];
 
 #ifdef _DEBUGSEARCH
-      if(verbosity > 2) {
-	    std::cout << "c";
-	    for(int k=0; k<=level; ++k) std::cout << " ";
-	    lastDecision->print(std::cout);
-      }
+	    if(verbosity > 2) {
+	      if( level > backtrackLevel+1 ) {
+		std::cout << "c";
+		for(int k=0; k<=level; ++k) std::cout << " ";
+		std::cout << " backjump to level " << backtrackLevel << std::endl;
+	      }
+	    }
 #endif
-
-	    lastDecision->branch->right();
+	    
+	    backtrackTo( backtrackLevel );
+	    
+	    last_decision.right();
+	    //lastDecision->branch->right();
 	    //lastDecision->branch->left();
 	    //lastDecision->branch->reverse_right();
 
 #ifdef _DEBUGSEARCH
-      if(verbosity > 2) {
-	    lastDecision->branch->printRight( std::cout );
-	    std::cout << std::endl;
-      }
+	    if(verbosity > 2) {
+	      std::cout << "c";
+	      for(int k=0; k<=level; ++k) std::cout << " ";
+	      last_decision.print( std::cout );
+	      std::cout << std::endl;
+	    }
 #endif
 
 	  }
@@ -1604,7 +1424,34 @@ namespace Mistral {
     }
 
 
+    void checkDecisions() {
+      
+      if(decision.size != branching_decision.size) {
+	std::cout << level << " inconsistency (size)" << std::endl;
+	std::cout << decision.size << " / "
+		  << branching_decision.size << std::endl;
+      }
 
+      for(int i=0; i<decision.size; ++i) {
+	if(decision[i] != branching_decision[i].var) {
+	  std::cout << i << " " << level << " inconsistency (var)" << std::endl;
+	  if(decision[i]) decision[i]->print(std::cout);
+	  else std::cout << "null";
+	  std::cout << " / " ;
+	  if(branching_decision[i].var) branching_decision[i].var->print(std::cout);
+	  else std::cout << "null" << std::endl;
+	}
+
+	if(decision[i]) {
+	  if(decision[i]->value() != branching_decision[i].value()) {
+	    std::cout << i << " " << level << " inconsistency (val)" << std::endl;
+	  std::cout << decision[i]->value() << " / "
+		    << branching_decision[i].value() << std::endl;
+	}
+	}
+      }
+
+    }
 
     /*!
       Decomposed dfs
@@ -1714,6 +1561,7 @@ namespace Mistral {
     {
 
       decision.pop();
+      branching_decision.pop();
       VariableInt **vp, **va;
       int lvl;
 

@@ -198,6 +198,7 @@ void Solver::build(CSP& c, const int n)
   numvars    =  variables.size;
   sequence = new VariableInt*[numvars];
   decision.init(0,numvars+1);
+  branching_decision.init(0,numvars+1);
 }
 
 void Solver::initSearch( BuildObject **x, const int l, const int maxsize )
@@ -435,6 +436,8 @@ void Solver::initSearch( const int n,
 
 
   decision.push( NULL );
+  SimpleUnaryConstraint no_decision;
+  branching_decision.push( no_decision );
   lvl_.push(0);
   past.push( future );
   auxv.push( auxilliary );
@@ -583,6 +586,8 @@ void Solver::upOneLevel() {
   auxv.push( auxilliary  );
   lvl_.push( store.size );
   decision.push( NULL );
+  SimpleUnaryConstraint no_decision;
+  branching_decision.push( no_decision );
   ++level;
 }
 
@@ -618,6 +623,9 @@ int Solver::presolve()
 	auxv.push( auxilliary  );
 	lvl_.push( store.size );
 	decision.push( NULL );
+	SimpleUnaryConstraint no_decision;
+	branching_decision.push( no_decision );
+
 	++level;
       }
 
@@ -1409,6 +1417,9 @@ int Solver::ldSolve(ConstraintLDS *lds, const int step, const int limit)
 	auxv.push( auxilliary  );
 	lvl_.push( store.size );
 	decision.push( NULL );
+	SimpleUnaryConstraint no_decision;
+	branching_decision.push( no_decision );
+
 
 	lds->lb_threshold = DISCREPANCY;
 	lds->ub_threshold = DISCREPANCY+step-1;
@@ -2383,18 +2394,22 @@ int Solver::solutionFound(int init_level)
       } else if( level > init_level ) {
 	backtrackLevel = level-1;
 	VariableInt *lastDecision = decision[level];
+	SimpleUnaryConstraint last_decision = branching_decision[level];
 	backtrackTo( backtrackLevel );
 #ifdef _DEBUGSEARCH
       if(verbosity > 2) {
 	std::cout << "c";
 	for(int k=0; k<=level; ++k) std::cout << " ";
-	lastDecision->print(std::cout);
+	last_decision.print(std::cout);
       }
 #endif
-	lastDecision->branch->right();
+      
+      //lastDecision->branch->right();
+      last_decision.right();
 #ifdef _DEBUGSEARCH
       if(verbosity > 2) {
-	lastDecision->branch->printRight( std::cout );
+	//lastDecision->branch->printRight( std::cout );
+	last_decision.print( std::cout );
 	std::cout << std::endl;
       }
 #endif
@@ -2411,8 +2426,10 @@ int Solver::solutionFound(int init_level)
       status = UNKNOWN;
       backtrackLevel = level-1;
       VariableInt *lastDecision = decision[level];
+      SimpleUnaryConstraint last_decision = branching_decision[level];
       backtrackTo( backtrackLevel );
-      lastDecision->branch->right();
+      //lastDecision->branch->right();
+      last_decision.right();
     } else status = UNSAT;
   }
 
@@ -2744,6 +2761,7 @@ int Solver::getNextSolution()
     status = UNKNOWN;
     backtrackLevel = level-1;
     VariableInt *lastDecision = decision[level];
+    SimpleUnaryConstraint last_decision = branching_decision[level];
 
 #ifdef _DEBUGSEARCH
     if( level > backtrackLevel+1 ) {
@@ -2759,11 +2777,13 @@ int Solver::getNextSolution()
     cout << "c";
     //for(int k=0; k<=level; ++k) cout << " ";
     cout << " ";
-    lastDecision->branch->printRight( cout );
+    //lastDecision->branch->printRight( cout );
+    last_decision.print( cout );
     cout << endl;
 #endif
 
-    lastDecision->branch->right();
+    //lastDecision->branch->right();
+    last_decision.right();
   }
 
   int res = iterative_dfs();

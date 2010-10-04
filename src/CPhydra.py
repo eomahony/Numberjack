@@ -12,6 +12,7 @@ from Numberjack import *
 import Mistral
 import cPickle
 import os
+import networkx
 
 from random import *
 
@@ -111,6 +112,30 @@ def load_case(file):
     return Case(file[file.rfind('/')+1:], 
                 parser.get_static_features(),
                 parser.get_dynamic_features())
+
+
+def load_graph(file):
+    G = networkx.Graph()
+
+    parser = Mistral.Solver(Model())
+    parser.load_xml(file)
+    parser.extract_graph()
+    for x in range(parser.numNodes()):
+        for y in parser.get_neighbors(x):
+            G.add_edge(x,y)
+
+    return G
+    '''
+    pos=networkx.graphviz_layout(G,prog="neato")
+    networkx.draw(G,
+                  pos,
+                  node_size=40,
+                  node_color=1,
+                  vmin=0.0,
+                  vmax=1.0,
+                  with_labels=False
+                  )
+    '''
     
 def classify(case):
     if case.features['max_arity'] <= 2:
@@ -255,8 +280,9 @@ class SolTask:
     
 
 if __name__ == "__main__":
-    
-    params = input({'-allocate-time':'no', 
+
+    params = input({'-extract-graph':'no',
+                    '-allocate-time':'no', 
                     '-update':'no', 
                     '-expected-time':'no', 
                     '-expected-distribution':'no', 
@@ -352,6 +378,9 @@ if __name__ == "__main__":
         #sch = scheudle_grid(prob_dir, solvers, int(params['time']),
         #                    int(params['machines']), CBR)
         test_grid_schedule(CBR, solvers, int(params['time']), int(params['machines']))
+    elif params['-extract-graph'] == 'yes':
+        G = load_graph(target_file)
+        print G.edges()
     else:
         print 'use one of --alocate-time, --update or --expected-time\n(or -help)'
         

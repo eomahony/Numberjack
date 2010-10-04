@@ -2871,9 +2871,21 @@ class NBJ_STD_Solver(object):
     def num_vars(self):
         return self.solver.num_vars()
 
-    def get_degree(self, var):
+    def extract_graph(self):
+        self.solver.extract_graph()
+
+    def numNodes(self):
+        return self.solver.numNodes()
+
+    def degree(self, var):
         return self.solver.get_degree(var)
 
+    def get_neighbors(self, x):
+        neighbors = []
+        for y in range(self.solver.degree(x)):
+            neighbors.append(self.solver.get_neighbor(x,y))
+        return neighbors
+            
     def get_static_features(self):
         feats = {}
         for i in range(12):

@@ -41,6 +41,7 @@ namespace MistralScheduler {
     StatisticList();
     virtual ~StatisticList();
 
+    int get_total_time();
     void add_info(SchedulingSolver *s, const int obj);
 
     std::ostream& print(std::ostream& os, 
@@ -258,7 +259,7 @@ namespace MistralScheduler {
 
     virtual int get_lb() = 0;
     virtual int get_ub() = 0;
-    virtual void add_objective() = 0;
+    virtual VariableInt* get_objective_var() = 0;
     virtual int  get_objective() = 0;
     virtual int  set_objective(const int obj) = 0;
 
@@ -274,7 +275,7 @@ namespace MistralScheduler {
 
     virtual int get_lb();
     virtual int get_ub();    
-    virtual void add_objective();
+    virtual VariableInt* get_objective_var();
     virtual int  get_objective();
     virtual int  set_objective(const int obj);
   };
@@ -288,7 +289,7 @@ namespace MistralScheduler {
 
     virtual int get_lb();
     virtual int get_ub();    
-    virtual void add_objective();
+    virtual VariableInt* get_objective_var();
     virtual int  get_objective();
     virtual int  set_objective(const int obj);
   };
@@ -332,7 +333,39 @@ namespace MistralScheduler {
 
     void add(Solution *s) { pool_.push_back(s); }
     Solution* getBestSolution() { return pool_.back(); }
+    unsigned int size() { return pool_.size(); }
+
   };
+
+class SolutionGuidedSearch : public SolutionMethod {
+
+protected:
+  SolutionPool *pool;
+
+public:
+
+  SolutionGuidedSearch(Solver *s, SolutionPool* p) : SolutionMethod(s) 
+  {
+    pool = p;
+  }
+
+  virtual ~SolutionGuidedSearch() 
+  {
+  }
+  
+  virtual void execute() 
+  { 
+    if(pool->size()) pool->getBestSolution()->guide_search();
+  }
+
+  virtual void initialise() 
+  {
+    execute();
+  }
+
+};
+
+
 
 
   class SchedulingSolver : public Solver {
@@ -363,10 +396,10 @@ namespace MistralScheduler {
     }
     virtual ~SchedulingSolver() {}
 
-
     std::ostream& print_weights(std::ostream& os);
     void decay_weights(const double decay);
 
+    void addObjective() { goal = new MinimiseVar(this, model->get_objective_var()); }
     void addHeuristic( std::string Heu, const int rdz, std::string vo ) {
       
       int val_ord = ParameterList::GUIDED;
@@ -468,7 +501,7 @@ namespace MistralScheduler {
     
 
     void dichotomic_search();
-    //void branch_and_bound();
+    void branch_and_bound();
 
   };
 

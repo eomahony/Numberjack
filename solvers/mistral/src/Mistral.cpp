@@ -1628,6 +1628,35 @@ int MistralSolver::get_degree(int i) {
   return 0;
 }
 
+
+void MistralSolver::extract_graph() {
+  VariableInt *x, *y;
+  Constraint *con = NULL;
+  MistralNode<Constraint*> *nd;
+  
+  if(!feature_ready) get_features();
+  std::cout << "C++ extract graph: " << (solver->variables.size) << std::endl;
+
+  graph.resize(solver->variables.size);
+  for(int i=0; i<solver->variables.size; ++i) {
+    
+    x = solver->variables[i];
+    nd = x->constraintsOnValue();
+    while( nextNode(nd) ) {
+      con = nd->elt;
+      for(int i=0; i<con->arity; ++i) {
+	y = con->_scope[i];
+	graph[i].push_back(y->id);
+      }
+    }
+  }
+}
+
+
+int MistralSolver::numNodes() { return graph.size(); }
+int MistralSolver::degree(const int x) { return graph[x].size(); }
+int MistralSolver::get_neighbor(const int x, const int y) { return graph[x][y]; }
+
 void MistralSolver::get_features(MistralDoubleArray& features)
 {
   if(!feature_ready) get_features();
@@ -1665,6 +1694,8 @@ void MistralSolver::get_features()
   cb->setAllSolution  ( 0 );
   
   cb->solve();
+
+  solver = cb->cp_solver;
 
   feature_ready = true;
   //
@@ -1779,21 +1810,29 @@ void MistralSolver::post(const char* op, Mistral_Expression* x, int v)
   int lvl = solver->level;
   solver->decision[lvl] = x->_self->varptr_; //currentDecision;
   decisions.push(x);
+  SimpleUnaryConstraint dec(x->_self->varptr_);
+  
 
   if(first_decision_level < 0) {
     first_decision_level = lvl-1;
     //std::cout << "first = " << first_decision_level << std::endl;
   }
 
+  int vald = v;
   if(op[0] == 'e') {
     solver->decision[lvl]->setDomain(v);
   } else if(op[0] == 'n') {
     solver->decision[lvl]->remove(v);
   } else if(op[0] == 'g') {
     solver->decision[lvl]->setMin(v);
+    if(op[1] == 'e') ++vald;
   } else if(op[0] == 'l') {
     solver->decision[lvl]->setMax(v);
+    if(op[1] == 't') --vald;
   }
+
+  dec.init_data(op[0], vald);
+  solver->branching_decision[lvl] = dec;
 
   VarValuation vv(v, op[0]);
   valuation.push(vv);

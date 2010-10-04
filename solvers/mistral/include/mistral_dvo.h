@@ -37,6 +37,112 @@ void free_disjuncts();
 namespace Mistral {
 
 
+
+  class SimpleUnaryConstraint {
+  public:
+    // 0 -> removal 'n'
+    static const int    REMOVAL = 0;
+    // 1 -> assignment 'e'
+    static const int ASSIGNMENT = 1;
+    // 2 -> lower bound 'g'
+    static const int LOWERBOUND = 2;
+    // 3 -> upper bound 'l'
+    static const int UPPERBOUND = 3;
+    
+    /**
+       2 bits for the type 
+       30 bits for the value
+     */
+
+    unsigned int _data_;
+    VariableInt* var;
+
+    inline int type() const {return _data_&3; }
+    inline int value() const {return _data_>>2; }
+
+    SimpleUnaryConstraint(const char t, const int v, VariableInt *x) {
+      init_data(t,v);
+      var = x;
+    }
+    
+    void init_data(const char t, const int v) {
+      _data_ = ((v - (t == 'g')) << 2);
+      switch(t) {
+      case 'n': _data_ += REMOVAL;
+      case 'e': _data_ += ASSIGNMENT;
+      case 'g': _data_ += LOWERBOUND;
+      case 'l': _data_ += UPPERBOUND;
+      }
+      //type = t;
+      //val = v;
+    }
+
+    SimpleUnaryConstraint(VariableInt *x) {
+      _data_ = 0xffffffff;
+      //type = 'x';
+      //val = NOVAL;
+      var = x;
+    }
+
+    SimpleUnaryConstraint() {
+      _data_ = 0xffffffff;
+      //type = 'x';
+      //val = NOVAL;
+      var = NULL;
+    }
+
+    virtual ~SimpleUnaryConstraint() {
+    }
+
+    inline void revert() { _data_^=1; }
+    inline void make();
+//  { 
+//       int v;
+//       int t;
+//       var->branch->make(t,v); 
+//       _data_ = ((v<<2)+t);
+//     }
+    inline bool left() {
+      switch(type()) {
+      case REMOVAL: return var->remove(value());
+      case ASSIGNMENT: return var->setDomain(value());
+      case LOWERBOUND: return var->setMin(value()+1); // > v
+      case UPPERBOUND: return var->setMax(value());   // <= v
+      }
+      return true;
+    }
+    inline bool right() { 
+      revert();
+      return left();
+    }
+
+    inline bool propagate() {
+      return left();
+    }
+
+    std::ostream& print(std::ostream& os) const {
+      var->print(os);
+      switch(type()) {
+      case REMOVAL: {
+	os << " =/= " << value();
+      } break;
+      case ASSIGNMENT: {
+	os << " == " << value();
+      } break;
+      case LOWERBOUND: {
+	os << " > " << value();
+      } break;
+      case UPPERBOUND: {
+	os << " <= " << value();
+      } break;
+      }
+
+      return os;
+    }
+
+  };
+
+
   /**********************************************
    * Branching Strategy
    **********************************************/
@@ -1385,7 +1491,7 @@ namespace Mistral {
   };
 
 
-
+  typedef SimpleUnaryConstraint Decision;
   class ValSelector
   {
   public:
@@ -1404,6 +1510,7 @@ namespace Mistral {
 
     /**@name Utils*/
     //@{ 
+    virtual void make(int& t, int& v) = 0;
     virtual int getBest() = 0;
     virtual void getOrder( int* dtv, int* vtd ) {
 
@@ -1448,6 +1555,7 @@ namespace Mistral {
 
     /**@name Utils*/
     //@{ 
+    void make(int& t, int& v) { v=_X->min(); t=Decision::ASSIGNMENT;}
     inline int getBest() { return (val = _X->min()); }
     inline void left() {
       val = _X->min();
@@ -1499,6 +1607,7 @@ namespace Mistral {
 
     /**@name Utils*/
     //@{ 
+    void make(int& t, int& v) { v=_X->first(); t=Decision::ASSIGNMENT;}
     inline int getBest() { return _X->first(); }
     inline void left() { 
       val = _X->first(); 
@@ -1548,6 +1657,7 @@ namespace Mistral {
 
     /**@name Utils*/
     //@{ 
+    void make(int& t, int& v) { v=_X->max(); t=Decision::ASSIGNMENT;}
     inline int getBest() { return (val = _X->max()); }
     inline void left() { 
       val = _X->max(); 
@@ -1595,6 +1705,7 @@ namespace Mistral {
 
     /**@name Utils*/ 
     //@{  
+    void make(int& t, int& v) { v=_X->random(); t=Decision::ASSIGNMENT;}
     inline int getBest() { return _X->max(); }
     inline void left() { 
       val = _X->random(); 
@@ -1650,6 +1761,30 @@ namespace Mistral {
 
     /**@name Utils*/ 
     //@{  
+    void make(int& t, int& v) { 
+      if(_X->contain(ideal)) {
+	v = ideal;
+	t=Decision::ASSIGNMENT;
+      } else {
+	if(planB == 0) {
+	  v = _X->min();
+	  t=Decision::ASSIGNMENT;
+	} else if(planB == 1) {
+	  int i=1, dir=1;
+	  while(true) {
+	    v = ideal + (dir*i);
+	    if(_X->contain(val)) break;
+	    if(dir < 0) ++i;
+	    dir*=-1;
+	  }
+	  t=Decision::ASSIGNMENT;
+	} else if(planB == 2) {
+	  v = ((_X->max() + _X->min()) >> 1); 
+	  if(ideal <= val) t=Decision::UPPERBOUND;
+	  else t=Decision::LOWERBOUND;
+	}
+      }
+    }
     inline int getBest() { return ideal; }
     inline void setSecondBest() {
       int i=1, dir=1;
@@ -1731,7 +1866,12 @@ namespace Mistral {
     //@}   
 
     /**@name Utils*/ 
-    //@{  
+    //@{
+    void make(int& t, int& v) { 
+      if(earlybool->min()) v = _X->max();
+      else v = _X->max();
+      t=Decision::ASSIGNMENT;
+    }
     inline int getBest() { if(earlybool->min()) return _X->max(); else return _X->min(); }
     inline void left() { 
       val = getBest();
@@ -1778,6 +1918,10 @@ namespace Mistral {
 
     /**@name Utils*/ 
     //@{  
+    void make(int& t, int& v) { 
+      v = probability_base->update(id);
+      t=Decision::ASSIGNMENT;
+    }
     inline int getBest() { return val; }
     inline void left() { 
 
@@ -1838,6 +1982,11 @@ namespace Mistral {
 
     /**@name Utils*/ 
     //@{  
+    void make(int& t, int& v) { 
+      if(_X->contain(ideal) && (randint(range) < proba)) v=ideal;
+      else v = (randint(2) ? _X->min() : _X->max());
+      t=Decision::ASSIGNMENT;
+    }
     inline int getBest() { return ideal; }
     inline void left() { 
       if(_X->contain(ideal) && (randint(range) < proba)) val=ideal;
@@ -1879,6 +2028,10 @@ namespace Mistral {
 
     /**@name Utils*/ 
     //@{  
+    void make(int& t, int& v) { 
+      v = (randint(2) ? _X->min() : _X->max());
+      t=Decision::ASSIGNMENT;
+    }
     inline int getBest() { return _X->first(); }
     inline void left() { 
       val = (randint(2) ? _X->min() : _X->max()); 
@@ -1925,6 +2078,10 @@ namespace Mistral {
   
     /**@name Utils*/
     //@{ 
+    void make(int& t, int& v) { 
+      v = ((_X->max() + _X->min()) >> 1); 
+      t=Decision::UPPERBOUND;
+    }
     inline int getBest() { return (val = _X->min()); }
     inline void left() { 
       val = ((_X->max() + _X->min()) >> 1); 
@@ -1970,6 +2127,12 @@ namespace Mistral {
   
     /**@name Utils*/
     //@{ 
+    void make(int& t, int& v) { 
+      v = _X->min();
+      v += randint(_X->max() - v);
+      if(randint(2)) t=Decision::UPPERBOUND;
+      else t=Decision::LOWERBOUND;
+    }
     inline int getBest() { return (_X->min()); }
     inline void left() { 
       int val = _X->min();
@@ -2055,6 +2218,12 @@ namespace Mistral {
   
     /**@name Utils*/
     //@{ 
+    void make(int& t, int& v) { 
+      v = _X->min();
+      v += randint(_X->max() - v);
+      if((randint(1000) < proba)^(value>v)) t=Decision::UPPERBOUND;
+      else t=Decision::LOWERBOUND;
+    }
     inline int getBest() { return (value); }
     inline void left() { 
       int val = _X->min();
@@ -2325,6 +2494,19 @@ namespace Mistral {
 
     /**@name Utils*/
     //@{ 
+    void make(int& t, int& v) { 
+      DomainIterator *valit = _X->begin();
+      v = *valit;
+      double w = weight[v];
+      while( valit->next() ) {
+	if( weight[*valit] > w )
+	  {
+	    w = weight[*valit];
+	    v = *valit;
+	  }
+      }
+      t=Decision::ASSIGNMENT;
+    }
     inline int getBest() 
     { 
       DomainIterator *valit = _X->begin();
@@ -2417,6 +2599,14 @@ namespace Mistral {
 
     /**@name Utils*/
     //@{ 
+    void make(int& t, int& v) { 
+      DomainIterator *valit = _X->begin();
+      v = *valit;
+      bool isin = true;
+      while( visited->member( *valit ) && ( isin = valit->next() ) );
+      if( isin ) v = *valit;
+      t=Decision::ASSIGNMENT;
+    }
     inline int getBest() 
     {
       DomainIterator *valit = _X->begin();
@@ -2479,7 +2669,12 @@ namespace Mistral {
     //@}
 
     /**@name Utils*/
-    //@{ 
+    //@{
+    void make(int& t, int& v) { 
+      if( visited->member(1) ) v=_X->min();
+      else v=_X->max();
+      t=Decision::ASSIGNMENT;
+    } 
     inline int getBest() { return _X->min(); }
     inline void left() 
     { 
@@ -2555,7 +2750,10 @@ namespace Mistral {
 
     /**@name Utils*/
     //@{
- 
+    void make(int& t, int& v) { 
+      v = ( disjunct->XltY() < disjunct->YltX() );
+      t=Decision::ASSIGNMENT;
+    } 
     inline int getBest() { 
       val = ( disjunct->XltY() < disjunct->YltX() );
       return val;
@@ -2609,6 +2807,10 @@ namespace Mistral {
     /**@name Utils*/
     //@{
  
+    void make(int& t, int& v) { 
+      v = ( disjunct->XltY() > disjunct->YltX() );
+      t=Decision::ASSIGNMENT;
+    } 
     inline int getBest() { 
       val = ( disjunct->XltY() > disjunct->YltX() );
       return val;
@@ -2674,7 +2876,16 @@ namespace Mistral {
 
     /**@name Utils*/
     //@{
- 
+
+    void make(int& t, int& v) { 
+      int i, XltY = 0, YltX = 0;
+      for(i=0; i<ndsj; ++i) {
+	XltY += disjunct[i]->XltY();
+	YltX += disjunct[i]->YltX();
+      }
+      v = ( XltY > YltX );
+      t=Decision::ASSIGNMENT;
+    }  
     inline int getBest() { 
       int i, XltY = 0, YltX = 0;
       for(i=0; i<ndsj; ++i) {
@@ -2749,7 +2960,27 @@ namespace Mistral {
 
     /**@name Utils*/
     //@{
- 
+
+    void make(int& t, int& v) { 
+      switch(mode) {
+      case 1: {
+	v = ( disjunct->XltY() > disjunct->YltX() );
+	break;
+      }
+      case -1: {
+	v = ( disjunct->XltY() < disjunct->YltX() );
+	break;
+      }
+      case 0: {
+	v = 0;
+	break;
+      }
+      default: {
+	v = randint(2);
+      }
+      }
+      t=Decision::ASSIGNMENT;
+    } 
     inline int getBest() { 
       switch(mode) {
       case 1: {
@@ -3869,5 +4100,14 @@ namespace Mistral {
 };
 
 
+inline void Mistral::SimpleUnaryConstraint::make() { 
+  int v;
+  int t;
+  var->branch->make(t,v); 
+  _data_ = ((v<<2)+t);
+}
+
+
 
 #endif // _DVO_H
+

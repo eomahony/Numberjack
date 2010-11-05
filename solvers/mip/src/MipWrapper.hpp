@@ -401,6 +401,8 @@ public:
   double _obj_coef;
   
   int var_counter;
+  
+  int get_lin_cons_size();
 
   MipWrapperSolver();
   virtual ~MipWrapperSolver();

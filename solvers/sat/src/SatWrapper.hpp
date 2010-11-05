@@ -559,6 +559,8 @@ public:
 
   SatWrapperSolver();
   virtual ~SatWrapperSolver();
+  
+  int get_cb_size();
 
   // add an expression, in the case of a tree of expressions,
   // each node of the tree is added separately, depth first.

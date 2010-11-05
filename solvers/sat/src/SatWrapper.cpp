@@ -1750,6 +1750,10 @@ int SatWrapperSolver::declare(SatWrapper_Expression *exp, bool type) {
   return id;
 }
 
+int SatWrapperSolver::get_cb_size(){
+  return clause_base.size();
+}
+
 int SatWrapperSolver::create_atom(DomainEncoding* dom, const int type) {
   unsigned int id = _atom_to_domain.size();
   _atom_to_domain.push_back(dom); 

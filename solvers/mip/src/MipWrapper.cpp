@@ -1355,6 +1355,10 @@ bool MipWrapperSolver::is_sat(){
   return true;
 }
 
+int MipWrapperSolver::get_lin_cons_size(){
+  return _constraints.size();
+}
+
 bool MipWrapperSolver::is_unsat(){
   return ! is_sat();
 }

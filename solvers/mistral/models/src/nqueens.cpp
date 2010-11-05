@@ -8,6 +8,24 @@ using namespace std;
  * A model of the NQueens problem
  *****************************************/
 
+
+int binlog2( unsigned long int x ) {
+  if( !x ) return NOVAL;
+  if( x == 1 ) return 0;
+  int exponent = 0;
+  while( (x >> (++exponent)) > 1 );
+  return exponent;
+}
+unsigned long int luby_seq2( unsigned long int iteration ) {
+  int thelog = binlog2( iteration );
+  if( (int)iteration == (1 << (thelog + 1))-1 )
+    return (1 << thelog);
+  return luby_seq2( iteration - (1 << thelog) + 1 );
+}
+
+
+
+
 /*****************************************
  * Print a solution
  *****************************************/
@@ -85,6 +103,13 @@ void initChessBoard2( CSP& model, VarArray& queens ) {
  *****************************************/
 int main(int argc, char *argv[]) { 
  
+  for(int i=0; i<100; ++i)
+    std::cout << luby_seq2(i) << " ";
+  std::cout << std::endl;
+  
+  exit(1);
+
+
   // command line
   int N = ( argc > 1 ? atoi(argv[1]) : 20 );
   int E = ( argc > 2 ? atoi(argv[2]) : 20 );

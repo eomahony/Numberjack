@@ -1121,6 +1121,183 @@ void ConstraintNogoodBase::print(std::ostream& o) const {
 //   }
 }
 
+
+/**********************************************
+ * GenNogoodBase Constraint
+ **********************************************/
+ConstraintGenNogoodBase::ConstraintGenNogoodBase(Solver* s) 
+  : Constraint(s, s->variables.stack_, s->length, VALUETRIGGER, 0)
+{
+  int i, n; // = s->length;
+  weight = 0;
+  minimums = new int[arity];
+  watched_values  = new Vector< Array < GeneralLiteral >* > *[arity];
+  watched_domains = new Vector< Array < GeneralLiteral >* > [arity];
+  watched_bounds  = new Vector< Array < GeneralLiteral >* > [arity];
+
+  
+  for(i=0; i<arity; ++i) {
+    minimums[i] = 0;
+    watched_values[i] = NULL;
+  }
+
+  for(i=0; i<arity; ++i) {
+    minimums[i] = scope[i]->minCapacity();
+    n = (scope[i]->maxCapacity() - minimums[i] + 1);
+    watched_values[i] = new Vector< Array < GeneralLiteral > * >[n];
+    watched_values[i] -= minimums[i];
+  }
+}
+
+ConstraintGenNogoodBase::~ConstraintGenNogoodBase() {
+  for(int i=0; i<arity; ++i) {
+    watched_values[i] += minimums[i];
+    delete [] watched_values[i];
+  }
+  delete [] watched_values;
+  delete [] watched_domains;
+  delete [] watched_bounds;
+  delete [] minimums;
+}
+
+void ConstraintGenNogoodBase::add( Vector<GeneralLiteral>& conflict ) {
+  if(conflict.size > 1) {
+    Array<GeneralLiteral> *cl = Array<GeneralLiteral>::Array_new(conflict);
+    nogood.push( cl );
+    
+    int var, val;
+
+    for(int i=0; i<2; ++i) {
+      var = conflict[i].var->id;
+      val = conflict[i].value();
+
+      if(conflict[i].type() == GeneralLiteral::REMOVAL) {
+// 	if(!watched_values[var]) {
+// 	  minimums[var] = scope[var]->minCapacity();
+// 	  n = (scope[var]->maxCapacity() - minimums[var] + 1);
+// 	  watched_values[var] = new Vector< Array < GeneralLiteral > * >[n];
+// 	  watched_values[var] -= minimums[var];
+// 	}
+	watched_values[var][val].push(cl);
+      } else if(conflict[i].type() == GeneralLiteral::ASSIGNMENT) {
+	watched_domains[var].push(cl);
+      } else {
+      	watched_bounds[var].push(cl);
+      }
+    }
+  } else {
+    //SimpleUnaryConstraint cons('r', conflict[0].value(), conflict[0].var);
+    scope[0]->solver->sUnaryCons.push(conflict[0]);
+    //std::cout << conflict[0].var->id << "," << conflict[0].value() << ":" ;
+    //conflict[0].print(std::cout);
+    //std::cerr << " is a unary nogood!!" << std::endl;
+    //exit(0);
+  }
+  //std::cout << "end add" << std::endl;
+}
+
+void ConstraintGenNogoodBase::removeClause( const int idx ) {
+
+  int var, val;
+
+  for(int i=0; i<2; ++i) {
+    var = (*(nogood[idx]))[i].var->id;
+    val = (*(nogood[idx]))[i].value();
+
+    if((*(nogood[idx]))[i].type() == GeneralLiteral::REMOVAL) {
+      watched_values[var][val].remove(nogood[idx]);
+    } else if((*(nogood[idx]))[i].type() == GeneralLiteral::ASSIGNMENT) {
+      watched_domains[var].remove(nogood[idx]);
+    } else {
+      watched_bounds[var].remove(nogood[idx]);
+    }
+  } 
+
+  nogood.erase(idx);
+}
+
+void ConstraintGenNogoodBase::forget( const int lim ) {
+  while(nogood.size>lim) {
+    removeClause(nogood.size-1);
+    //std::cout << nogood.size << std::endl;
+  }
+}
+
+int ConstraintGenNogoodBase::check( const int* ) const {
+  return 0;
+}
+
+bool ConstraintGenNogoodBase::propagate() {
+  return true;
+}
+
+bool ConstraintGenNogoodBase::propagate(const int changedIdx, const int e) {
+  int j, rank, consistent=true, v=scope[changedIdx]->value();
+  int i;
+
+  if(e == VALUETRIGGER && watched_values[changedIdx]) {
+    i=watched_values[changedIdx][v].size;
+    GeneralLiteral p;
+    while(consistent && i--) {
+      Array< GeneralLiteral >& cl = *(watched_values[changedIdx][v][i]);
+      if(cl[0].satisfied() || cl[1].satisfied()) {
+	continue;
+      }
+      
+      // otherwise, find out if the literal is the first, or second 
+      rank = (cl[1].var == scope[changedIdx]);
+      
+      assert(scope[changedIdx]->id == cl[rank].var->id);
+      assert(scope[changedIdx]->equal(cl[rank].value()));
+      
+      for(j=2; j<cl.size; ++j) {
+	// for each subsequent literal, if it non-violated, it is a possible watcher
+	if(!cl[j].violated()) {
+	  // in which case we swap it with cl[rank]
+	  p = cl[j];
+	  cl[j] = cl[rank];
+	  cl[rank] = p;
+	  
+	  watched_values[p.var->id][p.value()].push(watched_values[changedIdx][v][i]);
+	  watched_values[changedIdx][v].erase(i);
+	  
+	  break;
+	} 
+      }
+      
+      if(j>=cl.size) {
+	// there wasn't any possible replacement, so we need to propagate:
+	consistent = cl[1-rank].var->remove(cl[1-rank].value());
+      }
+    }
+  } else if(e == RANGETRIGGER) {
+    std::cout << "this should not happen" << std::endl; 
+  } else if(e == DOMAINTRIGGER) {
+    std::cout << "this should not happen" << std::endl; 
+  }
+
+  //  std::cout << "end propag" << std::endl;
+  
+  return consistent;
+}
+
+void ConstraintGenNogoodBase::print(std::ostream& o) const {
+  for(int i=0; i<nogood.size; ++i) {
+    Array< GeneralLiteral >& cl = *(nogood[i]);
+    for(int j=0; j<cl.size; ++j) {
+      cl[j].print(o);
+      o << " ";
+    }
+    o << std::endl;
+  }
+//   for(int i=0; i<arity; ++i) {
+//     for(int j=minimums[i]; j<)
+//   }
+}
+
+
+
+
 /**********************************************
  * inverse Constraint
  **********************************************/

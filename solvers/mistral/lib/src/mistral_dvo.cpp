@@ -263,7 +263,7 @@ void free_disjuncts() {
 Weighter::Weighter( Solver* s ) 
   : level(s->level)
 {
-  init_level = 0;
+  init_level = s->init_level;
 }
 
 WeighterDegree::WeighterDegree( Solver* s ) 
@@ -1171,59 +1171,112 @@ void WeighterRestartNogood::notifyRestart()
 
 
 WeighterRestartGenNogood::WeighterRestartGenNogood( Solver* s ) 
-  : Weighter(s), decision(s->decision.stack_)
+  : Weighter(s), decision(s->branching_decision.stack_)
 {
-  choices = new int[s->numvars+1];
-  lvl = 0;
+  bad_choices = new Vector< Decision >[s->numvars+1];
+  bad_choices -= s->init_level;
+  
+  depth = s->init_level;
 }
 
 WeighterRestartGenNogood::~WeighterRestartGenNogood() 
 {  
-  delete [] choices;
+  bad_choices += init_level;
+  delete [] bad_choices;
+}
+
+void WeighterRestartGenNogood::notifyChoice()
+{
+  //std::cout << " choice " << level << " " ;
+  //decision[level].print(std::cout);
+  //std::cout << std::endl;
+
+  bad_choices[level+1].clear();
 }
 
 void WeighterRestartGenNogood::notifyFailure( Constraint *con )
 {
+//   std::cout << " failure " << level << " " ;
 
-  lvl = level;
-  if( level > init_level ) {
-    int failed = choices[level];
-    while( path.back() != failed ) {
-      path.pop();
-    }
-  } else {
-    path.clear();
-  }
+//    if(level > init_level+1) {
+//      decision[level].print(std::cout);
+//      std::cout << std::endl;
+//    }
+
+  bad_choices[level].push(decision[level]);
+  depth = level;
+  //if(depth <= init_level+2) depth = 0;
 }
-
 
 void WeighterRestartGenNogood::notifyRestart() 
 {
-  int i=1, j=0, n=lvl, m=path.size;
-  choices[n] = 0;
-  Vector< Literal > clause;
+  
+  //std::cout << level << " " << init_level << " restart!!" << std::endl;
+  //exit(1);
 
-  while( j<m && path[j] != choices[i] )
-    ++j;
+//   for(int i=init_level+2; i<=depth; ++i) {
+//     std::cout << "bad (" << (bad_choices[i].size) << ") ";
+//     for(int j=0; j<bad_choices[i].size; ++j) {
+//       bad_choices[i][j].print(std::cout);
+//       std::cout << " ";
+//     }
+//     if(i<depth) {
+//       std::cout << "good: ";
+//       decision[i].print(std::cout);
+//     }
+//     std::cout << std::endl;
+//   }
+  
+  Vector< Decision > learnt;
+  int d = init_level+2;
+  while(d <= depth) {
+    for(int i=0; i<bad_choices[d].size; ++i) {
+      learnt.push(bad_choices[d][i]);
+      learnt.back().revert();
+//        std::cout << "add ";
+//        for(int j=0; j<=(d-init_level-2); ++j) {
+//  	learnt[j].print(std::cout);
+//  	std::cout << " ";
+//        }
+//        std::cout << std::endl;
+      base->add(learnt);
 
-  // find first disagreemnet between path and decision
-  while( i<n && choices[i] == path[j] ) {
-    ++i;
-    ++j;
-    // loop through all right 
-    while( j<m && path[j] != choices[i] ) {
-      clause.clear();
-      for(int x=1; x<i; ++x) {
-	clause.push(choices[x]);
-      }
-      clause.push( path[j] );
-      ++j;
-
-      //base->add( );
+      learnt.pop();
     }
+    learnt.push(decision[d]);
+    learnt.back().revert();
+
+    ++d;
   }
-  path.clear();
-  lvl = 0;
+  bad_choices[init_level+2].clear();
+
+
+//   int i=1, j=0, n=lvl, m=path.size;
+//   choices[n] = 0;
+//   Vector< Literal > clause;
+
+//   while( j<m && path[j] != choices[i] )
+//     ++j;
+
+//   // find first disagreemnet between path and decision
+//   while( i<n && choices[i] == path[j] ) {
+//     ++i;
+//     ++j;
+//     // loop through all right 
+//     while( j<m && path[j] != choices[i] ) {
+//       clause.clear();
+//       for(int x=1; x<i; ++x) {
+// 	clause.push(choices[x]);
+//       }
+//       clause.push( path[j] );
+//       ++j;
+
+//       //base->add( );
+//     }
+//   }
+//   path.clear();
+//   lvl = 0;
+
 }
 
 

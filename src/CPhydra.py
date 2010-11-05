@@ -277,8 +277,46 @@ class SolTask:
         return (self.solver + " on " + self.problem.name + " from " +
                 str(self.start_time) + " to " + str(self.end_time) +
                 " ( " + str(self.duration) + " )\n")
-    
 
+
+CBR = load_casebase('./tools/casebase.pkl')
+#print CBR[:-1]
+
+all_easy = 0
+easy_nothard = 0
+easy_hard = 0
+all_middle = 0
+noteasy_hard = 0
+all_hard = 0
+
+for case in CBR[:-1]:
+    print case.beliefs['mistral'], case.beliefs['choco'], case.beliefs['abscon']
+    mistral = 2
+    choco = 2
+    abscon = 2
+    if case.beliefs['mistral'] <= 10: mistral = 0
+    elif case.beliefs['mistral'] <= 1799: mistral = 1
+    if case.beliefs['choco'] <= 10: choco = 0
+    elif case.beliefs['choco'] <= 1799: choco = 1
+    if case.beliefs['abscon'] <= 10: abscon = 0
+    elif case.beliefs['abscon'] <= 1799: abscon = 1
+    
+    if max([mistral,choco,abscon]) == 0: all_easy += 1
+    elif max([mistral,choco,abscon]) == 1:
+        if min([mistral,choco,abscon]) == 0: easy_nothard +=1
+        else: all_middle += 1
+    elif min([mistral,choco,abscon]) == 0: easy_hard +=1
+    elif min([mistral,choco,abscon]) == 1: noteasy_hard +=1
+    else: all_hard += 1
+
+print 1, all_easy
+print 2, easy_nothard
+print 3, all_middle
+print 4, easy_hard
+print 5, noteasy_hard
+print 6, all_hard
+    
+"""
 if __name__ == "__main__":
 
     params = input({'-extract-graph':'no',
@@ -383,5 +421,5 @@ if __name__ == "__main__":
         print G.edges()
     else:
         print 'use one of --alocate-time, --update or --expected-time\n(or -help)'
-        
+"""
 

@@ -1183,11 +1183,7 @@ VariableInt* C_max_Model::get_objective_var() {
 
 int L_sum_Model::set_objective(const int obj) {
   //return UNKNOWN;
-
-  std::cout << (L_sum.getVariable()) << std::endl;
-  L_sum.getVariable()->print(std::cout);
-  std::cout << " <= " << obj << std::endl;
-
+  //L_sum.getVariable()->print(std::cout);
   return (L_sum.getVariable()->setMax(obj) ? UNKNOWN : UNSAT);
 }
 
@@ -1213,24 +1209,24 @@ int C_max_Model::set_objective(const int obj) {
 }
 
 int L_sum_Model::get_objective() {
-  //return -1;
+//   //return -1;
 
-  L_sum.getVariable()->print(std::cout);
-  std::cout << std::endl;
+//   L_sum.getVariable()->print(std::cout);
+//   std::cout << std::endl;
 
   int total_cost = 0;
   for(int i=0; i<latebool.size(); ++i) {
-    if(earlybool[i].getVariable()) earlybool[i].getVariable()->print(std::cout) ;
-    else std::cout << (earlybool[i].value());
-    std::cout << " ";
-    if(latebool[i].getVariable()) latebool[i].getVariable()->print(std::cout);
-    else std::cout << (latebool[i].value());
-    std::cout << " ";
-    if(last_tasks[i].getVariable()) last_tasks[i].getVariable()->print(std::cout);
-    else std::cout << "-";
-    std::cout << " " << data->getJobDueDate(i) << " " 
-	      << data->getJobEarlyCost(i) << " " 
-	      << data->getJobLateCost(i) << " ";
+//     if(earlybool[i].getVariable()) earlybool[i].getVariable()->print(std::cout) ;
+//     else std::cout << (earlybool[i].value());
+//     std::cout << " ";
+//     if(latebool[i].getVariable()) latebool[i].getVariable()->print(std::cout);
+//     else std::cout << (latebool[i].value());
+//     std::cout << " ";
+//     if(last_tasks[i].getVariable()) last_tasks[i].getVariable()->print(std::cout);
+//     else std::cout << "-";
+//     std::cout << " " << data->getJobDueDate(i) << " " 
+// 	      << data->getJobEarlyCost(i) << " " 
+// 	      << data->getJobLateCost(i) << " ";
 
     int cost = 0;
     if(earlybool[i].value()) {
@@ -1239,12 +1235,12 @@ int L_sum_Model::get_objective() {
       cost = ((last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i))) - data->getJobDueDate(i))*data->getJobLateCost(i);
     }
 
-    std::cout << cost << std::endl;
+    //std::cout << cost << std::endl;
 
     total_cost += cost;
   }
 
-  std::cout << total_cost << std::endl;
+  //std::cout << total_cost << std::endl;
 
   return L_sum.value();
 }
@@ -1357,12 +1353,16 @@ void SchedulingSolver::dichotomic_search()
   int objective = -1;
   int new_objective = -1;
   int Solved = true;
+  int ngd_stamp = 0;
+  int lit_stamp = 0;
   
   presolve();
   
   setVerbosity(params.Verbose);
   setTimeLimit(params.Cutoff);
-  
+
+  ConstraintGenNogoodBase *nogoods = NULL;
+  if(params.Rngd) nogoods = setRestartGenNogood();
   
   ////////// dichotomic search ///////////////
   if(status == UNKNOWN) 
@@ -1378,12 +1378,19 @@ void SchedulingSolver::dichotomic_search()
       std::cout << std::left << std::setw(30) << "c target objective" << ":"  
 		<< std::right << std::setw(20) << objective << std::endl;
       //std::cout << "c ===========[ start dichotomic search ]===========" << std::endl;
-	  
-      save();
-      status = model->set_objective(objective);
 
+      save();
+
+      status = model->set_objective(objective);
       if(pool->size()) pool->getBestSolution()->guide_search();
       
+      if(nogoods) {
+	ngd_stamp = nogoods->nogood.size;
+	lit_stamp = sUnaryCons.size;
+	//std::cout << "NUMBER NGD: " << ngd_stamp << std::endl;
+	//std::cout << "NUMBER UNARY NGD: " << lit_stamp << " " << (level) << std::endl;
+      }
+
       if(status == UNKNOWN) {
 	solve_and_restart(params.PolicyRestart, params.Base, params.Factor, params.Decay);
       }
@@ -1399,13 +1406,23 @@ void SchedulingSolver::dichotomic_search()
 	}
 	
 	std::cout << std::left << std::setw(30) << "c solutions's objective" << ":" << std::right << std::setw(20) << new_objective << std::endl;
-	
+	//nogoods->print(std::cout);	
+
       } else {
 	
 	new_objective = objective;
 	minfsble = objective+1;
 	if( status != UNSAT ) Solved = false;
-	else lower_bound = objective;
+	else lower_bound = minfsble;
+
+	if(nogoods) {
+// 	  std::cout << "BEFORE FORGET:" << std::endl;
+// 	  nogoods->print(std::cout);
+// 	  std::cout << std::endl << "AFTER FORGET:" << std::endl;
+	  nogoods->forget(ngd_stamp);
+// 	  nogoods->print(std::cout);
+// 	  std::cout << std::endl;
+	}
       }
       
       stats.add_info(this, new_objective);
@@ -1480,7 +1497,7 @@ int main( int argc, char** argv )
 
   Instance jsp(params);
   
-  jsp.print(std::cout);
+  //jsp.print(std::cout);
 
   SchedulingModel *model;
   if(params.Objective == "makespan") {
@@ -1496,10 +1513,11 @@ int main( int argc, char** argv )
   }
   SchedulingSolver solver(model, params, stats);
   
-  solver.print(std::cout);
+  //solver.print(std::cout);
 
   if(solver.status == UNKNOWN) solver.dichotomic_search();
-  if(solver.status == UNKNOWN) solver.branch_and_bound();
+  if(solver.status == UNKNOWN &&
+     solver.lower_bound < solver.upper_bound) solver.branch_and_bound();
 
   stats.print(std::cout, "DS");
   

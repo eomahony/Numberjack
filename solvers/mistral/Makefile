@@ -46,6 +46,8 @@ endif
 endif
 
 
+BOOSTDIR=/Users/ehebrard/work/dev/boost_1_44_0
+
 
 OPTFLAGS = -O3 #-m32
 #OPTFLAGS = -pg 
@@ -167,7 +169,7 @@ $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(PLIBOBJ)
 # The library
 lib: $(PLIBOBJ)
 $(OBJ)/%.o:  $(SRC)/%.cpp $(INC)/%.h
-	$(CCC) $(CFLAGS) -c   $< -o $@ 
+	$(CCC) $(CFLAGS) -I$(BOOSTDIR) -c   $< -o $@ 
 
 # The examples
 $(BIN)/%: $(MOD)/obj/%.o $(PLIBOBJ)
@@ -177,4 +179,4 @@ $(BIN)/%: $(MOD)/obj/%.o $(PLIBOBJ)
 	$(CCC) $(CFLAGS) $< $(PLIBOBJ) -lm -o $(BIN)/$@ $(LFLAGS)
 
 $(MOD)/obj/%.o: $(MOD)/src/%.cpp
-	$(CCC) -c $(CFLAGS)  -o $@ $<
+	$(CCC) -c $(CFLAGS) -I$(BOOSTDIR) -o $@ $<

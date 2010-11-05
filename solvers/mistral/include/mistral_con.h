@@ -534,6 +534,52 @@ namespace Mistral {
     //@}
   };
 
+
+  class SimpleUnaryConstraint;
+  // can be upper/lower bound or equality/disequality
+  typedef SimpleUnaryConstraint GeneralLiteral; 
+  class ConstraintGenNogoodBase : public Constraint {
+
+  public:  
+    /**@name Parameters*/
+    //@{ 
+
+    /// Attributes:
+    /// - A list of (pointer to) clauses per variable/value (the "watched literal")
+    /// - The (flat) list of clauses
+
+    // minimum values, used as an offset when accessing the base
+    int *minimums;
+    // list of nogoods
+    Vector< Array < GeneralLiteral >* > nogood;
+    // the watched literals data structure
+    Vector< Array < GeneralLiteral >* > **watched_values;
+    Vector< Array < GeneralLiteral >* > *watched_domains;
+    Vector< Array < GeneralLiteral >* > *watched_bounds;
+    //@}
+
+    /**@name Constructors*/
+    //@{
+    ConstraintGenNogoodBase(Solver*);
+    virtual ~ConstraintGenNogoodBase();
+    void add( Vector<GeneralLiteral>& );
+    //@}
+
+    /**@name Solving*/
+    //@{
+    inline int check( const int* ) const ;
+    inline bool propagate();
+    inline bool propagate(const int changedIdx, const int e);
+    //@}
+
+    /**@name Miscellaneous*/
+    //@{  
+    void forget(const int);
+    void removeClause(const int);
+    virtual void print(std::ostream& o) const;
+    //@}
+  };
+
   /**********************************************
    * Inverse Constraint Decomposition
    **********************************************/ 

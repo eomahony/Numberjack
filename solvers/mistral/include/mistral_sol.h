@@ -638,7 +638,10 @@ namespace Mistral {
 	    if(verbosity > 2) {
 	      std::cout << "c";
 	      for(int k=0; k<=level; ++k) std::cout << " ";
-	      std::cout << " limit expired at level " << level << std::endl;
+	      SimpleUnaryConstraint d = branching_decision[level];
+	      d.revert();
+	      d.print(std::cout);
+	      std::cout << " (limit expired at level " << level << ")" << std::endl;
 	    }
 #endif
 	    
@@ -1767,7 +1770,7 @@ namespace Mistral {
     }
     /// Setup the nogoods on restart
     void setRestartNogood();
-    void setRestartGenNogood();
+    ConstraintGenNogoodBase* setRestartGenNogood();
     //void addNogood();
     /// Setup the forget utility for the clause base
     void setForgetfulness( const double f );

@@ -1527,6 +1527,15 @@ bool Solver::restart(const double decay, const int reinit) {
 //   variables[0]->print(std::cout);
 //   std::cout << std::endl;
 
+#ifdef _DEBUGSEARCH
+      if(verbosity > 2) {
+	std::cout << "c";
+	for(int k=0; k<=level; ++k) std::cout << " ";
+	std::cout << "restart!" << std::endl;
+      }
+#endif
+
+
 
   if( randomizedRestart ) randomizeSequence();
   int i=learners.size;
@@ -2495,11 +2504,10 @@ bool Solver::filtering()
       ++PROPAGS;
       SimpleUnaryConstraint cons = sUnaryCons.pop();
 
-//       //       if(cons.var->id == 41 ) {
-//       //std::cout << "PROPAGATE UNARY CONSTRAINT ";
-//       //cons.print(std::cout);
-//       //std::cout << std::endl;
-//       //       }
+//       std::cout << "PROPAGATE UNARY CONSTRAINT AT LEVEL " << level << ": ";
+//       cons.print(std::cout);
+//       std::cout << std::endl;
+
 //       if(cons.val > cons.var->min()) {
 // 	++nuaryprop;
 //       }
@@ -2813,12 +2821,14 @@ void Solver::setRestartNogood()
   }
 }
 
-void Solver::setRestartGenNogood()
+ConstraintGenNogoodBase* Solver::setRestartGenNogood()
 {
-  ConstraintNogoodBase* base = new ConstraintNogoodBase(this);
+
+  ConstraintGenNogoodBase* base = new ConstraintGenNogoodBase(this);
   setLearner( Weighter::RGNGD );
   ((WeighterRestartGenNogood*)(learners.back()))->base = base;
 
+  return base;
 }
 
 void Solver::printPython() const

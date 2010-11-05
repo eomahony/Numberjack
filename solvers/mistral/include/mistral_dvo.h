@@ -1,4 +1,4 @@
-
+ 
 /*
   Mistral is a constraint satisfaction and optimisation library
   Copyright (C) 2003-2005  Emmanuel Hebrard
@@ -60,6 +60,27 @@ namespace Mistral {
     inline int type() const {return _data_&3; }
     inline int value() const {return _data_>>2; }
 
+    inline bool satisfied() {
+      switch(type()) {
+      case REMOVAL: return !var->contain(value());
+      case ASSIGNMENT: return var->equal(value());
+      case LOWERBOUND: return var->min() >  value(); // > v
+      case UPPERBOUND: return var->max() <= value();   // <= v
+      }
+      return true;
+    }
+
+    inline bool violated() {
+      switch(type()) {
+      case REMOVAL: return var->equal(value());
+      case ASSIGNMENT: return !var->contain(value());
+      case LOWERBOUND: return var->max() <= value(); // > v
+      case UPPERBOUND: return var->min() >  value();   // <= v
+      }
+      return true;
+    }
+    
+
     SimpleUnaryConstraint(const char t, const int v, VariableInt *x) {
       init_data(t,v);
       var = x;
@@ -68,10 +89,10 @@ namespace Mistral {
     void init_data(const char t, const int v) {
       _data_ = ((v - (t == 'g')) << 2);
       switch(t) {
-      case 'n': _data_ += REMOVAL;
-      case 'e': _data_ += ASSIGNMENT;
-      case 'g': _data_ += LOWERBOUND;
-      case 'l': _data_ += UPPERBOUND;
+      case 'n': _data_ |= REMOVAL;
+      case 'e': _data_ |= ASSIGNMENT;
+      case 'g': _data_ |= LOWERBOUND;
+      case 'l': _data_ |= UPPERBOUND;
       }
       //type = t;
       //val = v;
@@ -121,7 +142,7 @@ namespace Mistral {
     }
 
     std::ostream& print(std::ostream& os) const {
-      var->print(os);
+      var->printshort(os);
       switch(type()) {
       case REMOVAL: {
 	os << " =/= " << value();
@@ -141,7 +162,7 @@ namespace Mistral {
     }
 
   };
-
+  typedef SimpleUnaryConstraint Decision;
 
   /**********************************************
    * Branching Strategy
@@ -503,12 +524,14 @@ namespace Mistral {
 
     /**@name Parameters*/
     //@{
-    ConstraintNogoodBase *base;
-    VariableInt **decision;
+    ConstraintGenNogoodBase *base;
+    Decision *decision;
 
-    int       *choices;
-    Vector< int > path;
-    int lvl;
+    // record the bad decisions at a given level
+    Vector< Decision >* bad_choices;
+
+    // depth of the tree to parse
+    int depth;
     //@}
 
     /**@name Constructors*/
@@ -519,6 +542,7 @@ namespace Mistral {
 
     /**@name Utils*/
     //@{ 
+    virtual void notifyChoice() ; 
     virtual void notifyFailure( Constraint *con ) ;
     virtual void notifyRestart() ; 
     //@}  
@@ -1491,7 +1515,6 @@ namespace Mistral {
   };
 
 
-  typedef SimpleUnaryConstraint Decision;
   class ValSelector
   {
   public:
@@ -1761,7 +1784,8 @@ namespace Mistral {
 
     /**@name Utils*/ 
     //@{  
-    void make(int& t, int& v) { 
+    void make(int& t, int& v) {
+     
       if(_X->contain(ideal)) {
 	v = ideal;
 	t=Decision::ASSIGNMENT;
@@ -1770,12 +1794,18 @@ namespace Mistral {
 	  v = _X->min();
 	  t=Decision::ASSIGNMENT;
 	} else if(planB == 1) {
-	  int i=1, dir=1;
-	  while(true) {
-	    v = ideal + (dir*i);
-	    if(_X->contain(val)) break;
-	    if(dir < 0) ++i;
-	    dir*=-1;
+	  if(_X->min() > ideal) {
+	    v = _X->min();
+	  } else if(_X->max() < ideal) {
+	    v = _X->max();
+	  } else {
+	    int i=1, dir=1;
+	    while(true) {
+	      v = ideal + (dir*i);
+	      if(_X->contain(v)) break;
+	      if(dir < 0) ++i;
+	      dir*=-1;
+	    }
 	  }
 	  t=Decision::ASSIGNMENT;
 	} else if(planB == 2) {

@@ -169,15 +169,23 @@ $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(PLIBOBJ)
 
 # The library
 lib: $(PLIBOBJ)
-$(OBJ)/%.o:  $(SRC)/%.cpp $(INC)/%.h
+
+$(BIN): 
+	mkdir $(BIN)
+
+$(MOD)/obj: 
+	mkdir $(MOD)/obj
+
+$(OBJ)/%.o: $(SRC)/%.cpp $(INC)/%.h 
 	$(CCC) $(CFLAGS) -I$(BOOSTDIR) -c   $< -o $@ 
 
 # The examples
-$(BIN)/%: $(MOD)/obj/%.o $(PLIBOBJ)
+$(BIN)/%: $(MOD)/obj/%.o $(PLIBOBJ) $(BIN) 
 	$(CCC) $(CFLAGS) $< $(PLIBOBJ) -lm -o $@ $(LFLAGS)
 
-%: $(MOD)/obj/%.o $(PLIBOBJ)
+%: $(MOD)/obj/%.o $(PLIBOBJ) $(BIN)
 	$(CCC) $(CFLAGS) $< $(PLIBOBJ) -lm -o $(BIN)/$@ $(LFLAGS)
 
-$(MOD)/obj/%.o: $(MOD)/src/%.cpp
+$(MOD)/obj/%.o: $(MOD)/src/%.cpp $(MOD)/obj
 	$(CCC) -c $(CFLAGS) -I$(BOOSTDIR) -o $@ $<
+

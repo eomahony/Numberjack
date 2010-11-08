@@ -1518,11 +1518,16 @@ int main( int argc, char** argv )
   //solver.print(std::cout);
 
   if(solver.status == UNKNOWN) solver.dichotomic_search();
+
+  stats.print(std::cout, "DS");
+
   if(solver.status == UNKNOWN &&
      solver.lower_bound < solver.upper_bound) solver.branch_and_bound();
 
-  stats.print(std::cout, "DS");
+  stats.print(std::cout, "");
   
+  std::cout << "s SATISFIABLE \nv 00" << std::endl;
+
 }
   
 

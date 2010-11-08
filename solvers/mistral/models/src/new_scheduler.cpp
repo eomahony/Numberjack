@@ -289,10 +289,12 @@ Instance::Instance(const ParameterList& params) {
 
   DBG("Build instance %s\n", params.data_file);
 
-  setup_time = NULL;
-  time_lag[0] = NULL;
-  time_lag[1] = NULL;
-  jsp_duedate = NULL;
+  setup_time    = NULL;
+  time_lag[0]   = NULL;
+  time_lag[1]   = NULL;
+  jsp_duedate   = NULL;
+  jsp_latecost  = NULL;
+  jsp_earlycost = NULL;
   
   if(params.Type == "osp") {
     osp_readData( params.data_file );

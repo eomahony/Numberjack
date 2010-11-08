@@ -50,10 +50,10 @@ BOOSTDIR=/Users/ehebrard/work/dev/boost_1_44_0
 
 
 
-#OPTFLAGS = -O3 #-m32
+OPTFLAGS = -O3 #-m32
 #OPTFLAGS = -pg 
 #OPTFLAGS = -finstrument-functions 
-OPTFLAGS = -g
+#OPTFLAGS = -g
 
 COMPILFLAGS = -Wall -D_UNIX -fPIC #-D_DEBUGSEARCH #-D_DEBUGPROPAG #-D_DEBUGSCHED -D_DEBUGMODEL #
 

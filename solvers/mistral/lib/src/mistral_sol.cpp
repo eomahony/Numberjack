@@ -3481,6 +3481,7 @@ void Solver::setGuidedOrdering(VarArray& scope, int* ideal, const char*planb) {
   if(!strcmp(planb,"std")) pb = 0;
   else if(!strcmp(planb,"2nd")) pb = 1;
   else if(!strcmp(planb,"spl")) pb = 2;
+  else if(!strcmp(planb,"nbd")) pb = 3;
   setGuidedOrdering(bvar, l, ideal, pb);
 }
 

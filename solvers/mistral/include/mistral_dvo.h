@@ -1780,38 +1780,58 @@ namespace Mistral {
     int ideal;
     int val;
     int planB;
+    /// 0: min
+    /// 1: nearest
+    /// 2: nearest split
+    /// 3: nearest bound
     //@}   
 
     /**@name Utils*/ 
     //@{  
     void make(int& t, int& v) {
      
-      if(_X->contain(ideal)) {
-	v = ideal;
+      if(_X->getType() == VariableInt::RANGE) {
+	if(_X->max()-ideal < ideal-_X->min())
+	  v = _X->max();
+	else
+	  v = _X->min();
 	t=Decision::ASSIGNMENT;
       } else {
-	if(planB == 0) {
-	  v = _X->min();
+	if(_X->contain(ideal)) {
+	  v = ideal;
 	  t=Decision::ASSIGNMENT;
-	} else if(planB == 1) {
-	  if(_X->min() > ideal) {
+	} else {
+	  if(planB == 0) {
 	    v = _X->min();
-	  } else if(_X->max() < ideal) {
-	    v = _X->max();
-	  } else {
-	    int i=1, dir=1;
-	    while(true) {
-	      v = ideal + (dir*i);
-	      if(_X->contain(v)) break;
-	      if(dir < 0) ++i;
-	      dir*=-1;
+	    t=Decision::ASSIGNMENT;
+	  } else if(planB == 1) {
+	    if(_X->min() > ideal) {
+	      v = _X->min();
+	    } else if(_X->max() < ideal) {
+	      v = _X->max();
+	    } else {
+	      int i=1, dir=1;
+	      while(true) {
+		v = ideal + (dir*i);
+		if(_X->contain(v)) break;
+		if(dir < 0) ++i;
+		dir*=-1;
+	      }
 	    }
+	    t=Decision::ASSIGNMENT;
+	  } else if(planB == 2) {
+	    v = ((_X->max() + _X->min()) >> 1); 
+	    if(ideal <= val) t=Decision::UPPERBOUND;
+	    else t=Decision::LOWERBOUND;
+	  } else if(planB == 3) {
+	    int lb = _X->min();
+	    int ub = _X->max();
+	    if(ub < ideal) v = ub;
+	    else if(lb > ideal) v = lb;
+	    else if(ideal-lb < ub-ideal) v = lb;
+	    else v = ub;
+	    t=Decision::ASSIGNMENT;
 	  }
-	  t=Decision::ASSIGNMENT;
-	} else if(planB == 2) {
-	  v = ((_X->max() + _X->min()) >> 1); 
-	  if(ideal <= val) t=Decision::UPPERBOUND;
-	  else t=Decision::LOWERBOUND;
 	}
       }
     }

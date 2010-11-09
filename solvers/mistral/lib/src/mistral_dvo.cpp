@@ -1196,7 +1196,7 @@ void WeighterRestartGenNogood::notifyChoice()
 
 void WeighterRestartGenNogood::notifyFailure( Constraint *con )
 {
-//   std::cout << " failure " << level << " " ;
+  //   std::cout << " failure " << level << " " ;
 
 //    if(level > init_level+1) {
 //      decision[level].print(std::cout);
@@ -1233,12 +1233,12 @@ void WeighterRestartGenNogood::notifyRestart()
     for(int i=0; i<bad_choices[d].size; ++i) {
       learnt.push(bad_choices[d][i]);
       learnt.back().revert();
-//        std::cout << "add ";
-//        for(int j=0; j<=(d-init_level-2); ++j) {
-//  	learnt[j].print(std::cout);
-//  	std::cout << " ";
-//        }
-//        std::cout << std::endl;
+//         std::cout << "add ";
+//         for(int j=0; j<=(d-init_level-2); ++j) {
+//   	learnt[j].print(std::cout);
+//   	std::cout << " ";
+//         }
+//         std::cout << std::endl;
       base->add(learnt);
 
       learnt.pop();
@@ -1246,10 +1246,11 @@ void WeighterRestartGenNogood::notifyRestart()
     learnt.push(decision[d]);
     learnt.back().revert();
 
+    bad_choices[d].clear();
     ++d;
   }
-  bad_choices[init_level+2].clear();
 
+  depth = 0;
 
 //   int i=1, j=0, n=lvl, m=path.size;
 //   choices[n] = 0;

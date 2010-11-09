@@ -1144,6 +1144,12 @@ ConstraintGenNogoodBase::ConstraintGenNogoodBase(Solver* s)
   for(i=0; i<arity; ++i) {
     minimums[i] = scope[i]->minCapacity();
     n = (scope[i]->maxCapacity() - minimums[i] + 1);
+
+    if(n>10000) {
+      std::cout << n <<std::endl;
+      exit(1);
+    }
+
     watched_values[i] = new Vector< Array < GeneralLiteral > * >[n];
     watched_values[i] -= minimums[i];
   }
@@ -1205,10 +1211,24 @@ void ConstraintGenNogoodBase::removeClause( const int idx ) {
     val = (*(nogood[idx]))[i].value();
 
     if((*(nogood[idx]))[i].type() == GeneralLiteral::REMOVAL) {
+      
+      //std::cout << "remove ";
+      
+      //(*(nogood[idx]))[i].print(std::cout);
+
+      //std::cout << std::endl; 
+
       watched_values[var][val].remove(nogood[idx]);
+
     } else if((*(nogood[idx]))[i].type() == GeneralLiteral::ASSIGNMENT) {
+
+      //std::cout << "this should not happen" << std::endl; 
+
       watched_domains[var].remove(nogood[idx]);
     } else {
+
+      //std::cout << "this should not happen" << std::endl; 
+
       watched_bounds[var].remove(nogood[idx]);
     }
   } 
@@ -1217,10 +1237,15 @@ void ConstraintGenNogoodBase::removeClause( const int idx ) {
 }
 
 void ConstraintGenNogoodBase::forget( const int lim ) {
+  //std::cout << " FORGET! " << std::endl;
+  //std::cout << nogood.size << " -> " << lim << std::endl;
+
   while(nogood.size>lim) {
+    //std::cout << nogood.size << " -> " << lim << std::endl;
     removeClause(nogood.size-1);
-    //std::cout << nogood.size << std::endl;
   }
+
+  //std::cout << nogood.size << " -> " << lim << std::endl;
 }
 
 int ConstraintGenNogoodBase::check( const int* ) const {

@@ -329,7 +329,10 @@ namespace MistralScheduler {
     std::vector<Solution*> pool_;
     
     SolutionPool() {}
-    virtual ~SolutionPool() {}
+    virtual ~SolutionPool() {
+      for(int i=0; i<pool_.size(); ++i)
+	delete pool_[i];
+    }
 
     void add(Solution *s) { pool_.push_back(s); }
     Solution* getBestSolution() { return pool_.back(); }
@@ -380,21 +383,23 @@ public:
 
     SchedulingSolver(SchedulingModel* m, 
 		     ParameterList& p,
-		     StatisticList& s) : Solver(*m,m->SearchVars), params(p), stats(s) 
-    { 
-      model = m; 
-      lower_bound = m->get_lb();
-      upper_bound = m->get_ub();
+		     StatisticList& s);//  : Solver(*m,m->SearchVars), params(p), stats(s) 
+//     { 
+//       model = m; 
+//       lower_bound = m->get_lb();
+//       upper_bound = m->get_ub();
 
-      s.lower_bound = lower_bound;
-      s.upper_bound = upper_bound;
+//       s.lower_bound = lower_bound;
+//       s.upper_bound = upper_bound;
 
-      pool = new SolutionPool();
-      //stats = s; //new StatisticList();
+//       pool = new SolutionPool();
+//       //stats = s; //new StatisticList();
 
-      addHeuristic( params.Heuristic, params.Randomized, params.IValue );
+//       addHeuristic( params.Heuristic, params.Randomized, params.IValue );
+//     }
+    virtual ~SchedulingSolver() {
+      delete pool;
     }
-    virtual ~SchedulingSolver() {}
 
     std::ostream& print_weights(std::ostream& os);
     void decay_weights(const double decay);

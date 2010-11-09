@@ -325,6 +325,38 @@ Instance::Instance(const ParameterList& params) {
 }
 
 Instance::~Instance() {
+  int i, j;
+
+  if(hasSetupTime()) {
+    for(i=0; i<nMachines(); ++i) {
+      for(j=0; j<nJobs(); ++j) {
+	delete [] setup_time[i][j];
+      }
+      delete [] setup_time[i];
+    }
+    delete [] setup_time;
+  }
+
+  if(hasTimeLag()) {
+    for(i=0; i<nJobs(); ++i) {
+      delete [] time_lag[0][i];
+      delete [] time_lag[1][i];
+    }
+    delete [] time_lag[0];
+    delete [] time_lag[1];
+  }
+
+  if(hasJobDueDate()) {
+    delete [] jsp_duedate;
+  }
+
+  if(hasLateCost()) {
+    delete [] jsp_latecost;
+  }
+
+  if(hasEarlyCost()) {
+    delete [] jsp_earlycost;
+  }
 }
 
 // void Instance::close() {
@@ -1322,8 +1354,26 @@ void Solution::guide_search() {
   if(model->data->hasJobDueDate()) {
     solver->setGuidedOrdering(model->earlybool, earlybool_value);
     solver->setGuidedOrdering(model->latebool, latebool_value);
-    solver->setGuidedOrdering(model->last_tasks, ltask_value, "2nd");
+    solver->setGuidedOrdering(model->last_tasks, ltask_value, "nbd");
   }
+}
+
+SchedulingSolver::SchedulingSolver(SchedulingModel* m, 
+				   ParameterList& p,
+				   StatisticList& s) 
+  : Solver(*m,m->SearchVars), params(p), stats(s) 
+{ 
+  model = m; 
+  lower_bound = m->get_lb();
+  upper_bound = m->get_ub();
+  
+  s.lower_bound = lower_bound;
+  s.upper_bound = upper_bound;
+  
+  pool = new SolutionPool();
+  //stats = s; //new StatisticList();
+  
+  addHeuristic( params.Heuristic, params.Randomized, params.IValue );
 }
 
 std::ostream& SchedulingSolver::print_weights(std::ostream& os) {
@@ -1372,7 +1422,7 @@ void SchedulingSolver::dichotomic_search()
       setRandomSeed( params.Seed );
       
       objective = (int)(floor(((double)minfsble + (double)maxfsble)/2));
-      
+
       std::cout << "c ============[ start dichotomic step ]============" << std::endl;
       std::cout << std::left << std::setw(30) << "c current dichotomic range" << ":" 
 		<< std::right << std::setw(6) << " " << std::setw(5) << minfsble 
@@ -1398,8 +1448,8 @@ void SchedulingSolver::dichotomic_search()
       }
       
       if( status == SAT ) {
-	
 	new_objective = model->get_objective();
+
 	maxfsble = new_objective;
 	pool->add(new Solution(model, this));
 	
@@ -1411,23 +1461,26 @@ void SchedulingSolver::dichotomic_search()
 	//nogoods->print(std::cout);	
 
       } else {
-	
 	new_objective = objective;
 	minfsble = objective+1;
 	if( status != UNSAT ) Solved = false;
 	else lower_bound = minfsble;
 
-	if(nogoods) {
+// 	if(nogoods) {
 // 	  std::cout << "BEFORE FORGET:" << std::endl;
-// 	  nogoods->print(std::cout);
-// 	  std::cout << std::endl << "AFTER FORGET:" << std::endl;
-	  nogoods->forget(ngd_stamp);
+//  	  nogoods->print(std::cout);
+//  	  std::cout << std::endl << "AFTER FORGET:" << std::endl;
+// 	  nogoods->forget(ngd_stamp);
 // 	  nogoods->print(std::cout);
 // 	  std::cout << std::endl;
-	}
+//	}
       }
       
+      std::cout << 31 << std::endl;
+
       stats.add_info(this, new_objective);
+
+      std::cout << 32 << std::endl;
       
       printStatistics(std::cout, (RUNTIME + BTS + PPGS + OUTCOME) );
       
@@ -1527,6 +1580,8 @@ int main( int argc, char** argv )
   stats.print(std::cout, "");
   
   std::cout << "s SATISFIABLE \nv 00" << std::endl;
+
+  delete model;
 
 }
   

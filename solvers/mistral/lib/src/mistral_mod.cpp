@@ -6630,7 +6630,7 @@ CSP::~CSP()
 {
   
   //std::cout << "c (mistral) delete model" << std::endl;
-  std::cout  << "*** DELETE MODEL ***" << endl;
+  //std::cout  << "*** DELETE MODEL ***" << endl;
 
   ENVIRONMENT.flush();
   

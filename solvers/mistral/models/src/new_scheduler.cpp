@@ -1475,13 +1475,7 @@ void SchedulingSolver::dichotomic_search()
 // 	  std::cout << std::endl;
 //	}
       }
-      
-      std::cout << 31 << std::endl;
-
       stats.add_info(this, new_objective);
-
-      std::cout << 32 << std::endl;
-      
       printStatistics(std::cout, (RUNTIME + BTS + PPGS + OUTCOME) );
       
       reset(true);

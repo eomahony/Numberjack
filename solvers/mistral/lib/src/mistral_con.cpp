@@ -1164,6 +1164,10 @@ ConstraintGenNogoodBase::~ConstraintGenNogoodBase() {
   delete [] watched_domains;
   delete [] watched_bounds;
   delete [] minimums;
+
+  for(int i=0; i<nogood.size; ++i) {
+    free(nogood[i]);
+  }
 }
 
 void ConstraintGenNogoodBase::add( Vector<GeneralLiteral>& conflict ) {
@@ -1234,6 +1238,8 @@ void ConstraintGenNogoodBase::removeClause( const int idx ) {
   } 
 
   nogood.erase(idx);
+  //delete nogood[idx];
+  free(nogood[idx]);
 }
 
 void ConstraintGenNogoodBase::forget( const int lim ) {

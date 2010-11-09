@@ -269,6 +269,13 @@ namespace Mistral {
       return new (mem) Array<T>(ps); 
     }
 
+//     virtual ~Array() {
+      
+//       std::cout << ((void*)(data)) << std::endl;
+
+//       free((void*)(data));
+//     }
+
     inline T& operator [] (int i) { return data[i]; }
     inline T operator [] (int i) const { return data[i]; }
   };

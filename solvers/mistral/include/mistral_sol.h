@@ -600,7 +600,7 @@ namespace Mistral {
 
     inline int iterative_dfs()
     {
-      VariableInt *lastDecision;
+      //VariableInt *lastDecision;
       SimpleUnaryConstraint last_decision;
       
       while( status == UNKNOWN ) {

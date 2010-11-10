@@ -2402,7 +2402,7 @@ int Solver::solutionFound(int init_level)
 	status = SAT;
       } else if( level > init_level ) {
 	backtrackLevel = level-1;
-	VariableInt *lastDecision = decision[level];
+	//VariableInt *lastDecision = decision[level];
 	SimpleUnaryConstraint last_decision = branching_decision[level];
 	backtrackTo( backtrackLevel );
 #ifdef _DEBUGSEARCH
@@ -2434,7 +2434,7 @@ int Solver::solutionFound(int init_level)
     if( level > init_level ) {
       status = UNKNOWN;
       backtrackLevel = level-1;
-      VariableInt *lastDecision = decision[level];
+      //VariableInt *lastDecision = decision[level];
       SimpleUnaryConstraint last_decision = branching_decision[level];
       backtrackTo( backtrackLevel );
       //lastDecision->branch->right();
@@ -2768,7 +2768,7 @@ int Solver::getNextSolution()
     }
     status = UNKNOWN;
     backtrackLevel = level-1;
-    VariableInt *lastDecision = decision[level];
+    //VariableInt *lastDecision = decision[level];
     SimpleUnaryConstraint last_decision = branching_decision[level];
 
 #ifdef _DEBUGSEARCH

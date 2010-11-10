@@ -30,7 +30,7 @@ def print_chessboard(queens):
     return out
 
 solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
-default = {'solver':'Mistral', 'N':10, 'heuristic':'MinDomainMinVal',
+default = {'solver':'Mistral', 'N':6, 'heuristic':'MinDomainMinVal',
            'print':'yes', 'value':'Lex', 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':

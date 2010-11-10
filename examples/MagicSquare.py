@@ -35,7 +35,7 @@ def solve(param):
 
 solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
 default = {'solver':'Mistral', 'N':4, 'var':'MinDomain',
-           'val':'RandomMinMax', 'restart':'yes', 'rand':2, 'verbose':1, 'cutoff':4}
+           'val':'RandomMinMax', 'restart':'yes', 'rand':2, 'verbose':1, 'cutoff':10}
 
 if __name__ == '__main__':
     param = input(default) 

@@ -49,7 +49,14 @@ var_heuristics = ['No', 'MinDomain', 'Lex', 'AntiLex', 'MaxDegree', 'MinDomainMi
 
 
 
-
+def flatten(x):
+    result = []
+    for el in x:
+        if hasattr(el, "__iter__") and not isinstance(el, basestring) and not issubclass(type(el), Expression):
+            result.extend(flatten(el))
+        else:
+            result.append(el)
+    return result
 
 
 
@@ -1067,7 +1074,8 @@ class Predicate(Expression):
         #self.children = children
         
         ## List of children of the predicate 
-        self.children = [child for child in children]
+        #self.children = [child for child in children]
+        self.children = flatten(children)
 
 
     ## Returns a string representing the initial definition of the Predicate
@@ -1138,7 +1146,7 @@ class Predicate(Expression):
     #    solver.solve()
     #    .
     #    .
-    #    print constraint.domain()
+    #    print constraint.solution()
     #    >>> (0 < 10)
     # \endcode
     #
@@ -1768,9 +1776,12 @@ class Gcc(Predicate):
         self.parameters = [values, lb, ub]
         
     def __str__(self):
+        save_str = Expression.__str__
+        Expression.__str__ = Expression.name
         output = " Gcc(" + " ".join(map(str, self.children)) + " | " 
         for (v,l,u) in zip(*(self.parameters)):
             output += str(v)+' in ['+str(l)+','+str(u)+'] '
+        Expression.__str__ = save_str
         return output+')'
 
     def decompose(self):
@@ -2405,15 +2416,6 @@ class NBJ_STD_Solver(object):
                 self.solver.add(self.load_expr(expr))
 
             if X != None:
-
-                def flatten(x):
-                    result = []
-                    for el in x:
-                        if hasattr(el, "__iter__") and not isinstance(el, basestring) and not issubclass(type(el), Expression):
-                            result.extend(flatten(el))
-                        else:
-                            result.append(el)
-                    return result
 
                 self.variables = VarArray(flatten(X))
 

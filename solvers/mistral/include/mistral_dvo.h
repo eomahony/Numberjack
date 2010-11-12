@@ -25,6 +25,7 @@
     \brief Header for DVOs (Dynamic Variable/Value Ordering) and Goals (Objective functions).
 */
 
+
 #ifndef _DVO_H
 #define _DVO_H
 
@@ -1003,6 +1004,9 @@ namespace Mistral {
       //return (domsize_ * x.weight_ < x.domsize_ * weight_) ;
 
       //return (domsize_ * (x.weight_ + x.weight_task_) < x.domsize_ * (weight_ + weight_task_)) ;
+
+      //std::cout << "osp d/tw" << std::endl;
+
       return (domsize_ * (x.weight_task_ // - x.weight_
 			  ) < x.domsize_ * (weight_task_ // - weight_
 					    )) ;
@@ -1237,6 +1241,9 @@ namespace Mistral {
     /**@name Utils*/
     //@{ 
     inline bool operator<( VarSelectorOSP_DomainWeight& x ) const { 
+      
+      //std::cout << "osp d/bw" << std::endl;
+
       return (domsize_ < x.domsize_ || ( domsize_ == x.domsize_ && x.weight_ < weight_ )) ;
 
 //       int self = ((domsize_ * domsize_) / intersize_);
@@ -3237,6 +3244,31 @@ namespace Mistral {
 
 
   /**********************************************
+   * Generic Scheduling heuristic
+   **********************************************/
+
+  template <class T>
+  class GenericSchedulingDVO : public GenericDVO< T >
+  {
+  public: 
+
+    /**@name Parameters*/
+    //@{ 
+    PredicateDisjunctive **the_disjuncts;
+    //@}
+
+    /**@name Constructors*/
+    //@{
+    GenericSchedulingDVO(Solver* s) : GenericDVO< T >(s) {}
+    virtual ~GenericSchedulingDVO()
+    {
+      delete [] the_disjuncts;
+    }
+    //@}
+  };
+
+
+  /**********************************************
    * GenericRandom heuristic
    **********************************************/
 
@@ -3378,6 +3410,29 @@ namespace Mistral {
   };
 
 
+  /**********************************************
+   * Generic Scheduling Random heuristic
+   **********************************************/
+
+  template <class T>
+  class GenericSchedulingRandomDVO : public GenericRandomDVO< T >
+  {
+  public: 
+
+    /**@name Parameters*/
+    //@{ 
+    PredicateDisjunctive **the_disjuncts;
+    //@}
+
+    /**@name Constructors*/
+    //@{
+    GenericSchedulingRandomDVO(Solver* s, const int sz) : GenericRandomDVO< T >(s, sz) {}
+    virtual ~GenericSchedulingRandomDVO()
+    {
+      delete [] the_disjuncts;
+    }
+    //@}
+  };
 
   /*! \class VariableOrdering 
     \brief  Wrapper for DVO's
@@ -3957,6 +4012,7 @@ namespace Mistral {
     int promise;
     int strategy;
     OSP( const int sz=0, const int pr=0, const int st=DOM_O_BOOLWEIGHT ) { size=sz; promise=pr; strategy=st;}
+    virtual ~OSP();
   
     /**@name Utils*/
     //@{

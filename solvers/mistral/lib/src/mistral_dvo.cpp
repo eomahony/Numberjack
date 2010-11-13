@@ -255,9 +255,10 @@ std::ostream& Contention::print(std::ostream& os) const {
   return os; 
 }
 
-PredicateDisjunctive** _garbage_disjuncts = NULL;
+PredicateDisjunctive** _garbage_disjuncts;
 void free_disjuncts() {
-  //delete [] _garbage_disjuncts;
+//   for(int i=0; i<_garbage_disjuncts.size; ++i)
+//     delete [] _garbage_disjuncts[i];
 }
 
 Weighter::Weighter( Solver* s ) 
@@ -1512,6 +1513,8 @@ inline VariableInt* DVOAntiLex::select()
   return sequence[i];
 }
 
+OSP::~OSP() {
+}
 
 PredicateDisjunctive** OSP::get_disjuncts(Solver *s) {
   // collect disjuncts
@@ -1528,9 +1531,14 @@ PredicateDisjunctive** OSP::get_disjuncts(Solver *s) {
       j = x->id;
       disjunct[j] = (PredicateDisjunctive*)(cons[i]);
       if(promise == 1) {
+	//std::cout << "PROMISE" << std::endl;
+	delete x->branch;
 	x->branch = new ValSelectorLOSP( x, disjunct[j] );
-      } else if(promise == -1)
+      } else if(promise == -1) {
+	//std::cout << "ANTI" << std::endl;
+	delete x->branch;
 	x->branch = new ValSelectorMOSP( x, disjunct[j] );
+      }
     }
   return disjunct;
 }
@@ -1542,53 +1550,58 @@ DVO* OSP::extract( Solver* s )
     int i;
     switch(strategy) {
     case DOMAIN_O_NOT: {
-      GenericRandomDVO<VarSelectorOSP_Domain> *var_heuristic = 
-	new GenericRandomDVO<VarSelectorOSP_Domain>(s, size);
+      GenericSchedulingRandomDVO<VarSelectorOSP_Domain> *var_heuristic = 
+	new GenericSchedulingRandomDVO<VarSelectorOSP_Domain>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i)
 	var_heuristic->bests[i].disjuncts = disjunct;
       var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_disjuncts = disjunct;
       return var_heuristic;
     }
     case DOMAIN_P_TWEIGHT: {
-      GenericRandomDVO<VarSelectorOSP_DomainWeight> *var_heuristic = 
-	new GenericRandomDVO<VarSelectorOSP_DomainWeight>(s, size);
+      GenericSchedulingRandomDVO<VarSelectorOSP_DomainWeight> *var_heuristic = 
+	new GenericSchedulingRandomDVO<VarSelectorOSP_DomainWeight>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i)
 	var_heuristic->bests[i].disjuncts = disjunct;
       var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_disjuncts = disjunct;
       return var_heuristic;
     }
     case DOM_O_BOOLWEIGHT: {
-      GenericRandomDVO<VarSelectorOSP_DoBoolWeight> *var_heuristic = 
-	new GenericRandomDVO<VarSelectorOSP_DoBoolWeight>(s, size);
+      GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolWeight> *var_heuristic = 
+	new GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolWeight>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i)
 	var_heuristic->bests[i].disjuncts = disjunct;
       var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_disjuncts = disjunct;
       return var_heuristic;
     }
     case DOM_O_TASKWEIGHT: {
-      GenericRandomDVO<VarSelectorOSP_DoTaskWeight> *var_heuristic = 
-	new GenericRandomDVO<VarSelectorOSP_DoTaskWeight>(s, size);
+      GenericSchedulingRandomDVO<VarSelectorOSP_DoTaskWeight> *var_heuristic = 
+	new GenericSchedulingRandomDVO<VarSelectorOSP_DoTaskWeight>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i)
 	var_heuristic->bests[i].disjuncts = disjunct;
       var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_disjuncts = disjunct;
       return var_heuristic;
     }
     case DOM_O_BOOLTASKWEIGHT: {
-      GenericRandomDVO<VarSelectorOSP_DoBoolTaskWeight> *var_heuristic = 
-	new GenericRandomDVO<VarSelectorOSP_DoBoolTaskWeight>(s, size);
+      GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolTaskWeight> *var_heuristic = 
+	new GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolTaskWeight>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i)
 	var_heuristic->bests[i].disjuncts = disjunct;
       var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_disjuncts = disjunct;
       return var_heuristic;
     }
     default: {
-      GenericRandomDVO<VarSelectorOSP_DoWeakWeight> *var_heuristic = 
-	new GenericRandomDVO<VarSelectorOSP_DoWeakWeight>(s, size);
+      GenericSchedulingRandomDVO<VarSelectorOSP_DoWeakWeight> *var_heuristic = 
+	new GenericSchedulingRandomDVO<VarSelectorOSP_DoWeakWeight>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i) {
 	var_heuristic->bests[i].disjuncts = disjunct;
@@ -1596,6 +1609,7 @@ DVO* OSP::extract( Solver* s )
       }
       var_heuristic->current.disjuncts = disjunct;
       var_heuristic->current.weak_ = strategy;
+      var_heuristic->the_disjuncts = disjunct;
       return var_heuristic;
     }
     }
@@ -1603,53 +1617,59 @@ DVO* OSP::extract( Solver* s )
   } else {
     switch(strategy) {
     case DOMAIN_O_NOT: {
-      GenericDVO<VarSelectorOSP_Domain> *var_heuristic = 
-	new GenericDVO<VarSelectorOSP_Domain>(s);
+      GenericSchedulingDVO<VarSelectorOSP_Domain> *var_heuristic = 
+	new GenericSchedulingDVO<VarSelectorOSP_Domain>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
       var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_disjuncts = disjunct;
       return var_heuristic;
     }
     case DOMAIN_P_TWEIGHT: {
-      GenericDVO<VarSelectorOSP_DomainWeight> *var_heuristic = 
-	new GenericDVO<VarSelectorOSP_DomainWeight>(s);
+      GenericSchedulingDVO<VarSelectorOSP_DomainWeight> *var_heuristic = 
+	new GenericSchedulingDVO<VarSelectorOSP_DomainWeight>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
       var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_disjuncts = disjunct;
       return var_heuristic;
     }
     case DOM_O_BOOLWEIGHT: {
-      GenericDVO<VarSelectorOSP_DoBoolWeight> *var_heuristic = 
-	new GenericDVO<VarSelectorOSP_DoBoolWeight>(s);
+      GenericSchedulingDVO<VarSelectorOSP_DoBoolWeight> *var_heuristic = 
+	new GenericSchedulingDVO<VarSelectorOSP_DoBoolWeight>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
       var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_disjuncts = disjunct;
       return var_heuristic;
     }
     case DOM_O_TASKWEIGHT: {
-      GenericDVO<VarSelectorOSP_DoTaskWeight> *var_heuristic = 
-	new GenericDVO<VarSelectorOSP_DoTaskWeight>(s);
+      GenericSchedulingDVO<VarSelectorOSP_DoTaskWeight> *var_heuristic = 
+	new GenericSchedulingDVO<VarSelectorOSP_DoTaskWeight>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
       var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_disjuncts = disjunct;
       return var_heuristic;
     }
     case DOM_O_BOOLTASKWEIGHT: {
-      GenericDVO<VarSelectorOSP_DoBoolTaskWeight> *var_heuristic = 
-	new GenericDVO<VarSelectorOSP_DoBoolTaskWeight>(s);
+      GenericSchedulingDVO<VarSelectorOSP_DoBoolTaskWeight> *var_heuristic = 
+	new GenericSchedulingDVO<VarSelectorOSP_DoBoolTaskWeight>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
       var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_disjuncts = disjunct;
       return var_heuristic;
     }
     default: {
-      GenericDVO<VarSelectorOSP_DoWeakWeight> *var_heuristic = 
-	new GenericDVO<VarSelectorOSP_DoWeakWeight>(s);
+      GenericSchedulingDVO<VarSelectorOSP_DoWeakWeight> *var_heuristic = 
+	new GenericSchedulingDVO<VarSelectorOSP_DoWeakWeight>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
       var_heuristic->current.disjuncts = disjunct;
       var_heuristic->best.weak_ = strategy;
       var_heuristic->current.weak_ = strategy;
+      var_heuristic->the_disjuncts = disjunct;
       return var_heuristic;
     }
     }

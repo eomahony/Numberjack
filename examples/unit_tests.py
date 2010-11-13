@@ -5,7 +5,7 @@ import subprocess
 
 ls = subprocess.Popen(['ls', '-1'], stdout=subprocess.PIPE)
 
-param = input({'update':'no'})
+param = input({'update':'no', 'solver':'Mistral'})
 
 outcome = {}
 

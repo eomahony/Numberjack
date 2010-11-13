@@ -554,6 +554,8 @@ public:
 
   std::vector< std::vector<Lit> > clause_base;
   unsigned int current;
+  
+  unsigned int clause_limit;
 
   int *cp_model;
 
@@ -599,6 +601,8 @@ public:
   virtual bool branch_right();
 
   virtual void store_solution();
+  
+  virtual void setClauseLimit(int limit);
   
   // parameter tuning methods
   virtual void guide(SatWrapperExpArray& vars, 

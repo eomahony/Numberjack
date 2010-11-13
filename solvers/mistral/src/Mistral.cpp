@@ -1574,6 +1574,9 @@ void MistralSolver::load_xml(const char* filename, const int type)
       //cb->setFeatureExt   ( 2 );
 
       parser->parse( filename ); // parse the input file
+      
+      
+      
     }
   catch (exception &e)
     {

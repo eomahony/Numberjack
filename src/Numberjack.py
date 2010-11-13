@@ -2357,12 +2357,19 @@ class Nogood(object):
 
 ## Generic Solver Class
 class NBJ_STD_Solver(object):
-    def __init__(self, Library, Wrapper, model=None, X=None, FD=False):
+    def __init__(self, Library, Wrapper, model=None, X=None, FD=False,
+                 clause_limit=-1):
+        
+        
 
         self.decomposition_store = []
 
         self.solver = getattr(sys.modules[Library],
                               Library+"Solver", None)()
+        
+        if hasattr(self.solver, "setClauseLimit"):
+            print "Setting clause limit"
+            self.solver.setClauseLimit(clause_limit);
         
         self.Library = Library
         

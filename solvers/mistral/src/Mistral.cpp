@@ -30,6 +30,19 @@ void Mistral_Expression::print_python() const
   _self->print_python();
 }
 
+Mistral_Expression::Mistral_Expression(BuildObject *x)
+{
+
+  initialise();
+  nbj_ident = -1;
+  _self = x;
+
+#ifdef _DEBUGWRAP
+  std::cout << "creating a variable [" << 0 << ".." << (nval-1) << "]" << std::endl;
+#endif
+
+}
+
 Mistral_Expression::Mistral_Expression()
 {
   initialise();
@@ -80,6 +93,20 @@ Mistral_Expression::Mistral_Expression(MistralIntArray& vals)
 
 }
 
+const char* Mistral_Expression::get_type() const
+{
+  return _self->get_type();
+}
+
+int Mistral_Expression::get_arity() const
+{
+  return _self->get_arity();
+}
+ 
+Mistral_Expression* Mistral_Expression::get_child(const int i)
+{
+  return new Mistral_Expression(((BuildObjectPredicate*)_self)->scope[i]);
+}
 
 int Mistral_Expression::getVariableId() const
 {
@@ -1514,6 +1541,8 @@ MistralSolver::MistralSolver()
   nogood_base = NULL;
 
   first_decision_level = -1;
+
+  is_copy = false;
 }
 
 MistralSolver::~MistralSolver()
@@ -1522,7 +1551,10 @@ MistralSolver::~MistralSolver()
   std::cout << "c (wrapper) delete solver" << std::endl;
 #endif
 
-  delete model;
+  if(!is_copy)
+    delete model;
+  else
+    model = NULL;
   delete solver;
   //delete parser;
   //delete cb;
@@ -1574,6 +1606,10 @@ void MistralSolver::load_xml(const char* filename, const int type)
       //cb->setFeatureExt   ( 2 );
 
       parser->parse( filename ); // parse the input file
+
+      model = &(cb->model);
+      is_copy = true;
+
     }
   catch (exception &e)
     {
@@ -2202,3 +2238,17 @@ int MistralSolver::getRandomNumber()
 }
 
 void MistralSolver::test_x60() { solver->test_x60(); }
+
+
+Mistral_Expression* MistralSolver::get_expression(const int i) 
+{
+
+  //model->declarations[i]->getBuildObject()->print(std::cout);
+  //std::cout << std::endl;
+
+  return new Mistral_Expression(model->toplevel_expressions[i]->getBuildObject());
+}
+int MistralSolver::num_expression() 
+{
+  return model->toplevel_expressions.size;
+}

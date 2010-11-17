@@ -1770,7 +1770,8 @@ namespace Mistral {
     }
     /// Setup the nogoods on restart
     void setRestartNogood();
-    ConstraintGenNogoodBase* setRestartGenNogood();
+    //ConstraintGenNogoodBase* setRestartGenNogood();
+    WeighterRestartGenNogood* setRestartGenNogood();
     //void addNogood();
     /// Setup the forget utility for the clause base
     void setForgetfulness( const double f );

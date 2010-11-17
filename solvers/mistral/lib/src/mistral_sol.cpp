@@ -2504,9 +2504,9 @@ bool Solver::filtering()
       ++PROPAGS;
       SimpleUnaryConstraint cons = sUnaryCons.pop();
 
-//       std::cout << "PROPAGATE UNARY CONSTRAINT AT LEVEL " << level << ": ";
-//       cons.print(std::cout);
-//       std::cout << std::endl;
+//        std::cout << "PROPAGATE UNARY CONSTRAINT AT LEVEL " << level << ": ";
+//        cons.print(std::cout);
+//        std::cout << std::endl;
 
 //       if(cons.val > cons.var->min()) {
 // 	++nuaryprop;
@@ -2821,14 +2821,14 @@ void Solver::setRestartNogood()
   }
 }
 
-ConstraintGenNogoodBase* Solver::setRestartGenNogood()
+WeighterRestartGenNogood* Solver::setRestartGenNogood()
 {
 
   ConstraintGenNogoodBase* base = new ConstraintGenNogoodBase(this);
   setLearner( Weighter::RGNGD );
   ((WeighterRestartGenNogood*)(learners.back()))->base = base;
 
-  return base;
+  return ((WeighterRestartGenNogood*)(learners.back()));
 }
 
 void Solver::printPython() const
@@ -3364,6 +3364,7 @@ void Solver::reset_stats() {
   SOLUTIONS = NODES = BACKTRACKS = CHECKS
     = FAILURES = PROPAGS = FILTERINGS = RESTORES = MISC = 0;
   status = UNKNOWN;
+  SOLTIME = 0.0;
   STARTTIME = getRunTime();
   BTSLIST.clear();
 }

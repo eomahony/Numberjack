@@ -36,13 +36,17 @@ namespace MistralScheduler {
     std::vector<long unsigned int> fails;
     std::vector<long unsigned int> propags;
     std::vector<double>            time;
+    std::vector<double>            soltime;
     std::vector<int>               outcome;
 
     StatisticList();
     virtual ~StatisticList();
 
-    int get_total_time();
+    bool solved();
+    double get_total_time();
+    double get_lowerbound_time();
     void add_info(SchedulingSolver *s, const int obj);
+    //void add_info(const int lb, const int ub);
 
     std::ostream& print(std::ostream& os, 
 			const char* prefix=" ",
@@ -330,7 +334,7 @@ namespace MistralScheduler {
     
     SolutionPool() {}
     virtual ~SolutionPool() {
-      for(int i=0; i<pool_.size(); ++i)
+      for(unsigned int i=0; i<pool_.size(); ++i)
 	delete pool_[i];
     }
 
@@ -339,6 +343,62 @@ namespace MistralScheduler {
     unsigned int size() { return pool_.size(); }
 
   };
+
+
+// class StoreStats : public SolutionMethod {
+
+// protected:
+//   StatisticList *stats;
+
+// public:
+
+//   StoreStats(Solver *s, StatisticList *t) : SolutionMethod(s) 
+//   {
+//     stats = t;
+//   }
+
+//   virtual ~StoreStats() 
+//   {
+//   }
+  
+//   virtual void execute() 
+//   { 
+//     stats->add_info((SchedulingSolver *)solver, solver->goal->upper_bound);
+//   }
+
+//   virtual void initialise() 
+//   {
+//   }
+// };
+
+// class SolutionGuidedSearch : public StoreStats {
+
+// protected:
+//   SolutionPool *pool;
+
+// public:
+
+//   SolutionGuidedSearch(Solver *s, SolutionPool* p, StatisticList *t) : StoreStats(s,t) 
+//   {
+//     pool = p;
+//   }
+
+//   virtual ~SolutionGuidedSearch() 
+//   {
+//   }
+  
+//   virtual void execute() 
+//   { 
+//     if(pool->size()) pool->getBestSolution()->guide_search();
+//     StoreStats::execute();
+//   }
+
+//   virtual void initialise() 
+//   {
+//     if(pool->size()) pool->getBestSolution()->guide_search();
+//   }
+
+// };
 
 class SolutionGuidedSearch : public SolutionMethod {
 
@@ -374,8 +434,8 @@ public:
   class SchedulingSolver : public Solver {
   public:
 
-    int lower_bound;
-    int upper_bound;
+    //int lower_bound;
+    //int upper_bound;
     ParameterList params;
     StatisticList& stats;
     SchedulingModel *model;
@@ -474,10 +534,10 @@ public:
 	OSP h(abs(rdz), val_ord);
 	add( h );
       }
-      else if( Heu == "osp-dw") {
-	OSP h(abs(rdz), val_ord, OSP::DOMAIN_P_TWEIGHT);
-	add( h );
-      }
+//       else if( Heu == "osp-dw") {
+// 	OSP h(abs(rdz), val_ord, OSP::DOMAIN_P_TWEIGHT);
+// 	add( h );
+//       }
       else if( Heu == "osp-d") {
 	OSP h(abs(rdz), val_ord, OSP::DOMAIN_O_NOT);
 	add( h );
@@ -492,6 +552,22 @@ public:
       }
       else if( Heu == "osp-bt") {
 	OSP h(abs(rdz), val_ord, OSP::DOM_O_BOOLTASKWEIGHT);
+	add( h );
+      }
+      else if( Heu == "osp-dt") {
+	OSP h(abs(rdz), val_ord, OSP::DOMAIN_O_NOTTYPE);
+	add( h );
+      }
+      else if( Heu == "osp-bt") {
+	OSP h(abs(rdz), val_ord, OSP::DOM_O_BOOLWEIGHTTYPE);
+	add( h );
+      }
+      else if( Heu == "osp-tt") {
+	OSP h(abs(rdz), val_ord, OSP::DOM_O_TASKWEIGHTTYPE);
+	add( h );
+      }
+      else if( Heu == "osp-btt") {
+	OSP h(abs(rdz), val_ord, OSP::DOM_O_BOOLTASKWEIGHTTYPE);
 	add( h );
       }
 //       else if( Heu == "osp-w") {

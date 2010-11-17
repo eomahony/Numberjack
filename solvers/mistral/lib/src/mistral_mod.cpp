@@ -24,6 +24,7 @@
 #include <mistral_mod.h>
 #include <mistral_sol.h>
 #include <cstring>
+//#include "../../src/Mistral.hpp"
 
 using namespace Mistral;
 using namespace std;
@@ -32,6 +33,12 @@ using namespace std;
 static ConstraintStore ENVIRONMENT;
 
 int P_GAC;
+
+// Mistral_Expression* BuildObject::ExpressionWrap() 
+// {
+//   Mistral_Expression *x = new Mistral_Expression(getMin(), getMax());
+//   return x;
+// }
 
 void BuildObject::add( CSP *m, const int l )
 { 
@@ -44,6 +51,11 @@ void BuildObject::add( CSP *m, const int l )
     model->declarations.push( this ) ;
   }
 }
+
+// void BuildObject::gather_variables()
+// {
+//   model->variables.insert(id);
+// }
 
 void BuildObject::close()
 {  
@@ -1100,6 +1112,10 @@ BuildObjectPredicate::~BuildObjectPredicate()
   delete [] scope;
   delete [] params;
 }
+
+// void BuildObject::gather_variables()
+// {
+// }
 
 bool BuildObjectPredicate::isRel() const 
 {
@@ -4346,7 +4362,9 @@ void BuildObjectAllDiff::add( CSP *mod, const int l,
     for(i=0; i<n; ++i)
       for(j=i+1; j<n; ++j)
 	{	    
-	  mod->add( CSP::_Equal( x[i], x[j], 0 ) );
+	  //mod->add( CSP::_Equal( x[i], x[j], 0 ) );
+	  BuildObject* p = CSP::_Equal( x[i], x[j], 0 );
+	  p->add( mod, 0 );
 	}
   }
 
@@ -5602,12 +5620,14 @@ void CSP::add( BuildObject *x )
 //  #endif
 
 // //   if( x->id >= 98 ) {
-// //     cout << "add ";
-// //     x->print( cout );
-// //     cout << endl;
+     cout << "add ";
+     x->print( cout );
+     cout << endl;
 // //   }
 
-  x->add( this, 0 );
+     
+     if(x->isRel()) toplevel_expressions.push(x);
+     x->add( this, 0 );
 
 // #ifdef _DEBUGMODEL
 //   cout << " : " << (x->id) << endl;

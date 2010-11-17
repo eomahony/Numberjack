@@ -36,10 +36,11 @@
 
 #include <mistral_dvo.h>
 #include <mistral_sat.h>
-
+//#include <Mistral.hpp>
 
 namespace Mistral {
-
+  
+  //class Mistral_Expression;
   class CSP;
   class Variable;
   class VarArray;
@@ -371,6 +372,10 @@ namespace Mistral {
 
     BuildObject *getBuildObject();
     const BuildObject *getConstBuildObject() const ;
+
+    virtual const char* get_type() const {return (veqptr_ ? veqptr_->get_type() : "var");}
+    virtual int get_arity() {return 0;}
+
     int getState() const;
     void setState( const int s ) ;
     
@@ -592,6 +597,13 @@ namespace Mistral {
     virtual void printstate( std::ostream& o ) const ;
     bool operator==( BuildObject& x ) const ;
 
+
+//     virtual Mistral_Expression* ExpressionWrap() ;
+// //     {
+// //       Mistral_Expression *x = new Mistral_Expression(getMin(), getMax());
+// //       return x;
+// //     }
+
   };
 
 
@@ -606,6 +618,8 @@ namespace Mistral {
 
     BuildObjectConstraint() ;
     virtual ~BuildObjectConstraint() ;
+
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "not implemented";}
   
     virtual void add( CSP *model, const int l, BuildObjectPredicate *pred ) ;
     virtual void build( Solver *s, VariableInt **tmp, BuildObjectPredicate *pred ) = 0;  
@@ -641,6 +655,10 @@ namespace Mistral {
 			 const int, const int, const int, 
 			 BuildObjectConstraint*, int*); 
     virtual ~BuildObjectPredicate() ;
+
+    virtual const char* get_type() const {return (relation ? relation->get_type(this) : "none");}
+    virtual int get_arity() {return arity;}
+
 
     virtual bool isRel() const;
     virtual void unsetRel();
@@ -679,6 +697,8 @@ namespace Mistral {
     //virtual int state();
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "neg";}
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
     virtual void close( BuildObjectPredicate *pred ) ;
@@ -699,6 +719,7 @@ namespace Mistral {
     //virtual int state();
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "not";}
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
     virtual void close( BuildObjectPredicate *pred ) ;
@@ -720,6 +741,7 @@ namespace Mistral {
     //virtual int state();
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "abs";}
     virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual void close( BuildObjectPredicate *pred ) ;
@@ -748,6 +770,7 @@ namespace Mistral {
     //virtual int state();
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "abs";}
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
     virtual void close( BuildObjectPredicate *pred ) ;
@@ -769,6 +792,7 @@ namespace Mistral {
     //virtual int state();
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "or";}
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
     virtual void close( BuildObjectPredicate *pred ) ;
@@ -790,6 +814,7 @@ namespace Mistral {
     //virtual int state();
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "ite";}
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
     virtual void close( BuildObjectPredicate *pred ) ;
@@ -809,6 +834,7 @@ namespace Mistral {
  
   public:
 
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "dis";}
     virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual void close( BuildObjectPredicate *pred ) ;
@@ -826,6 +852,7 @@ namespace Mistral {
  
   public:
 
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "ovl";}
     virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual void close( BuildObjectPredicate *pred ) ;
@@ -845,6 +872,7 @@ namespace Mistral {
     //virtual int state();
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "prec";}
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
     virtual void close( BuildObjectPredicate *pred ) ;
@@ -866,6 +894,7 @@ namespace Mistral {
     //virtual int state();
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "mul";}
     virtual void self_build( Solver *s, VariableInt **tmp, BuildObjectPredicate *pred );  
     virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
@@ -888,6 +917,7 @@ namespace Mistral {
     //virtual int state();
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "div";}
     virtual void self_build( Solver *s, VariableInt **tmp, BuildObjectPredicate *pred );  
     virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
@@ -910,6 +940,7 @@ namespace Mistral {
     //virtual int state();
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "mod";}
     virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual void close( BuildObjectPredicate *pred ) ;
@@ -930,6 +961,7 @@ namespace Mistral {
     //virtual int state();
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return (p->params[0] ? "eq" : "ne");}
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
     virtual void close( BuildObjectPredicate *pred ) ;
@@ -951,6 +983,7 @@ namespace Mistral {
     //virtual int state();
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "mem";}
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
     virtual void close( BuildObjectPredicate *pred ) ;
@@ -977,6 +1010,7 @@ namespace Mistral {
     //virtual int state();
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "sum";}
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual int propagateDownward(BuildObjectPredicate *pred) const ;
     virtual void close( BuildObjectPredicate *pred ) ;
@@ -998,6 +1032,7 @@ namespace Mistral {
     //virtual int state();
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "min";}
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual int propagateDownward(BuildObjectPredicate *pred ) const ;
     virtual void close( BuildObjectPredicate *pred ) ;
@@ -1019,6 +1054,7 @@ namespace Mistral {
     //virtual int state();
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "max";}
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
     virtual void close( BuildObjectPredicate *pred ) ;
@@ -1040,6 +1076,7 @@ namespace Mistral {
     //virtual int state();
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "Element";}
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
     virtual void close( BuildObjectPredicate *pred ) ;
@@ -1057,6 +1094,7 @@ namespace Mistral {
  
   public:
  
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "Cardinality";}
     virtual void add( CSP *model, const int l, BuildObjectPredicate *pred ) ;
     //virtual int state();
     //virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
@@ -1083,6 +1121,7 @@ namespace Mistral {
  
   public:
 
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "Clause";}
     virtual void close( BuildObjectPredicate *pred ) ;
     virtual void   build  (Solver *, VariableInt **, BuildObjectPredicate *) ;
     virtual void   print  (std::ostream&, const BuildObjectPredicate*) const ; 
@@ -1118,6 +1157,7 @@ namespace Mistral {
     void selectType       ( BuildObjectPredicate *pred );
     void setNotEqual      ( BuildObjectPredicate *pred );
 
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "Table";}
     virtual void close( BuildObjectPredicate *pred ) ;
     virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
     virtual void   build  (Solver *, VariableInt **, BuildObjectPredicate *) ;
@@ -1135,6 +1175,7 @@ namespace Mistral {
 
   public:
 
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "AllDiff";}
     virtual void add( CSP *model, const int l, BuildObjectPredicate *pred ) ;
     virtual void close( BuildObjectPredicate *pred ) ;
     virtual void   build  (Solver *, VariableInt **, BuildObjectPredicate *) ; 
@@ -1152,6 +1193,7 @@ namespace Mistral {
 
     //virtual void add( CSP *model, const int l, BuildObjectPredicate *pred ) ;
     //virtual void close( BuildObjectPredicate *pred ) ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "Tree";}
     virtual void   build  (Solver *, VariableInt **, BuildObjectPredicate *) ;
     virtual void   print  (std::ostream&, const BuildObjectPredicate*) const ; 
     virtual std::string xmlPred(int&, int, const BuildObjectPredicate*, int*) const ; 
@@ -1166,6 +1208,7 @@ namespace Mistral {
   public:
 
     //virtual void add( CSP *model, const int l, BuildObjectPredicate *pred ) ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "TDAG";}
     virtual void close( BuildObjectPredicate *pred ) ;
     virtual void   build  (Solver *, VariableInt **, BuildObjectPredicate *) ;
     virtual void   print  (std::ostream&, const BuildObjectPredicate*) const ; 
@@ -1180,6 +1223,7 @@ namespace Mistral {
 
   public:
 
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "Gcc";}
     virtual void add( CSP *model, const int l, BuildObjectPredicate *pred ) ;
     virtual void close( BuildObjectPredicate *pred ) ;
     virtual void   build  (Solver *, VariableInt **, BuildObjectPredicate *) ;
@@ -1195,6 +1239,7 @@ namespace Mistral {
  
   public:
 
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "Lex";}
     virtual void add( CSP *model, const int l, BuildObjectPredicate *pred ) ;
     //virtual int state();
     //virtual void close( BuildObjectPredicate *pred ) ;
@@ -1214,6 +1259,7 @@ namespace Mistral {
     //virtual int state();  
     //virtual int getMin( BuildObjectPredicate *pred ) const ;
     //virtual int getMax( BuildObjectPredicate *pred ) const ;
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "DLex";}
     virtual int propagateUpward(BuildObjectPredicate *pred) const ;
     virtual int propagateDownward(BuildObjectPredicate *pred) const ;
     virtual void close( BuildObjectPredicate *pred )  ;
@@ -1727,6 +1773,9 @@ namespace Mistral {
     Vector<BuildObject*> declarations; 
     MistralGacList<BuildObject*> buildqueue;
 
+    Vector<BuildObject*> toplevel_expressions; 
+    List variables;
+
     // Infered not-equals
     Vector<BuildObject*> notequals;
 
@@ -1864,6 +1913,8 @@ namespace Mistral {
   BuildObjectConstraint* getConstraint(const int);
 
 };
+
+
 
 std::ostream& operator<< (std::ostream& os, const Mistral::MistralGraph& g) ;
 std::ostream& operator<< (std::ostream& os, const Mistral::Variable& x) ;

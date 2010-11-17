@@ -1137,8 +1137,10 @@ namespace CSPXMLParser {
 	switch(model_type) {
 	case 0 : {
 	  ++numDECPred;
-	  model.add( Variable( predicates[idcur]->
-			       getPredicate( predicateScope ) ) );
+	  model.add( predicates[idcur]->
+		     getPredicate( predicateScope ) );
+// 	  model.add( Variable( predicates[idcur]->
+// 			       getPredicate( predicateScope ) ) );
 	  break;
 	}
 	case 1 : {

@@ -89,10 +89,15 @@ public:
   void initialise();
 
   Mistral_Expression();
+  Mistral_Expression(BuildObject *x);
   Mistral_Expression(const int nval);
   Mistral_Expression(const int lb, const int ub);
   Mistral_Expression(MistralIntArray& vals);
   virtual ~Mistral_Expression();
+
+  const char* get_type() const;
+  int get_arity() const;
+  Mistral_Expression *get_child(const int i);
 
   int next(int v);
   int getVariableId() const;
@@ -431,6 +436,7 @@ public:
 
   //MistralIntArray communicate;
   bool feature_ready;
+  bool is_copy;
   //CSPXMLParser::MistralCallback *cb; 
   //CSPXMLParser::XMLParser_libxml2<CSPXMLParser::MistralCallback> *parser;
 
@@ -451,6 +457,10 @@ public:
   // add an expression, in the case of a tree of expressions,
   // each node of the tree is added separately, depth first.
   void add(Mistral_Expression* arg);
+
+  Mistral_Expression* get_expression(const int i);
+  int num_expression();
+  
 
   // used to initialise search on a given subset of variables
   void initialise(MistralExpArray& arg);

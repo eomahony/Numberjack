@@ -23,22 +23,26 @@ StatisticList::StatisticList() {
   avg_distance        = 0;
   min_distance        = INFTY;
   max_distance        = 0;
-
-  /*
-  total_time          = 0.0;
-  total_nodes         = 0;
-  total_backtracks    = 0;
-  total_fails         = 0;
-  total_propags       = 0;
-  */
 }
 
 StatisticList::~StatisticList() {}
 
-int StatisticList::get_total_time() {
+bool StatisticList::solved() {
+  return (lower_bound == upper_bound);
+}
+
+double StatisticList::get_total_time() {
   double total_time  = 0.0;
   for(unsigned int i=0; i<time.size(); ++i)
     total_time += time[i];
+  return total_time;
+}
+
+double StatisticList::get_lowerbound_time() {
+  double total_time  = 0.0;
+  for(unsigned int i=0; i<time.size(); ++i)
+    if(outcome[i] == UNSAT)
+      total_time += time[i];
   return total_time;
 }
 
@@ -47,6 +51,7 @@ void StatisticList::add_info(SchedulingSolver *s, const int objective) {
   DBG("Update statistics%s\n", "");
 
   time.push_back(s->ENDTIME);
+  soltime.push_back(s->SOLTIME);
   nodes.push_back(s->NODES);
   backtracks.push_back(s->BACKTRACKS);
   fails.push_back(s->FAILURES);
@@ -54,18 +59,11 @@ void StatisticList::add_info(SchedulingSolver *s, const int objective) {
 
   outcome.push_back(s->status);
 
-  /*
-  total_time         += time.back();
-  total_nodes        += nodes.back();
-  total_backtracks   += backtracks.back();
-  total_fails        += fails.back();
-  total_propags      += propags.back();
-  */
-
-  if(outcome.back() == SAT) {
+  if(outcome.back() == SAT || outcome.back() == OPT) {
     ++num_solutions;
     best_solution_index = outcome.size()-1;
     upper_bound = objective;
+    if(outcome.back() == OPT) lower_bound = objective;
   } else if(outcome.back() == UNSAT) {
     lower_bound = objective+1;
   }
@@ -84,6 +82,9 @@ std::ostream& StatisticList::print(std::ostream& os,
 
   double total_time  = 0.0;
   double opt_time    = 0.0;
+  double ub_time     = 0.0;
+  double lb_time     = 0.0;
+  double lost_time   = 0.0;
   double proof_time  = 0.0;
   long unsigned int total_nodes         = 0;
   long unsigned int total_backtracks    = 0;
@@ -91,14 +92,27 @@ std::ostream& StatisticList::print(std::ostream& os,
   long unsigned int total_propags       = 0;
 
   for(k=i; k<j; ++k) {
-    if(k<=best_solution_index) opt_time += time[k];
+    if(k<=best_solution_index) {
+      if(outcome[k] != OPT)
+	opt_time += time[k];
+      else
+	opt_time += soltime[k];
+    }
+    
+    if(outcome[k] != OPT && outcome[k] != UNSAT) {
+      lost_time += (time[k] - soltime[k]);
+    }
+    
+    ub_time            += soltime[k];
     total_time         += time[k];
     total_nodes        += nodes[k];
     total_backtracks   += backtracks[k];
     total_fails        += fails[k];
     total_propags      += propags[k];
   }
+
   proof_time = (total_time - opt_time);
+  lb_time = (total_time - ub_time - lost_time);
 
 
   int plength = 0;
@@ -109,7 +123,10 @@ std::ostream& StatisticList::print(std::ostream& os,
      << "d " << prefix << std::left << std::setw(28-plength)  << "OBJECTIVE "     << std::right << std::setw(21) << upper_bound << std::endl 
      << "d " << prefix << std::left << std::setw(28-plength)  << "RUNTIME "       << std::right << std::setw(21) << total_time << std::endl
      << "d " << prefix << std::left << std::setw(28-plength)  << "OPTTIME "       << std::right << std::setw(21) << opt_time << std::endl
-     << "d " << prefix << std::left << std::setw(28-plength)  << "PROOFTIME "       << std::right << std::setw(21) << proof_time << std::endl
+     << "d " << prefix << std::left << std::setw(28-plength)  << "PROOFTIME "     << std::right << std::setw(21) << proof_time << std::endl
+     << "d " << prefix << std::left << std::setw(28-plength)  << "UBTIME "        << std::right << std::setw(21) << ub_time << std::endl
+     << "d " << prefix << std::left << std::setw(28-plength)  << "LBTIME "        << std::right << std::setw(21) << lb_time << std::endl
+     << "d " << prefix << std::left << std::setw(28-plength)  << "LOSTTIME "      << std::right << std::setw(21) << lost_time << std::endl
      << "d " << prefix << std::left << std::setw(28-plength)  << "NODES "         << std::right << std::setw(21) << total_nodes << std::endl
      << "d " << prefix << std::left << std::setw(28-plength)  << "BACKTRACKS "    << std::right << std::setw(21) << total_backtracks << std::endl
      << "d " << prefix << std::left << std::setw(28-plength)  << "FAILS "         << std::right << std::setw(21) << total_fails << std::endl
@@ -126,11 +143,6 @@ std::ostream& StatisticList::print(std::ostream& os,
 
   return os;
 }  
-
-
-// void StatisticList::add_solution(SolutionPool *s) {
-//   best_solution_index = 
-// }
 
 
 const char* ParameterList::int_ident[ParameterList::nia] = 
@@ -225,11 +237,11 @@ ParameterList::ParameterList(int length, char **commandline) {
   } else if(Type == "jet") {
     Cutoff      = 30;
     Objective = "tardiness";
-    Heuristic = "osp-t";
+    Heuristic = "osp-tt";
   } else if(Type == "dyn") {
     Cutoff      = 30;
     Objective = "tardiness";
-    Heuristic = "osp-t";
+    Heuristic = "osp-tt";
   }
 
 
@@ -359,48 +371,38 @@ Instance::~Instance() {
   }
 }
 
-// void Instance::close() {
-//   // remove unused machines:
-//   for()
+int Instance::addTask(const int dur, const int job, const int machine) {
+  int index = duration.size();
+  if(job >= 0) addTaskToJob(index, job);
+  if(machine >= 0) addTaskToMachine(index, machine);
+  duration.push_back(dur);
+  due_date.push_back(INFTY);
+  release_date.push_back(0);
   
-// }
+  return index;
+}
 
+void Instance::addTaskToJob(const unsigned int index, const unsigned int j) {
+  if(tasks_in_job.size() <= j) tasks_in_job.resize(j+1);
+  if(jobs_of_task.size() <= index) jobs_of_task.resize(index+1);
+  if(task_rank_in_job.size() <= index) task_rank_in_job.resize(index+1);
+  tasks_in_job[j].push_back(index);
+  jobs_of_task[index].push_back(j);
+  pair_ x(j, tasks_in_job[j].size()-1);
+  task_rank_in_job[index].push_back(x);
+}
 
-    int Instance::addTask(const int dur, const int job, const int machine) {
-      int index = duration.size();
-      if(job >= 0) addTaskToJob(index, job);
-      if(machine >= 0) addTaskToMachine(index, machine);
-      duration.push_back(dur);
-      due_date.push_back(INFTY);
-      release_date.push_back(0);
-
-      return index;
-    }
-
-    void Instance::addTaskToJob(const unsigned int index, const unsigned int j) {
-      if(tasks_in_job.size() <= j) tasks_in_job.resize(j+1);
-      if(jobs_of_task.size() <= index) jobs_of_task.resize(index+1);
-      if(task_rank_in_job.size() <= index) task_rank_in_job.resize(index+1);
-      tasks_in_job[j].push_back(index);
-      jobs_of_task[index].push_back(j);
-      pair_ x(j, tasks_in_job[j].size()-1);
-      task_rank_in_job[index].push_back(x);
-    }
-
-    void Instance::addTaskToMachine(const unsigned int index, const unsigned int j) {
-      if(tasks_in_machine.size() <= j) tasks_in_machine.resize(j+1);
-      if(machines_of_task.size() <= index) machines_of_task.resize(index+1);
-      if(task_rank_in_machine.size() <= index) task_rank_in_machine.resize(index+1);
-      tasks_in_machine[j].push_back(index);
-      machines_of_task[index].push_back(j);
-      pair_ x(j, tasks_in_machine[j].size()-1);
-      task_rank_in_machine[index].push_back(x);
-    }
+void Instance::addTaskToMachine(const unsigned int index, const unsigned int j) {
+  if(tasks_in_machine.size() <= j) tasks_in_machine.resize(j+1);
+  if(machines_of_task.size() <= index) machines_of_task.resize(index+1);
+  if(task_rank_in_machine.size() <= index) task_rank_in_machine.resize(index+1);
+  tasks_in_machine[j].push_back(index);
+  machines_of_task[index].push_back(j);
+  pair_ x(j, tasks_in_machine[j].size()-1);
+  task_rank_in_machine[index].push_back(x);
+}
 
 int Instance::getSetupTime(const int k, const int i, const int j) const {
-  
-  //std::cout << k << " " << i << " " << j << " -> ";
-
   // get the rank of task i in machine k
   int ri = 0;
   for(unsigned int x=0; x<task_rank_in_machine[i].size(); ++x)
@@ -415,14 +417,9 @@ int Instance::getSetupTime(const int k, const int i, const int j) const {
       rj = task_rank_in_machine[j][x].rank;
       break;
     }
-
-  //std::cout << k << " " << ri << " " << rj << " : " << setup_time[k][ri][rj] << std::endl;
-
-  //std::cout << setup_time << std::endl;
-  //std::cout << setup_time[k] << std::endl;
-  //std::cout << setup_time[k][ri] << std::endl;
-  //std::cout << setup_time[k][ri][rj] << std::endl;
-  return setup_time[k][ri][rj];}
+  
+  return setup_time[k][ri][rj];
+}
 
 std::ostream& Instance::print(std::ostream& os) {
   os << "c " << (nJobs()) << " jobs, " 
@@ -1083,42 +1080,21 @@ SchedulingModel::~SchedulingModel() {}
 
 void No_wait_Model::setup(Instance& inst, const int max_makespan) {
 
-  //std::cout << "nowait setup" << std::endl;
-  //exit(1);
-
   int i,j,k, lb, ub, ti=0, tj=0;
   std::vector<int> offset;
-  //**offset=new int*[inst.nJobs()];
   for(i=0; i<inst.nJobs(); ++i) {
-    //offset[i] = new int[inst.nTasksInJob(i)+1];
-    //offset[i][0] = 0;
-    //for(j=0; j<inst.nTasksInJob(i); ++j)
-    //offset[i][j+1] = (offset[i][j] + inst.getDuration(inst.getJobTask(i,j)));
-
     offset.push_back(0);
     for(j=0; j<inst.nTasksInJob(i)-1; ++j)
       offset.push_back(offset.back() + inst.getDuration(inst.getJobTask(i,j)));
   }
 
-
-
   lb_C_max = inst.getMakespanLowerBound();
   if(max_makespan < 0) {
     ub_C_max = 0;
     for(i=0; i<inst.nJobs(); ++i) {
-
-      //std::cout << offset.size() << " " << i << " " << ((i+1)*inst.nTasksInJob(i)-1) << std::endl;
-
-      //ub_C_max += (offset[(i+1)*inst.nTasksInJob(i)-1] + inst.getDuration(inst.getLastTaskofJob(i)));
       ub_C_max += (offset[inst.getLastTaskofJob(i)] + inst.getDuration(inst.getLastTaskofJob(i)));
     }
   } else ub_C_max = max_makespan;
-
-
-  //exit(1);
-
-  //lb_L_sum = inst.getEarlinessTardinessLowerBound(ub_C_max);
-  //ub_L_sum = inst.getEarlinessTardinessUpperBound(ub_C_max);
 
   data = &inst;
 
@@ -1127,7 +1103,6 @@ void No_wait_Model::setup(Instance& inst, const int max_makespan) {
 
     lb = inst.getReleaseDate(inst.getJobTask(i,0));
     ub = std::min(ub_C_max, inst.getDueDate(inst.getLastTaskofJob(i))) 
-      //- (offset[(i+1)*inst.nTasksInJob(i)-1] + inst.getDuration(inst.getLastTaskofJob(i)));
       - (offset[inst.getLastTaskofJob(i)] + inst.getDuration(inst.getLastTaskofJob(i)));
 
 
@@ -1172,16 +1147,6 @@ void No_wait_Model::setup(Instance& inst, const int max_makespan) {
   }
   for(int i=0; i<disjuncts.size(); ++i) SearchVars.add(disjuncts[i]);
 
-//   for(i=0; i<inst.nJobs(); ++i) {
-//     for(j=0; j<inst.nTasksInJob(i); ++j) {
-//       ti = inst.getJobTask(i,j);
-//       std::cout << offset[ti] << "+t" << ti << "+" << inst.getDuration(ti) << " ";
-//     }
-//     std::cout << std::endl;
-//   }
-
-//   //exit(1);
-
 }
 
 
@@ -1204,20 +1169,12 @@ int C_max_Model::get_ub() {
 VariableInt* L_sum_Model::get_objective_var() {
   return L_sum.getVariable();
 }
-// void L_sum_Model::add_objective() {
-//   add(Minimise(L_sum));
-// }
 
 VariableInt* C_max_Model::get_objective_var() {
   return C_max.getVariable();
 }
-// void C_max_Model::add_objective() {
-//   add(Minimise(C_max));
-// }
 
 int L_sum_Model::set_objective(const int obj) {
-  //return UNKNOWN;
-  //L_sum.getVariable()->print(std::cout);
   return (L_sum.getVariable()->setMax(obj) ? UNKNOWN : UNSAT);
 }
 
@@ -1243,49 +1200,19 @@ int C_max_Model::set_objective(const int obj) {
 }
 
 int L_sum_Model::get_objective() {
-//   //return -1;
-
-//   L_sum.getVariable()->print(std::cout);
-//   std::cout << std::endl;
-
   int total_cost = 0;
   for(int i=0; i<latebool.size(); ++i) {
-//     if(earlybool[i].getVariable()) earlybool[i].getVariable()->print(std::cout) ;
-//     else std::cout << (earlybool[i].value());
-//     std::cout << " ";
-//     if(latebool[i].getVariable()) latebool[i].getVariable()->print(std::cout);
-//     else std::cout << (latebool[i].value());
-//     std::cout << " ";
-//     if(last_tasks[i].getVariable()) last_tasks[i].getVariable()->print(std::cout);
-//     else std::cout << "-";
-//     std::cout << " " << data->getJobDueDate(i) << " " 
-// 	      << data->getJobEarlyCost(i) << " " 
-// 	      << data->getJobLateCost(i) << " ";
-
     int cost = 0;
     if(earlybool[i].value()) {
       cost = (data->getJobDueDate(i) - (last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i))))*data->getJobEarlyCost(i);
     } else if(latebool[i].value()) {
       cost = ((last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i))) - data->getJobDueDate(i))*data->getJobLateCost(i);
     }
-
-    //std::cout << cost << std::endl;
-
     total_cost += cost;
   }
-
-  //std::cout << total_cost << std::endl;
-
   return L_sum.value();
 }
 int C_max_Model::get_objective() {
-//   int obj=0, aux, ti;
-//   for(int i=0; i<data->nJobs(); ++i) {
-//     ti = data->getLastTaskofJob(i);
-//     aux = (tasks[ti].value() + data->getDuration(ti));
-//     if(aux > obj) obj = aux;
-//   }
-//   return obj;
   return C_max.value();
 }
 
@@ -1364,14 +1291,11 @@ SchedulingSolver::SchedulingSolver(SchedulingModel* m,
   : Solver(*m,m->SearchVars), params(p), stats(s) 
 { 
   model = m; 
-  lower_bound = m->get_lb();
-  upper_bound = m->get_ub();
   
-  s.lower_bound = lower_bound;
-  s.upper_bound = upper_bound;
-  
+  s.lower_bound = m->get_lb();//lower_bound;
+  s.upper_bound = m->get_ub();//upper_bound;
+
   pool = new SolutionPool();
-  //stats = s; //new StatisticList();
   
   addHeuristic( params.Heuristic, params.Randomized, params.IValue );
 }
@@ -1400,11 +1324,10 @@ void SchedulingSolver::dichotomic_search()
   
   int iteration = 0;
   
-  int minfsble = lower_bound;
-  int maxfsble = upper_bound;
+  int minfsble = stats.lower_bound;
+  int maxfsble = stats.upper_bound;
   int objective = -1;
   int new_objective = -1;
-  int Solved = true;
   int ngd_stamp = 0;
   int lit_stamp = 0;
   
@@ -1413,7 +1336,7 @@ void SchedulingSolver::dichotomic_search()
   setVerbosity(params.Verbose);
   setTimeLimit(params.Cutoff);
 
-  ConstraintGenNogoodBase *nogoods = NULL;
+  WeighterRestartGenNogood *nogoods = NULL;
   if(params.Rngd) nogoods = setRestartGenNogood();
   
   ////////// dichotomic search ///////////////
@@ -1439,10 +1362,8 @@ void SchedulingSolver::dichotomic_search()
       }
       
       if(nogoods) {
-	ngd_stamp = nogoods->nogood.size;
+	ngd_stamp = nogoods->base->nogood.size;
 	lit_stamp = sUnaryCons.size;
-	//std::cout << "NUMBER NGD: " << ngd_stamp << std::endl;
-	//std::cout << "NUMBER UNARY NGD: " << lit_stamp << " " << (level) << std::endl;
       }
 
       if(status == UNKNOWN) {
@@ -1456,25 +1377,18 @@ void SchedulingSolver::dichotomic_search()
 	pool->add(new Solution(model, this));
 	
 	std::cout << std::left << std::setw(30) << "c solutions's objective" << ":" << std::right << std::setw(20) << new_objective << std::endl;
-	//nogoods->print(std::cout);	
 
       } else {
 	new_objective = objective;
 	minfsble = objective+1;
-	if( status != UNSAT ) Solved = false;
-	else lower_bound = minfsble;
 
-// 	if(nogoods) {
-// 	  std::cout << "BEFORE FORGET:" << std::endl;
-//  	  nogoods->print(std::cout);
-//  	  std::cout << std::endl << "AFTER FORGET:" << std::endl;
-// 	  nogoods->forget(ngd_stamp);
-// 	  nogoods->print(std::cout);
-// 	  std::cout << std::endl;
-//	}
+ 	if(nogoods) {
+ 	  nogoods->forget(ngd_stamp);
+	  nogoods->reinit();
+	}
       }
       stats.add_info(this, new_objective);
-      printStatistics(std::cout, (RUNTIME + BTS + PPGS + OUTCOME) );
+      printStatistics(std::cout, (RUNTIME + OPTTIME + BTS + PPGS + OUTCOME) );
       
       reset(true);
       decay_weights(params.Decay);
@@ -1489,100 +1403,53 @@ void SchedulingSolver::dichotomic_search()
     } 
       
   std::cout << std::endl;
-  
-  upper_bound = maxfsble;
-
-  Solved = (upper_bound == lower_bound);
-  
 }
 
 
 void SchedulingSolver::branch_and_bound()
 {
-  int Solved = false;
-
+  save();
+  model->set_objective(stats.upper_bound-1);
   addObjective();
 
   setRandomSeed( params.Seed );
-  setTimeLimit( params.Optimise - stats.get_total_time() ); 
-  addHeuristic( params.Heuristic, params.Randomized, params.Value );
-  if(params.Value == "guided") {
-    function = new SolutionGuidedSearch( this, pool );
-    if(pool->size()) pool->getBestSolution()->guide_search();
+  double time_limit = (params.Optimise - stats.get_total_time());
+
+  if(time_limit > 0) {
+    setTimeLimit( time_limit ); 
+    addHeuristic( params.Heuristic, params.Randomized, params.Value );
+    if(params.Value == "guided") {
+      function = new SolutionGuidedSearch( this, pool// , &stats
+					   );
+      if(pool->size()) pool->getBestSolution()->guide_search();
+    }//  else {
+//       function = new StoreStats( this, &stats );
+//     }
+    
+    std::cout << "c ============[ start branch & bound ]=============" << std::endl;
+    std::cout << std::left << std::setw(30) << "c current range" << ":" 
+	      << std::right << std::setw(6) << " " << std::setw(5) << stats.lower_bound 
+	      << " to " << std::setw(5) << goal->upper_bound << std::endl;
+    std::cout << std::left << std::setw(30) << "c run for " << ":"
+	      << std::right << std::setw(19) << (time_limit) << "s" << std::endl;
+    
+    if(status == UNKNOWN) {
+      solve_and_restart(params.PolicyRestart, params.Base, params.Factor, params.Decay);
+    }
+
+//      std::cout << "c OUTCOME: " <<
+//        (status == UNKNOWN ? "UNKNOWN" : (status == SAT ? "SAT" : (status == OPT ? "OPT" : "UNSAT")))
+//  	      << "  UB: " << goal->upper_bound << std::endl;
+    
+    stats.add_info(this, goal->upper_bound);
+    
+    printStatistics(std::cout, (RUNTIME + BTS + PPGS + OUTCOME) );
+    
+    reset(true);
+    std::cout << "c =============[ end branch & bound ]==============" << std::endl;
+    
   }
-
-  save();
-  model->set_objective(upper_bound-1);
-     
-  std::cout << "c ============[ start branch & bound ]============" << std::endl;
-  std::cout << std::left << std::setw(30) << "c current range" << ":" 
-	    << std::right << std::setw(6) << " " << std::setw(5) << lower_bound 
-	    << " to " << std::setw(5) << upper_bound << std::endl;
-
-  
-  if(status == UNKNOWN) {
-    solve_and_restart(params.PolicyRestart, params.Base, params.Factor, params.Decay);
-  }
-  if( status == OPT ) {
-    lower_bound = goal->upper_bound+1;
-  }
-
-  upper_bound = this->goal->upper_bound+1;
-  stats.add_info(this, upper_bound);
-      
-  printStatistics(std::cout, (RUNTIME + BTS + PPGS + OUTCOME) );
-      
-  reset(true);
-  std::cout << "c =============[ end branch & bound ]=============" << std::endl;
-  
-  Solved = (upper_bound == lower_bound);
-
 }
-  
-
-// int main( int argc, char** argv )
-// {
-//   ParameterList params(argc, argv);
-//   StatisticList stats;
-
-//   usrand( params.Seed );
-
-//   params.print(std::cout);
-
-//   Instance jsp(params);
-  
-//   //jsp.print(std::cout);
-
-//   SchedulingModel *model;
-//   if(params.Objective == "makespan") {
-//     std::cout << "c Minimising Makespan" << std::endl;
-//     if(params.Type == "now") model = new No_wait_Model(jsp, -1);
-//     else model = new C_max_Model(jsp, -1);
-//   } else if(params.Objective == "tardiness") {
-//     std::cout << "c Minimising Tardiness" << std::endl;
-//     model = new L_sum_Model(jsp, -1);
-//   } else {
-//     std::cout << "c unknown objective, exiting" << std::endl;
-//     exit(1);
-//   }
-//   SchedulingSolver solver(model, params, stats);
-  
-//   //solver.print(std::cout);
-
-//   if(solver.status == UNKNOWN) solver.dichotomic_search();
-
-//   stats.print(std::cout, "DS");
-
-//   if(solver.status == UNKNOWN &&
-//      solver.lower_bound < solver.upper_bound) solver.branch_and_bound();
-
-//   stats.print(std::cout, "");
-  
-//   std::cout << "s SATISFIABLE \nv 00" << std::endl;
-
-//   delete model;
-
-// }
   
 
 

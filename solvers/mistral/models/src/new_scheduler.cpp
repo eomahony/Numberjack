@@ -17,8 +17,6 @@ int main( int argc, char** argv )
 
   Instance jsp(params);
   
-  //jsp.print(std::cout);
-
   SchedulingModel *model;
   if(params.Objective == "makespan") {
     std::cout << "c Minimising Makespan" << std::endl;
@@ -32,15 +30,14 @@ int main( int argc, char** argv )
     exit(1);
   }
   SchedulingSolver solver(model, params, stats);
-  
-  //solver.print(std::cout);
+
+  stats.print(std::cout, "INIT");  
 
   if(solver.status == UNKNOWN) solver.dichotomic_search();
 
   stats.print(std::cout, "DS");
 
-  if(solver.status == UNKNOWN &&
-     solver.lower_bound < solver.upper_bound) solver.branch_and_bound();
+  if(!stats.solved()) solver.branch_and_bound();
 
   stats.print(std::cout, "");
   

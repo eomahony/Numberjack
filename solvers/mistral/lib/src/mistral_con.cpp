@@ -1210,13 +1210,19 @@ void ConstraintGenNogoodBase::removeClause( const int idx ) {
 
   int var, val;
 
+//   std::cout << "remove";
+//   for(int i=0; i<nogood[idx]->size; ++i) {
+//     std::cout << " ";
+//     (*(nogood[idx]))[i].print(std::cout);
+//   }
+//   std::cout << std::endl;
+
   for(int i=0; i<2; ++i) {
     var = (*(nogood[idx]))[i].var->id;
     val = (*(nogood[idx]))[i].value();
 
     if((*(nogood[idx]))[i].type() == GeneralLiteral::REMOVAL) {
-      
-      //std::cout << "remove ";
+     
       
       //(*(nogood[idx]))[i].print(std::cout);
 

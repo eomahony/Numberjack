@@ -92,7 +92,7 @@ SRCDIR = ./src
 PYTHON = ./python
 
 
-CFLAGS = -I$(INC) \
+CFLAGS = -I$(INC) -I$(SRCDIR)\
 `xml2-config --cflags`
 
 LFLAGS = -L$(OBJ) \

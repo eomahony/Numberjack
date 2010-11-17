@@ -543,6 +543,9 @@ namespace Mistral {
 
     /**@name Utils*/
     //@{ 
+    void forget(const int l);
+    void reinit();
+
     virtual void notifyChoice() ; 
     virtual void notifyFailure( Constraint *con ) ;
     virtual void notifyRestart() ; 
@@ -1107,7 +1110,63 @@ namespace Mistral {
     }
     inline void operator=( VariableInt    *x ) 
     { 
-      domsize_ = disjuncts[x->id]->domsize();
+      int idx = x->id;
+      if(disjuncts[idx]) {
+	domsize_ = disjuncts[idx]->domsize();
+      } else {
+	domsize_ = x->domsize();
+      }
+
+      //domsize_ = disjuncts[x->id]->domsize();
+    }
+    //@}  
+
+    std::ostream& print(std::ostream& os) const {
+      os << "-" ;
+      return os;
+    }
+  };
+
+
+  class VarSelectorOSP_DomainType
+  {
+  public: 
+
+    /**@name Constructors*/
+    //@{
+    VarSelectorOSP_DomainType() {domsize_ = 0;}
+    //@}
+
+    double value() { return (double)domsize_; }
+
+    /**@name Parameters*/
+    //@{ 
+    int type_;
+    int domsize_;
+    PredicateDisjunctive **disjuncts;
+    //@}  
+  
+    /**@name Utils*/
+    //@{ 
+    inline bool operator<( VarSelectorOSP_DomainType& x ) const { 
+      return (type_ < x.type_ || (type_ == x.type_ && (domsize_ < x.domsize_)));
+    }
+    inline void operator=( VarSelectorOSP_DomainType& x ) { 
+      domsize_ = x.domsize_; 
+    }
+    inline void operator=( VariableInt    *x ) 
+    { 
+      
+      int idx = x->id;
+      if(disjuncts[idx]) {
+	type_ = 1;
+	domsize_ = disjuncts[idx]->domsize();
+      } else {
+	domsize_ = x->domsize();
+	type_ = 2*(domsize_ > 2);
+      }
+
+      //domsize_ = disjuncts[x->id]->domsize();
     }
     //@}  
 
@@ -1132,7 +1191,6 @@ namespace Mistral {
 
     /**@name Parameters*/
     //@{ 
-    int type_;
     int domsize_;
     int weight_;
     PredicateDisjunctive **disjuncts;
@@ -1141,9 +1199,57 @@ namespace Mistral {
     /**@name Utils*/
     //@{ 
     inline bool operator<( VarSelectorOSP_DoBoolWeight& x ) const { 
-      return (type_ < x.type_ || (type_ == x.type_ && (domsize_ * x.weight_ < x.domsize_ * weight_))) ;
+      return (domsize_ * x.weight_ < x.domsize_ * weight_) ;
     }
     inline void operator=( VarSelectorOSP_DoBoolWeight& x ) { 
+      weight_ = x.weight_; domsize_ = x.domsize_; 
+    }
+    inline void operator=( VariableInt    *x ) 
+    { 
+
+      int idx = x->id;
+      if(disjuncts[idx]) {
+	domsize_ = disjuncts[idx]->domsize();
+      } else {
+	domsize_ = x->domsize();
+      }
+      weight_ = x->weight;
+
+    }
+    //@}  
+
+    std::ostream& print(std::ostream& os) const {
+      os << "-" ;
+      return os;
+    }
+  };
+
+
+  class VarSelectorOSP_DoBoolWeightType 
+  {
+  public: 
+
+    /**@name Constructors*/
+    //@{
+    VarSelectorOSP_DoBoolWeightType() {domsize_ = 0; weight_ = 0;}
+    //@}
+
+    double value() { return ((double)weight_); }
+
+    /**@name Parameters*/
+    //@{ 
+    int type_;
+    int domsize_;
+    int weight_;
+    PredicateDisjunctive **disjuncts;
+    //@}  
+  
+    /**@name Utils*/
+    //@{ 
+    inline bool operator<( VarSelectorOSP_DoBoolWeightType& x ) const { 
+      return (type_ < x.type_ || (type_ == x.type_ && (domsize_ * x.weight_ < x.domsize_ * weight_))) ;
+    }
+    inline void operator=( VarSelectorOSP_DoBoolWeightType& x ) { 
       weight_ = x.weight_; domsize_ = x.domsize_; 
     }
     inline void operator=( VariableInt    *x ) 
@@ -1204,10 +1310,58 @@ namespace Mistral {
       if(d) {
 	domsize_ = d->domsize();
 	task_weight_ = (d->scope[0]->weight + d->scope[1]->weight);
+      } else {
+	domsize_ = x->domsize();
+	task_weight_ = x->weight;
+      }
+    }
+      
+    //@}  
+
+    std::ostream& print(std::ostream& os) const {
+      os << "-" ;
+      return os;
+    }
+  };
+
+  class VarSelectorOSP_DoTaskWeightType
+  {
+  public: 
+    /**@name Constructors*/
+    //@{
+    VarSelectorOSP_DoTaskWeightType() {domsize_ = 0; task_weight_ = 0;}
+    //@}
+
+    double value() { return ((double)task_weight_); }
+
+    /**@name Parameters*/
+    //@{ 
+    int type_;
+    int domsize_;
+    int task_weight_;
+    PredicateDisjunctive **disjuncts;
+    //@}  
+  
+    /**@name Utils*/
+    //@{ 
+    inline bool operator<( VarSelectorOSP_DoTaskWeightType& x ) const { 
+      return (type_ < x.type_ || (type_ == x.type_ && (domsize_ * x.task_weight_ < x.domsize_ * task_weight_)));
+    }
+    inline void operator=( VarSelectorOSP_DoTaskWeightType& x ) { 
+      task_weight_ = x.task_weight_; domsize_ = x.domsize_; 
+    }
+    inline void operator=( VariableInt    *x ) 
+    { 
+      PredicateDisjunctive* d = disjuncts[x->id];
+      if(d) {
+	type_ = 1;
+	domsize_ = d->domsize();
+	task_weight_ = (d->scope[0]->weight + d->scope[1]->weight);
 	//std::cout << domsize_ << " / " << task_weight_ << std::endl;
       } else {
 	domsize_ = x->domsize();
 	task_weight_ = x->weight;
+	type_ = 2*(domsize_ > 2);
       }
     }
       
@@ -1305,8 +1459,67 @@ namespace Mistral {
     inline void operator=( VariableInt    *x ) 
     { 
       PredicateDisjunctive* d = disjuncts[x->id];
-      domsize_ = d->domsize();
-      task_weight_ = (d->scope[0]->weight + d->scope[1]->weight);
+      if(d) {
+	domsize_ = d->domsize();
+	task_weight_ = (d->scope[0]->weight + d->scope[1]->weight);
+	//std::cout << domsize_ << " / " << task_weight_ << std::endl;
+      } else {
+	domsize_ = x->domsize();
+	task_weight_ = x->weight;
+      }
+      weight_ = x->weight;
+    }
+    //@}  public: 
+
+    std::ostream& print(std::ostream& os) const {
+      os << "-" ;
+      return os;
+    }
+  };
+
+
+  class VarSelectorOSP_DoBoolTaskWeightType
+  {
+  public: 
+
+    /**@name Constructors*/
+    //@{
+    VarSelectorOSP_DoBoolTaskWeightType() {domsize_ = 0; weight_ = 0; task_weight_ = 0;}
+    //@}
+
+    double value() { return ((double)(weight_ + task_weight_)); }
+
+
+    /**@name Parameters*/
+    //@{ 
+    int type_;
+    int domsize_;
+    int weight_;
+    int task_weight_;
+    PredicateDisjunctive **disjuncts;
+    //@}  
+  
+    /**@name Utils*/
+    //@{ 
+    inline bool operator<( VarSelectorOSP_DoBoolTaskWeightType& x ) const { 
+      return (type_ < x.type_ || (type_ == x.type_ && (domsize_ * (x.weight_ + x.task_weight_) < x.domsize_ * (weight_ + task_weight_))));
+    }
+    inline void operator=( VarSelectorOSP_DoBoolTaskWeightType& x ) { 
+      weight_ = x.weight_; task_weight_ = x.task_weight_; domsize_ = x.domsize_; 
+    }
+    inline void operator=( VariableInt    *x ) 
+    { 
+      PredicateDisjunctive* d = disjuncts[x->id];
+      if(d) {
+	type_ = 1;
+	domsize_ = d->domsize();
+	task_weight_ = (d->scope[0]->weight + d->scope[1]->weight);
+	//std::cout << domsize_ << " / " << task_weight_ << std::endl;
+      } else {
+	domsize_ = x->domsize();
+	task_weight_ = x->weight;
+	type_ = 2*(domsize_ > 2);
+      }
       weight_ = x->weight;
     }
     //@}  public: 
@@ -4006,6 +4219,10 @@ namespace Mistral {
     static const int DOM_O_BOOLWEIGHT = 0;
     static const int DOM_O_TASKWEIGHT = 1;
     static const int DOM_O_BOOLTASKWEIGHT = 2;
+    static const int DOMAIN_O_NOTTYPE = 8;
+    static const int DOM_O_BOOLWEIGHTTYPE = 5;
+    static const int DOM_O_TASKWEIGHTTYPE = 6;
+    static const int DOM_O_BOOLTASKWEIGHTTYPE = 7;
     //static const int DOM_O_WEAKWEIGHT = 3;
 
     int size;

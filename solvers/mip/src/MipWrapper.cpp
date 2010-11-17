@@ -501,6 +501,7 @@ LINEAR_ARG* MipWrapper_Sum::for_linear(){
     largs[i].expr = _vars.get_item(i);
     largs[i].coef = _weights.get_item(i);
     largs[i].offset = _offset;
+    //std::cout << "Weight:" << largs[i].coef << std::endl;
   }
   return largs;
 }
@@ -540,8 +541,9 @@ void MipWrapper_Sum::neq(double value, MipWrapperSolver* solver){
 void MipWrapper_Sum::encode(MipWrapperSolver* solver){
   MipWrapper_Expression::encode(solver);
   LinearConstraint *con = new LinearConstraint(0, 0);
-  for(int i = _lower; i <= _upper; ++i)
+  for(int i = _lower; i <= _upper; ++i){
     con->add_coef(_expr_encoding[i], -i);
+  }
   con->add_coef(this, 1, false);
   solver->_constraints.push_back(con);
 }
@@ -769,7 +771,7 @@ MipWrapper_Expression* MipWrapper_ne::add(MipWrapperSolver *solver,
 	
         int lb = std::max(this->_vars[0]->_lower, this->_vars[1]->_lower);
 	int ub = std::min(this->_vars[0]->_upper, this->_vars[1]->_upper);
-        
+	
 	for(int i = lb; i <= ub; ++i)
 	  if(_vars[0]->_expr_encoding[i] != NULL &&
 	     _vars[1]->_expr_encoding[i] != NULL){

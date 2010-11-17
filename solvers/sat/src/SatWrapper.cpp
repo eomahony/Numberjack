@@ -1733,6 +1733,7 @@ SatWrapperSolver::SatWrapperSolver()
   Lit_False = ~Lit(dummy);
 
   current = 0;
+  clause_limit = -1;
 }
 
 SatWrapperSolver::~SatWrapperSolver()
@@ -1761,7 +1762,17 @@ int SatWrapperSolver::create_atom(DomainEncoding* dom, const int type) {
   return id; 
 }
 
-void SatWrapperSolver::addClause(std::vector<Lit>& cl) { 
+void SatWrapperSolver::addClause(std::vector<Lit>& cl) {
+  
+  if(clause_limit != -1){
+    // We are limiting clauses
+    if(clause_limit < clause_base.size()){
+      //std::cerr << "Warning: Clause limit reached" << std::endl;
+      cl.clear();
+      return; 
+    }
+  } 
+  
   std::vector<Lit> clause;
   if(!processClause(cl,clause)) {
     clause_base.push_back(clause);
@@ -2127,4 +2138,7 @@ void SatWrapperSolver::displayLiteral(Lit p) {
   else std::cout << "false" ;
 }
 
-
+void SatWrapperSolver::setClauseLimit(int limit){
+  std::cout << "Clause limit set to " << limit << std::endl;
+  this->clause_limit = limit;
+}

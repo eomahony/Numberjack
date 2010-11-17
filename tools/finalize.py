@@ -14,8 +14,9 @@ try:
 import Numberjack
 
 class Solver(Numberjack.NBJ_STD_Solver):
-    def __init__(self, model=None, X=None, FD=False):
-        Numberjack.NBJ_STD_Solver.__init__(self, "%s", "%s", model, X, FD)
+    def __init__(self, model=None, X=None, FD=False, clause_limit=-1):
+        Numberjack.NBJ_STD_Solver.__init__(self, "%s", "%s", model, X, FD,
+            clause_limit)
     
                 ''' % (sol_name,wrap_name)
 

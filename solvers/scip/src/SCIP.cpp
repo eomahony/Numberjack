@@ -95,6 +95,8 @@ void SCIPSolver::add_in_constraint(LinearConstraint *con, double coef){
 
 int SCIPSolver::solve(){
   DBG("solve!%s\n", "");
+  
+  initialise();
 
   if(_verbosity > 0 && _verbosity < 3){
     // Do nothing extra

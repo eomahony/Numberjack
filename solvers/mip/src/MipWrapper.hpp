@@ -1,7 +1,7 @@
 #ifndef MipWrapper_H
 #define MipWrapper_H
 
-// #define _DEBUGWRAP 1
+//#define _DEBUGWRAP 1
 
 #ifdef _DEBUGWRAP
   #define DBG(fmt, args...) printf("%s:%d "fmt,__FILE__,__LINE__,args)

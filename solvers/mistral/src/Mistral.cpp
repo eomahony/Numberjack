@@ -1606,10 +1606,16 @@ void MistralSolver::load_xml(const char* filename, const int type)
       //cb->setFeatureExt   ( 2 );
 
       parser->parse( filename ); // parse the input file
+<<<<<<< HEAD
 
       model = &(cb->model);
       is_copy = true;
 
+=======
+      
+      
+      
+>>>>>>> 42497cdfa2a9e5b06a5351cdb425bdd5461e4def
     }
   catch (exception &e)
     {

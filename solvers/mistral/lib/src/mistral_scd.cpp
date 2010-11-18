@@ -14,15 +14,17 @@ StatisticList::StatisticList() {
   best_solution_index     = 0;
   branch_and_bound_index  = 0;
 
-  lower_bound         = INFTY;
-  upper_bound         = 0;
+  lower_bound             = INFTY;
+  upper_bound             = 0;
 
-  num_nogoods         = 0;
-  num_solutions       = 0;
+  num_nogoods             = 0;
+  num_solutions           = 0;
   
-  avg_distance        = 0;
-  min_distance        = INFTY;
-  max_distance        = 0;
+  avg_distance            = 0;
+  min_distance            = INFTY;
+  max_distance            = 0;
+
+  normalized_objective    = 1.0;
 }
 
 StatisticList::~StatisticList() {}
@@ -46,7 +48,7 @@ double StatisticList::get_lowerbound_time() {
   return total_time;
 }
 
-void StatisticList::add_info(SchedulingSolver *s, const int objective) {
+void StatisticList::add_info(SchedulingSolver *s, const int objective, bool dichotomic) {
 
   DBG("Update statistics%s\n", "");
 
@@ -56,6 +58,7 @@ void StatisticList::add_info(SchedulingSolver *s, const int objective) {
   backtracks.push_back(s->BACKTRACKS);
   fails.push_back(s->FAILURES);
   propags.push_back(s->PROPAGS);
+  dicho_step.push_back(dichotomic);
 
   outcome.push_back(s->status);
 
@@ -80,17 +83,19 @@ std::ostream& StatisticList::print(std::ostream& os,
   int k, i=start, j=outcome.size();
   if(end >= 0) j=end;
 
-  double total_time  = 0.0;
-  double opt_time    = 0.0;
-  double ub_time     = 0.0;
-  double lb_time     = 0.0;
-  double lost_time   = 0.0;
-  double proof_time  = 0.0;
+  double total_time      = 0.0;
+  double opt_time        = 0.0;
+  double ub_time         = 0.0;
+  double lb_time         = 0.0;
+  double lost_time       = 0.0;
+  double proof_time      = 0.0;
+  double avg_cutoff_time = 0.0;
   long unsigned int total_nodes         = 0;
   long unsigned int total_backtracks    = 0;
   long unsigned int total_fails         = 0;
   long unsigned int total_propags       = 0;
-
+  
+  int nb_unknown = 0;
   for(k=i; k<j; ++k) {
 //     if(k<=best_solution_index) {
 //       if(outcome[k] != OPT)
@@ -111,8 +116,17 @@ std::ostream& StatisticList::print(std::ostream& os,
     total_backtracks   += backtracks[k];
     total_fails        += fails[k];
     total_propags      += propags[k];
+
+    if(dicho_step[k] && outcome[k] == UNKNOWN)
+      {
+	++nb_unknown;
+	avg_cutoff_time += time[k];
+      }
+
   }
 
+  if(nb_unknown)
+    avg_cutoff_time /= (double)nb_unknown;
   proof_time = (total_time - opt_time);
   lb_time = (total_time - ub_time - lost_time);
 
@@ -125,7 +139,9 @@ std::ostream& StatisticList::print(std::ostream& os,
   
   os << "c =================[ statistics ]==================" << std::endl
      << "d " << prefix << std::left << std::setw(28-plength)  << "LOWERBOUND "    << std::right << std::setw(21) << lower_bound << std::endl
+     << "d " << prefix << std::left << std::setw(28-plength)  << "UPPERBOUND "    << std::right << std::setw(21) << upper_bound << std::endl
      << "d " << prefix << std::left << std::setw(28-plength)  << "OBJECTIVE "     << std::right << std::setw(21) << upper_bound << std::endl 
+     << "d " << prefix << std::left << std::setw(28-plength)  << "NORMOBJECTIVE " << std::right << std::setw(21) << normalized_objective << std::endl 
      << "d " << prefix << std::left << std::setw(28-plength)  << "RUNTIME "       << std::right << std::setw(21) << total_time << std::endl
      << "d " << prefix << std::left << std::setw(28-plength)  << "OPTTIME "       << std::right << std::setw(21) << opt_time << std::endl
      << "d " << prefix << std::left << std::setw(28-plength)  << "PROOFTIME "     << std::right << std::setw(21) << proof_time << std::endl
@@ -136,9 +152,34 @@ std::ostream& StatisticList::print(std::ostream& os,
      << "d " << prefix << std::left << std::setw(28-plength)  << "BACKTRACKS "    << std::right << std::setw(21) << total_backtracks << std::endl
      << "d " << prefix << std::left << std::setw(28-plength)  << "FAILS "         << std::right << std::setw(21) << total_fails << std::endl
      << "d " << prefix << std::left << std::setw(28-plength)  << "PROPAGS "       << std::right << std::setw(21) << total_propags << std::endl
+     << "d " << prefix << std::left << std::setw(28-plength)  << "NODES/s "       << std::right << std::setw(21) ;
+  if(total_time > 0)
+    std::cout << (int)((double)total_nodes/total_time);
+  else 
+    std::cout << "N/A";
+  std::cout << std::endl
+     << "d " << prefix << std::left << std::setw(28-plength)  << "BACKTRACKS/s "  << std::right << std::setw(21) ;
+  if(total_time > 0)
+    std::cout << (int)((double)total_backtracks/total_time);
+  else 
+    std::cout << "N/A";
+  std::cout << std::endl
+     << "d " << prefix << std::left << std::setw(28-plength)  << "FAILS/s "       << std::right << std::setw(21) ;
+  if(total_time > 0)
+    std::cout << (int)((double)total_fails/total_time);
+  else 
+    std::cout << "N/A";
+  std::cout << std::endl
+     << "d " << prefix << std::left << std::setw(28-plength)  << "PROPAGS/s "     << std::right << std::setw(21) ;
+  if(total_time > 0)
+    std::cout << (int)((double)total_propags/total_time);
+  else 
+    std::cout << "N/A";
+  std::cout << std::endl
     //<< "d " << prefix << std::left << std::setw(28-plength)  << "RESTARTS "      << std::right << std::setw(21) << total_restarts << std::endl
     
      << "d " << prefix << std::left << std::setw(28-plength)  << "SOLUTIONS "     << std::right << std::setw(21) << num_solutions << std::endl
+     << "d " << prefix << std::left << std::setw(28-plength)  << "AVGCUTOFF "     << std::right << std::setw(21) << avg_cutoff_time << std::endl
     //<< std::left << std::setw(28) << "d AVGDISTANCE "     << std::right << std::setw(21) << avg_distance << std::endl
     //<< std::left << std::setw(28) << "d MINDISTANCE "     << std::right << std::setw(21) << min_distance << std::endl
     //<< std::left << std::setw(28) << "d MAXDISTANCE "     << std::right << std::setw(21) << max_distance << std::endl;
@@ -152,7 +193,8 @@ std::ostream& StatisticList::print(std::ostream& os,
 
 const char* ParameterList::int_ident[ParameterList::nia] = 
   {"-ub", "-lb", "-check", "-seed", "-cutoff", "-dichotomy", 
-   "-base", "-randomized", "-verbose", "-optimise", "-nogood", "-nodes"};
+   "-base", "-randomized", "-verbose", "-optimise", "-nogood", 
+   "-dyncutoff", "-nodes"};
 
 const char* ParameterList::str_ident[ParameterList::nsa] = 
   {"-heuristic", "-restart", "-factor", "-decay", "-type", 
@@ -192,11 +234,13 @@ ParameterList::ParameterList(int length, char **commandline) {
   LBinit      = -1;
   Checked     = true;
   Seed        = 12345;
-  Cutoff      = 30;
-  NodeCutoff  = 300000;
+  Cutoff      = 300;
+  NodeCutoff  = 0;
+  NodeBase    = 30;
   Dichotomy   = 128;
   Base        = 256;
   Randomized  = 1;
+  Precision   = 100;
 
   Verbose     = 1;
   Optimise    = 3600;
@@ -214,51 +258,40 @@ ParameterList::ParameterList(int length, char **commandline) {
   Heuristic = "osp-t";
   PolicyRestart = GEOMETRIC;
 
+}
 
+
+void ParameterList::initialise(const int n_constraints) {
 
   if(Type == "osp") {
-    Cutoff      = 300;
-    NodeCutoff  = 250000;
     Objective = "makespan";
     Heuristic = "osp-b";
   } else if(Type == "sds") {
-    Cutoff      = 300;
-    NodeCutoff  = 250000;
     Objective = "makespan";
     Heuristic = "osp-b";
   } else if(Type == "jtl") {
-    Cutoff      = 300;
-    NodeCutoff  = 250000;
     Objective = "makespan";
     Heuristic = "osp-t";
   } else if(Type == "now") {
-    Cutoff      = 300;
-    NodeCutoff  = 250000;
     Objective = "makespan";
     Heuristic = "osp-dw";
   } else if(Type == "jla") {
     Cutoff      = 1000;
-    NodeCutoff  = 250000;
+    NodeBase   *= 10;
     Objective = "makespan";
     Heuristic = "osp-t";
   } else if(Type == "jsp") {
     Cutoff      = 1000;
-    NodeCutoff  = 250000;
+    NodeBase   *= 10;
     Objective = "makespan";
     Heuristic = "osp-t";
   } else if(Type == "jet") {
-    Cutoff      = 300;
-    NodeCutoff  = 250000;
     Objective = "tardiness";
     Heuristic = "osp-tr";
   } else if(Type == "dyn") {
-    Cutoff      = 300;
-    NodeCutoff  = 250000;
     Objective = "tardiness";
     Heuristic = "osp-tr";
   }
-
-
 
   if(int_param[0]  != NOVAL) UBinit      = int_param[0];
   if(int_param[1]  != NOVAL) LBinit      = int_param[1];
@@ -271,7 +304,11 @@ ParameterList::ParameterList(int length, char **commandline) {
   if(int_param[8]  != NOVAL) Verbose     = int_param[8];
   if(int_param[9]  != NOVAL) Optimise    = int_param[9]; 
   if(int_param[10] != NOVAL) Rngd        = int_param[10];
-  if(int_param[11] != NOVAL) NodeCutoff  = int_param[11]; 
+
+  if(int_param[11] != NOVAL) NodeBase    = int_param[11]; 
+  NodeCutoff  = (int)((double)NodeBase * (12500000.0/(double)n_constraints));
+
+  if(int_param[12] != NOVAL) NodeCutoff  = int_param[12]; 
 
   if(strcmp(str_param[0],"nil")) Heuristic  = str_param[0];
   if(strcmp(str_param[1],"nil")) Policy     = str_param[1];
@@ -293,7 +330,7 @@ ParameterList::ParameterList(int length, char **commandline) {
 }
 
 std::ostream& ParameterList::print(std::ostream& os) {
-  os << std::endl << "c =================[ parameters ]==================" << std::endl;
+  os << "c =================[ parameters ]==================" << std::endl;
   os << std::left << std::setw(30) << "c data file " << ":" << std::right << std::setw(20) << data_file_name << std::endl;
   os << std::left << std::setw(30) << "c type " << ":" << std::right << std::setw(20) << Type << std::endl;
   os << std::left << std::setw(30) << "c seed " << ":" << std::right << std::setw(20) << Seed << std::endl;
@@ -313,16 +350,17 @@ std::ostream& ParameterList::print(std::ostream& os) {
 }
 
 
-Instance::Instance(const ParameterList& params) {
+Instance::Instance(ParameterList& params) {
 
   DBG("Build instance %s\n", params.data_file);
-
+  
   setup_time    = NULL;
   time_lag[0]   = NULL;
   time_lag[1]   = NULL;
   jsp_duedate   = NULL;
   jsp_latecost  = NULL;
   jsp_earlycost = NULL;
+  jsp_floatcost = NULL;
   
   if(params.Type == "osp") {
     osp_readData( params.data_file );
@@ -345,11 +383,12 @@ Instance::Instance(const ParameterList& params) {
   } else if(params.Type == "jet") {
     jet_readData( params.data_file );
   } else if(params.Type == "dyn") {
-    dyn_readData( params.data_file );
+    dyn_readData( params.data_file, params.Precision );
   }
 
   // close();
 
+  params.initialise(nDisjuncts()+nPrecedences());
 }
 
 Instance::~Instance() {
@@ -472,6 +511,58 @@ std::ostream& Instance::print(std::ostream& os) {
 //     std::cout << std::endl;
 //   }
 
+  return os;
+}
+
+int Instance::nDisjuncts() const {
+  int n_disjuncts = 0;
+  for(int i=0; i<nMachines(); ++i) {
+    n_disjuncts += (nTasksInMachine(i) * (nTasksInMachine(i)-1))/2;
+  }
+  return n_disjuncts;
+}
+
+int Instance::nPrecedences() const {
+  int n_precedences = 0;
+  for(int i=0; i<nJobs(); ++i) {
+    n_precedences += (nTasksInJob(i)-1);
+  }
+  if(hasTimeLag()) {
+    //n_precedences *= 2;
+    for(int i=0; i<nJobs(); ++i) 
+      for(int j=1; j<nTasksInJob(i); ++j) 
+	if(getMaxLag(i,j-1) >= 0) 
+	  ++n_precedences;
+  }
+  return n_precedences;
+}
+
+double Instance::getNormalizer() const {
+  double normalizer=0.0, cost;
+  int i, j, job_dur;
+  for(i=0; i<nJobs(); ++i) {
+    job_dur = 0;
+    for(j=0; j<nTasksInJob(i); ++j) job_dur += getDuration(getJobTask(i,j));
+    if(hasFloatCost())
+      cost = getJobFloatCost(i);
+    else if(hasEarlyCost() || hasLateCost()) {
+      cost = 0.0;
+      if(hasEarlyCost()) cost += getJobEarlyCost(i);
+      if(hasLateCost()) cost += getJobLateCost(i);
+    } else cost = 1.0;
+    normalizer += ((double)job_dur * cost);
+  }
+  return normalizer;
+}
+
+std::ostream& Instance::printStats(std::ostream& os) {
+  os << "c ==================[ instance ]===================" << std::endl
+     << "d " << std::left << std::setw(28)  << "NUMTASKS "      << std::right << std::setw(21) << nTasks() << std::endl
+     << "d " << std::left << std::setw(28)  << "NUMJOBS "       << std::right << std::setw(21) << nJobs() << std::endl
+     << "d " << std::left << std::setw(28)  << "NUMMACHINES "   << std::right << std::setw(21) << nMachines() << std::endl
+     << "d " << std::left << std::setw(28)  << "NUMDISJUNCTS "  << std::right << std::setw(21) << nDisjuncts() << std::endl
+     << "d " << std::left << std::setw(28)  << "NUMPRECEDENCES "<< std::right << std::setw(21) << nPrecedences() << std::endl
+     << "c ==================[ instance ]===================" << std::endl;
   return os;
 }
 
@@ -900,7 +991,7 @@ void Instance::jet_readData( const char* filename ) {
 
 }
 
-void Instance::dyn_readData( const char* filename ) {
+void Instance::dyn_readData( const char* filename, const int precision ) {
 
   DBG("Read (dyn)%s\n", "");
 
@@ -914,10 +1005,8 @@ void Instance::dyn_readData( const char* filename ) {
   jsp_duedate = new int[nJobs];
   jsp_earlycost = new int[nJobs];
   jsp_latecost = new int[nJobs];
-  
+  jsp_floatcost = new double[nJobs];
 
-  double *float_weights = new double[nJobs];
-  
   for(i=0; i<nJobs; ++i) {
     k = release_date.size();
 
@@ -929,17 +1018,28 @@ void Instance::dyn_readData( const char* filename ) {
       if(mach != -1 && dur != -1) addTask(dur, i, mach);
     }		
 
-
-
     infile >> jsp_duedate[i];
     infile >> j;
-    infile >> jsp_latecost[i];
-    infile >> float_weights[i];
-
-    std::cout << (k) << " " << release_date.size() << std::endl;
+    //infile >> jsp_latecost[i];
+    infile >> jsp_floatcost[i];
+    
     setReleaseDate(k, j);
-    jsp_earlycost[i] = jsp_latecost[i];
+    //jsp_earlycost[i] = jsp_latecost[i];
   }
+
+
+  double min_cost = jsp_floatcost[0];
+  double max_cost = jsp_floatcost[0];
+  for(i=1; i<nJobs; ++i) {
+    if(min_cost > jsp_floatcost[i]) min_cost = jsp_floatcost[i];
+    if(min_cost < jsp_floatcost[i]) max_cost = jsp_floatcost[i];
+  }
+  for(i=0; i<nJobs; ++i) {
+    int approx = (int)((jsp_floatcost[i]/max_cost)*precision);
+    jsp_earlycost[i] = jsp_latecost[i] = approx;
+    //std::cout << approx << std::endl;
+  }
+
 }
 
 
@@ -1073,8 +1173,8 @@ void SchedulingModel::setup(Instance& inst, const int max_makespan) {
     
     weights[n_weights] = 0;
     
-    Variable x(0, sum_ub);
-    L_sum = x;
+    Variable x_lsum(0, sum_ub);
+    L_sum = x_lsum;
     add( L_sum == Sum(sum_scope, weights) );
   }
 
@@ -1191,6 +1291,7 @@ VariableInt* C_max_Model::get_objective_var() {
 }
 
 int L_sum_Model::set_objective(const int obj) {
+  //VariableInt *x_lsum = L_sum.getVariable();
   return (L_sum.getVariable()->setMax(obj) ? UNKNOWN : UNSAT);
 }
 
@@ -1216,18 +1317,51 @@ int C_max_Model::set_objective(const int obj) {
 }
 
 int L_sum_Model::get_objective() {
-  int total_cost = 0;
+//   int total_cost = 0, cost;
+//   for(int i=0; i<latebool.size(); ++i) {
+//     cost = 0;
+//     if(earlybool[i].value()) {
+//       cost = (data->getJobDueDate(i) - (last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i))))*data->getJobEarlyCost(i);
+//     } else if(latebool[i].value()) {
+//       cost = ((last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i))) - data->getJobDueDate(i))*data->getJobLateCost(i);
+//     }
+//     total_cost += cost;
+//   }
+  return L_sum.value();
+}
+
+double L_sum_Model::get_normalized_objective() {
+  double total_cost = 0, cost;
   for(int i=0; i<latebool.size(); ++i) {
-    int cost = 0;
+    cost = 0.0;
     if(earlybool[i].value()) {
-      cost = (data->getJobDueDate(i) - (last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i))))*data->getJobEarlyCost(i);
+
+//       std::cout << "E " << (data->getJobDueDate(i) - (last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i)))) << " * "
+// 		<< (data->hasFloatCost() ? data->getJobFloatCost(i) : data->getJobEarlyCost(i)) 
+// 		<< std::endl;
+      
+      cost = (data->getJobDueDate(i) - (last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i))))*(data->hasFloatCost() ? data->getJobFloatCost(i) : data->getJobEarlyCost(i));
     } else if(latebool[i].value()) {
-      cost = ((last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i))) - data->getJobDueDate(i))*data->getJobLateCost(i);
+
+
+//       std::cout << "L " << ((last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i))) - data->getJobDueDate(i)) << " * "
+// 		<< (data->hasFloatCost() ? data->getJobFloatCost(i) : data->getJobLateCost(i))
+// 		<< std::endl;
+
+      cost = ((last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i))) - data->getJobDueDate(i))*(data->hasFloatCost() ? data->getJobFloatCost(i) : data->getJobLateCost(i));
     }
     total_cost += cost;
   }
-  return L_sum.value();
+  
+  //std::cout << " => " << total_cost << "/" << data->getNormalizer();
+
+  total_cost /= data->getNormalizer();
+
+  //std::cout << " == " << total_cost << std::endl;
+
+  return total_cost;
 }
+
 int C_max_Model::get_objective() {
   return C_max.value();
 }
@@ -1312,6 +1446,8 @@ SchedulingSolver::SchedulingSolver(SchedulingModel* m,
   s.upper_bound = m->get_ub();//upper_bound;
 
   pool = new SolutionPool();
+
+  //s.normalizer = m->data->getNormalizer();
   
   addHeuristic( params.Heuristic, params.Randomized, params.IValue );
 }
@@ -1376,7 +1512,7 @@ void SchedulingSolver::dichotomic_search()
   if(params.Rngd) nogoods = setRestartGenNogood();
   
   ////////// dichotomic search ///////////////
-  if(status == UNKNOWN) 
+  if(status == UNKNOWN) {
     while( minfsble < maxfsble && iteration < params.Dichotomy ) {
       setRandomSeed( params.Seed );
       
@@ -1417,6 +1553,9 @@ void SchedulingSolver::dichotomic_search()
       if( status == SAT ) {
 	new_objective = model->get_objective();
 
+	stats.normalized_objective = model->get_normalized_objective();
+	
+
 	maxfsble = new_objective;
 	pool->add(new Solution(model, this));
 	
@@ -1437,7 +1576,7 @@ void SchedulingSolver::dichotomic_search()
 // 	}
       }
       stats.add_info(this, new_objective);
-      printStatistics(std::cout, ((params.Verbose>1 ? RUNTIME : 0) + ((params.Verbose || status != UNKNOWN)  ? BTS + PPGS : 0) + OUTCOME) );
+      printStatistics(std::cout, ((params.Verbose ? RUNTIME : 0) + ((params.Verbose || status != UNKNOWN)  ? BTS + PPGS : 0) + OUTCOME) );
       
 
       reset(true);
@@ -1454,6 +1593,13 @@ void SchedulingSolver::dichotomic_search()
       //if(status == SAT && was_unk) exit(1);
 
     } 
+  } else if( status == SAT ) {
+    std::cout << "c Solved during preprocessing!" << std::endl;
+
+  } else if( status == UNSAT ) {
+    std::cout << "c Found inconsistent during preprocessing!" << std::endl;
+
+  }
       
   std::cout << std::endl;
 }
@@ -1461,6 +1607,8 @@ void SchedulingSolver::dichotomic_search()
 
 void SchedulingSolver::branch_and_bound()
 {
+  setNodeLimit(0);
+
   save();
   model->set_objective(stats.upper_bound-1);
   addObjective();
@@ -1472,12 +1620,11 @@ void SchedulingSolver::branch_and_bound()
     setTimeLimit( time_limit ); 
     addHeuristic( params.Heuristic, params.Randomized, params.Value );
     if(params.Value == "guided") {
-      function = new SolutionGuidedSearch( this, pool// , &stats
-					   );
+      function = new SolutionGuidedSearch( this, pool, &stats );
       if(pool->size()) pool->getBestSolution()->guide_search();
-    }//  else {
-//       function = new StoreStats( this, &stats );
-//     }
+    }  else {
+      function = new StoreStats( this, &stats );
+    }
     
     std::cout << "c ============[ start branch & bound ]=============" << std::endl;
     std::cout << std::left << std::setw(30) << "c current range" << ":" 
@@ -1494,7 +1641,10 @@ void SchedulingSolver::branch_and_bound()
 //        (status == UNKNOWN ? "UNKNOWN" : (status == SAT ? "SAT" : (status == OPT ? "OPT" : "UNSAT")))
 //  	      << "  UB: " << goal->upper_bound << std::endl;
     
-    stats.add_info(this, goal->upper_bound);
+    //if(SOLUTIONS)
+    //stats.normalized_objective = model->get_normalized_objective();
+
+    stats.add_info(this, goal->upper_bound, false);
     
     printStatistics(std::cout, ((params.Verbose ? RUNTIME : 0) + (params.Verbose ? BTS + PPGS : 0) + OUTCOME) );
     
@@ -1503,7 +1653,12 @@ void SchedulingSolver::branch_and_bound()
     
   }
 }
-  
+
+void StoreStats::execute()
+{ 
+  //stats->add_info((SchedulingSolver *)solver, solver->goal->upper_bound);
+  stats->normalized_objective = ss->model->get_normalized_objective();
+}  
 
 
 

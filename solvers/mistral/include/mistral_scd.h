@@ -31,6 +31,9 @@ namespace MistralScheduler {
     int    min_distance;
     int    max_distance;
 
+    double normalized_objective;
+    //double normalizer;
+
     std::vector<long unsigned int> nodes;
     std::vector<long unsigned int> backtracks;
     std::vector<long unsigned int> fails;
@@ -38,6 +41,7 @@ namespace MistralScheduler {
     std::vector<double>            time;
     std::vector<double>            soltime;
     std::vector<int>               outcome;
+    std::vector<bool>              dicho_step;
 
     StatisticList();
     virtual ~StatisticList();
@@ -45,7 +49,7 @@ namespace MistralScheduler {
     bool solved();
     double get_total_time();
     double get_lowerbound_time();
-    void add_info(SchedulingSolver *s, const int obj);
+    void add_info(SchedulingSolver *s, const int obj, bool dichotomic=true);
     //void add_info(const int lb, const int ub);
 
     std::ostream& print(std::ostream& os, 
@@ -54,7 +58,7 @@ namespace MistralScheduler {
 			const int end=-1);
     };
 
-
+  class Instance;
   class ParameterList {
   public:
 
@@ -65,7 +69,7 @@ namespace MistralScheduler {
     static const int RGUIDED =  3;
     static const int RAND    =  4;
 
-    static const int nia = 12;
+    static const int nia = 13;
     static const char* int_ident[nia];
     
     static const int nsa = 10;
@@ -84,12 +88,14 @@ namespace MistralScheduler {
     int Seed; // "seed": random seed
     int Cutoff; // "cutoff": time cutoff of dichotomic steps
     int NodeCutoff; // "nodes": node cutoff of dichotomic steps
+    int NodeBase; // "dyncutoff": node cutoff trying to mimic time cutoff
     int Dichotomy; // "dichotomy": max number of dichotomic steps
     int Base; // "base": base cutoff for restarts
     int Randomized; // "randomized": level of randomization
     int Verbose; // "verbose": level of verbosity
     int Optimise; // "optimise": total time cutoff 
     int Rngd; // "nogood": whether nogood on restart are used
+    int Precision; // "-": precision when turning float weights into int weights
 
     double Factor;
     double Decay;
@@ -108,6 +114,7 @@ namespace MistralScheduler {
     ParameterList(int length, char** commandline);
     virtual ~ParameterList() {}
 
+    void initialise(const int);
     std::ostream& print(std::ostream& os);
 
   };
@@ -136,10 +143,11 @@ namespace MistralScheduler {
     std::vector< std::vector< pair_ > > task_rank_in_job;
 
     int***  setup_time;
-    int**  time_lag[2];
-    int*   jsp_duedate;
-    int*   jsp_latecost;
-    int*   jsp_earlycost;
+    int**   time_lag[2];
+    int*    jsp_duedate;
+    int*    jsp_latecost;
+    int*    jsp_earlycost;
+    double* jsp_floatcost;
 
     
     int addTask(const int dur, const int job, const int machine) ;
@@ -155,7 +163,7 @@ namespace MistralScheduler {
     void fsp_readData( const char* filename );
     void jsp_readData( const char* filename );
     void jet_readData( const char* filename );
-    void dyn_readData( const char* filename );
+    void dyn_readData( const char* filename, const int p );
 
 
     int get_machine_rank(const int ti, const int mj) {
@@ -185,7 +193,7 @@ namespace MistralScheduler {
 
   public:
 
-    Instance(const ParameterList& params);
+    Instance(ParameterList& params);
     virtual ~Instance();
 
     std::ostream& print(std::ostream& os);
@@ -228,11 +236,21 @@ namespace MistralScheduler {
     int  getJobEarlyCost(const int i) const {return jsp_earlycost[i];}
     int  getJobLateCost(const int i) const {return jsp_latecost[i];}
 
+    bool hasFloatCost() const {return jsp_floatcost != NULL; }
+    double getJobFloatCost(const int i) const {return jsp_floatcost[i];}
+
     int getMakespanLowerBound();
     int getMakespanUpperBound(const int);
 
     int getEarlinessTardinessLowerBound(const int);
     int getEarlinessTardinessUpperBound(const int);
+
+    int nDisjuncts() const;
+    int nPrecedences() const;
+
+    double getNormalizer() const;
+
+    std::ostream& printStats(std::ostream& os);
   };
 
 
@@ -266,6 +284,7 @@ namespace MistralScheduler {
     virtual int get_ub() = 0;
     virtual VariableInt* get_objective_var() = 0;
     virtual int  get_objective() = 0;
+    virtual double  get_normalized_objective() = 0;
     virtual int  set_objective(const int obj) = 0;
 
   };
@@ -282,6 +301,7 @@ namespace MistralScheduler {
     virtual int get_ub();    
     virtual VariableInt* get_objective_var();
     virtual int  get_objective();
+    virtual double  get_normalized_objective() {return (double)(get_objective())/data->getNormalizer();}
     virtual int  set_objective(const int obj);
   };
 
@@ -296,6 +316,7 @@ namespace MistralScheduler {
     virtual int get_ub();    
     virtual VariableInt* get_objective_var();
     virtual int  get_objective();
+    virtual double  get_normalized_objective();
     virtual int  set_objective(const int obj);
   };
 
@@ -346,69 +367,40 @@ namespace MistralScheduler {
   };
 
 
-// class StoreStats : public SolutionMethod {
+class StoreStats : public SolutionMethod {
 
-// protected:
-//   StatisticList *stats;
+protected:
+  StatisticList *stats;
+  SchedulingSolver *ss;
 
-// public:
+public:
 
-//   StoreStats(Solver *s, StatisticList *t) : SolutionMethod(s) 
-//   {
-//     stats = t;
-//   }
+  StoreStats(Solver *s, StatisticList *t) : SolutionMethod(s) 
+  {
+    stats = t;
+    ss = (SchedulingSolver*)s;
+  }
 
-//   virtual ~StoreStats() 
-//   {
-//   }
+  virtual ~StoreStats() 
+  {
+  }
   
-//   virtual void execute() 
-//   { 
-//     stats->add_info((SchedulingSolver *)solver, solver->goal->upper_bound);
-//   }
+  virtual void execute();
 
-//   virtual void initialise() 
-//   {
-//   }
-// };
+  virtual void initialise() 
+  {
+  }
+};
 
-// class SolutionGuidedSearch : public StoreStats {
-
-// protected:
-//   SolutionPool *pool;
-
-// public:
-
-//   SolutionGuidedSearch(Solver *s, SolutionPool* p, StatisticList *t) : StoreStats(s,t) 
-//   {
-//     pool = p;
-//   }
-
-//   virtual ~SolutionGuidedSearch() 
-//   {
-//   }
-  
-//   virtual void execute() 
-//   { 
-//     if(pool->size()) pool->getBestSolution()->guide_search();
-//     StoreStats::execute();
-//   }
-
-//   virtual void initialise() 
-//   {
-//     if(pool->size()) pool->getBestSolution()->guide_search();
-//   }
-
-// };
-
-class SolutionGuidedSearch : public SolutionMethod {
+class SolutionGuidedSearch : public StoreStats {
 
 protected:
   SolutionPool *pool;
 
 public:
 
-  SolutionGuidedSearch(Solver *s, SolutionPool* p) : SolutionMethod(s) 
+  SolutionGuidedSearch(Solver *s, SolutionPool* p, StatisticList *t) 
+  : StoreStats(s,t) 
   {
     pool = p;
   }
@@ -420,14 +412,43 @@ public:
   virtual void execute() 
   { 
     if(pool->size()) pool->getBestSolution()->guide_search();
+    StoreStats::execute();
   }
 
   virtual void initialise() 
   {
-    execute();
+    if(pool->size()) pool->getBestSolution()->guide_search();
   }
 
 };
+
+// class SolutionGuidedSearch : public SolutionMethod {
+
+// protected:
+//   SolutionPool *pool;
+
+// public:
+
+//   SolutionGuidedSearch(Solver *s, SolutionPool* p) : SolutionMethod(s) 
+//   {
+//     pool = p;
+//   }
+
+//   virtual ~SolutionGuidedSearch() 
+//   {
+//   }
+  
+//   virtual void execute() 
+//   { 
+//     if(pool->size()) pool->getBestSolution()->guide_search();
+//   }
+
+//   virtual void initialise() 
+//   {
+//     execute();
+//   }
+
+// };
 
 
 

@@ -13,10 +13,14 @@ int main( int argc, char** argv )
 
   usrand( params.Seed );
 
-  params.print(std::cout);
-
   Instance jsp(params);
   
+  //jsp.print(std::cout);
+
+  std::cout << std::endl;
+  jsp.printStats(std::cout);
+  params.print(std::cout);  
+
   SchedulingModel *model;
   if(params.Objective == "makespan") {
     std::cout << "c Minimising Makespan" << std::endl;
@@ -34,6 +38,16 @@ int main( int argc, char** argv )
   stats.print(std::cout, "INIT");  
 
   if(solver.status == UNKNOWN) solver.dichotomic_search();
+  else if( solver.status == SAT ) {
+    std::cout << "c Solved while building!" << std::endl;
+    exit(1);
+    
+  } else if( solver.status == UNSAT ) {
+    std::cout << "c Found inconsistent while building!" << std::endl;
+    exit(1);
+
+  }
+      
 
   stats.print(std::cout, "DS");
 
@@ -41,7 +55,8 @@ int main( int argc, char** argv )
 
   stats.print(std::cout, "");
   
-  std::cout << "s SATISFIABLE \nv 00" << std::endl;
+  std::cout << "s " << (stats.num_solutions ? "SATISFIABLE" : "UNSATISFIABLE") 
+	    << " \nv 00" << std::endl;
 
   delete model;
 

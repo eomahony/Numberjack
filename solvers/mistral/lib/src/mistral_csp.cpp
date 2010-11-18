@@ -435,6 +435,10 @@ void VariableInt::unLink( )
 //     std::cout << std::endl;
 //   }
 
+//   std::cout << "unlink " ;
+//   printshort(std::cout);
+//   std::cout << std::endl;
+
   *seqIdx = **seqBeg;
   (*seqIdx)->seqIdx = seqIdx;
   seqIdx = *seqBeg;

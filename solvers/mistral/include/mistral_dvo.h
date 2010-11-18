@@ -1187,7 +1187,7 @@ namespace Mistral {
     VarSelectorOSP_DoBoolWeight() {domsize_ = 0; weight_ = 0;}
     //@}
 
-    double value() { return ((double)weight_); }
+    double value() { return ((double)domsize_ / (double)weight_); }
 
     /**@name Parameters*/
     //@{ 
@@ -1753,6 +1753,7 @@ namespace Mistral {
 
     /**@name Utils*/
     //@{ 
+    //virtual double value() { return 1.0; }
     virtual void make(int& t, int& v) = 0;
     virtual int getBest() = 0;
     virtual void getOrder( int* dtv, int* vtd ) {
@@ -3356,6 +3357,7 @@ namespace Mistral {
     VariableInt**& decision;
     /// The number of decisions;
     int& level;
+    int verbosity;
     /// Structure used to learn weights
     //Weighter *learner;
     //@}
@@ -3365,6 +3367,8 @@ namespace Mistral {
 
     /**@name Constructors*/
     //@{
+    // virtual void print_weights() {}
+    
     DVO(Solver*);
     virtual ~DVO() {}
     //@}  
@@ -3393,7 +3397,7 @@ namespace Mistral {
   class GenericDVO : public DVO
   {
   public: 
-
+    
     /**@name Parameters*/
     //@{ 
     T best;
@@ -3416,7 +3420,17 @@ namespace Mistral {
     //@}
 
     /**@name Utils*/
-    //@{ 
+    //@{
+    
+//     virtual void print_weights() {
+//       VariableInt **var_iterator;
+//       for( var_iterator = first; var_iterator != last; ++var_iterator ) 
+// 	{
+// 	  current = (*var_iterator);
+// 	  std::cout << "branch: " << (current.value()) << std::endl;
+// 	}
+//     }
+ 
     inline VariableInt* select()
     {    
       VariableInt *var=*first, **var_iterator;
@@ -3447,7 +3461,14 @@ namespace Mistral {
 	    {
 	      best = current;
 	      var = (*var_iterator);
-	    } 
+
+
+	      //std::cout << "jjjjjjj " << verbosity << std::endl;
+	      if(verbosity > 3) {
+		var->print(std::cout);
+		std::cout << " " << best.value() << std::endl;
+	      } 
+	    }
 	}
 
       return var;

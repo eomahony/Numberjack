@@ -1436,11 +1436,11 @@ DVO::DVO(Solver *s)
     decision(s->decision.stack_), 
     level(s->level)
 {
-  VariableInt **var_iterator;
-  for(var_iterator = first; var_iterator != last; ++var_iterator)
-    {
-    }
-
+//   VariableInt **var_iterator;
+//   for(var_iterator = first; var_iterator != last; ++var_iterator)
+//     {
+//     }
+  verbosity = 0;
 }
 
 PredicateDisjunctive** DVO::get_disjuncts() { return _garbage_disjuncts; }

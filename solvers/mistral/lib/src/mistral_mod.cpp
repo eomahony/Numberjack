@@ -5619,11 +5619,11 @@ void CSP::add( BuildObject *x )
 //     cout << endl;
 //  #endif
 
-// //   if( x->id >= 98 ) {
-     cout << "add ";
-     x->print( cout );
-     cout << endl;
-// //   }
+// // //   if( x->id >= 98 ) {
+//      cout << "add ";
+//      x->print( cout );
+//      cout << endl;
+// // //   }
 
      
      if(x->isRel()) toplevel_expressions.push(x);

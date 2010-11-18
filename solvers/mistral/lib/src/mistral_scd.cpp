@@ -92,12 +92,14 @@ std::ostream& StatisticList::print(std::ostream& os,
   long unsigned int total_propags       = 0;
 
   for(k=i; k<j; ++k) {
-    if(k<=best_solution_index) {
-      if(outcome[k] != OPT)
-	opt_time += time[k];
-      else
-	opt_time += soltime[k];
-    }
+//     if(k<=best_solution_index) {
+//       if(outcome[k] != OPT)
+// 	opt_time += time[k];
+//       else
+// 	opt_time += soltime[k];
+//     }
+    if(k==best_solution_index) opt_time += soltime[k];
+    else opt_time += time[k];
     
     if(outcome[k] != OPT && outcome[k] != UNSAT) {
       lost_time += (time[k] - soltime[k]);
@@ -114,6 +116,9 @@ std::ostream& StatisticList::print(std::ostream& os,
   proof_time = (total_time - opt_time);
   lb_time = (total_time - ub_time - lost_time);
 
+  if(lb_time < 0.00001) lb_time = 0.0;
+  if(lost_time < 0.00001) lost_time = 0.0;
+  if(proof_time < 0.00001) proof_time = 0.0;
 
   int plength = 0;
   while(prefix[plength] != '\0') ++plength;
@@ -147,7 +152,7 @@ std::ostream& StatisticList::print(std::ostream& os,
 
 const char* ParameterList::int_ident[ParameterList::nia] = 
   {"-ub", "-lb", "-check", "-seed", "-cutoff", "-dichotomy", 
-   "-base", "-randomized", "-verbose", "-optimise", "-nogood"};
+   "-base", "-randomized", "-verbose", "-optimise", "-nogood", "-nodes"};
 
 const char* ParameterList::str_ident[ParameterList::nsa] = 
   {"-heuristic", "-restart", "-factor", "-decay", "-type", 
@@ -188,6 +193,7 @@ ParameterList::ParameterList(int length, char **commandline) {
   Checked     = true;
   Seed        = 12345;
   Cutoff      = 30;
+  NodeCutoff  = 300000;
   Dichotomy   = 128;
   Base        = 256;
   Randomized  = 1;
@@ -211,37 +217,45 @@ ParameterList::ParameterList(int length, char **commandline) {
 
 
   if(Type == "osp") {
-    Cutoff      = 30;
+    Cutoff      = 300;
+    NodeCutoff  = 250000;
     Objective = "makespan";
     Heuristic = "osp-b";
   } else if(Type == "sds") {
-    Cutoff      = 30;
+    Cutoff      = 300;
+    NodeCutoff  = 250000;
     Objective = "makespan";
     Heuristic = "osp-b";
   } else if(Type == "jtl") {
-    Cutoff      = 30;
+    Cutoff      = 300;
+    NodeCutoff  = 250000;
     Objective = "makespan";
     Heuristic = "osp-t";
   } else if(Type == "now") {
-    Cutoff      = 30;
+    Cutoff      = 300;
+    NodeCutoff  = 250000;
     Objective = "makespan";
     Heuristic = "osp-dw";
   } else if(Type == "jla") {
-    Cutoff      = 300;
+    Cutoff      = 1000;
+    NodeCutoff  = 250000;
     Objective = "makespan";
     Heuristic = "osp-t";
   } else if(Type == "jsp") {
-    Cutoff      = 300;
+    Cutoff      = 1000;
+    NodeCutoff  = 250000;
     Objective = "makespan";
     Heuristic = "osp-t";
   } else if(Type == "jet") {
-    Cutoff      = 30;
+    Cutoff      = 300;
+    NodeCutoff  = 250000;
     Objective = "tardiness";
-    Heuristic = "osp-tt";
+    Heuristic = "osp-tr";
   } else if(Type == "dyn") {
-    Cutoff      = 30;
+    Cutoff      = 300;
+    NodeCutoff  = 250000;
     Objective = "tardiness";
-    Heuristic = "osp-tt";
+    Heuristic = "osp-tr";
   }
 
 
@@ -256,7 +270,8 @@ ParameterList::ParameterList(int length, char **commandline) {
   if(int_param[7]  != NOVAL) Randomized  = int_param[7]; 
   if(int_param[8]  != NOVAL) Verbose     = int_param[8];
   if(int_param[9]  != NOVAL) Optimise    = int_param[9]; 
-  if(int_param[10] != NOVAL) Rngd        = int_param[10]; 
+  if(int_param[10] != NOVAL) Rngd        = int_param[10];
+  if(int_param[11] != NOVAL) NodeCutoff  = int_param[11]; 
 
   if(strcmp(str_param[0],"nil")) Heuristic  = str_param[0];
   if(strcmp(str_param[1],"nil")) Policy     = str_param[1];
@@ -282,7 +297,8 @@ std::ostream& ParameterList::print(std::ostream& os) {
   os << std::left << std::setw(30) << "c data file " << ":" << std::right << std::setw(20) << data_file_name << std::endl;
   os << std::left << std::setw(30) << "c type " << ":" << std::right << std::setw(20) << Type << std::endl;
   os << std::left << std::setw(30) << "c seed " << ":" << std::right << std::setw(20) << Seed << std::endl;
-  os << std::left << std::setw(30) << "c cutoff " << ":" << std::right << std::setw(20) << Cutoff << std::endl;
+  os << std::left << std::setw(30) << "c time cutoff " << ":" << std::right << std::setw(20) << Cutoff << std::endl;
+  os << std::left << std::setw(30) << "c node cutoff " << ":" << std::right << std::setw(20) << NodeCutoff << std::endl;
   os << std::left << std::setw(30) << "c dichotomy " << ":" << std::right << std::setw(20) << (Dichotomy ? "yes" : "no") << std::endl;
   os << std::left << std::setw(30) << "c restart policy " << ":" << std::right << std::setw(20) << Policy << std::endl;
   os << std::left << std::setw(30) << "c base " << ":" << std::right << std::setw(20) << Base << std::endl;
@@ -1301,20 +1317,36 @@ SchedulingSolver::SchedulingSolver(SchedulingModel* m,
 }
 
 std::ostream& SchedulingSolver::print_weights(std::ostream& os) {
-  int n=100; //length;
-  for(int i=0; i<n; ++i) {
-    os << " " << std::setw(4) << variables[i]->weight;
+  int i, n=variables.size;
+  for(i=0; i<n; ++i) {
+    sequence[i]->print(os);
+    os << " " << std::setw(4) << heuristic->get_value(sequence[i]) << std::endl;
   }
-  os << std::endl;
+  //os << std::endl;
+  n=constraints.size;
+  for(i=0; i<n; ++i) {
+    constraints[i]->print(os);
+    os << " " << std::setw(4) << constraints[i]->weight << std::endl;
+  }
+  //os << std::endl;
   return os;
 }
 
 void SchedulingSolver::decay_weights(const double decay) {
-  int w, n=variables.size;
-  for(int i=0; i<n; ++i) {
+  int i, w, n=variables.size;
+  for(i=0; i<n; ++i) {
     w = (int)(((double)(variables[i]->weight))*decay);
     if(w > variables[i]->degree) variables[i]->weight = w;
     else variables[i]->weight = variables[i]->degree;
+  }
+  n = constraints.size;
+  for(i=0; i<n; ++i) {
+    if(constraints[i]->arity < variables.size/2) {
+      w = (int)(((double)(constraints[i]->weight))*decay);
+      if(w > 1) constraints[i]->weight = w;
+      else constraints[i]->weight = 1;
+      //constraints[i]->oldweight = 0;
+    }
   }
 }
 
@@ -1330,11 +1362,15 @@ void SchedulingSolver::dichotomic_search()
   int new_objective = -1;
   int ngd_stamp = 0;
   int lit_stamp = 0;
+
+
+  //bool was_unk = false;
   
   presolve();
   
   setVerbosity(params.Verbose);
   setTimeLimit(params.Cutoff);
+  setNodeLimit(params.NodeCutoff);
 
   WeighterRestartGenNogood *nogoods = NULL;
   if(params.Rngd) nogoods = setRestartGenNogood();
@@ -1345,6 +1381,9 @@ void SchedulingSolver::dichotomic_search()
       setRandomSeed( params.Seed );
       
       objective = (int)(floor(((double)minfsble + (double)maxfsble)/2));
+
+      //reorderSequence();
+
 
       std::cout << "c ============[ start dichotomic step ]============" << std::endl;
       std::cout << std::left << std::setw(30) << "c current dichotomic range" << ":" 
@@ -1366,8 +1405,13 @@ void SchedulingSolver::dichotomic_search()
 	lit_stamp = sUnaryCons.size;
       }
 
+ //      if(verbosity == 4) heuristic->verbosity = 4;
+//       print_weights(std::cout);
+//       //heuristic->print_weights();
+//       ////std::cout << std::endl;
+
       if(status == UNKNOWN) {
-	solve_and_restart(params.PolicyRestart, params.Base, params.Factor, params.Decay);
+	solve_and_restart(params.PolicyRestart, params.Base, params.Factor);
       }
       
       if( status == SAT ) {
@@ -1386,10 +1430,16 @@ void SchedulingSolver::dichotomic_search()
  	  nogoods->forget(ngd_stamp);
 	  nogoods->reinit();
 	}
+
+// 	if( status != UNSAT ) {
+// 	  setVerbosity(4);
+// 	  was_unk = true;
+// 	}
       }
       stats.add_info(this, new_objective);
-      printStatistics(std::cout, (RUNTIME + OPTTIME + BTS + PPGS + OUTCOME) );
+      printStatistics(std::cout, ((params.Verbose>1 ? RUNTIME : 0) + ((params.Verbose || status != UNKNOWN)  ? BTS + PPGS : 0) + OUTCOME) );
       
+
       reset(true);
       decay_weights(params.Decay);
 
@@ -1400,6 +1450,9 @@ void SchedulingSolver::dichotomic_search()
       std::cout << "c =============[ end dichotomic step ]=============" << std::endl;
       
       ++iteration;
+
+      //if(status == SAT && was_unk) exit(1);
+
     } 
       
   std::cout << std::endl;
@@ -1434,7 +1487,7 @@ void SchedulingSolver::branch_and_bound()
 	      << std::right << std::setw(19) << (time_limit) << "s" << std::endl;
     
     if(status == UNKNOWN) {
-      solve_and_restart(params.PolicyRestart, params.Base, params.Factor, params.Decay);
+      solve_and_restart(params.PolicyRestart, params.Base, params.Factor);
     }
 
 //      std::cout << "c OUTCOME: " <<
@@ -1443,7 +1496,7 @@ void SchedulingSolver::branch_and_bound()
     
     stats.add_info(this, goal->upper_bound);
     
-    printStatistics(std::cout, (RUNTIME + BTS + PPGS + OUTCOME) );
+    printStatistics(std::cout, ((params.Verbose ? RUNTIME : 0) + (params.Verbose ? BTS + PPGS : 0) + OUTCOME) );
     
     reset(true);
     std::cout << "c =============[ end branch & bound ]==============" << std::endl;

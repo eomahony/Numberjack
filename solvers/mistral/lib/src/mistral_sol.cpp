@@ -93,6 +93,20 @@ void Solver::randomizeSequence()
   //  cout << endl << endl;
 }
 
+void Solver::reorderSequence()
+{
+  for(int i=0; i<length; ++i)
+    {
+      sequence[i] = variables[i];
+      sequence[i]->seqIdx = &sequence[i];
+    }
+  for(int i=length; i<numvars; ++i)
+    {
+      sequence[i] = variables[i];
+      sequence[i]->seqIdx = &sequence[i];
+    }
+}
+
 Weighter* Solver::setLearner( int wtype )
 {
 
@@ -1683,7 +1697,7 @@ int Solver::solve_and_restart( const int policy,
 	      lround((double)(fail_increment * factor));
 	    break;
 	  case LUBY : fail_increment =
-	      lround((double)(base * luby_seq(iteration)));
+	      lround((double)(base * luby_seq(iteration+1)));
 	    break;
 	  default : fail_increment =
 	      lround((double)(base * luby_seq(iteration) * factor));
@@ -2504,9 +2518,11 @@ bool Solver::filtering()
       ++PROPAGS;
       SimpleUnaryConstraint cons = sUnaryCons.pop();
 
-//        std::cout << "PROPAGATE UNARY CONSTRAINT AT LEVEL " << level << ": ";
-//        cons.print(std::cout);
-//        std::cout << std::endl;
+      if(verbosity > 2) {
+        std::cout << "PROPAGATE UNARY CONSTRAINT AT LEVEL " << level << ": ";
+        cons.print(std::cout);
+        std::cout << std::endl;
+      }
 
 //       if(cons.val > cons.var->min()) {
 // 	++nuaryprop;

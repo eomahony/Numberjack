@@ -65,7 +65,7 @@ namespace MistralScheduler {
     static const int RGUIDED =  3;
     static const int RAND    =  4;
 
-    static const int nia = 11;
+    static const int nia = 12;
     static const char* int_ident[nia];
     
     static const int nsa = 10;
@@ -83,6 +83,7 @@ namespace MistralScheduler {
     int Checked; // "check": whether the solution is checked
     int Seed; // "seed": random seed
     int Cutoff; // "cutoff": time cutoff of dichotomic steps
+    int NodeCutoff; // "nodes": node cutoff of dichotomic steps
     int Dichotomy; // "dichotomy": max number of dichotomic steps
     int Base; // "base": base cutoff for restarts
     int Randomized; // "randomized": level of randomization
@@ -554,19 +555,19 @@ public:
 	OSP h(abs(rdz), val_ord, OSP::DOM_O_BOOLTASKWEIGHT);
 	add( h );
       }
-      else if( Heu == "osp-dt") {
+      else if( Heu == "osp-dr") {
 	OSP h(abs(rdz), val_ord, OSP::DOMAIN_O_NOTTYPE);
 	add( h );
       }
-      else if( Heu == "osp-bt") {
+      else if( Heu == "osp-br") {
 	OSP h(abs(rdz), val_ord, OSP::DOM_O_BOOLWEIGHTTYPE);
 	add( h );
       }
-      else if( Heu == "osp-tt") {
+      else if( Heu == "osp-tr") {
 	OSP h(abs(rdz), val_ord, OSP::DOM_O_TASKWEIGHTTYPE);
 	add( h );
       }
-      else if( Heu == "osp-btt") {
+      else if( Heu == "osp-btr") {
 	OSP h(abs(rdz), val_ord, OSP::DOM_O_BOOLTASKWEIGHTTYPE);
 	add( h );
       }

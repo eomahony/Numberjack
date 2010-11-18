@@ -617,6 +617,21 @@ namespace Mistral {
 	  if( future == empty ) {
 	    solutionFound(init_level);
 	  } else {
+
+// 	    variables[1]->print(std::cout);
+// 	    std::cout << " " << variables[1]->weight << std::endl;
+// 	    variables[18]->print(std::cout);
+// 	    std::cout << " " << variables[18]->weight << std::endl;
+
+// 	    if(verbosity > 2) {
+// 	      for(int i=0; i<(empty-future); ++i) {
+// 		std::cout << "future: ";
+// 		future[i]->print(std::cout);
+// 		std::cout << heuristic->get_value(future[i]) << std::endl;
+// 	      }
+// 	    }
+
+
 	    newNode();
 	  }
 	} else {
@@ -1646,6 +1661,7 @@ namespace Mistral {
     {
 
 #ifdef _DEBUGSEARCH
+      if(verbosity > 5) {
       if(TIMELIMIT > .0 && getRunTime() - STARTTIME >= TIMELIMIT)
 	std::cout << "TIME LIMIT " << TIMELIMIT << " " << (getRunTime() - STARTTIME) << std::endl;
 
@@ -1657,6 +1673,7 @@ namespace Mistral {
 
       if(FAILLIMIT == 1 && FAILURES   >=  FAILLIMIT)
 	std::cout << "FAIL LIMIT " << FAILURES << " " << FAILLIMIT << std::endl;
+      }
 #endif
 
       //		std::cout << "TIMELIMIT=" << TIMELIMIT << "; getRunTime()-STARTTIME=" << getRunTime() - STARTTIME << std::endl;
@@ -1761,6 +1778,8 @@ namespace Mistral {
     void setDomainSplitting() { domainSplitting = true; }
     /// Shuffle the array of variables
     void randomizeSequence();
+    /// Reinitialise the array of variables
+    void reorderSequence();
     /// Randomize the array of variables before restarts
     void setRandomized( const bool r=true ) { randomizedRestart = r; }
     /// Set the random seed

@@ -18,7 +18,7 @@ ACCOUNT := $(shell users)
 all: $(TARGET_LIB)
 
 %_lib: $(SOL)/%
-	cd $(SOL)/$(@:_lib=); make ZIMPL=false ZLIB=false
+	cd $(SOL)/$(@:_lib=); make ZIMPL=false ZLIB=false READLINE=false
 
 install: $(TARGET_INSTALL)
 	cd $(SRC); python setup.py install

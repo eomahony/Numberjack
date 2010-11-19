@@ -159,6 +159,6 @@ $(SCIPDIR)/done.txt:
 	cp  $(MAINDIR)/tools/Makefile.scip.Numberjack $(SCIPDIR)/
 	cp  $(MAINDIR)/tools/Makefile.soplex.Numberjack $(SOPLEXDIR)/
 	cd $(SCIPDIR)/..; make -f Makefile.Numberjack ZIMPL=false ZLIB=false READLINE=false	
-	@echo finished 
+	@echo finished | cat > $(SCIPDIR)/done.txt
 
 #---- EOF --------------------------------------------------------------------

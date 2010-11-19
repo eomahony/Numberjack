@@ -156,6 +156,8 @@ $(PYTHON)/_%.so: $(OBJDIR) $(SCIPLIBFILE) $(LPILIBFILE) $(MAINOBJFILES) $(OBJDIR
 #	cd  $(SCIPDIR)/..; make ZIMPL=false ZLIB=false READLINE=false
 
 $(SCIPDIR)/done.txt: 
+	cp  $(MAINDIR)/tools/Makefile.Numberjack $(SCIPDIR)/../
+	cp  $(MAINDIR)/tools/Makefile.doit.Numberjack $(SCIPDIR)/../
 	cp  $(MAINDIR)/tools/Makefile.scip.Numberjack $(SCIPDIR)/
 	cp  $(MAINDIR)/tools/Makefile.soplex.Numberjack $(SOPLEXDIR)/
 	cd $(SCIPDIR)/..; make -f Makefile.Numberjack ZIMPL=false ZLIB=false READLINE=false	

@@ -1,0 +1,145 @@
+#* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+#*                                                                           *
+#*                  This file is part of the program and library             *
+#*         SCIP --- Solving Constraint Integer Programs                      *
+#*                                                                           *
+#*    Copyright (C) 2002-2008 Konrad-Zuse-Zentrum                            *
+#*                            fuer Informationstechnik Berlin                *
+#*                                                                           *
+#*  SCIP is distributed under the terms of the ZIB Academic Licence.         *
+#*                                                                           *
+#*  You should have received a copy of the ZIB Academic License              *
+#*  along with SCIP; see the file COPYING. If not email to scip@zib.de.      *
+#*                                                                           *
+#* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+# $Id: Makefile.doit,v 1.5 2008/09/29 19:47:55 bzfheinz Exp $
+
+#@file    Makefile.doit
+#@brief   ZIB Optimization Suite Makefile
+#@author  Tobias Achterberg
+
+
+BASEDIR		:=	$(CURDIR)
+
+LIBS		=
+DIRECTORIES	=
+SOFTLINKS	=
+
+#-----------------------------------------------------------------------------
+# detect host architecture
+#-----------------------------------------------------------------------------
+include $(SCIPDIR)/make/make.detecthost
+
+
+OPT		=	opt
+COMP		=	gnu
+
+MAKESOFTLINKS	=	true
+READLINE	=	true
+ZLIB		=	true
+ZIMPL		=	true
+LPS		=	spx
+LPSOPT		=	opt
+ZIMPLOPT	=	opt
+
+BASE		=	$(OSTYPE).$(ARCH).$(COMP).$(OPT)
+LIBEXT		=	a
+
+ifeq ($(LPS), spx)
+MAKESOFTLINKS	=	false
+endif
+
+
+#-----------------------------------------------------------------------------
+include $(SCIPDIR)/make/make.$(BASE)
+#-----------------------------------------------------------------------------
+
+DIRECTORIES	+=	$(SCIPDIR)/lib
+
+SOPLEXINC	=	$(SOPLEXDIR)/src
+SOPLEXLIB	=	$(SOPLEXDIR)/lib/libsoplex.$(OSTYPE).$(ARCH).$(COMP).$(LPSOPT).$(LIBEXT)
+SOPLEXINCLINK	=	$(SCIPDIR)/lib/spxinc
+SOPLEXLIBLINK	=	$(SCIPDIR)/lib/libsoplex.$(OSTYPE).$(ARCH).$(COMP).$(LPSOPT).$(LIBEXT)
+LIBS		+=	$(SOPLEXLIB)
+SOFTLINKS	+=	$(SOPLEXINCLINK)
+SOFTLINKS	+=	$(SOPLEXLIBLINK)
+
+DIRECTORIES	+=	$(SCIPDIR)/lib/zimplinc
+ZIMPLINC	=	$(ZIMPLDIR)/src
+ZIMPLLIB	=	$(ZIMPLDIR)/lib/libzimpl.$(OSTYPE).$(ARCH).$(COMP).$(ZIMPLOPT).$(LIBEXT)
+ZIMPLINCLINK	=	$(SCIPDIR)/lib/zimplinc/zimpl
+ZIMPLLIBLINK	=	$(SCIPDIR)/lib/libzimpl.$(OSTYPE).$(ARCH).$(COMP).$(ZIMPLOPT).$(LIBEXT)
+LIBS		+=	$(ZIMPLLIB)
+SOFTLINKS	+=	$(ZIMPLINCLINK)
+SOFTLINKS	+=	$(ZIMPLLIBLINK)
+
+
+ifeq ($(ZIMPL),true)
+ifeq ($(ZLIB),false)
+$(error ZIMPL requires the ZLIB to be linked. Use either ZIMPL=false or ZLIB=true)
+endif
+endif
+
+
+.PHONY:		all
+all: scipbinary
+
+
+
+$(DIRECTORIES):	$(SCIPDIR) $(SOPLEXDIR) $(ZIMPLDIR)
+		@echo "** Creating directory \"$@\"."
+		@-mkdir -p $@
+
+
+# declare lib to be phony to force building it - dependencies are not available here
+.PHONY:		$(SOPLEXLIB)
+$(SOPLEXLIB):   $(SOPLEXDIR)
+		@echo ""
+		@echo "** Building SoPlex library \"$@\"."
+		@$(MAKE) -C $(SOPLEXDIR) OPT=$(LPSOPT) ZLIB=$(ZLIB)
+
+
+# declare lib to be phony to force building it - dependencies are not available here
+.PHONY:		$(ZIMPLLIB)
+$(ZIMPLLIB):	$(ZIMPLDIR)
+		@echo ""
+ifeq ($(ZIMPL),true)
+		@echo "** Building ZIMPL library \"$@\"."
+		@$(MAKE) -C $(ZIMPLDIR) OPT=$(ZIMPLOPT)
+else
+		@echo "** ZIMPL support disabled."
+endif
+
+.PHONY:		softlinkmsg
+softlinkmsg:
+		@echo ""
+		@echo "** Creating necessary soft-links."
+
+$(SOPLEXINCLINK):	softlinkmsg $(SCIPDIR)
+		@rm -f $@
+		@ln -s $(SOPLEXINC) $@
+
+$(SOPLEXLIBLINK):	softlinkmsg $(SCIPDIR)
+		@rm -f $@
+		@ln -s $(SOPLEXLIB) $@
+
+$(ZIMPLINCLINK):	softlinkmsg $(SCIPDIR)
+		@rm -f $@
+		@ln -s $(ZIMPLINC) $@
+
+$(ZIMPLLIBLINK):	softlinkmsg $(SCIPDIR)
+ifeq ($(ZIMPL),true)
+		@rm -f $@
+		@ln -s $(ZIMPLLIB) $@
+endif
+
+.PHONY:		scipbinary
+scipbinary:	$(LIBS) $(DIRECTORIES) $(SOFTLINKS)
+		@echo ""
+		@echo "** Building SCIP library and executable."
+		@$(MAKE) -C $(SCIPDIR) READLINE=$(READLINE) LPS=$(LPS) LPSOPT=$(LPSOPT) ZIMPL=$(ZIMPL) ZIMPLOPT=$(ZIMPLOPT) ZLIB=$(ZLIB) MAKESOFTLINKS=$(MAKESOFTLINKS)
+		@echo ""
+		@echo "** Build complete."
+		@echo "** Find your SCIP binary in \"$(SCIPDIR)/bin\"."
+		@echo "** Enter \"make test\" to solve a number of MIPLIB instances in order to verify that SCIP runs correctly."
+		@echo ""

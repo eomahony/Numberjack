@@ -1,0 +1,67 @@
+#* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+#*                                                                           *
+#*                  This file is part of the program and library             *
+#*         SCIP --- Solving Constraint Integer Programs                      *
+#*                                                                           *
+#*    Copyright (C) 2002-2008 Konrad-Zuse-Zentrum                            *
+#*                            fuer Informationstechnik Berlin                *
+#*                                                                           *
+#*  SCIP is distributed under the terms of the ZIB Academic Licence.         *
+#*                                                                           *
+#*  You should have received a copy of the ZIB Academic License              *
+#*  along with SCIP; see the file COPYING. If not email to scip@zib.de.      *
+#*                                                                           *
+#* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+# $Id: Makefile,v 1.9 2008/09/30 10:33:14 bzfheinz Exp $
+
+#@file    Makefile
+#@brief   ZIB Optimization Suite Makefile
+#@author  Tobias Achterberg
+
+
+SCIPVERSION	=	1.2.0
+SOPLEXVERSION	=	1.4.2
+ZIMPLVERSION	=	3.0.0
+
+BASEDIR		:=	$(CURDIR)
+
+SCIPDIR		=	$(BASEDIR)/scip-$(SCIPVERSION)
+SOPLEXDIR	=	$(BASEDIR)/soplex-$(SOPLEXVERSION)
+ZIMPLDIR	=	$(BASEDIR)/zimpl-$(ZIMPLVERSION)
+
+SCIPARCHIVE	=	$(BASEDIR)/scip-$(SCIPVERSION).tgz
+SOPLEXARCHIVE	=	$(BASEDIR)/soplex-$(SOPLEXVERSION).tgz
+ZIMPLARCHIVE	=	$(BASEDIR)/zimpl-$(ZIMPLVERSION).tgz
+
+
+.PHONY:		all
+all:		scipbinary
+
+.PHONY:		clean
+clean: 		
+		@$(MAKE) -C $(SCIPDIR) clean
+		@$(MAKE) -C $(SOPLEXDIR) clean
+		@$(MAKE) -C $(ZIMPLDIR) clean
+
+.PHONY:		check
+check:		test
+
+.PHONY:		test
+test:		scipbinary
+		@$(MAKE) -C $(SCIPDIR) test
+
+.PHONY:		scipbinary
+scipbinary:	$(SOPLEXDIR) $(SCIPDIR)
+		@$(MAKE) -f Makefile.doit.Numberjack SCIPDIR=$(SCIPDIR) SOPLEXDIR=$(SOPLEXDIR) 
+
+$(SCIPDIR):
+		@echo "** Extracting SCIP archive \"$(SCIPARCHIVE)\"."
+		@gunzip -c $(SCIPARCHIVE) | tar xf -
+
+$(SOPLEXDIR):
+		@echo "** Extracting SoPlex archive \"$(SOPLEXARCHIVE)\"."
+		@gunzip -c $(SOPLEXARCHIVE) | tar xf -
+
+$(ZIMPLDIR):
+		@echo "** Extracting ZIMPL archive \"$(ZIMPLARCHIVE)\"."
+		@gunzip -c $(ZIMPLARCHIVE) | tar xf -

@@ -1,0 +1,267 @@
+#ORIGINAL
+# $Id: Makefile,v 1.95 2009/09/11 13:37:13 bzfgleix Exp $
+#* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+#*                                                                           *
+#*   File....: Makefile                                                      *
+#*   Name....: SoPlex Makefile                                               *
+#*   Author..: Thorsten Koch                                                 *
+#*   Copyright by Author, All rights reserved                                *
+#*                                                                           *
+#* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+.PHONY:		all depend clean distclean lint doc check
+
+VERSION		:=	1.4.2
+
+ARCH            :=      $(shell uname -m | \
+                        sed \
+			-e s/sun../sparc/ \
+			-e s/i.86/x86/ \
+	                -e s/i86pc/x86/ \
+			-e s/IP../mips/ \
+			-e s/9000..../hppa/ \
+			-e s/Power\ Macintosh/ppc/ \
+			-e s/00........../pwr4/)
+OSTYPE		:=	$(shell uname -s | tr '[:upper:]' '[:lower:]' | sed -e s/cygwin.*/cygwin/ -e s/irix../irix/ )
+HOSTNAME	:=	$(shell uname -n | tr '[:upper:]' '[:lower:]')
+
+VERBOSE		=	false
+OPT		=	opt
+LIBEXT		=	a
+TEST		=	quick
+ALGO		=	1 2 3 4 5 6
+LIMIT		=	#
+
+ZLIB		=	true
+
+COMP		=	gnu
+CXX		=	g++
+DCXX		=	g++
+LINT		=	flexelint
+AR		=	ar
+RANLIB		=	ranlib
+DOXY		=	doxygen
+VALGRIND	=	valgrind
+
+LIBBUILD	=	$(AR)
+LIBBUILD_o	=	$(AR_o)
+LIBBUILDFLAGS	=       $(ARFLAGS)
+
+CPPFLAGS	=	-Isrc
+CXXFLAGS	=	-O
+BINOFLAGS	=	
+LIBOFLAGS	=	
+LDFLAGS		=	-lm
+ARFLAGS		=	cr
+DFLAGS		=	-MM
+VFLAGS		=	--tool=memcheck --leak-check=yes --show-reachable=yes #--gen-suppressions=yes
+
+SRCDIR		=	src
+BINDIR		=	bin
+LIBDIR		=	lib
+NAME		=	soplex
+FLAGS		=       #
+LIBOBJ		= 	changesoplex.o didxset.o \
+			dsvector.o dvector.o enter.o factor.o \
+			forest.o idxset.o leave.o lpcolset.o lprowset.o \
+			lprow.o message.o mpsinput.o nameset.o \
+			slufactor.o solve.o soplex.o \
+			spxbasis.o spxbounds.o spxchangebasis.o \
+			spxequilisc.o spxdantzigpr.o spxdefaultrt.o \
+			spxdefines.o spxdesc.o spxdevexpr.o \
+			spxfastrt.o spxfileio.o spxgeometsc.o \
+			spxharrisrt.o spxhybridpr.o spxid.o spxio.o \
+			spxlp.o spxlpfread.o spxmainsm.o spxmpsread.o \
+			spxmpswrite.o spxlpfwrite.o \
+			spxout.o spxparmultpr.o spxquality.o \
+			spxscaler.o spxshift.o spxsolver.o spxsolve.o \
+			spxstarter.o spxsteeppr.o spxsumst.o spxvecs.o \
+			spxvectorst.o spxweightpr.o spxweightst.o spxwritestate.o \
+			ssvector.o svector.o svset.o timer.o \
+			tracemethod.o unitvector.o update.o updatevector.o \
+			vector.o vsolve.o \
+			gzstream.o
+BINOBJ		=	soplexmain.o
+EXAMPLEOBJ	=	example.o
+REPOSIT		=	# template repository, explicitly empty  #spxproof.o 
+
+BASE		=	$(OSTYPE).$(ARCH).$(COMP).$(OPT)
+
+LASTSETTINGS	=	$(OBJDIR)/make.lastsettings
+
+#------------------------------------------------------------------------------
+#--- NOTHING TO CHANGE FROM HERE ON -------------------------------------------
+#------------------------------------------------------------------------------
+
+GCCWARN		=	-Wall -W -Wpointer-arith -Wno-unknown-pragmas \
+			-Wcast-align -Wwrite-strings -Wconversion \
+			-Wctor-dtor-privacy -Wnon-virtual-dtor -Wreorder \
+			-Woverloaded-virtual -Wsign-promo -Wsynth -Wundef \
+			-Wcast-qual -Wold-style-cast -Wshadow 
+#			-Weffc++ -Wredundant-decls    
+# gcc 2.xx -Wmissing-declarations -Wbad-function-cast 
+
+#GCCWARN =
+#-----------------------------------------------------------------------------
+include make/make.$(BASE)
+-include make/local/make.$(HOSTNAME)
+-include make/local/make.$(HOSTNAME).$(COMP)
+-include make/local/make.$(HOSTNAME).$(COMP).$(OPT)
+#-----------------------------------------------------------------------------
+
+BINNAME		=	$(NAME)-$(VERSION).$(BASE)
+EXAMPLENAME	=	example.$(BASE)
+LIBNAME		=	$(NAME)-$(VERSION).$(BASE)
+BINFILE		=	$(BINDIR)/$(BINNAME)
+EXAMPLEFILE	=	$(BINDIR)/$(EXAMPLENAME)
+LIBFILE		=	$(LIBDIR)/lib$(LIBNAME).$(LIBEXT)
+LIBLINK		=	$(LIBDIR)/lib$(NAME).$(BASE).$(LIBEXT)
+BINLINK		=	$(BINDIR)/$(NAME).$(BASE)
+BINSHORTLINK	=	$(BINDIR)/$(NAME)
+DEPEND		=	src/depend
+
+# potential valgrind suppression file name
+VSUPPNAME	= 	$(OSTYPE).$(ARCH).$(COMP).supp
+
+OBJDIR		=	obj/O.$(BASE)
+BINOBJDIR	=	$(OBJDIR)/bin
+LIBOBJDIR	=	$(OBJDIR)/lib
+BINOBJFILES	=	$(addprefix $(BINOBJDIR)/,$(BINOBJ))
+EXAMPLEOBJFILES	=	$(addprefix $(BINOBJDIR)/,$(EXAMPLEOBJ))
+LIBOBJFILES	=	$(addprefix $(LIBOBJDIR)/,$(LIBOBJ))
+BINSRC		=	$(addprefix $(SRCDIR)/,$(BINOBJ:.o=.cpp))
+EXAMPLESRC	=	$(addprefix $(SRCDIR)/,$(EXAMPLEOBJ:.o=.cpp))
+LIBSRC		=	$(addprefix $(SRCDIR)/,$(LIBOBJ:.o=.cpp))
+
+ZLIBDEP		:=	$(SRCDIR)/depend.zlib
+ZLIBSRC		:=	$(shell cat $(ZLIBDEP))
+ifeq ($(ZLIB_LDFLAGS),)
+ZLIB		=	false
+endif
+ifeq ($(ZLIB),true)
+CPPFLAGS	+=	-DWITH_ZLIB $(ZLIB_FLAGS)
+LDFLAGS		+=	$(ZLIB_LDFLAGS)
+endif
+
+
+ifeq ($(VERBOSE),false)
+.SILENT:	$(LIBLINK) $(BINLINK) $(BINSHORTLINK) $(BINFILE) $(LIBFILE) $(BINOBJFILES) $(LIBOBJFILES)
+endif
+
+all:		$(LIBFILE) $(BINFILE) $(LIBLINK) $(BINLINK) $(BINSHORTLINK)
+example:	$(LIBFILE) $(EXAMPLEFILE) $(LIBLINK)
+
+$(LIBLINK):	$(LIBFILE)
+		@rm -f $@
+		cd $(dir $@) && ln -s $(notdir $(LIBFILE)) $(notdir $@)
+
+$(BINLINK) $(BINSHORTLINK):	$(BINFILE)
+		@rm -f $@
+		cd $(dir $@) && ln -s $(notdir $(BINFILE)) $(notdir $@)
+
+$(BINFILE):	$(BINDIR) $(BINOBJDIR) $(LIBFILE) $(BINOBJFILES)
+		@echo "-> linking $@"
+		$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(BINOBJFILES) \
+		-L$(LIBDIR) -l$(LIBNAME) $(LDFLAGS) -o $@
+
+$(EXAMPLEFILE):	$(BINDIR) $(EXAMPLEOBJDIR) $(LIBFILE) $(EXAMPLEOBJFILES)
+		@echo "-> linking $@"
+		$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(EXAMPLEOBJFILES) \
+		-L$(LIBDIR) -l$(LIBNAME) $(LDFLAGS) -o $@
+
+$(LIBFILE):	$(LIBDIR) $(LIBOBJDIR) touchexternal $(LIBOBJFILES) 
+		@echo "-> generating library $@"
+		-rm -f $(LIBFILE)
+		$(LIBBUILD) $(LIBBUILDFLAGS) $(LIBBUILD_o)$@ $(LIBOBJFILES) $(REPOSIT)
+ifneq ($(RANLIB),)
+		$(RANLIB) $@
+endif
+
+
+lint:		$(BINSRC) $(LIBSRC)
+		$(LINT) lint/$(NAME).lnt -os\(lint.out\) \
+		$(CPPFLAGS) -UNDEBUG $^
+
+doc:		
+		cd doc; $(DOXY) $(NAME).dxy
+
+all:		$(BINFILE)
+
+check:		#$(BINFILE)
+		cd check; ./check.sh $(TEST).test ../$(BINFILE) '$(ALGO)' $(LIMIT)
+
+valgrind-check:	$(BINFILE)
+		cd check; \
+		./valgrind.sh $(TEST).test ../$(BINFILE) '$(ALGO)' '$(LIMIT)' \
+		"$(VALGRIND) $(VFLAGS)" $(VSUPPNAME)
+
+memory_exception_test: $(BINFILE)
+		cd check; \
+		./exception.sh $(TEST).test ../$(BINFILE) '$(ALGO)' '$(LIMIT)' \
+		"$(VALGRIND) $(VFLAGS)" $(VSUPPNAME)
+
+clean:
+		-rm -rf $(OBJDIR)/* $(BINFILE) $(EXAMPLEFILE) $(LIBFILE) $(LIBLINK) $(BINLINK) $(BINSHORTLINK)
+
+distclean:	clean
+		-rm -rf obj/* $(LIBDIR)/lib$(NAME).* $(BINDIR)/$(NAME).* 
+
+vimtags:
+		-ctags -o TAGS src/*.cpp src/*.h
+
+etags:
+		-ctags -e -o TAGS src/*.cpp src/*.h
+
+$(OBJDIR):	
+		@-mkdir -p $(OBJDIR)
+
+$(BINOBJDIR):	$(OBJDIR)
+		@-mkdir -p $(BINOBJDIR)
+
+$(LIBOBJDIR):	$(OBJDIR)
+		@-mkdir -p $(LIBOBJDIR)
+
+$(BINDIR):
+		@-mkdir -p $(BINDIR)
+
+$(LIBDIR):
+		@-mkdir -p $(LIBDIR)
+
+depend:
+		$(SHELL) -ec '$(DCXX) $(DFLAGS) $(CPPFLAGS) \
+		$(BINSRC:.o=.cpp) \
+		| sed '\''s|^\([0-9A-Za-z]\{1,\}\)\.o|$$\(BINOBJDIR\)/\1.o|g'\'' \
+		>$(DEPEND)'
+		$(SHELL) -ec '$(DCXX) $(DFLAGS) $(CPPFLAGS) \
+		$(EXAMPLESRC:.o=.cpp) \
+		| sed '\''s|^\([0-9A-Za-z]\{1,\}\)\.o|$$\(BINOBJDIR\)/\1.o|g'\'' \
+		>>$(DEPEND)'
+		$(SHELL) -ec '$(DCXX) $(DFLAGS) $(CPPFLAGS) \
+		$(LIBSRC:.o=.cpp) \
+		| sed '\''s|^\([0-9A-Za-z]\{1,\}\)\.o|$$\(LIBOBJDIR\)/\1.o|g'\'' \
+		>>$(DEPEND)'
+		@echo `grep -l "WITH_ZLIB" $(SRCDIR)/*` >$(ZLIBDEP)
+
+-include	$(DEPEND)
+
+$(BINOBJDIR)/%.o:	$(SRCDIR)/%.cpp
+		@echo "-> compiling $@"
+		$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(BINOFLAGS) -fPIC -c $< -o $@
+
+$(LIBOBJDIR)/%.o:	$(SRCDIR)/%.cpp
+		@echo "-> compiling $@"
+		$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBOFLAGS) -fPIC -c $< -o $@
+
+
+-include $(LASTSETTINGS)
+
+.PHONY: touchexternal
+touchexternal:	$(ZLIBDEP)
+ifneq ($(ZLIB),$(LAST_ZLIB))
+		@-touch $(ZLIBSRC)
+endif
+		@-rm -f $(LASTSETTINGS)
+		@echo "LAST_ZLIB=$(ZLIB)" >> $(LASTSETTINGS)
+
+
+# --- EOF ---------------------------------------------------------------------

@@ -100,11 +100,6 @@ MIPFLAGS        =       -I$(MIPDIR)/src/
 
 NFLAGS = $(FLAGS) #-D_DEBUGWRAP
 
-print:
-	@echo $(ZIBPATH)
-	@echo $(SCIPDIR)
-	@echo $(SOPLEXDIR)
-
 wrapper: $(SCIPDIR)/done.txt $(IFILE) $(WXXFILE) $(SOFILE)
 
 

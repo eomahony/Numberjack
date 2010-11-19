@@ -35,9 +35,9 @@ OPT		=	opt
 COMP		=	gnu
 
 MAKESOFTLINKS	=	true
-READLINE	=	true
-ZLIB		=	true
-ZIMPL		=	true
+READLINE	=	false
+ZLIB		=	false
+ZIMPL		=	false
 LPS		=	spx
 LPSOPT		=	opt
 ZIMPLOPT	=	opt

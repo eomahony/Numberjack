@@ -27,8 +27,10 @@ MAINDIR = $(CURDIR)/../..
 # paths
 #-----------------------------------------------------------------------------
 
-SCIPDIR	= $(SCIPPATH)
-SOPLEXDIR = $(shell find $(SCIPPATH)/.. -name "soplex-?.?.?")
+ZIBDIR = $(ZIBPATH)
+
+SCIPDIR = $(shell find $(ZIBPATH) -name "scip-?.?.?")
+SOPLEXDIR = $(shell find $(ZIBPATH) -name "soplex-?.?.?")
 
 PYTHON = ./python
 
@@ -98,8 +100,13 @@ MIPFLAGS        =       -I$(MIPDIR)/src/
 
 NFLAGS = $(FLAGS) #-D_DEBUGWRAP
 
+print:
+	@echo $(ZIBPATH)
+	@echo $(SCIPDIR)
+	@echo $(SOPLEXDIR)
 
 wrapper: $(SCIPDIR)/done.txt $(IFILE) $(WXXFILE) $(SOFILE)
+
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
@@ -156,10 +163,10 @@ $(PYTHON)/_%.so: $(OBJDIR) $(SCIPLIBFILE) $(LPILIBFILE) $(MAINOBJFILES) $(OBJDIR
 #	cd  $(SCIPDIR)/..; make ZIMPL=false ZLIB=false READLINE=false
 
 $(SCIPDIR)/done.txt: 
-	cp  $(MAINDIR)/tools/Makefile.Numberjack $(SCIPDIR)/../
-	cp  $(MAINDIR)/tools/Makefile.doit.Numberjack $(SCIPDIR)/../
-	cp  $(MAINDIR)/tools/Makefile.scip.Numberjack $(SCIPDIR)/
-	cp  $(MAINDIR)/tools/Makefile.soplex.Numberjack $(SOPLEXDIR)/
+	cp $(MAINDIR)/tools/Makefile.Numberjack $(SCIPDIR)/../
+	cp $(MAINDIR)/tools/Makefile.doit.Numberjack $(SCIPDIR)/../
+	cp $(MAINDIR)/tools/Makefile.scip.Numberjack $(SCIPDIR)/
+	cp $(MAINDIR)/tools/Makefile.soplex.Numberjack $(SOPLEXDIR)/
 	cd $(SCIPDIR)/..; make -f Makefile.Numberjack ZIMPL=false ZLIB=false READLINE=false	
 	@echo finished | cat > $(SCIPDIR)/done.txt
 

@@ -1766,7 +1766,7 @@ void SatWrapperSolver::addClause(std::vector<Lit>& cl) {
   
   if(clause_limit != -1){
     // We are limiting clauses
-    if(clause_limit < clause_base.size()){
+    if((unsigned int)clause_limit < clause_base.size()){
       //std::cerr << "Warning: Clause limit reached" << std::endl;
       cl.clear();
       return; 
@@ -2139,6 +2139,6 @@ void SatWrapperSolver::displayLiteral(Lit p) {
 }
 
 void SatWrapperSolver::setClauseLimit(int limit){
-  std::cout << "Clause limit set to " << limit << std::endl;
+  //std::cout << "Clause limit set to " << limit << std::endl;
   this->clause_limit = limit;
 }

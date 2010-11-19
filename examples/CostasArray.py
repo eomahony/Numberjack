@@ -26,25 +26,17 @@ def printCostasTriangle(sequence):
 
 def solve(param):
     sequence,model, seqs = get_model(param['N'])
-    
-    
-    
+        
     solver = model.load(param['solver'])
     solver.setVerbosity(param['verbose'])
     solver.setTimeLimit(param['tcutoff'])
     
-    res = solver.solve()
-    out = ' Res:' + str(res) + "\n"
-    
-    for seq in seqs:
-        out += str(map(lambda x: str(x.get_value()), seq))
-        out += "\n"
-    
+    res = solver.solve()  
+
+    out = ''
     if solver.is_sat():
         out += printCostasTriangle(sequence)
     out += ('\nNodes: ' + str(solver.getNodes()))
-    
-    MipWrapper.Solver(model).solve()
     return out
 
 

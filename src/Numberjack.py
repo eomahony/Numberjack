@@ -2368,7 +2368,6 @@ class NBJ_STD_Solver(object):
                               Library+"Solver", None)()
         
         if hasattr(self.solver, "setClauseLimit"):
-            print "Setting clause limit"
             self.solver.setClauseLimit(clause_limit);
         
         self.Library = Library

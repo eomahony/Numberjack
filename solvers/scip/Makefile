@@ -27,13 +27,8 @@ MAINDIR = $(CURDIR)/../..
 # paths
 #-----------------------------------------------------------------------------
 
-#SCIPDIR         =       /home/eoin/ziboptsuite-1.2.0/scip-1.2.0
-#SCIPDIR         =       /Users/eomahont/ziboptsuite-1.2.0/scip-1.2.0
-#SCIPDIR         =       /Users/eomahony/Documents/workspace/ziboptsuite-1.1.0/scip-1.1.0 
-#SCIPDIR         =       /Users/eoinomahony/ProgressiveParty/ziboptsuite-1.1.0/scip-1.1.0
-#SCIPDIR		 =	 /Users/ehebrard/work/dev/Roadef2010/Numberjack/solvers/scip/ziboptsuite/scip-1.1.0
-#SCIPDIR 	 =	 /Users/ehebrard/work/dev/ziboptsuite-1.2.0/scip-1.2.0
 SCIPDIR	= $(SCIPPATH)
+SOPLEXDIR = $(shell find $(SCIPPATH)/.. -name "soplex-?.?.?")
 
 PYTHON = ./python
 
@@ -66,6 +61,9 @@ ZIMPL=false
 # include default project Makefile from SCIP
 #-----------------------------------------------------------------------------
 include $(SCIPDIR)/make/make.project
+ZIMPL=false 
+ZLIB=false 
+READLINE=false
 
 #include $(SCIPDIR)/Makefile
 
@@ -107,7 +105,7 @@ install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
 
 $(OBJDIR):
-		@-mkdir -p $(OBJDIR)
+	@-mkdir -p $(OBJDIR)
 
 clean:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/*o $(PYTHON)/*~ $(PYTHON)/build *~ $(SRCDIR)/*~ $(SCIPDIR)/done.txt
@@ -148,13 +146,19 @@ $(PYTHON)/%.i: $(SRCDIR)/%.hpp
 
 $(PYTHON)/_%.so: $(OBJDIR) $(SCIPLIBFILE) $(LPILIBFILE) $(MAINOBJFILES) $(OBJDIR)/%.o  $(MIPDIR)/obj/MipWrapper.o $(PYTHON)/%_wrap.o
 	@echo "-> linking $@"
-	$(LINKCXX) $(BUNDLE) -flat_namespace -Wno-long-double $(MAINOBJFILES) $(LINKCXX_L)$(SCIPDIR)/lib $(LINKCXX_l)$(SCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(OBJSCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(LPILIB)$(LINKLIBSUFFIX)  $(OFLAGS) $(LPSLDFLAGS) $(LDFLAGS) $(MIPDIR)/obj/MipWrapper.o python/SCIP_wrap.o $(LINKCXX_o)$@
+	$(LINKCXX) $(BUNDLE) -flat_namespace -Wno-long-double $(MAINOBJFILES) $(LINKCXX_L)$(SCIPDIR)/lib $(LINKCXX_l)$(SCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(OBJSCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(LPILIB)$(LINKLIBSUFFIX)  $(OFLAGS) $(LPSLDFLAGS) $(MIPDIR)/obj/MipWrapper.o python/SCIP_wrap.o $(LINKCXX_o)$@
 
-scip_lib: $(SCIPDIR)/done.txt
-	cd  $(SCIPDIR)/..; make ZIMPL=false READLINE=false
+#scip_lib: $(SCIPDIR)/Makefile.backup 
+#	cp  $(SCIPDIR)/Makefile $(SCIPDIR)/Makefile.backup
+#	cp  $(MAINDIR)/tools/Makefile.scip $(SCIPDIR)/Makefile
+#	cp  $(SOPLEXDIR)/Makefile $(SOPLEXDIR)/Makefile.backup
+#	cp  $(MAINDIR)/tools/Makefile.soplex $(SOPLEXDIR)/Makefile
+#	cd  $(SCIPDIR)/..; make ZIMPL=false ZLIB=false READLINE=false
 
 $(SCIPDIR)/done.txt: 
-	cd $(SCIPDIR)/..; make ZIMPL=false READLINE=false	
-	@echo finished | cat > $(SCIPDIR)/done.txt
+	cp  $(MAINDIR)/tools/Makefile.scip.Numberjack $(SCIPDIR)/
+	cp  $(MAINDIR)/tools/Makefile.soplex.Numberjack $(SOPLEXDIR)/
+	cd $(SCIPDIR)/..; make -f Makefile.Numberjack ZIMPL=false ZLIB=false READLINE=false	
+	@echo finished 
 
 #---- EOF --------------------------------------------------------------------

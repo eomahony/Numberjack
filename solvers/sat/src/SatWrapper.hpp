@@ -555,7 +555,7 @@ public:
   std::vector< std::vector<Lit> > clause_base;
   unsigned int current;
   
-  unsigned int clause_limit;
+  int clause_limit;
 
   int *cp_model;
 

@@ -1507,6 +1507,9 @@ void SchedulingSolver::dichotomic_search()
   setVerbosity(params.Verbose);
   setTimeLimit(params.Cutoff);
   setNodeLimit(params.NodeCutoff);
+  setRandomSeed( params.Seed );
+  if(params.Randomized) randomizeSequence();
+
 
   WeighterRestartGenNogood *nogoods = NULL;
   if(params.Rngd) nogoods = setRestartGenNogood();
@@ -1514,7 +1517,6 @@ void SchedulingSolver::dichotomic_search()
   ////////// dichotomic search ///////////////
   if(status == UNKNOWN) {
     while( minfsble < maxfsble && iteration < params.Dichotomy ) {
-      setRandomSeed( params.Seed );
       
       objective = (int)(floor(((double)minfsble + (double)maxfsble)/2));
 
@@ -1614,6 +1616,7 @@ void SchedulingSolver::branch_and_bound()
   addObjective();
 
   setRandomSeed( params.Seed );
+
   double time_limit = (params.Optimise - stats.get_total_time());
 
   if(time_limit > 0) {

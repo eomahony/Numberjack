@@ -24,8 +24,7 @@ def solve(param):
     s,e,n,d,m,o,r,y,model = get_model()
 
     # Load up model into solver
-    solver = MiniSat.Solver(model, clause_limit=100)
-    print "Here"
+    solver = model.load(param['solver'])
     solver.setVerbosity(param['verbose'])
 
     # Now Solve

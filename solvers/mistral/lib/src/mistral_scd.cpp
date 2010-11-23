@@ -194,11 +194,19 @@ std::ostream& StatisticList::print(std::ostream& os,
 const char* ParameterList::int_ident[ParameterList::nia] = 
   {"-ub", "-lb", "-check", "-seed", "-cutoff", "-dichotomy", 
    "-base", "-randomized", "-verbose", "-optimise", "-nogood", 
-   "-dyncutoff", "-nodes"};
+   "-dyncutoff", "-nodes", "-hlimit"};
 
 const char* ParameterList::str_ident[ParameterList::nsa] = 
   {"-heuristic", "-restart", "-factor", "-decay", "-type", 
    "-value", "-dvalue", "-ivalue", "-skew", "-objective"};
+
+
+// ParameterList::ParameterList() {
+// }
+
+// ParameterList::ParameterList(const ParameterList& pl) {
+//   initialise(pl);
+// }
 
 ParameterList::ParameterList(int length, char **commandline) {
 
@@ -241,6 +249,7 @@ ParameterList::ParameterList(int length, char **commandline) {
   Base        = 256;
   Randomized  = 1;
   Precision   = 100;
+  Hlimit      = 20000;
 
   Verbose     = 1;
   Optimise    = 3600;
@@ -260,8 +269,43 @@ ParameterList::ParameterList(int length, char **commandline) {
 
 }
 
+// void ParameterList::initialise(const ParameterList& pl) {
+//   UBinit      = pl.UBinit;
+//   LBinit      = LBinit;
+//   Checked     = Checked;
+//   Seed        = Seed;
+//   Cutoff      = Cutoff;
+//   NodeCutoff  = NodeCutoff;
+//   NodeBase    = NodeBase;
+//   Dichotomy   = Dichotomy;
+//   Base        = Base;
+//   Randomized  = Randomized;
+//   Precision   = Precision;
 
-void ParameterList::initialise(const int n_constraints) {
+//   Verbose     = Verbose;
+//   Optimise    = Optimise;
+//   Rngd        = Rngd;
+
+//   Policy    = Policy;
+//   Factor    = Factor;
+//   Decay     = Decay;
+//   Value     = Value;
+//   DValue    = DValue;
+//   IValue    = IValue;
+//   Skew      = Skew;
+//   Objective = Objective;
+
+//   Heuristic = Heuristic;
+//   PolicyRestart = PolicyRestart;
+
+//   std::memcpy(int_param, pl.int_param, nia*sizeof(int));
+
+//   data_file = pl.data_file;
+//   data_file_name = pl.data_file_name;
+// }
+
+//void ParameterList::initialise(const int n_constraints) {
+void ParameterList::initialise(const SchedulingModel *model) {
 
   if(Type == "osp") {
     Objective = "makespan";
@@ -306,9 +350,16 @@ void ParameterList::initialise(const int n_constraints) {
   if(int_param[10] != NOVAL) Rngd        = int_param[10];
 
   if(int_param[11] != NOVAL) NodeBase    = int_param[11]; 
-  NodeCutoff  = (int)((double)NodeBase * (12500000.0/(double)n_constraints));
-
+  NodeCutoff  = (int)((double)NodeBase * 
+		      (12500000.0/(double)(model->data->nDisjuncts()+
+					   model->data->nPrecedences())));
+  if(model->ub_C_max - model->lb_C_max > 4000)
+    NodeCutoff /= 2;
+  if(model->ub_C_max - model->lb_C_max > 6000)
+    NodeCutoff /= 2;
   if(int_param[12] != NOVAL) NodeCutoff  = int_param[12]; 
+  if(int_param[13] != NOVAL) Hlimit      = int_param[13]; 
+
 
   if(strcmp(str_param[0],"nil")) Heuristic  = str_param[0];
   if(strcmp(str_param[1],"nil")) Policy     = str_param[1];
@@ -328,8 +379,8 @@ void ParameterList::initialise(const int n_constraints) {
   else
     PolicyRestart = NO;
 
+  //  if(model->ub_C_max - model->lb_C_max > 3000)
 
-  std::cout << NodeBase << std::endl;
 
 }
 
@@ -392,7 +443,8 @@ Instance::Instance(ParameterList& params) {
 
   // close();
 
-  params.initialise(nDisjuncts()+nPrecedences());
+  //params.initialise(nDisjuncts()+nPrecedences());
+  //params.initialise(model);
 }
 
 Instance::~Instance() {
@@ -566,6 +618,8 @@ std::ostream& Instance::printStats(std::ostream& os) {
      << "d " << std::left << std::setw(28)  << "NUMMACHINES "   << std::right << std::setw(21) << nMachines() << std::endl
      << "d " << std::left << std::setw(28)  << "NUMDISJUNCTS "  << std::right << std::setw(21) << nDisjuncts() << std::endl
      << "d " << std::left << std::setw(28)  << "NUMPRECEDENCES "<< std::right << std::setw(21) << nPrecedences() << std::endl
+    //<< "d " << std::left << std::setw(28)  << "LBMAKESPAN "    << std::right << std::setw(21) << lb_C_max << std::endl
+    //<< "d " << std::left << std::setw(28)  << "UBMAKESPAN "    << std::right << std::setw(21) << ub_C_max << std::endl
      << "c ==================[ instance ]===================" << std::endl;
   return os;
 }
@@ -1054,6 +1108,15 @@ SchedulingModel::SchedulingModel(Instance& inst, const int max_makespan) : CSP()
 
 }
 
+std::ostream& SchedulingModel::printStats(std::ostream& os) {
+  os << "c ====================[ model ]====================" << std::endl
+     << "d " << std::left << std::setw(28)  << "LBMAKESPAN "    << std::right << std::setw(21) << lb_C_max << std::endl
+     << "d " << std::left << std::setw(28)  << "UBMAKESPAN "    << std::right << std::setw(21) << ub_C_max << std::endl
+     << "c ====================[ model ]====================" << std::endl;
+  return os;
+}
+
+
 void SchedulingModel::setup(Instance& inst, const int max_makespan) {
 
   int i,j,k, lb, ub, ti, tj;
@@ -1440,20 +1503,26 @@ void Solution::guide_search() {
 }
 
 SchedulingSolver::SchedulingSolver(SchedulingModel* m, 
-				   ParameterList& p,
-				   StatisticList& s) 
-  : Solver(*m,m->SearchVars), params(p), stats(s) 
+				   ParameterList* p,
+				   StatisticList* s) 
+  : Solver(*m,m->SearchVars), stats(s) 
 { 
   model = m; 
-  
-  s.lower_bound = m->get_lb();//lower_bound;
-  s.upper_bound = m->get_ub();//upper_bound;
+  params = p;
+  stats = s;
+
+  //params.initialise(model);
+  //p.initialise(model);
+  params->initialise(model);
+
+  stats->lower_bound = m->get_lb();//lower_bound;
+  stats->upper_bound = m->get_ub();//upper_bound;
 
   pool = new SolutionPool();
 
   //s.normalizer = m->data->getNormalizer();
   
-  addHeuristic( params.Heuristic, params.Randomized, params.IValue );
+  addHeuristic( params->Heuristic, params->Randomized, params->IValue, params->Hlimit );
 }
 
 std::ostream& SchedulingSolver::print_weights(std::ostream& os) {
@@ -1496,36 +1565,33 @@ void SchedulingSolver::dichotomic_search()
   
   int iteration = 0;
   
-  int minfsble = stats.lower_bound;
-  int maxfsble = stats.upper_bound;
+  int minfsble = stats->lower_bound;
+  int maxfsble = stats->upper_bound;
   int objective = -1;
   int new_objective = -1;
   int ngd_stamp = 0;
   int lit_stamp = 0;
-
-
-  //bool was_unk = false;
-  
+    
   presolve();
   
-  setVerbosity(params.Verbose);
-  setTimeLimit(params.Cutoff);
-  setNodeLimit(params.NodeCutoff);
-  setRandomSeed( params.Seed );
-  if(params.Randomized) randomizeSequence();
+  setVerbosity(params->Verbose);
+  setTimeLimit(params->Cutoff);
+  setNodeLimit(params->NodeCutoff);
+  setRandomSeed( params->Seed );
+  if(params->Randomized) randomizeSequence();
 
 
   WeighterRestartGenNogood *nogoods = NULL;
-  if(params.Rngd) nogoods = setRestartGenNogood();
+  if(params->Rngd) nogoods = setRestartGenNogood();
   
   ////////// dichotomic search ///////////////
   if(status == UNKNOWN) {
     while( minfsble<maxfsble && 
-	   iteration<params.Dichotomy
+	   iteration<params->Dichotomy
 	   ) {
 	     
-      double remaining_time = params.Optimise - stats.get_total_time();
-      if(remaining_time < (2*params.NodeBase)) break;
+      double remaining_time = params->Optimise - stats->get_total_time();
+      if(remaining_time < (2*params->NodeBase)) break;
 	   
 
 	   
@@ -1546,7 +1612,7 @@ void SchedulingSolver::dichotomic_search()
 
       status = model->set_objective(objective);
       if(pool->size()) {
-	if(params.DValue == "guided") pool->getBestSolution()->guide_search();
+	if(params->DValue == "guided") pool->getBestSolution()->guide_search();
       }
       
       if(nogoods) {
@@ -1560,13 +1626,13 @@ void SchedulingSolver::dichotomic_search()
 //       ////std::cout << std::endl;
 
       if(status == UNKNOWN) {
-	solve_and_restart(params.PolicyRestart, params.Base, params.Factor);
+	solve_and_restart(params->PolicyRestart, params->Base, params->Factor);
       }
       
       if( status == SAT ) {
 	new_objective = model->get_objective();
 
-	stats.normalized_objective = model->get_normalized_objective();
+	stats->normalized_objective = model->get_normalized_objective();
 	
 
 	maxfsble = new_objective;
@@ -1588,15 +1654,15 @@ void SchedulingSolver::dichotomic_search()
 // 	  was_unk = true;
 // 	}
       }
-      stats.add_info(this, new_objective);
-      printStatistics(std::cout, ((params.Verbose ? RUNTIME : 0) + ((params.Verbose || status != UNKNOWN)  ? BTS + PPGS : 0) + OUTCOME) );
+      stats->add_info(this, new_objective);
+      printStatistics(std::cout, ((params->Verbose ? RUNTIME : 0) + ((params->Verbose || status != UNKNOWN)  ? BTS + PPGS : 0) + OUTCOME) );
       
 
       reset(true);
-      decay_weights(params.Decay);
+      decay_weights(params->Decay);
 
-      if(pool->size() && (params.DValue != params.IValue)) {
-	addHeuristic( params.Heuristic, params.Randomized, params.DValue );
+      if(pool->size() && (params->DValue != params->IValue)) {
+	addHeuristic( params->Heuristic, params->Randomized, params->DValue, params->Hlimit );
       }
       
       std::cout << "c =============[ end dichotomic step ]=============" << std::endl;
@@ -1623,32 +1689,32 @@ void SchedulingSolver::branch_and_bound()
   setNodeLimit(0);
 
   save();
-  model->set_objective(stats.upper_bound-1);
+  model->set_objective(stats->upper_bound-1);
   addObjective();
 
-  setRandomSeed( params.Seed );
+  setRandomSeed( params->Seed );
 
-  double time_limit = (params.Optimise - stats.get_total_time());
+  double time_limit = (params->Optimise - stats->get_total_time());
 
   if(time_limit > 0) {
     setTimeLimit( time_limit ); 
-    addHeuristic( params.Heuristic, params.Randomized, params.Value );
-    if(params.Value == "guided") {
-      function = new SolutionGuidedSearch( this, pool, &stats );
+    addHeuristic( params->Heuristic, params->Randomized, params->Value, params->Hlimit );
+    if(params->Value == "guided") {
+      function = new SolutionGuidedSearch( this, pool, stats );
       if(pool->size()) pool->getBestSolution()->guide_search();
     }  else {
-      function = new StoreStats( this, &stats );
+      function = new StoreStats( this, stats );
     }
     
     std::cout << "c ============[ start branch & bound ]=============" << std::endl;
     std::cout << std::left << std::setw(30) << "c current range" << ":" 
-	      << std::right << std::setw(6) << " " << std::setw(5) << stats.lower_bound 
+	      << std::right << std::setw(6) << " " << std::setw(5) << stats->lower_bound 
 	      << " to " << std::setw(5) << goal->upper_bound << std::endl;
     std::cout << std::left << std::setw(30) << "c run for " << ":"
 	      << std::right << std::setw(19) << (time_limit) << "s" << std::endl;
     
     if(status == UNKNOWN) {
-      solve_and_restart(params.PolicyRestart, params.Base, params.Factor);
+      solve_and_restart(params->PolicyRestart, params->Base, params->Factor);
     }
 
 //      std::cout << "c OUTCOME: " <<
@@ -1656,11 +1722,11 @@ void SchedulingSolver::branch_and_bound()
 //  	      << "  UB: " << goal->upper_bound << std::endl;
     
     //if(SOLUTIONS)
-    //stats.normalized_objective = model->get_normalized_objective();
+    //stats->normalized_objective = model->get_normalized_objective();
 
-    stats.add_info(this, goal->upper_bound, false);
+    stats->add_info(this, goal->upper_bound, false);
     
-    printStatistics(std::cout, ((params.Verbose ? RUNTIME : 0) + (params.Verbose ? BTS + PPGS : 0) + OUTCOME) );
+    printStatistics(std::cout, ((params->Verbose ? RUNTIME : 0) + (params->Verbose ? BTS + PPGS : 0) + OUTCOME) );
     
     reset(true);
     std::cout << "c =============[ end branch & bound ]==============" << std::endl;

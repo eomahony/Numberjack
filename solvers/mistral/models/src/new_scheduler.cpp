@@ -19,7 +19,6 @@ int main( int argc, char** argv )
 
   std::cout << std::endl;
   jsp.printStats(std::cout);
-  params.print(std::cout);  
 
   SchedulingModel *model;
   if(params.Objective == "makespan") {
@@ -33,9 +32,14 @@ int main( int argc, char** argv )
     std::cout << "c unknown objective, exiting" << std::endl;
     exit(1);
   }
-  SchedulingSolver solver(model, params, stats);
-  
+
+  SchedulingSolver solver(model, &params, &stats);
+
+  params.print(std::cout);  
+
+  model->printStats(std::cout);  
   stats.print(std::cout, "INIT");  
+
 
   if(solver.status == UNKNOWN) solver.dichotomic_search();
   else if( solver.status == SAT ) {

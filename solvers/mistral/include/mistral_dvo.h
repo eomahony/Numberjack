@@ -3357,7 +3357,8 @@ namespace Mistral {
     VariableInt**& decision;
     /// The number of decisions;
     int& level;
-    int verbosity;
+    //int verbosity;
+    int limit;
     /// Structure used to learn weights
     //Weighter *learner;
     //@}
@@ -3369,7 +3370,7 @@ namespace Mistral {
     //@{
     // virtual void print_weights() {}
     
-    DVO(Solver*);
+    DVO(Solver*, const int l=NOVAL);
     virtual ~DVO() {}
     //@}  
 
@@ -3411,7 +3412,7 @@ namespace Mistral {
 
     /**@name Constructors*/
     //@{
-    GenericDVO(Solver* s) : DVO(s) {}
+    GenericDVO(Solver* s, const int l=NOVAL) : DVO(s,l) { }
     virtual ~GenericDVO()
     {
       //delete [] _garbage_disjuncts;
@@ -3434,11 +3435,13 @@ namespace Mistral {
     inline VariableInt* select()
     {    
       VariableInt *var=*first, **var_iterator;
+      VariableInt **last_var = (last-first > limit ? first+limit : last);
       best = var; 
 
       //std::cout << "number of unassigned vars: " << (last-first) << std::endl;
 
-      for( var_iterator = first+1; var_iterator != last; ++var_iterator ) 
+      //for( var_iterator = first+1; var_iterator != last; ++var_iterator ) 
+      for( var_iterator = first+1; var_iterator != last_var; ++var_iterator ) 
 	{  
 	
 	  // 	  	VariableInt *x = (*var_iterator);
@@ -3463,11 +3466,11 @@ namespace Mistral {
 	      var = (*var_iterator);
 
 
-	      //std::cout << "jjjjjjj " << verbosity << std::endl;
-	      if(verbosity > 3) {
-		var->print(std::cout);
-		std::cout << " " << best.value() << std::endl;
-	      } 
+// 	      //std::cout << "jjjjjjj " << verbosity << std::endl;
+// 	      if(verbosity > 3) {
+// 		var->print(std::cout);
+// 		std::cout << " " << best.value() << std::endl;
+// 	      } 
 	    }
 	}
 
@@ -3493,7 +3496,7 @@ namespace Mistral {
 
     /**@name Constructors*/
     //@{
-    GenericSchedulingDVO(Solver* s) : GenericDVO< T >(s) {}
+    GenericSchedulingDVO(Solver* s, const int l=NOVAL) : GenericDVO< T >(s,l) {}
     virtual ~GenericSchedulingDVO()
     {
       delete [] the_disjuncts;
@@ -3526,7 +3529,7 @@ namespace Mistral {
 
     /**@name Constructors*/
     //@{
-    GenericRandomDVO(Solver* s, const int sz)  : DVO(s) 
+    GenericRandomDVO(Solver* s, const int sz, const int l=NOVAL)  : DVO(s,l) 
     {
       size = sz;
       bests = new T[size+1];
@@ -3559,6 +3562,7 @@ namespace Mistral {
       //std::cout << " ===> first " << (*first) << std::endl;
       bests[0] = bestvars[0] = *first;
       VariableInt **var_iterator;
+      VariableInt **last_var = (last-first > limit ? first+limit : last);
 
 
 //       for( var_iterator = first; var_iterator != last; ++var_iterator ) {
@@ -3577,7 +3581,8 @@ namespace Mistral {
 
       //
       //std::cout << " ===> last " << (last) << std::endl;
-      for( var_iterator = first+1; var_iterator != last; ++var_iterator ) 
+      //for( var_iterator = first+1; var_iterator != last; ++var_iterator ) 
+      for( var_iterator = first+1; var_iterator != last_var; ++var_iterator ) 
 	{  
 	  //std::cout << " ===> iter " << (var_iterator) << std::endl;
 

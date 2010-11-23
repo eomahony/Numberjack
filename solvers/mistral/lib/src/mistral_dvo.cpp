@@ -1429,7 +1429,7 @@ void WeighterSAT::notifyChoice()
  * DVOs Dynamic Variable Ordering
  **********************************************/
 
-DVO::DVO(Solver *s) 
+DVO::DVO(Solver *s, const int l) 
   : variables(s->variables.stack_),
     first(s->future), 
     last(s->empty), 
@@ -1440,7 +1440,8 @@ DVO::DVO(Solver *s)
 //   for(var_iterator = first; var_iterator != last; ++var_iterator)
 //     {
 //     }
-  verbosity = 0;
+  limit = l;
+  //verbosity = 0;
 }
 
 PredicateDisjunctive** DVO::get_disjuncts() { return _garbage_disjuncts; }

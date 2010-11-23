@@ -60,6 +60,7 @@ namespace MistralScheduler {
     };
 
   class Instance;
+  class SchedulingModel;
   class ParameterList {
   public:
 
@@ -70,7 +71,7 @@ namespace MistralScheduler {
     static const int RGUIDED =  3;
     static const int RAND    =  4;
 
-    static const int nia = 13;
+    static const int nia = 14;
     static const char* int_ident[nia];
     
     static const int nsa = 10;
@@ -97,6 +98,7 @@ namespace MistralScheduler {
     int Optimise; // "optimise": total time cutoff 
     int Rngd; // "nogood": whether nogood on restart are used
     int Precision; // "-": precision when turning float weights into int weights
+    int Hlimit; // "hlimit": maximum number of variables evaluated by the dvo
 
     double Factor;
     double Decay;
@@ -113,9 +115,12 @@ namespace MistralScheduler {
     int PolicyRestart;
 
     ParameterList(int length, char** commandline);
+    //ParameterList();
+    //ParameterList(const ParameterList& pl);
     virtual ~ParameterList() {}
 
-    void initialise(const int);
+    void initialise(const SchedulingModel*);
+    void initialise(const ParameterList& pl);
     std::ostream& print(std::ostream& os);
 
   };
@@ -288,6 +293,7 @@ namespace MistralScheduler {
     virtual double  get_normalized_objective() = 0;
     virtual int  set_objective(const int obj) = 0;
 
+    std::ostream& printStats(std::ostream& os);
   };
 
 
@@ -459,14 +465,14 @@ public:
 
     //int lower_bound;
     //int upper_bound;
-    ParameterList params;
-    StatisticList& stats;
+    ParameterList  *params;
+    StatisticList   *stats;
     SchedulingModel *model;
-    SolutionPool *pool;
+    SolutionPool     *pool;
 
     SchedulingSolver(SchedulingModel* m, 
-		     ParameterList& p,
-		     StatisticList& s);//  : Solver(*m,m->SearchVars), params(p), stats(s) 
+		     ParameterList* p,
+		     StatisticList* s);//  : Solver(*m,m->SearchVars), params(p), stats(s) 
 //     { 
 //       model = m; 
 //       lower_bound = m->get_lb();
@@ -488,7 +494,7 @@ public:
     void decay_weights(const double decay);
 
     void addObjective() { goal = new MinimiseVar(this, model->get_objective_var()); }
-    void addHeuristic( std::string Heu, const int rdz, std::string vo ) {
+    void addHeuristic( std::string Heu, const int rdz, std::string vo, const int hlimit ) {
       
       int val_ord = ParameterList::GUIDED;
       if(  vo == "rguided")   val_ord = ParameterList::RGUIDED;
@@ -601,6 +607,8 @@ public:
 	NoOrder h;
 	add( h );
       }
+
+      heuristic->limit = hlimit;
     }
     
 

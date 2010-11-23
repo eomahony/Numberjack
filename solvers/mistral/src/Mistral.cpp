@@ -108,6 +108,11 @@ Mistral_Expression* Mistral_Expression::get_child(const int i)
   return new Mistral_Expression(((BuildObjectPredicate*)_self)->scope[i]);
 }
 
+int Mistral_Expression::get_id() const
+{
+  return _self->getVarId();
+}
+
 int Mistral_Expression::getVariableId() const
 {
   return _self->getVariableId();
@@ -2247,4 +2252,8 @@ Mistral_Expression* MistralSolver::get_expression(const int i)
 int MistralSolver::num_expression() 
 {
   return model->toplevel_expressions.size;
+}
+int MistralSolver::max_expression_id() 
+{
+  return model->declarations.size;
 }

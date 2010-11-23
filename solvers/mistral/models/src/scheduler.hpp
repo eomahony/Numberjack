@@ -1786,7 +1786,8 @@ void dichotomic_search()
 
   ////////// dichotomic search ///////////////
   while( Gap < (maxfsble-minfsble) && Dichotomy-- && minfsble < maxfsble ) {
-    
+   
+
     //if(first_step)
     if(first_solution)
       makespan = (int)(floor((Skew * (double)minfsble + (double)maxfsble)/(1.0+Skew)));
@@ -1814,7 +1815,6 @@ void dichotomic_search()
       Result = permfsp_setup(model, disjuncts, tasks);     
     else
       Result = jsp_setup(model, disjuncts, tasks);     
-
 
     assert(disjuncts.size() == ndisjuncts);    
 
@@ -1860,6 +1860,7 @@ void dichotomic_search()
 	  s.setRestartNogood();
 	  s.setForgetfulness( 0.0 );
 	}
+
 	if( Randomized > 0 ) s.setRandomized();
 	curr_time=(3000.0 - (getRunTime() - total_time));
 	if( Cutoff < curr_time) { 
@@ -1904,6 +1905,7 @@ void dichotomic_search()
 	  setWeights(s,tasks);
 
 	Result = s.solve_and_restart(PolicyRestart, Base, Factor, Decay);
+
       }
 
       if( Result == SAT ) {

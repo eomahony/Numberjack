@@ -98,6 +98,7 @@ public:
   const char* get_type() const;
   int get_arity() const;
   Mistral_Expression *get_child(const int i);
+  int get_id() const;
 
   int next(int v);
   int getVariableId() const;
@@ -460,6 +461,7 @@ public:
 
   Mistral_Expression* get_expression(const int i);
   int num_expression();
+  int max_expression_id();
   
 
   // used to initialise search on a given subset of variables

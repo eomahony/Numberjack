@@ -34,7 +34,7 @@ int main( int argc, char** argv )
     exit(1);
   }
   SchedulingSolver solver(model, params, stats);
-
+  
   stats.print(std::cout, "INIT");  
 
   if(solver.status == UNKNOWN) solver.dichotomic_search();

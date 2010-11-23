@@ -1087,18 +1087,18 @@ void WeighterRestartNogood::notifyRestart()
 {
 
 
-  std::cout << std::endl <<std::setw(3)<< lvl << "   ";
-  std::cout.flush();
-  for(int i=1; i<lvl; ++i) {
-    std::cout << " " << std::setw(2) << choices[i];
-  }
-  std::cout << std::endl;
-  std::cout << std::setw(3)<< (path.size) << "   ";
-  std::cout.flush();
-  for(int i=0; i<path.size; ++i) {
-    std::cout << " " << std::setw(2) << path[i];
-  }
-  std::cout << std::endl ;
+//   std::cout << std::endl <<std::setw(3)<< lvl << "   ";
+//   std::cout.flush();
+//   for(int i=1; i<lvl; ++i) {
+//     std::cout << " " << std::setw(2) << choices[i];
+//   }
+//   std::cout << std::endl;
+//   std::cout << std::setw(3)<< (path.size) << "   ";
+//   std::cout.flush();
+//   for(int i=0; i<path.size; ++i) {
+//     std::cout << " " << std::setw(2) << path[i];
+//   }
+//   std::cout << std::endl ;
 
 
 

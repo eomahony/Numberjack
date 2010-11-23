@@ -287,10 +287,10 @@ void ParameterList::initialise(const int n_constraints) {
     Heuristic = "osp-t";
   } else if(Type == "jet") {
     Objective = "tardiness";
-    Heuristic = "osp-tr";
+    Heuristic = "osp-t";
   } else if(Type == "dyn") {
     Objective = "tardiness";
-    Heuristic = "osp-tr";
+    Heuristic = "osp-t";
   }
 
   if(int_param[0]  != NOVAL) UBinit      = int_param[0];
@@ -327,6 +327,10 @@ void ParameterList::initialise(const int n_constraints) {
     PolicyRestart = GEOMETRIC;
   else
     PolicyRestart = NO;
+
+
+  std::cout << NodeBase << std::endl;
+
 }
 
 std::ostream& ParameterList::print(std::ostream& os) {
@@ -1516,10 +1520,17 @@ void SchedulingSolver::dichotomic_search()
   
   ////////// dichotomic search ///////////////
   if(status == UNKNOWN) {
-    while( minfsble < maxfsble && iteration < params.Dichotomy ) {
-      
-      objective = (int)(floor(((double)minfsble + (double)maxfsble)/2));
+    while( minfsble<maxfsble && 
+	   iteration<params.Dichotomy
+	   ) {
+	     
+      double remaining_time = params.Optimise - stats.get_total_time();
+      if(remaining_time < (2*params.NodeBase)) break;
+	   
 
+	   
+      objective = (int)(floor(((double)minfsble + (double)maxfsble)/2));
+	     
       //reorderSequence();
 
 

@@ -27,6 +27,7 @@ namespace MistralScheduler {
     int    lower_bound;
     int    upper_bound;
 
+    double avg_cutoff_time;
     double avg_distance;
     int    min_distance;
     int    max_distance;
@@ -556,10 +557,10 @@ public:
 	OSP h(abs(rdz), val_ord);
 	add( h );
       }
-//       else if( Heu == "osp-dw") {
-// 	OSP h(abs(rdz), val_ord, OSP::DOMAIN_P_TWEIGHT);
-// 	add( h );
-//       }
+      else if( Heu == "osp-dw") {
+ 	OSP h(abs(rdz), val_ord, OSP::DOMAIN_P_TWEIGHT);
+ 	add( h );
+      }
       else if( Heu == "osp-d") {
 	OSP h(abs(rdz), val_ord, OSP::DOMAIN_O_NOT);
 	add( h );

@@ -275,7 +275,7 @@ ParameterList::ParameterList(int length, char **commandline) {
   Randomized  = 1;
   Precision   = 100;
   Hlimit      = 20000;
-  InitBound   = 1;
+  InitBound   = 1000;
 
   Verbose     = 1;
   Optimise    = 3600;

@@ -9,7 +9,10 @@ using namespace MistralScheduler;
 int main( int argc, char** argv )
 {
   ParameterList params(argc, argv);
+  usrand(params.Seed);
+
   StatisticList stats;
+  stats.start();
 
   usrand( params.Seed );
 
@@ -23,11 +26,11 @@ int main( int argc, char** argv )
   SchedulingModel *model;
   if(params.Objective == "makespan") {
     std::cout << "c Minimising Makespan" << std::endl;
-    if(params.Type == "now") model = new No_wait_Model(jsp, -1);
-    else model = new C_max_Model(jsp, -1);
+    if(params.Type == "now") model = new No_wait_Model(jsp, &params, -1);
+    else model = new C_max_Model(jsp, &params, -1);
   } else if(params.Objective == "tardiness") {
     std::cout << "c Minimising Tardiness" << std::endl;
-    model = new L_sum_Model(jsp, -1);
+    model = new L_sum_Model(jsp, &params, -1);
   } else {
     std::cout << "c unknown objective, exiting" << std::endl;
     exit(1);

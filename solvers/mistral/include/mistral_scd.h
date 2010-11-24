@@ -22,6 +22,8 @@ namespace MistralScheduler {
 
   public:
 
+    SchedulingSolver *solver;
+
     int    num_nogoods;
     int    num_solutions;
     int    lower_bound;
@@ -29,11 +31,13 @@ namespace MistralScheduler {
 
     double avg_cutoff_time;
     double avg_distance;
-    int    min_distance;
-    int    max_distance;
+    double min_distance;
+    double max_distance;
 
     double normalized_objective;
     //double normalizer;
+    
+    double real_start_time;
 
     std::vector<long unsigned int> nodes;
     std::vector<long unsigned int> backtracks;
@@ -50,7 +54,8 @@ namespace MistralScheduler {
     bool solved();
     double get_total_time();
     double get_lowerbound_time();
-    void add_info(SchedulingSolver *s, const int obj, bool dichotomic=true);
+    void start();
+    void add_info(const int obj, bool dichotomic=true);
     //void add_info(const int lb, const int ub);
 
     std::ostream& print(std::ostream& os, 
@@ -71,7 +76,7 @@ namespace MistralScheduler {
     static const int RGUIDED =  3;
     static const int RAND    =  4;
 
-    static const int nia = 14;
+    static const int nia = 15;
     static const char* int_ident[nia];
     
     static const int nsa = 10;
@@ -99,6 +104,7 @@ namespace MistralScheduler {
     int Rngd; // "nogood": whether nogood on restart are used
     int Precision; // "-": precision when turning float weights into int weights
     int Hlimit; // "hlimit": maximum number of variables evaluated by the dvo
+    int InitBound; // "init": number of iterations when initialising the upper bound
 
     double Factor;
     double Decay;
@@ -172,7 +178,7 @@ namespace MistralScheduler {
     void dyn_readData( const char* filename, const int p );
 
 
-    int get_machine_rank(const int ti, const int mj) {
+    int get_machine_rank(const int ti, const int mj) const {
       int rk=-1, mc;
       for(unsigned int i=0; i<task_rank_in_machine[ti].size(); ++i) {
 	mc = task_rank_in_machine[ti][i].element;
@@ -184,7 +190,7 @@ namespace MistralScheduler {
       return rk;
     }
 
-    int get_job_rank(const int ti, const int jj) {
+    int get_job_rank(const int ti, const int jj) const {
       int rk=-1, jb;
       for(unsigned int i=0; i<task_rank_in_job[ti].size(); ++i) {
 	jb = task_rank_in_job[ti][i].element;
@@ -245,6 +251,18 @@ namespace MistralScheduler {
     bool hasFloatCost() const {return jsp_floatcost != NULL; }
     double getJobFloatCost(const int i) const {return jsp_floatcost[i];}
 
+
+    int getRankInJob(const int i, const int j=-1) const {return get_job_rank(i,(j==-1?getJob(i,0):j));}
+    int getHeadInJob(const int i, const int j=-1) const {
+      int rj = (j==-1?getJob(i,0):j);
+      int rk = get_job_rank(i,rj);
+      int head = 0;
+      for(int k=0; k<rk; ++k) {
+	head += getDuration(getJobTask(rj,k));
+      }
+      return head;
+    }
+
     int getMakespanLowerBound();
     int getMakespanUpperBound(const int);
 
@@ -282,8 +300,8 @@ namespace MistralScheduler {
     Variable L_sum;
 
     SchedulingModel() : CSP() {}
-    SchedulingModel(Instance& prob, const int C_max);
-    virtual void setup(Instance& inst, const int C_max);
+    SchedulingModel(Instance& prob, ParameterList *params, const int C_max);
+    virtual void setup(Instance& inst, ParameterList *params, const int C_max);
     virtual ~SchedulingModel();
 
     virtual int get_lb() = 0;
@@ -301,7 +319,7 @@ namespace MistralScheduler {
   public:
 
     C_max_Model() : SchedulingModel() {}
-    C_max_Model(Instance& prob, const int C_max) { setup(prob, C_max); }
+    C_max_Model(Instance& prob, ParameterList *params, const int C_max) { setup(prob, params, C_max); }
     virtual ~C_max_Model() {}
 
     virtual int get_lb();
@@ -316,7 +334,7 @@ namespace MistralScheduler {
   public:
 
     L_sum_Model() : SchedulingModel() {}
-    L_sum_Model(Instance& prob, const int L_sum) { setup(prob, L_sum); }
+    L_sum_Model(Instance& prob, ParameterList *params, const int L_sum) { setup(prob, params, L_sum); }
     virtual ~L_sum_Model() {}
 
     virtual int get_lb();
@@ -331,8 +349,8 @@ namespace MistralScheduler {
   public:
  
     No_wait_Model() : C_max_Model() {} 
-    No_wait_Model(Instance& prob, const int C_max) : C_max_Model() { setup(prob, C_max); }
-    virtual void setup(Instance& prob, const int C_max);
+    No_wait_Model(Instance& prob, ParameterList *params, const int C_max) : C_max_Model() { setup(prob, params, C_max); }
+    virtual void setup(Instance& prob, ParameterList *params, const int C_max);
     virtual ~No_wait_Model() {}
   };
 
@@ -352,6 +370,8 @@ namespace MistralScheduler {
     Solution(SchedulingModel *m, SchedulingSolver *s);
     virtual ~Solution();
 
+    double distance(Solution* s);
+
     void guide_search();
     
   };
@@ -367,6 +387,7 @@ namespace MistralScheduler {
 	delete pool_[i];
     }
 
+    Solution*& operator[](const int i) { return pool_[i]; }
     void add(Solution *s) { pool_.push_back(s); }
     Solution* getBestSolution() { return pool_.back(); }
     unsigned int size() { return pool_.size(); }

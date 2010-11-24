@@ -272,7 +272,7 @@ ParameterList::ParameterList(int length, char **commandline) {
   NodeBase    = 30;
   Dichotomy   = 128;
   Base        = 256;
-  Randomized  = 1;
+  Randomized  = -1;
   Precision   = 100;
   Hlimit      = 20000;
   InitBound   = 1000;
@@ -1699,7 +1699,12 @@ void SchedulingSolver::dichotomic_search()
   setTimeLimit(params->Cutoff);
   setNodeLimit(params->NodeCutoff);
   //setRandomSeed( params->Seed );
-  if(params->Randomized) randomizeSequence();
+  //if(params->Randomized) 
+  //randomizeSequence();
+  if(params->Randomized > 0)
+    setRandomized(params->Randomized);
+  else
+    randomizeSequence();
 
 
   WeighterRestartGenNogood *nogoods = NULL;
@@ -1713,8 +1718,6 @@ void SchedulingSolver::dichotomic_search()
 	     
       double remaining_time = params->Optimise - stats->get_total_time();
       if(remaining_time < (2*params->NodeBase)) break;
-	   
-
 	   
       objective = (int)(floor(((double)minfsble + (double)maxfsble)/2));
 	     

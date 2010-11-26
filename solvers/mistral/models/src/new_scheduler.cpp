@@ -40,9 +40,6 @@ int main( int argc, char** argv )
   model->printStats(std::cout);  
   stats.print(std::cout, "INIT");  
 
-  //exit(1);
-
-
   if(solver.status == UNKNOWN) solver.dichotomic_search();
   else if( solver.status == SAT ) {
     std::cout << "c Solved while building!" << std::endl;
@@ -57,12 +54,14 @@ int main( int argc, char** argv )
 
   stats.print(std::cout, "DS");
 
-  //if(!stats.solved()) solver.branch_and_bound();
-  solver.large_neighborhood_search();
+  if(!stats.solved()) {
+    if(params.Algorithm == "bnb")
+      solver.branch_and_bound();
+    else if(params.Algorithm == "lns")
+      solver.large_neighborhood_search();
+  }
 
-
-  stats.print(std::cout, "");
-  
+  stats.print(std::cout, "");  
   std::cout << "s " << (stats.num_solutions ? "SATISFIABLE" : "UNSATISFIABLE") 
 	    << " \nv 00" << std::endl;
 

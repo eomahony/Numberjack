@@ -9,6 +9,10 @@ using namespace MistralScheduler;
 #define INFTY 0xffffff
 #define BIG 0xffff
 
+#define DICHO 0
+#define BNB   1
+#define LNS   2
+
 
 StatisticList::StatisticList() {
   best_solution_index     = 0;
@@ -58,8 +62,9 @@ double StatisticList::get_lowerbound_time() {
   return total_time;
 }
 
-void StatisticList::add_info(const int objective, bool dichotomic) {
+void StatisticList::add_info(const int objective, int tp) {
 
+  //bool update_ub = true;
   DBG("Update statistics%s\n", "");
 
   time.push_back(solver->ENDTIME);
@@ -68,7 +73,7 @@ void StatisticList::add_info(const int objective, bool dichotomic) {
   backtracks.push_back(solver->BACKTRACKS);
   fails.push_back(solver->FAILURES);
   propags.push_back(solver->PROPAGS);
-  dicho_step.push_back(dichotomic);
+  types.push_back(tp);
 
   outcome.push_back(solver->status);
 
@@ -77,10 +82,9 @@ void StatisticList::add_info(const int objective, bool dichotomic) {
     best_solution_index = outcome.size()-1;
     upper_bound = objective;
     if(outcome.back() == OPT) lower_bound = objective;
-  } else if(outcome.back() == UNSAT) {
+  } else if(types.back() != LNS && outcome.back() == UNSAT) {
     lower_bound = objective+1;
   }
-
 }
 
 
@@ -127,7 +131,7 @@ std::ostream& StatisticList::print(std::ostream& os,
     total_fails        += fails[k];
     total_propags      += propags[k];
 
-    if(dicho_step[k] && outcome[k] == UNKNOWN)
+    if(types[k]==DICHO && outcome[k] == UNKNOWN)
       {
 	++nb_unknown;
 	avg_cutoff_time += time[k];
@@ -219,11 +223,11 @@ std::ostream& StatisticList::print(std::ostream& os,
 const char* ParameterList::int_ident[ParameterList::nia] = 
   {"-ub", "-lb", "-check", "-seed", "-cutoff", "-dichotomy", 
    "-base", "-randomized", "-verbose", "-optimise", "-nogood", 
-   "-dyncutoff", "-nodes", "-hlimit", "-init"};
+   "-dyncutoff", "-nodes", "-hlimit", "-init", "neighbor"};
 
 const char* ParameterList::str_ident[ParameterList::nsa] = 
   {"-heuristic", "-restart", "-factor", "-decay", "-type", 
-   "-value", "-dvalue", "-ivalue", "-skew", "-objective"};
+   "-value", "-dvalue", "-ivalue", "-skew", "-objective", "-algo"};
 
 
 // ParameterList::ParameterList() {
@@ -276,6 +280,7 @@ ParameterList::ParameterList(int length, char **commandline) {
   Precision   = 100;
   Hlimit      = 20000;
   InitBound   = 1000;
+  Neighbor    = 2;
 
   Verbose     = 1;
   Optimise    = 3600;
@@ -289,6 +294,7 @@ ParameterList::ParameterList(int length, char **commandline) {
   IValue    = "promise";
   Skew      = -1.0;
   Objective = "makespan";
+  Algorithm = "bnb";
 
   Heuristic = "osp-t";
   PolicyRestart = GEOMETRIC;
@@ -306,19 +312,20 @@ ParameterList::ParameterList(int length, char **commandline) {
   if(int_param[10] != NOVAL) Rngd        = int_param[10];
   if(int_param[13] != NOVAL) Hlimit      = int_param[13]; 
   if(int_param[14] != NOVAL) InitBound   = int_param[14]; 
-
+  if(int_param[15] != NOVAL) Neighbor    = int_param[15]; 
   
 
 
-  if(strcmp(str_param[0],"nil")) Heuristic  = str_param[0];
-  if(strcmp(str_param[1],"nil")) Policy     = str_param[1];
-  if(strcmp(str_param[2],"nil")) Factor     = atof(str_param[2]);
-  if(strcmp(str_param[3],"nil")) Decay      = atof(str_param[3]);
-  if(strcmp(str_param[5],"nil")) Value      = str_param[5];
-  if(strcmp(str_param[6],"nil")) DValue     = str_param[6];
-  if(strcmp(str_param[7],"nil")) IValue     = str_param[7];
-  if(strcmp(str_param[8],"nil")) Skew       = atof(str_param[8]);
-  if(strcmp(str_param[9],"nil")) Objective  = str_param[9];
+  if(strcmp(str_param[0 ],"nil")) Heuristic  = str_param[0];
+  if(strcmp(str_param[1 ],"nil")) Policy     = str_param[1];
+  if(strcmp(str_param[2 ],"nil")) Factor     = atof(str_param[2]);
+  if(strcmp(str_param[3 ],"nil")) Decay      = atof(str_param[3]);
+  if(strcmp(str_param[5 ],"nil")) Value      = str_param[5];
+  if(strcmp(str_param[6 ],"nil")) DValue     = str_param[6];
+  if(strcmp(str_param[7 ],"nil")) IValue     = str_param[7];
+  if(strcmp(str_param[8 ],"nil")) Skew       = atof(str_param[8]);
+  if(strcmp(str_param[9 ],"nil")) Objective  = str_param[9];
+  if(strcmp(str_param[10],"nil")) Algorithm  = str_param[10];
 
 }
 
@@ -1576,7 +1583,11 @@ Solution::Solution(SchedulingModel *m, SchedulingSolver *s) {
 
   for(i=0; i<n; ++i) {
     all_value[i] = solver->variables[i]->value();
+//     std::cout << "store " ;
+//     solver->variables[i]->print(std::cout);
+//     std::cout << std::endl;
   }
+
 
   n = m->disjuncts.size();
   if(n) {
@@ -1818,7 +1829,7 @@ void SchedulingSolver::dichotomic_search()
 // 	  was_unk = true;
 // 	}
       }
-      stats->add_info(new_objective);
+      stats->add_info(new_objective, DICHO);
       printStatistics(std::cout, ((params->Verbose ? RUNTIME : 0) + ((params->Verbose || status != UNKNOWN)  ? BTS + PPGS : 0) + OUTCOME) );
       
 
@@ -1888,7 +1899,7 @@ void SchedulingSolver::branch_and_bound()
     //if(SOLUTIONS)
     //stats->normalized_objective = model->get_normalized_objective();
 
-    stats->add_info(goal->upper_bound, false);
+    stats->add_info(goal->upper_bound, BNB);
     
     printStatistics(std::cout, ((params->Verbose ? RUNTIME : 0) + (params->Verbose ? BTS + PPGS : 0) + OUTCOME) );
     
@@ -1904,52 +1915,62 @@ void StoreStats::execute()
   stats->normalized_objective = ss->model->get_normalized_objective();
 }  
 
-void SchedulingSolver::extract_stable(Vector<VariableInt*>& stable) 
+Vector<VariableInt*> unstable;
+
+void SchedulingSolver::extract_stable(List& neighbors, 
+				      Vector<VariableInt*>& stable)
 {
   stable.clear();
-  int i, j, k=0, n=model->data->nMachines(), m;
-  int selected_machine = randint(n);
-  for(i=0; i<n; ++i) if(i!=selected_machine) {
+  unstable.clear();
+  int i, j, k=0, n=neighbors.capacity, m=0;
+  
+  for(i=0; i<n; ++i) if(!neighbors.member(i)) {
       m = model->data->nTasksInMachine(i);
-      for(j=0; j<m; ++j) {
+      for(j=0; j<(m*(m-1)/2); ++j) {
 	stable.push(model->disjuncts[k++].getVariable());
       }
+    } else {
+      k += (m*(m-1)/2);
+//       m = model->data->nTasksInMachine(i);
+//       for(j=0; j<(m*(m-1)/2); ++j) {
+// 	unstable.push(model->disjuncts[k++].getVariable());
+//       }
     }
 }
 
 void SchedulingSolver::large_neighborhood_search() {
    Vector< VariableInt* > stable;
-   Solution *solution;
+   List neighbors;
+   neighbors.init(0, model->data->nMachines()-1);
    int objective = INFTY;
 
-//   save();
-//   model->set_objective(stats->upper_bound-1);
-//   addObjective();
+   save();
+   model->set_objective(stats->upper_bound);
+   addObjective();
 
    while(true) {
      // select a subset of variables that will stay stable
-     extract_stable(stable);
-
-//      for(int i=0; i<stable.size; ++i) {
-//        stable[i]
+     neighbors.clear();
+     neighbors.random_fill(params->Neighbor);
+     extract_stable(neighbors,stable);
+    
+     // optimise the remaining part
+     objective = stats->upper_bound;
+     repair(pool->getBestSolution(), stable);
+     if(stats->upper_bound <= objective)
+       pool->add(new Solution(model, this));
+     reset(true);
    }
-
-//     // optimise the remaining part
-//     objective = repair(pool->getBestSolution(), stable);
-//     if(goal->upper_bound <= stats->upper_bound) {
-//       // if a solution at least as good as the previous one was found
-//       stats->upper_bound = goal->upper_bound;
-//     } // otherwise we keep trying from the same solution 
-//   }
 }
 
 
 void SchedulingSolver::repair(Solution *sol, Vector<VariableInt*>& stable)  
 {
+  save();
   for(int i=0; i<stable.size; ++i) {
-    save();
-    Decision branch(Decision::ASSIGNMENT, (*sol)[stable[i]], stable[i]);
+    Decision branch('e', (*sol)[stable[i]], stable[i]);
     branch.left();
-    print(std::cout);
   }
+  solve_and_restart() ;
+  stats->add_info(goal->upper_bound, LNS);
 }

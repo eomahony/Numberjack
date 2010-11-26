@@ -46,7 +46,7 @@ namespace MistralScheduler {
     std::vector<double>            time;
     std::vector<double>            soltime;
     std::vector<int>               outcome;
-    std::vector<bool>              dicho_step;
+    std::vector<bool>              types;
 
     StatisticList();
     virtual ~StatisticList();
@@ -55,7 +55,7 @@ namespace MistralScheduler {
     double get_total_time();
     double get_lowerbound_time();
     void start();
-    void add_info(const int obj, bool dichotomic=true);
+    void add_info(const int obj, const int tp);
     //void add_info(const int lb, const int ub);
 
     std::ostream& print(std::ostream& os, 
@@ -76,10 +76,10 @@ namespace MistralScheduler {
     static const int RGUIDED =  3;
     static const int RAND    =  4;
 
-    static const int nia = 15;
+    static const int nia = 16;
     static const char* int_ident[nia];
     
-    static const int nsa = 10;
+    static const int nsa = 11;
     static const char* str_ident[nsa];
     
     
@@ -107,6 +107,7 @@ namespace MistralScheduler {
     int Precision; // "-": precision when turning float weights into int weights
     int Hlimit; // "hlimit": maximum number of variables evaluated by the dvo
     int InitBound; // "init": number of iterations when initialising the upper bound
+    int Neighbor; // "neighbor": number of machines to re-schedule during LNS
 
     double Factor;
     double Decay;
@@ -119,6 +120,7 @@ namespace MistralScheduler {
     std::string DValue;
     std::string IValue;
     std::string Objective;
+    std::string Algorithm;
 
     int PolicyRestart;
 
@@ -643,7 +645,7 @@ public:
     void dichotomic_search();
     void branch_and_bound();
     void large_neighborhood_search();
-    void extract_stable(Vector<VariableInt*>& stable);
+    void extract_stable(List& neighbors, Vector<VariableInt*>& stable);
     void repair(Solution *sol, Vector<VariableInt*>& stable);
 
   };

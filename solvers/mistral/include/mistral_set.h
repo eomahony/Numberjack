@@ -1541,6 +1541,16 @@ namespace Mistral {
       size = capacity;
     }
 
+    inline void random_fill(const int n)
+    {
+      int i, j;
+      for(i=0; i<n; ++i) {
+	j = randint(capacity-size);
+	if(j) insert(list_[j+size]);
+	else ++size;
+      }
+    }
+
     inline void clear()
     {
       size = 0;

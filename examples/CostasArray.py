@@ -1,20 +1,16 @@
 from Numberjack import *
-import MipWrapper
 
 def get_model(N):
     # Create the variables
     sequence = VarArray(N,1,N)
     
-    seqs = [[sequence[j] - sequence[j+i+1] for j in range(N-i-1)] for i in range(N-2)]
-    
     # State the model
     model = Model(
         AllDiff(sequence),
-        #[AllDiff([sequence[j] - sequence[j+i+1] for j in range(N-i-1)]) for i in range(N-2)] 
-        [ AllDiff(seq) for seq in seqs ]
+        [AllDiff([sequence[j] - sequence[j+i+1] for j in range(N-i-1)]) for i in range(N-2)] 
         )
     
-    return sequence,model, seqs
+    return sequence,model
     
 def printCostasTriangle(sequence):
     N = len(sequence)
@@ -25,7 +21,7 @@ def printCostasTriangle(sequence):
     return out
 
 def solve(param):
-    sequence,model, seqs = get_model(param['N'])
+    sequence,model = get_model(param['N'])
         
     solver = model.load(param['solver'])
     solver.setVerbosity(param['verbose'])

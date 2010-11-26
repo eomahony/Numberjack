@@ -26,7 +26,7 @@ StatisticList::StatisticList() {
 
   normalized_objective    = 1.0;
 
-  real_start_time               = 0.0;
+  real_start_time         = 0.0;
 }
 
 StatisticList::~StatisticList() {}
@@ -304,7 +304,6 @@ ParameterList::ParameterList(int length, char **commandline) {
   if(int_param[8]  != NOVAL) Verbose     = int_param[8];
   if(int_param[9]  != NOVAL) Optimise    = int_param[9]; 
   if(int_param[10] != NOVAL) Rngd        = int_param[10];
-  if(int_param[11] != NOVAL) NodeBase    = int_param[11]; 
   if(int_param[13] != NOVAL) Hlimit      = int_param[13]; 
   if(int_param[14] != NOVAL) InitBound   = int_param[14]; 
 
@@ -359,7 +358,10 @@ ParameterList::ParameterList(int length, char **commandline) {
 // }
 
 //void ParameterList::initialise(const int n_constraints) {
-void ParameterList::initialise(const SchedulingModel *model) {
+void ParameterList::initialise(SchedulingSolver *s) {
+
+  solver = s;
+  SchedulingModel *model = solver->model;
 
   if(Type == "osp") {
     Objective = "makespan";
@@ -404,6 +406,7 @@ void ParameterList::initialise(const SchedulingModel *model) {
 //   if(int_param[10] != NOVAL) Rngd        = int_param[10];
 
 //   if(int_param[11] != NOVAL) NodeBase    = int_param[11]; 
+  if(int_param[11] != NOVAL) NodeBase    = int_param[11]; 
   NodeCutoff  = (int)((double)NodeBase * 
 		      (12500000.0/(double)(model->data->nDisjuncts()+
 					   model->data->nPrecedences())));
@@ -438,6 +441,27 @@ void ParameterList::initialise(const SchedulingModel *model) {
 
   //  if(model->ub_C_max - model->lb_C_max > 3000)
 
+}
+
+double ParameterList::getSkew() {
+
+  if(Skew < 0) Skew = ((double)(solver->stats->upper_bound)/
+		       (double)solver->stats->lower_bound);
+  if(Skew != 1.0) {
+    if(Skew < 1.0) Skew = 1.0; 
+    double rs = (randreal() - .5)/2.0;
+
+    //cout << left << setw(30) << "c Dichotomic skew " << ":" ;
+    //if(rs<0) cout << right << setw(6) << setprecision(2) << (-rs) << " - " ;
+    //else cout << right << setw(6) << setprecision(1) << rs << " + ";
+    //cout << right << setw(4) << setprecision(3) << Skew;
+    Skew += rs;
+    //cout << " = " << right << setw(4) << Skew << endl;
+  } // else {
+//     cout << left << setw(30) << "c Dichotomic skew " << ":" << right << setw(20) <<  "no" << endl;
+//   }
+
+  return Skew;
 
 }
 
@@ -446,6 +470,8 @@ std::ostream& ParameterList::print(std::ostream& os) {
   os << std::left << std::setw(30) << "c data file " << ":" << std::right << std::setw(20) << data_file_name << std::endl;
   os << std::left << std::setw(30) << "c type " << ":" << std::right << std::setw(20) << Type << std::endl;
   os << std::left << std::setw(30) << "c seed " << ":" << std::right << std::setw(20) << Seed << std::endl;
+  os << std::left << std::setw(30) << "c greedy iterations " << ":" << std::right << std::setw(20) << InitBound << std::endl;
+  os << std::left << std::setw(30) << "c skew " << ":" << std::right << std::setw(20) << getSkew() << std::endl;
   os << std::left << std::setw(30) << "c time cutoff " << ":" << std::right << std::setw(20) << Cutoff << std::endl;
   os << std::left << std::setw(30) << "c node cutoff " << ":" << std::right << std::setw(20) << NodeCutoff << std::endl;
   os << std::left << std::setw(30) << "c dichotomy " << ":" << std::right << std::setw(20) << (Dichotomy ? "yes" : "no") << std::endl;
@@ -1538,14 +1564,19 @@ Solution::Solution(SchedulingModel *m, SchedulingSolver *s) {
   model = m;
   solver = s;
 
+  int i, n=solver->variables.size;
+
   earlybool_value = NULL;
   latebool_value = NULL;
   task_min = NULL;
   task_max = NULL;
   ltask_value = NULL;
   disjunct_value = NULL;
+  all_value = new int[n];
 
-  int i, n;
+  for(i=0; i<n; ++i) {
+    all_value[i] = solver->variables[i]->value();
+  }
 
   n = m->disjuncts.size();
   if(n) {
@@ -1592,6 +1623,7 @@ Solution::~Solution() {
   delete [] task_max;
   delete [] ltask_value;
   delete [] disjunct_value;
+  delete [] all_value;
 }
 
 void Solution::guide_search() {
@@ -1634,10 +1666,13 @@ SchedulingSolver::SchedulingSolver(SchedulingModel* m,
 
   //params.initialise(model);
   //p.initialise(model);
-  params->initialise(model);
+  params->initialise(this);
 
-  stats->lower_bound = m->get_lb();//lower_bound;
-  stats->upper_bound = m->get_ub();//upper_bound;
+  stats->lower_bound = model->get_lb();//lower_bound;
+  stats->upper_bound = model->get_ub();//upper_bound;
+
+  //params->init_skew();
+  
 
   pool = new SolutionPool();
 
@@ -1680,7 +1715,6 @@ void SchedulingSolver::decay_weights(const double decay) {
   }
 }
 
-
 void SchedulingSolver::dichotomic_search()
 {
   
@@ -1718,8 +1752,14 @@ void SchedulingSolver::dichotomic_search()
 	     
       double remaining_time = params->Optimise - stats->get_total_time();
       if(remaining_time < (2*params->NodeBase)) break;
-	   
-      objective = (int)(floor(((double)minfsble + (double)maxfsble)/2));
+
+      if(pool->size())
+	objective = (int)(floor(((double)minfsble + (double)maxfsble)/2));
+      else
+	objective = (int)(floor((params->getSkew() * 
+				 (double)minfsble + (double)maxfsble)/
+				(1.0+params->getSkew()))); 
+
 	     
       //reorderSequence();
 
@@ -1864,6 +1904,52 @@ void StoreStats::execute()
   stats->normalized_objective = ss->model->get_normalized_objective();
 }  
 
+void SchedulingSolver::extract_stable(Vector<VariableInt*>& stable) 
+{
+  stable.clear();
+  int i, j, k=0, n=model->data->nMachines(), m;
+  int selected_machine = randint(n);
+  for(i=0; i<n; ++i) if(i!=selected_machine) {
+      m = model->data->nTasksInMachine(i);
+      for(j=0; j<m; ++j) {
+	stable.push(model->disjuncts[k++].getVariable());
+      }
+    }
+}
+
+void SchedulingSolver::large_neighborhood_search() {
+   Vector< VariableInt* > stable;
+   Solution *solution;
+   int objective = INFTY;
+
+//   save();
+//   model->set_objective(stats->upper_bound-1);
+//   addObjective();
+
+   while(true) {
+     // select a subset of variables that will stay stable
+     extract_stable(stable);
+
+//      for(int i=0; i<stable.size; ++i) {
+//        stable[i]
+   }
+
+//     // optimise the remaining part
+//     objective = repair(pool->getBestSolution(), stable);
+//     if(goal->upper_bound <= stats->upper_bound) {
+//       // if a solution at least as good as the previous one was found
+//       stats->upper_bound = goal->upper_bound;
+//     } // otherwise we keep trying from the same solution 
+//   }
+}
 
 
-
+void SchedulingSolver::repair(Solution *sol, Vector<VariableInt*>& stable)  
+{
+  for(int i=0; i<stable.size; ++i) {
+    save();
+    Decision branch(Decision::ASSIGNMENT, (*sol)[stable[i]], stable[i]);
+    branch.left();
+    print(std::cout);
+  }
+}

@@ -5,7 +5,7 @@ def get_model(N):
 
     square = Matrix(N,N,1,N*N)
     model = Model(
-            AllDiff( square.flat ),
+            AllDiff( square ),
         
             [Sum(row) == sum_val for row in square.row],
             [Sum(col) == sum_val for col in square.col],

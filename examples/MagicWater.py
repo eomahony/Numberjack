@@ -9,10 +9,10 @@ def model_magic_square(N):
     water = Matrix(N,N,1,N*N) # water[a][b] stands for the water level in square a,b
 
     # Sum of water depth
-    objective = (Sum(water.flat) - (N*N*(N*N+1)/2))
+    objective = (Sum(water) - (N*N*(N*N+1)/2))
 
     model = Model(
-        AllDiff( square.flat ),
+        AllDiff( square ),
         
         [Sum(row) == sum_val for row in square.row],
         [Sum(col) == sum_val for col in square.col],
@@ -213,7 +213,7 @@ default = {'N':4, 'var':'DomainOverWDegree', 'proba':0.8,
            'val':'RandomSplit', 'restart':'yes', 'rand':5, 
            'verbose':1, 'cutoff':30000, 'factor':1.2, 'base':64, 
            'decay':0.0,'algo':'basic','solver':'Mistral', 
-           'print':'no','tcutoff':3}
+           'print':'no','tcutoff':5}
 
 if __name__ == '__main__':
     param = input(default) 

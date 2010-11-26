@@ -1603,7 +1603,7 @@ class Sum(Predicate):
         Predicate.__init__(self, vars, "Sum")
         
         if coefs is None:
-            coefs = [1 for var in vars]
+            coefs = [1 for var in self.children]
     
         self.parameters = [coefs, 0]
 

@@ -89,6 +89,8 @@ namespace MistralScheduler {
     char* data_file;
     char* data_file_name;
 
+    SchedulingSolver *solver;
+
     int UBinit; // "ub": user defined upper bound (-1 if not)
     int LBinit; // "lb": user defined lower bound (-1 if not)
     int Checked; // "check": whether the solution is checked
@@ -125,7 +127,9 @@ namespace MistralScheduler {
     //ParameterList(const ParameterList& pl);
     virtual ~ParameterList() {}
 
-    void initialise(const SchedulingModel*);
+    double getSkew();
+
+    void initialise(SchedulingSolver*);
     void initialise(const ParameterList& pl);
     std::ostream& print(std::ostream& os);
 
@@ -362,6 +366,7 @@ namespace MistralScheduler {
     int *task_max;
     int *ltask_value;
     int *disjunct_value;
+    int *all_value;
 
   public:
     SchedulingModel  * model;
@@ -369,6 +374,8 @@ namespace MistralScheduler {
     
     Solution(SchedulingModel *m, SchedulingSolver *s);
     virtual ~Solution();
+
+    int& operator[](const VariableInt *x) {return all_value[x->id];}
 
     double distance(Solution* s);
 
@@ -635,11 +642,11 @@ public:
 
     void dichotomic_search();
     void branch_and_bound();
+    void large_neighborhood_search();
+    void extract_stable(Vector<VariableInt*>& stable);
+    void repair(Solution *sol, Vector<VariableInt*>& stable);
 
   };
-
-
-
 
 
 

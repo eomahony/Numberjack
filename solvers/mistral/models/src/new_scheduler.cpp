@@ -14,13 +14,9 @@ int main( int argc, char** argv )
   StatisticList stats;
   stats.start();
 
-  usrand( params.Seed );
-
   Instance jsp(params);
   
   //jsp.print(std::cout);
-
-  std::cout << std::endl;
   jsp.printStats(std::cout);
 
   SchedulingModel *model;
@@ -37,11 +33,14 @@ int main( int argc, char** argv )
   }
 
   SchedulingSolver solver(model, &params, &stats);
+  usrand(params.Seed);
 
   params.print(std::cout);  
 
   model->printStats(std::cout);  
   stats.print(std::cout, "INIT");  
+
+  //exit(1);
 
 
   if(solver.status == UNKNOWN) solver.dichotomic_search();
@@ -58,7 +57,9 @@ int main( int argc, char** argv )
 
   stats.print(std::cout, "DS");
 
-  if(!stats.solved()) solver.branch_and_bound();
+  //if(!stats.solved()) solver.branch_and_bound();
+  solver.large_neighborhood_search();
+
 
   stats.print(std::cout, "");
   

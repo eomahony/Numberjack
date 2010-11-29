@@ -107,7 +107,47 @@ int main(int argc, char *argv[]) {
     std::cout << luby_seq2(i) << " ";
   std::cout << std::endl;
   
+
+  Variable x(-1, 3);
+  Variable y(-3, 1);
+
+  CSP model;
+  
+  model.add( x != y );
+
+  Solver s(model);
+
+
+  VariableInt *_x = x.getVariable();
+    
+  _x->print(std::cout);
+  std::cout << std::endl;
+
+  SimpleUnaryConstraint dec(_x);
+
+  _x->branch = new ValSelectorMin(_x);
+  
+  
+  dec.make();
+  
+
+  std::cout << dec._data_ << std::endl;
+  std::cout << dec.type() << std::endl;
+  std::cout << dec.value() << std::endl;
+
+
+  dec.revert();
+  
+    std::cout << dec._data_ << std::endl;
+  std::cout << dec.type() << std::endl;
+  std::cout << dec.value() << std::endl;
+
   exit(1);
+  
+  
+
+
+  //exit(1);
 
 
   // command line
@@ -150,6 +190,8 @@ int main(int argc, char *argv[]) {
 
      //s.setVerbosity(3);
 
+
+  
     //s.solve_and_restart(GEOMETRIC, 32, 2);
     s.solve();
 

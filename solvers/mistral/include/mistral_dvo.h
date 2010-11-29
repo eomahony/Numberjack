@@ -55,7 +55,7 @@ namespace Mistral {
        30 bits for the value
      */
 
-    unsigned int _data_;
+    int _data_;
     VariableInt* var;
 
     inline int type() const {return _data_&3; }
@@ -1799,7 +1799,15 @@ namespace Mistral {
 
     /**@name Utils*/
     //@{ 
-    void make(int& t, int& v) { v=_X->min(); t=Decision::ASSIGNMENT;}
+    void make(int& t, int& v) { 
+
+//        std::cout << "make a min decision for ";
+//        _X->print(std::cout);
+//        std::cout << std::endl;
+
+v=_X->min(); t=Decision::ASSIGNMENT;
+
+}
     inline int getBest() { return (val = _X->min()); }
     inline void left() {
       val = _X->min();
@@ -4353,6 +4361,7 @@ namespace Mistral {
 
     /**@name Utils*/
     //@{   
+    virtual void init() = 0;
     /// Return an optimistic evaluation of the best objective value currently achievable
     virtual int score() = 0;
     /// Return the current value of the objective
@@ -4387,6 +4396,7 @@ namespace Mistral {
 
     /**@name Utils*/
     //@{ 
+    virtual void init();
     /*!
       returns an optimistic estimate of the bound
     */
@@ -4428,6 +4438,7 @@ namespace Mistral {
 
     /**@name Utils*/
     //@{ 
+    virtual void init();
     /*!
       returns an optimistic estimate of the bound
     */
@@ -4452,6 +4463,11 @@ namespace Mistral {
 inline void Mistral::SimpleUnaryConstraint::make() { 
   int v;
   int t;
+
+//        std::cout << "make a decision for ";
+//   var->print(std::cout);
+//        std::cout << std::endl;
+
   var->branch->make(t,v); 
   _data_ = ((v<<2)+t);
 }

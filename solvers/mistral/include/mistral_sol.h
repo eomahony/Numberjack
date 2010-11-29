@@ -422,6 +422,7 @@ namespace Mistral {
       VariableInt *x = heuristic->select();
       decision.push( x );
 
+
       SimpleUnaryConstraint dec( x );
       branching_decision.push( dec );
 

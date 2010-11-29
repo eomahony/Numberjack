@@ -3395,6 +3395,8 @@ void Solver::reset(const bool full) {
   //status = UNKNOWN;
   //if(full) 
   reset_stats();
+
+  if(full) goal->init();
 }
 
 void Solver::setLowerBounds(VarArray& vars, int* lb) {

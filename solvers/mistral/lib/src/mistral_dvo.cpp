@@ -2172,8 +2172,16 @@ int ObjectiveFunction::update()
 MaximiseVar::MaximiseVar(Solver *s, VariableInt *x) 
 {
   umore = new UnaryConstraintMore(s, x, x->min());
-  maxX = x->max();
-  upper_bound = (maxX - x->min());
+  init();
+//   maxX = x->max();
+//   upper_bound = (maxX - x->min());
+}
+
+void MaximiseVar::init() 
+{
+  //umore = new UnaryConstraintMore(s, x, x->min());
+  maxX = umore->X->max();
+  upper_bound = (maxX - umore->X->min());
 }
 
 MaximiseVar::~MaximiseVar() 
@@ -2205,8 +2213,16 @@ int MaximiseVar::update()
 MinimiseVar::MinimiseVar(Solver *s, VariableInt *x) 
 {
   uless = new UnaryConstraintLess(s, x, x->max());
-  minX = x->min();
-  upper_bound = x->max();
+  init();
+//   minX = x->min();
+//   upper_bound = x->max();
+}
+
+void MinimiseVar::init() 
+{
+  //umore = new UnaryConstraintMore(s, x, x->min());
+  minX = uless->X->min();
+  upper_bound = uless->X->max();
 }
 
 MinimiseVar::~MinimiseVar() 

@@ -332,7 +332,7 @@ int MiniSatSolver::solve()
     std::cout << "unsatisfiable" << std:: endl;
 #endif 
 
-bool ret = is_sat();
+  bool ret = is_sat();
 
  return ret;
 }

@@ -713,6 +713,7 @@ void SimpSolver::toDimacs(const char* file)
             toDimacs(f, *clauses[i]);
 
         fprintf(stderr, "Wrote %d clauses...\n", clauses.size());
+	fclose(f);
     }else
         fprintf(stderr, "could not open file %s\n", file);
 }

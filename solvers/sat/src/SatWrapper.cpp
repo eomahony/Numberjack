@@ -1083,6 +1083,9 @@ SatWrapper_and::~SatWrapper_and() {
 
 }
 
+
+
+
 SatWrapper_Expression* SatWrapper_and::add(SatWrapperSolver *solver, bool top_level) {
   if(!has_been_added()) {
     _solver = solver;
@@ -1093,30 +1096,47 @@ SatWrapper_Expression* SatWrapper_and::add(SatWrapperSolver *solver, bool top_le
       
       if(_vars[1]) {
 	
-	_vars[0] = _vars[0]->add(_solver, false);
-	_vars[1] = _vars[1]->add(_solver, false);
+	///////////// OLD BUGGY?? VERSION ///////////////
+	// 	_vars[0] = _vars[0]->add(_solver, false);
+	// 	_vars[1] = _vars[1]->add(_solver, false);
+	
+	// #ifdef _DEBUGWRAP
+	// 	std::cout << "add and constraint" << std::endl;
+	// #endif
+	
+	// 	for(int i=0; i<2; ++i) {
+	// 	  lits.clear();
+	// 	  lits.push_back(~(_vars[i]->equal(0)));
+	// 	  _solver->addClause(lits);
+	// 	}
+	
+	_vars[0] = _vars[0]->add(_solver, true);
+	_vars[1] = _vars[1]->add(_solver, true);
 	
 #ifdef _DEBUGWRAP
-	std::cout << "add or constraint" << std::endl;
+	std::cout << "add and constraint" << std::endl;
 #endif
 	
-	for(int i=0; i<2; ++i) {
-	  lits.clear();
-	  lits.push_back(~(_vars[i]->equal(0)));
-	  _solver->addClause(lits);
-	}
 	
       } else if(_rhs != 0) {
-	
-	_vars[0] = _vars[0]->add(_solver, false);
+
+	///////////// NEW VERSION ///////////////
+	_vars[0] = _vars[0]->add(_solver, true);
 	
 #ifdef _DEBUGWRAP
-	std::cout << "add or constraint" << std::endl;
+	std::cout << "add and constraint" << std::endl;
 #endif
+
+	///////////// OLD BUGGY?? VERSION ///////////////
+	// 	_vars[0] = _vars[0]->add(_solver, false);
 	
-	lits.clear();
-	lits.push_back(~(_vars[0]->equal(0)));
-	_solver->addClause(lits);
+	// #ifdef _DEBUGWRAP
+	// 	std::cout << "add and constraint" << std::endl;
+	// #endif
+	
+	// 	lits.clear();
+	// 	lits.push_back(~(_vars[0]->equal(0)));
+	// 	_solver->addClause(lits);
       }
       
     } else {
@@ -1129,7 +1149,7 @@ SatWrapper_Expression* SatWrapper_and::add(SatWrapperSolver *solver, bool top_le
 	_vars[1] = _vars[1]->add(_solver, false);
 	
 #ifdef _DEBUGWRAP
-	std::cout << "add or constraint" << std::endl;
+	std::cout << "add and constraint" << std::endl;
 #endif
 	
 	// y and z -> x

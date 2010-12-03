@@ -200,7 +200,6 @@ void MiniSatSolver::validate() {
     cl.clear(false);
     for(i=0; i<clause_base[current].size(); ++i)
       cl.push(clause_base[current][i]);
-    //displayClause(clause_base[current]);
     Solver::addClause(cl);
     ++current;
   }

@@ -101,6 +101,7 @@ int SCIPSolver::solve(){
   if(_verbosity > 0 && _verbosity < 3){
     // Do nothing extra
   } else if(_verbosity >= 3){
+    //SCIP_CALL_EXC(SCIPwriteOrigProblem(_scip, "scip_model", NULL, TRUE));
     SCIP_CALL_EXC(SCIPprintOrigProblem(_scip, NULL, NULL, FALSE));
   } else {
       // disable scip output to stdout

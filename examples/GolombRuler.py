@@ -17,7 +17,7 @@ def get_model(param):
         AllDiff(distance),
         marks[0] == 0, # symmetry breaking
         
-        [distance[i*(i-1)/2+j] >= ruler[i-j] for i in range(1,m) for j in range(0,i-1) if (i-j < m-1)]
+        [distance[i*(i-1)/2+j] >= ruler[i-j] for i in range(1,m) for j in range(0,i-1) if (i-j < m)]
         )
 
     return marks,model

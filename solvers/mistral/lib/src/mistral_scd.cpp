@@ -1920,6 +1920,9 @@ Vector<VariableInt*> unstable;
 void SchedulingSolver::extract_stable(List& neighbors, 
 				      Vector<VariableInt*>& stable)
 {
+  neighbors.clear();
+  neighbors.random_fill(params->Neighbor);
+
   stable.clear();
   unstable.clear();
   int i, j, k=0, n=neighbors.capacity, m=0;
@@ -1950,8 +1953,6 @@ void SchedulingSolver::large_neighborhood_search() {
 
    while(true) {
      // select a subset of variables that will stay stable
-     neighbors.clear();
-     neighbors.random_fill(params->Neighbor);
      extract_stable(neighbors,stable);
     
      // optimise the remaining part

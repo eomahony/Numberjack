@@ -1084,8 +1084,6 @@ SatWrapper_and::~SatWrapper_and() {
 }
 
 
-
-
 SatWrapper_Expression* SatWrapper_and::add(SatWrapperSolver *solver, bool top_level) {
   if(!has_been_added()) {
     _solver = solver;

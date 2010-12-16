@@ -3396,7 +3396,11 @@ void Solver::reset(const bool full) {
   //if(full) 
   reset_stats();
 
-  if(full) goal->init();
+  if(full) 
+    if(goal) {
+      goal->init();
+      //std::cout << "goal ub: " << goal->upper_bound << std::endl;
+    }
 }
 
 void Solver::setLowerBounds(VarArray& vars, int* lb) {

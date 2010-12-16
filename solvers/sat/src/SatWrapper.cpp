@@ -105,6 +105,10 @@ int DomainEncoding::contain(const int value) const {
 
 int DomainEncoding::next(const int value, const int index) const {
   int nxt = value;
+
+//   std::cout << _lower << " < " << value << " < " << _upper << std::endl;
+//   std::cout << "size: " << _size << std::endl;
+
   if(nxt < _upper) {
     if(_size == 2) return _upper;
     if(_values) {
@@ -112,6 +116,10 @@ int DomainEncoding::next(const int value, const int index) const {
 	if(index < _size) return _values[index+1];
       } else {
 	int x = get_index_p(value);
+
+// 	std::cout << "index: " << x << std::endl;
+	
+
 	if(x < _size) return _values[x+1];
       }
     } else return ++nxt;
@@ -540,7 +548,7 @@ SatWrapper_Expression::~SatWrapper_Expression() {
 int SatWrapper_Expression::get_size() const
 {
   int i=0, domsize=0;
-  for(i=0; i<getsize(); ++i)
+  for(i=0; i<getsize(); ++i) 
     domsize += (_solver->truth_value(equal(getval(i),i)) != l_False);
   return domsize;
 }

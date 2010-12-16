@@ -203,7 +203,8 @@ class Expression(object):
     def __str__(self):
         if self.is_built() and self.solver.is_sat():
             return self.solution()
-        else: return self.domain()
+        else:
+            return self.domain()
 
     def is_str(self):
         return hasattr(self, 'model')

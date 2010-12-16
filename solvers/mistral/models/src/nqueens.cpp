@@ -102,7 +102,12 @@ void initChessBoard2( CSP& model, VarArray& queens ) {
  * Main
  *****************************************/
 int main(int argc, char *argv[]) { 
+
+  std::cout << (int)(0xffffffff) << std::endl;
+  std::cout << (unsigned int)(0xffffffff) << std::endl;
  
+  exit(1);
+
   for(int i=0; i<100; ++i)
     std::cout << luby_seq2(i) << " ";
   std::cout << std::endl;

@@ -134,6 +134,7 @@ class Domain(list):
 class Expression(object):
     
     def __init__(self, operator):
+        #self.mod = None
         self.ident = -1
         self.operator = operator
         
@@ -195,10 +196,11 @@ class Expression(object):
         return str(self.get_value(solver))
 
     def name(self):
-        output = self.operator
-        if (output == 'x' or output == 't') and self.ident >= 0:
-            output += str(self.ident)
-        return output 
+        #output = self.operator
+        #if (output == 'x' or output == 't') and self.ident >= 0:
+        #    output += str(self.ident)
+        #return output 
+        return self.operator
 
     def __str__(self):
         if self.is_built() and self.solver.is_sat():
@@ -526,7 +528,10 @@ class Model(object):
         # this expression is new, choose an identifiant for it
         te = type(exp)
         if te is not int and te is not str and te is not bool:
+            ## THIS IS BUGGY, WE CANNOT ADD THE SAME VARIABLE TO SEVERAL MODELS
             if exp.ident == -1:            
+            #if exp.mod != self:
+                #exp.mod = self
                 if exp.get_children() is None:
                     if exp.is_var():
                         exp.ident = len(self.variables)

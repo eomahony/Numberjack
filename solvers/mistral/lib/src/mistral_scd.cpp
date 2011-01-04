@@ -457,16 +457,8 @@ double ParameterList::getSkew() {
   if(Skew != 1.0) {
     if(Skew < 1.0) Skew = 1.0; 
     double rs = (randreal() - .5)/2.0;
-
-    //cout << left << setw(30) << "c Dichotomic skew " << ":" ;
-    //if(rs<0) cout << right << setw(6) << setprecision(2) << (-rs) << " - " ;
-    //else cout << right << setw(6) << setprecision(1) << rs << " + ";
-    //cout << right << setw(4) << setprecision(3) << Skew;
     Skew += rs;
-    //cout << " = " << right << setw(4) << Skew << endl;
-  } // else {
-//     cout << left << setw(30) << "c Dichotomic skew " << ":" << right << setw(20) <<  "no" << endl;
-//   }
+  }
 
   return Skew;
 
@@ -478,7 +470,9 @@ std::ostream& ParameterList::print(std::ostream& os) {
   os << std::left << std::setw(30) << "c type " << ":" << std::right << std::setw(20) << Type << std::endl;
   os << std::left << std::setw(30) << "c seed " << ":" << std::right << std::setw(20) << Seed << std::endl;
   os << std::left << std::setw(30) << "c greedy iterations " << ":" << std::right << std::setw(20) << InitBound << std::endl;
-  os << std::left << std::setw(30) << "c skew " << ":" << std::right << std::setw(20) << getSkew() << std::endl;
+  os << std::left << std::setw(30) << "c skew " << ":" << std::right << std::setw(20) << // getSkew()
+    Skew
+     << std::endl;
   os << std::left << std::setw(30) << "c time cutoff " << ":" << std::right << std::setw(20) << Cutoff << std::endl;
   os << std::left << std::setw(30) << "c node cutoff " << ":" << std::right << std::setw(20) << NodeCutoff << std::endl;
   os << std::left << std::setw(30) << "c dichotomy " << ":" << std::right << std::setw(20) << (Dichotomy ? "yes" : "no") << std::endl;
@@ -1683,6 +1677,8 @@ SchedulingSolver::SchedulingSolver(SchedulingModel* m,
   stats->upper_bound = model->get_ub();//upper_bound;
 
   //params->init_skew();
+
+  params->getSkew();
   
 
   pool = new SolutionPool();
@@ -1767,9 +1763,13 @@ void SchedulingSolver::dichotomic_search()
       if(pool->size())
 	objective = (int)(floor(((double)minfsble + (double)maxfsble)/2));
       else
-	objective = (int)(floor((params->getSkew() * 
+	objective = (int)(floor((// params->getSkew()
+				 params->Skew
+				 * 
 				 (double)minfsble + (double)maxfsble)/
-				(1.0+params->getSkew()))); 
+				(1.0+// params->getSkew()
+				 params->Skew
+				 ))); 
 
 	     
       //reorderSequence();

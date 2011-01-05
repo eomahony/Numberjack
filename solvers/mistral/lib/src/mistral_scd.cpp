@@ -413,9 +413,14 @@ void ParameterList::initialise(SchedulingSolver *s) {
 //   if(int_param[10] != NOVAL) Rngd        = int_param[10];
 
 //   if(int_param[11] != NOVAL) NodeBase    = int_param[11]; 
-  if(int_param[11] != NOVAL) NodeBase    = int_param[11]; 
+  if(int_param[11] != NOVAL) NodeBase    = int_param[11];
+
+  // since the model is different for no-wait, we use a different factor
+  double NodeFactor = 12500000.0;
+  if(Type == "now") NodeFactor *= 8;
+ 
   NodeCutoff  = (int)((double)NodeBase * 
-		      (12500000.0/(double)(model->data->nDisjuncts()+
+		      (NodeFactor/(double)(model->data->nDisjuncts()+
 					   model->data->nPrecedences())));
   if(model->ub_C_max - model->lb_C_max > 4000)
     NodeCutoff /= 2;
@@ -1738,7 +1743,6 @@ void SchedulingSolver::dichotomic_search()
   
   setVerbosity(params->Verbose);
   setTimeLimit(params->Cutoff);
-  setNodeLimit(params->NodeCutoff);
   //setRandomSeed( params->Seed );
   //if(params->Randomized) 
   //randomizeSequence();
@@ -1751,6 +1755,31 @@ void SchedulingSolver::dichotomic_search()
   WeighterRestartGenNogood *nogoods = NULL;
   if(params->Rngd) nogoods = setRestartGenNogood();
   
+//   if(!pool->size()) {
+//   ////////// initial solution //////////////
+
+//     objective = maxfsble-1;
+//     setNodeLimit(params->NodeCutoff/100);
+
+//     std::cout << "c ==========[ get an initial solution ]==========" 
+// 	      << std::endl;
+//     std::cout << std::left << std::setw(30) << "c target objective" << ":"  
+// 	      << std::right << std::setw(20) << objective << std::endl;
+//     std::cout << std::left << std::setw(30) << "c node cutoff" << ":"  
+// 	      << std::right << std::setw(20) << params->NodeCutoff << std::endl;
+    
+//     if(nogoods) {
+//       ngd_stamp = nogoods->base->nogood.size;
+//       lit_stamp = sUnaryCons.size;
+//     }
+    
+//     if(status == UNKNOWN) {
+//       solve_and_restart(params->PolicyRestart, params->Base, params->Factor);
+//     }
+
+//   }
+
+
   ////////// dichotomic search ///////////////
   if(status == UNKNOWN) {
     while( minfsble<maxfsble && 
@@ -1758,11 +1787,13 @@ void SchedulingSolver::dichotomic_search()
 	   ) {
 	     
       double remaining_time = params->Optimise - stats->get_total_time();
-      if(remaining_time < (2*params->NodeBase)) break;
+      
+      if((pool->size() || iteration) && // always do the initial step
+	 remaining_time < (2*params->NodeBase)) break;
 
       if(pool->size())
 	objective = (int)(floor(((double)minfsble + (double)maxfsble)/2));
-      else
+      else if(iteration)
 	objective = (int)(floor((// params->getSkew()
 				 params->Skew
 				 * 
@@ -1770,12 +1801,21 @@ void SchedulingSolver::dichotomic_search()
 				(1.0+// params->getSkew()
 				 params->Skew
 				 ))); 
+      // initial step
+      else objective = maxfsble-1;
 
-	     
+      // set node limit (short for initial step)
+      if(!pool->size() && !iteration) {
+	std::cout << "c ===========[ initial dichotomic step ]===========" << std::endl;
+	std::cout << std::left << std::setw(30) << "c node cutoff" << ":"  
+		  << std::right << std::setw(20) << (params->NodeCutoff/100) << std::endl;
+	setNodeLimit(params->NodeCutoff/100);
+      } else { 
+	std::cout << "c ============[ start dichotomic step ]============" << std::endl;
+	setNodeLimit(params->NodeCutoff);
+      }     
       //reorderSequence();
 
-
-      std::cout << "c ============[ start dichotomic step ]============" << std::endl;
       std::cout << std::left << std::setw(30) << "c current dichotomic range" << ":" 
 		<< std::right << std::setw(6) << " " << std::setw(5) << minfsble 
 		<< " to " << std::setw(5) << maxfsble << std::endl;
@@ -1816,20 +1856,27 @@ void SchedulingSolver::dichotomic_search()
 	std::cout << std::left << std::setw(30) << "c solutions's objective" << ":" << std::right << std::setw(20) << new_objective << std::endl;
 
       } else {
-	new_objective = objective;
-	minfsble = objective+1;
 
- 	if(nogoods) {
- 	  nogoods->forget(ngd_stamp);
+ 	if( status == UNSAT || iteration || pool->size() ) {
+
+	  new_objective = objective;
+	  minfsble = objective+1;
+
+	}
+	// Otherwise it's a failed initial step. 
+	// Instead of updating the lower bound, we continue
+	// the dichotomic search as if nothing happenned 
+	// i.e., with the skew.
+
+	if(nogoods) {
+	  nogoods->forget(ngd_stamp);
 	  nogoods->reinit();
 	}
-
-// 	if( status != UNSAT ) {
-// 	  setVerbosity(4);
-// 	  was_unk = true;
-// 	}
       }
-      stats->add_info(new_objective, DICHO);
+
+      if( status != UNKNOWN || iteration || pool->size() ) 
+	stats->add_info(new_objective, DICHO);
+
       printStatistics(std::cout, ((params->Verbose ? RUNTIME : 0) + ((params->Verbose || status != UNKNOWN)  ? BTS + PPGS : 0) + OUTCOME) );
       
 
@@ -1975,3 +2022,5 @@ void SchedulingSolver::repair(Solution *sol, Vector<VariableInt*>& stable)
   solve_and_restart() ;
   stats->add_info(goal->upper_bound, LNS);
 }
+
+

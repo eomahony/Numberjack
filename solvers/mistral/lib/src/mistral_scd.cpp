@@ -518,7 +518,7 @@ Instance::Instance(ParameterList& params) {
   } else if(params.Type == "jtl") {
     jtl_readData( params.data_file );
   } else if(params.Type == "now") {
-    jtl_readData( params.data_file );
+    now_readData( params.data_file );
   } else if(params.Type == "jla") {
     jla_readData( params.data_file );
   } else if(params.Type == "tsp") {
@@ -1063,6 +1063,55 @@ void Instance::jtl_readData( const char* filename ) {
       infile >> time_lag[0][i][j];
       infile >> time_lag[1][i][j];
     }
+  }
+
+}
+void Instance::now_readData( const char* filename ) {
+
+  DBG("Read (now)%s\n", "");
+
+  int i, j, dur, mach, nJobs, nMachines;
+
+  std::string tag;
+
+  std::ifstream infile( filename, std::ios_base::in );
+
+  infile >> nJobs;
+
+  infile >> nMachines;
+
+  for(i=0; i<nJobs; ++i) {
+
+    for(j=0; j<nMachines; ++j) {
+
+      infile >> mach;
+
+      infile >> dur;
+
+      addTask(dur, i, mach);
+
+    }
+
+  }
+
+  time_lag[0] = new int*[nJobs];
+
+  time_lag[1] = new int*[nJobs];
+
+  for(i=0; i<nJobs; ++i) {
+
+    time_lag[0][i] = new int[nMachines];
+
+    time_lag[1][i] = new int[nMachines];
+
+    for(j=0; j<nMachines; ++j) {
+
+      time_lag[0][i][j] = 0;
+
+      time_lag[1][i][j] = 0;
+
+    }
+
   }
 
 }

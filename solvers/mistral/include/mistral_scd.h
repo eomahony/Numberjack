@@ -176,6 +176,7 @@ namespace MistralScheduler {
     void osp_readData( const char* filename );
     void sds_readData( const char* filename );
     void jtl_readData( const char* filename );
+    void now_readData( const char* filename );
     void jla_readData( const char* filename );
     void tsp_readData( const char* filename );
     void fsp_readData( const char* filename );

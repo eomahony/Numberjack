@@ -1296,7 +1296,16 @@ void SchedulingModel::setup(Instance& inst, ParameterList *params,
   
   lb_C_max = inst.getMakespanLowerBound();
   if(max_makespan < 0) ub_C_max = inst.getMakespanUpperBound(params->InitBound);
-  else ub_C_max = max_makespan;
+  else ub_C_max = max_makespan; 
+  if(params->Objective != "makespan") {
+    int max_due_date = inst.getJobDueDate(0);
+    for(int i=1; i<inst.nJobs(); ++i) {
+      if(max_due_date < inst.getJobDueDate(i))
+	max_due_date = inst.getJobDueDate(i);
+    }
+    if(max_due_date < ub_C_max) max_due_date = ub_C_max;
+    ub_C_max += max_due_date;
+  }
 
   //for(i=0; i<inst.nJobs(); ++i)
   //ub_C_max += inst.getDuration(inst.getLastTaskofJob(i));

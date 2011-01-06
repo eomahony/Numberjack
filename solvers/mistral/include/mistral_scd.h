@@ -526,6 +526,7 @@ public:
     void addObjective() { goal = new MinimiseVar(this, model->get_objective_var()); }
     void addHeuristic( std::string Heu, const int rdz, std::string vo, const int hlimit ) {
       
+
       int val_ord = ParameterList::GUIDED;
       if(  vo == "rguided")   val_ord = ParameterList::RGUIDED;
       if(  vo == "lex"    )   val_ord = ParameterList::LEX;
@@ -638,7 +639,7 @@ public:
 	add( h );
       }
 
-      heuristic->limit = hlimit;
+      if(heuristic) heuristic->limit = hlimit;
     }
     
 

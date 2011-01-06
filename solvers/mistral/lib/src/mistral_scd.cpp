@@ -327,6 +327,33 @@ ParameterList::ParameterList(int length, char **commandline) {
   if(strcmp(str_param[9 ],"nil")) Objective  = str_param[9];
   if(strcmp(str_param[10],"nil")) Algorithm  = str_param[10];
 
+  if(Type == "osp") {
+    Objective = "makespan";
+    Heuristic = "osp-b";
+  } else if(Type == "sds") {
+    Objective = "makespan";
+    Heuristic = "osp-b";
+  } else if(Type == "jtl") {
+    Objective = "makespan";
+    Heuristic = "osp-t";
+  } else if(Type == "now") {
+    Objective = "makespan";
+    Heuristic = "osp-dw";
+  } else if(Type == "jla") {
+    Objective = "makespan";
+    Heuristic = "osp-t";
+  } else if(Type == "jsp") {
+    Objective = "makespan";
+    Heuristic = "osp-t";
+  } else if(Type == "jet") {
+    Objective = "tardiness";
+    Heuristic = "osp-t";
+  } else if(Type == "dyn") {
+    Objective = "tardiness";
+    Heuristic = "osp-t";
+  }
+
+
 }
 
 // void ParameterList::initialise(const ParameterList& pl) {
@@ -370,34 +397,12 @@ void ParameterList::initialise(SchedulingSolver *s) {
   solver = s;
   SchedulingModel *model = solver->model;
 
-  if(Type == "osp") {
-    Objective = "makespan";
-    Heuristic = "osp-b";
-  } else if(Type == "sds") {
-    Objective = "makespan";
-    Heuristic = "osp-b";
-  } else if(Type == "jtl") {
-    Objective = "makespan";
-    Heuristic = "osp-t";
-  } else if(Type == "now") {
-    Objective = "makespan";
-    Heuristic = "osp-dw";
-  } else if(Type == "jla") {
+  if(Type == "jla") {
     Cutoff      = 1000;
     NodeBase   *= 10;
-    Objective = "makespan";
-    Heuristic = "osp-t";
   } else if(Type == "jsp") {
     Cutoff      = 1000;
     NodeBase   *= 10;
-    Objective = "makespan";
-    Heuristic = "osp-t";
-  } else if(Type == "jet") {
-    Objective = "tardiness";
-    Heuristic = "osp-t";
-  } else if(Type == "dyn") {
-    Objective = "tardiness";
-    Heuristic = "osp-t";
   }
 
 //   if(int_param[0]  != NOVAL) UBinit      = int_param[0];
@@ -1368,7 +1373,6 @@ void SchedulingModel::setup(Instance& inst, ParameterList *params,
       }
       n_weights += inst.nJobs();
     }
-
     
     weights[n_weights] = 0;
     

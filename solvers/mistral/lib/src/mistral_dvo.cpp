@@ -977,7 +977,7 @@ WeighterRestartNogood::WeighterRestartNogood( Solver* s )
   : Weighter(s), decision(s->decision.stack_)
 {
   // nBranches = new int[s->numvars+1];
-  choices = new int[s->numvars+1];
+  choices = new int[s->numvars+2];
   lvl = 0;
 }
 
@@ -1102,7 +1102,7 @@ void WeighterRestartNogood::notifyRestart()
 
 
 
-  int i=1, j=0, n=lvl, m=path.size;
+  int i=2, j=0, n=lvl, m=path.size;
 
 
   //decision[n] = NULL;
@@ -1136,7 +1136,7 @@ void WeighterRestartNogood::notifyRestart()
     while( j<m && path[j] != choices[i] ) {
       clause.clear();
       //std::cout << "      ";
-      for(int x=1; x<i; ++x) {
+      for(int x=2; x<i; ++x) {
 	clause.push(choices[x]);
 	//std::cout << " " << setw(2) << choices[x];
       }

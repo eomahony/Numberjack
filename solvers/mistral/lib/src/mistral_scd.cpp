@@ -223,7 +223,7 @@ std::ostream& StatisticList::print(std::ostream& os,
 const char* ParameterList::int_ident[ParameterList::nia] = 
   {"-ub", "-lb", "-check", "-seed", "-cutoff", "-dichotomy", 
    "-base", "-randomized", "-verbose", "-optimise", "-nogood", 
-   "-dyncutoff", "-nodes", "-hlimit", "-init", "neighbor"};
+   "-dyncutoff", "-nodes", "-hlimit", "-init", "-neighbor", "-initstep"};
 
 const char* ParameterList::str_ident[ParameterList::nsa] = 
   {"-heuristic", "-restart", "-factor", "-decay", "-type", 
@@ -280,6 +280,7 @@ ParameterList::ParameterList(int length, char **commandline) {
   Precision   = 100;
   Hlimit      = 20000;
   InitBound   = 1000;
+  InitStep    = 1;
   Neighbor    = 2;
 
   Verbose     = 1;
@@ -313,6 +314,7 @@ ParameterList::ParameterList(int length, char **commandline) {
   if(int_param[13] != NOVAL) Hlimit      = int_param[13]; 
   if(int_param[14] != NOVAL) InitBound   = int_param[14]; 
   if(int_param[15] != NOVAL) Neighbor    = int_param[15]; 
+  if(int_param[16] != NOVAL) InitStep    = int_param[16]; 
   
 
 
@@ -397,6 +399,9 @@ void ParameterList::initialise(SchedulingSolver *s) {
   solver = s;
   SchedulingModel *model = solver->model;
 
+//   if(UBinit >= 0) solver->stats->upper_bound = UBinit;
+//   if(LBinit >= 0) solver->stats->lower_bound = LBinit;
+
   if(Type == "jla") {
     Cutoff      = 1000;
     NodeBase   *= 10;
@@ -462,8 +467,17 @@ void ParameterList::initialise(SchedulingSolver *s) {
 
 double ParameterList::getSkew() {
 
+//   double ub = (double)(solver->stats->upper_bound);
+//   double lb = (double)(solver->stats->lower_bound+1);
+
+//   if(Skew < 0) {
+//     if(ub/1000 > lb) Skew = 1000;
+//     else Skew = ub/lb;
+//   }
+
   if(Skew < 0) Skew = ((double)(solver->stats->upper_bound)/
-		       (double)solver->stats->lower_bound);
+		       ((double)solver->stats->lower_bound+1));
+  if(Skew > 100.0) Skew = 100.0;
   if(Skew != 1.0) {
     if(Skew < 1.0) Skew = 1.0; 
     double rs = (randreal() - .5)/2.0;
@@ -483,6 +497,7 @@ std::ostream& ParameterList::print(std::ostream& os) {
   os << std::left << std::setw(30) << "c skew " << ":" << std::right << std::setw(20) << // getSkew()
     Skew
      << std::endl;
+  os << std::left << std::setw(30) << "c use initial probe " << ":" << std::right << std::setw(20) << (InitStep ? "yes" : "no") << std::endl;
   os << std::left << std::setw(30) << "c time cutoff " << ":" << std::right << std::setw(20) << Cutoff << std::endl;
   os << std::left << std::setw(30) << "c node cutoff " << ":" << std::right << std::setw(20) << NodeCutoff << std::endl;
   os << std::left << std::setw(30) << "c dichotomy " << ":" << std::right << std::setw(20) << (Dichotomy ? "yes" : "no") << std::endl;
@@ -1294,8 +1309,8 @@ void SchedulingModel::setup(Instance& inst, ParameterList *params,
 
   int i,j,k, lb, ub, ti, tj, rki, rkj, hi, hj, aux;
   
-  lb_C_max = inst.getMakespanLowerBound();
-  if(max_makespan < 0) ub_C_max = inst.getMakespanUpperBound(params->InitBound);
+  lb_C_max = (params->LBinit<0 ? inst.getMakespanLowerBound() : params->LBinit);
+  if(max_makespan < 0) ub_C_max = (params->UBinit<0 ? inst.getMakespanUpperBound(params->InitBound) : params->UBinit);
   else ub_C_max = max_makespan; 
   if(params->Objective != "makespan") {
     int max_due_date = inst.getJobDueDate(0);
@@ -1365,7 +1380,7 @@ void SchedulingModel::setup(Instance& inst, ParameterList *params,
 	hi = inst.getHeadInJob(ti);
 	hj = inst.getHeadInJob(tj);
 
-	if(rkj < rki || (rkj == rki && hj < hi))
+	if(rkj > rki || (rkj == rki && hj > hi))
 	  {
 	    aux = ti;
 	    ti = tj;
@@ -1796,6 +1811,7 @@ void SchedulingSolver::dichotomic_search()
   
   int minfsble = stats->lower_bound;
   int maxfsble = stats->upper_bound;
+
   int objective = -1;
   int new_objective = -1;
   int ngd_stamp = 0;
@@ -1855,14 +1871,19 @@ void SchedulingSolver::dichotomic_search()
 
       if(pool->size())
 	objective = (int)(floor(((double)minfsble + (double)maxfsble)/2));
-      else if(iteration)
+      else if(!params->InitStep || iteration)
 	objective = (int)(floor((// params->getSkew()
-				 params->Skew
-				 * 
-				 (double)minfsble + (double)maxfsble)/
-				(1.0+// params->getSkew()
-				 params->Skew
-				 ))); 
+				 (double)minfsble +
+				 
+				 ((double)maxfsble - (double)minfsble)/
+
+				 (1.0 + params->Skew)
+				 )));
+// 				 * 
+// 				 (double)minfsble + (double)maxfsble)/
+// 				(1.0+// params->getSkew()
+// 				 params->Skew
+// 				 ))); 
       // initial step
       else objective = maxfsble-1;
 

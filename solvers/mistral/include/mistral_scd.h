@@ -76,7 +76,7 @@ namespace MistralScheduler {
     static const int RGUIDED =  3;
     static const int RAND    =  4;
 
-    static const int nia = 16;
+    static const int nia = 17;
     static const char* int_ident[nia];
     
     static const int nsa = 11;
@@ -108,6 +108,7 @@ namespace MistralScheduler {
     int Hlimit; // "hlimit": maximum number of variables evaluated by the dvo
     int InitBound; // "init": number of iterations when initialising the upper bound
     int Neighbor; // "neighbor": number of machines to re-schedule during LNS
+    int InitStep; // "initstep": whether an initial probe with high makespan should be performed
 
     double Factor;
     double Decay;

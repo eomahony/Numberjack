@@ -1307,13 +1307,13 @@ namespace Mistral {
     inline void operator=( VariableInt    *x ) 
     { 
       PredicateDisjunctive* d = disjuncts[x->id];
-      if(d) {
+      //if(d) {
 	domsize_ = d->domsize();
 	task_weight_ = (d->scope[0]->weight + d->scope[1]->weight);
-      } else {
-	domsize_ = x->domsize();
-	task_weight_ = x->weight;
-      }
+//       } else {
+// 	domsize_ = x->domsize();
+// 	task_weight_ = x->weight;
+//       }
     }
       
     //@}  

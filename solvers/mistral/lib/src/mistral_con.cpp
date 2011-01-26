@@ -1153,6 +1153,8 @@ ConstraintGenNogoodBase::ConstraintGenNogoodBase(Solver* s)
     watched_values[i] = new Vector< Array < GeneralLiteral > * >[n];
     watched_values[i] -= minimums[i];
   }
+
+  delayed = true;
 }
 
 ConstraintGenNogoodBase::~ConstraintGenNogoodBase() {
@@ -1284,8 +1286,8 @@ bool ConstraintGenNogoodBase::propagate(const int changedIdx, const int e) {
       // otherwise, find out if the literal is the first, or second 
       rank = (cl[1].var == scope[changedIdx]);
       
-      assert(scope[changedIdx]->id == cl[rank].var->id);
-      assert(scope[changedIdx]->equal(cl[rank].value()));
+      //assert(scope[changedIdx]->id == cl[rank].var->id);
+      //assert(scope[changedIdx]->equal(cl[rank].value()));
       
       for(j=2; j<cl.size; ++j) {
 	// for each subsequent literal, if it non-violated, it is a possible watcher
@@ -1303,6 +1305,13 @@ bool ConstraintGenNogoodBase::propagate(const int changedIdx, const int e) {
       }
       
       if(j>=cl.size) {
+
+// 	if(!cl[1-rank].var->equal(cl[1-rank].value())) {
+// 	  std::cout << "prune ";
+// 	  cl[1-rank].var->print(std::cout);
+// 	  std::cout << std::endl;
+// 	}
+
 	// there wasn't any possible replacement, so we need to propagate:
 	consistent = cl[1-rank].var->remove(cl[1-rank].value());
       }
@@ -10448,6 +10457,13 @@ inline bool ConstraintClauseBase::propagate(const int changedIdx, const int e)
     if( i < assumptions.size )       
       for(; consistent && i<assumptions.size; ++i) {
 	a = assumptions[i];
+
+//    if(!X[a]->equal(a==polarity[a])) {
+//       std::cout << " prune ";
+//       X[a]->print(std::cout);
+//       std::cout << std::endl;
+//     }
+
 	consistent &= X[a]->setDomain( a==polarity[a] );
 
 	if( !consistent ) {

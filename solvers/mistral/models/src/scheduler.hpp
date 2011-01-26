@@ -1857,7 +1857,10 @@ void dichotomic_search()
       if(s.status == UNKNOWN) {
 	
 	if( Rngd ) {
-	  s.setRestartNogood();
+	  if( Rngd == 1 )
+	    s.setRestartNogood();
+	  else 
+	    s.setRestartGenNogood();
 	  s.setForgetfulness( 0.0 );
 	}
 
@@ -2059,7 +2062,14 @@ void nbj_dichotomic_search()
  
       if(s.status == UNKNOWN) {
 	
-	s.setRestartNogood();
+	if( Rngd ) {
+	  if( Rngd == 1 )
+	    s.setRestartNogood();
+	  else 
+	    s.setRestartGenNogood();
+	}
+
+	  //s.setRestartNogood();
 	//s.setTimeLimit( Cutoff );
 	s.setNodeLimit( 7000 );
 	s.setVerbosity( Verbose-1 );
@@ -2215,7 +2225,10 @@ void mks_dec_search()
       if(s.status == UNKNOWN) {
 				
 	if( Rngd ) {
-	  s.setRestartNogood();
+	  if( Rngd == 1 )
+	    s.setRestartNogood();
+	  else 
+	    s.setRestartGenNogood();
 	  s.setForgetfulness( 0.0 );
 	}
 	if( Randomized > 0 ) s.setRandomized();
@@ -2411,7 +2424,11 @@ void branch_and_bound()
     s.function = new SolutionRandGuidedSearch( &s, disjuncts );
 
   if( Rngd ) {
-    s.setRestartNogood();      
+	  if( Rngd == 1 )
+	    s.setRestartNogood();
+	  else 
+	    s.setRestartGenNogood();
+	  //s.setRestartNogood();      
     s.setForgetfulness( 0.0 );
   }
   if( Randomized > 0 ) s.setRandomized();

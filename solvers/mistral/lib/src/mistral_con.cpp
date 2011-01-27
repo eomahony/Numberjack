@@ -1154,7 +1154,7 @@ ConstraintGenNogoodBase::ConstraintGenNogoodBase(Solver* s)
     watched_values[i] -= minimums[i];
   }
 
-  delayed = true;
+  //delayed = true;
 }
 
 ConstraintGenNogoodBase::~ConstraintGenNogoodBase() {

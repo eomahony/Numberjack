@@ -1380,7 +1380,7 @@ void SchedulingModel::setup(Instance& inst, ParameterList *params,
 	hi = inst.getHeadInJob(ti);
 	hj = inst.getHeadInJob(tj);
 
-	if(rkj > rki || (rkj == rki && hj > hi))
+	if(rkj < rki || (rkj == rki && hj < hi))
 	  {
 	    aux = ti;
 	    ti = tj;
@@ -1926,6 +1926,9 @@ void SchedulingSolver::dichotomic_search()
       if(status == UNKNOWN) {
 	solve_and_restart(params->PolicyRestart, params->Base, params->Factor);
       }
+
+
+      std::cout << std::left << std::setw(30) << "c makespan's variable weight" << ":" << std::right << std::setw(20) << (model->get_objective_var()->weight) << std::endl;
       
       if( status == SAT ) {
 	new_objective = model->get_objective();

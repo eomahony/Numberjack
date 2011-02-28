@@ -260,7 +260,7 @@ void SatSolver::printAll(ostream& o) const
 {
   printDecisions( o );
   printClauses( o );
-  //printWatchers( o );
+  printWatchers( o );
 }
 
 void SatSolver::printWatchers(ostream& o, int beg, int end) const
@@ -269,38 +269,51 @@ void SatSolver::printWatchers(ostream& o, int beg, int end) const
   if( end == NOVAL ) end = numAtoms;
   for(int i=beg; i<=end; ++i)
     {
-      o << i << " is watched by";
-      for(int j=0; j<isWatchedBy[i].size; ++j) {
-	assert(isWatchedBy[i][j]);
-	Clause& clause = *(isWatchedBy[i][j]);
-	printClause(cout, isWatchedBy[i][j]);
-	assert( clause[0] == i || 
-		clause[1] == i );
-	assert( clause[0] != clause[1] );
+      if(i) {
+	if(i>0) o << "+";
+	o << i << " is watched by";
+	for(int j=0; j<isWatchedBy[i].size; ++j) {
+	  assert(isWatchedBy[i][j]);
+	  Clause& clause = *(isWatchedBy[i][j]);
+	  printClause(cout, isWatchedBy[i][j]);
+	  assert( clause[0] == i || 
+		  clause[1] == i );
+	  assert( clause[0] != clause[1] );
+	}
+	o << endl;
       }
-      o << endl;
     }
 }
 
 void SatSolver::printDecisions(ostream& o, bool mode) const
 {
   if( mode ) {
-    cout << "c literals: ";
+    cout << "assumptions: ";
     for(unsigned int i=0; i<assumptions.size; ++i)
-      o << " " <<setw(3)<< polarity[assumptions[i]];
-    o << endl;
-    cout << "c   level: ";
-    for(unsigned int i=0; i<assumptions.size; ++i)
-      o << " " << setw(3) << lvl[assumptions[i]];
+      o << (polarity[assumptions[i]]>0 ? " +" : " ")
+	<< polarity[assumptions[i]];
+//     cout << "c literals: ";
+//     for(unsigned int i=0; i<assumptions.size; ++i)
+//       o << " " <<setw(3)<< polarity[assumptions[i]];
+//     o << endl;
+//     cout << "c   level: ";
+//     for(unsigned int i=0; i<assumptions.size; ++i)
+//       o << " " << setw(3) << lvl[assumptions[i]];
     o << endl;
   } else {
     for(unsigned int i=0; i<assumptions.size; ++i) {
-      o << lvl[assumptions[i]] << "\t" << polarity[assumptions[i]] << "\t";
+      
+      o << i << "\t" << lvl[assumptions[i]] 
+	<< "\t" ;
+      if(polarity[assumptions[i]]>0) o << "+";
+      o << polarity[assumptions[i]] << "\t";
       if( reason[assumptions[i]] )
 	printClause(o, reason[assumptions[i]]);
-      else 
-	cout << "decision";
-      cout << endl;
+      else if(lvl[assumptions[i]])
+	o << "decision";
+      else
+	o << "data";
+      o << endl;
     }
   }
 }
@@ -310,8 +323,11 @@ void SatSolver::printClause(ostream& o, Clause *cl) const
   Clause& clause = *cl;
   o //<< " " << cl 
     << "(";
-  for(int i=0; i<clause.size-1; ++i)
+  for(int i=0; i<clause.size-1; ++i) {
+    if(clause[i]>0) o << "+";
     o << clause[i] << " ";
+  }
+  if(clause[clause.size-1]>0) o << "+";
   o << clause[clause.size-1] << ")";
 }
 

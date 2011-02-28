@@ -266,16 +266,24 @@ using namespace Mistral;
 
 inline void SatSolver::shuffle()
 {
+
+  //std::cout << "shuffle" << std::endl;
+
   int i, j, k;
   for(i=assumptions.size; i<numAtoms; ++i)
     {
       //j = i+rand()%(numAtoms-i);
       j = i+randint(numAtoms-i);
       k = assumptions[j];
+
+      //std::cout << j << " " << k << std::endl;
+
       assumptions[j] = assumptions[i];
       assumptions[i] = k;
       assumptions.index_[k] = i;
     }
+
+  //exit(1);
 }
 
 
@@ -462,6 +470,12 @@ inline int SatSolver::iterative_search()
   Atom a;
   while(status == UNKNOWN) {
     Clause *conflict = unitPropagate();
+
+#ifdef _DEBUGSEARCH
+    for(unsigned int i=0; i<decisions.size; ++i) std::cout << " " ;
+    printDecisions(std::cout);
+#endif
+
     if(decisions.size == 0 && assumptions.size) simplifyDataBase();
     if( conflict ) {
 
@@ -469,7 +483,7 @@ inline int SatSolver::iterative_search()
       for(int d=0; d<decisions.size; ++d) std::cout << " ";
       std::cout << "conflict: ";
       printClause(std::cout, conflict);
-      std::cout << " " << (assumptions.size) << std::endl;
+      std::cout << " => " ; //<< (assumptions.size) << std::endl;
 #endif
 
       if( decisions.size == 0 ) status = UNSAT;
@@ -487,6 +501,14 @@ inline int SatSolver::iterative_search()
 	  status = UNSAT;
 	else {	
 	  nextDeduction = assumptions.size;
+
+#ifdef _DEBUGSEARCH
+	  for(unsigned int i=0; i<decisions.size; ++i) std::cout << " " ;
+	  std::cout << "deduce:" << (p>0 ? " +" : " ") << p;
+	  //printLiteral(std::cout, p);
+	  std::cout << std::endl;
+#endif
+
 	  addLiteral(a, p);
 	  //reason[a] = learnt.back();
 	}
@@ -503,6 +525,9 @@ inline int SatSolver::iterative_search()
 inline int SatSolver::analyze( Clause *conflict, int& lit, const bool learn )
 {
 #ifdef _DEBUGNOGOOD
+#ifdef _DEBUGSEARCH
+  std::cout << std::endl;
+#endif
   printDecisions( std::cout , 0 );
 #endif
 
@@ -534,7 +559,9 @@ inline int SatSolver::analyze( Clause *conflict, int& lit, const bool learn )
 	a = atom(q);
 
 #ifdef _DEBUGNOGOOD
-	std::cout << "\t" << q << ": ";
+	std::cout << "\t" ;
+	if(q>0) std::cout << "+";
+	std::cout << q << ": ";
 #endif
 
 	if( !visited.fastMember(a) ) {
@@ -553,6 +580,11 @@ inline int SatSolver::analyze( Clause *conflict, int& lit, const bool learn )
 
 #ifdef _DEBUGNOGOOD
 	    std::cout << "add to the clause" << std::endl;
+	  for(unsigned int k=0; k<learnt_clause.size; ++k) {
+	    std::cout << (learnt_clause[k] < 0 ? " " : " +") 
+		      << learnt_clause[k];
+	  }
+	  std::cout << std::endl;
 #endif
 
 	    learnt_clause.push(q);
@@ -574,7 +606,7 @@ inline int SatSolver::analyze( Clause *conflict, int& lit, const bool learn )
       p = polarity[a];
 
 #ifdef _DEBUGNOGOOD
-      std::cout << "explore " << p << " ";
+      std::cout << "explore" << (p<0 ? " " : " +") << p << " ";
       std::cout.flush();
 #endif
 
@@ -594,11 +626,11 @@ inline int SatSolver::analyze( Clause *conflict, int& lit, const bool learn )
     // assumption stack have been skipped or expended.
     learnt_clause[0] = -p;    
 
-#ifdef _DEBUGNOGOOD
-    std::cout << "add the negation of the last decision: " << -p << std::endl;
-    std::cout << "(";
+#ifdef _DEBUGSEARCH
+    //std::cout << "add the negation of the last decision: " << -p << std::endl;
+    std::cout << " (";
     for(int i=0; i<learnt_clause.size; ++i)
-      std::cout << " " << learnt_clause[i];
+      std::cout << (learnt_clause[i]>0 ? " +" : " ") << learnt_clause[i];
     std::cout << " )" << std::endl;
 #endif
 
@@ -649,6 +681,9 @@ inline Literal SatSolver::choice()
       cur = activity[y];
       cur += activity[-y]; 
 
+
+      //std::cout << "activity of " << assumptions[i] << " = " << cur << std::endl;
+
       for(j=crd; j && cur>best[j-1]; --j);
       for(k=crd; k>j; --k) {
 	x[k] = x[k-1];
@@ -666,7 +701,9 @@ inline Literal SatSolver::choice()
 
 #ifdef _DEBUGSEARCH
   for(int d=0; d<decisions.size; ++d) std::cout << " ";
-  std::cout << "decide: " << p << " " << (assumptions.size) << std::endl;
+  std::cout << "decide: " ;
+  if(p>0) std::cout << "+";
+  std::cout << p << std::endl;
 #endif
 
   return p;    
@@ -685,6 +722,12 @@ inline void SatSolver::makeDecision(const Literal l)
 inline void SatSolver::backtrackTo( const int backtrackLevel )
 {
   assumptions.revertTo( decisions.popUntil(backtrackLevel) );
+
+#ifdef _DEBUGSEARCH
+  for(unsigned int i=0; i<decisions.size; ++i) std::cout << " " ;
+  std::cout << "backtrack to level " << backtrackLevel << std::endl;
+#endif
+
 }
 
 inline void SatSolver::addLiteral(const Atom a, const Literal l)
@@ -777,7 +820,7 @@ inline Clause* SatSolver::updateWatcher(const int cw, const Atom x, const Litera
 	  addLiteral(y, q);
 	  reason[y] = cl;
 
-#ifdef _DEBUGNOGOOD
+#ifdef _DEBUGWATCH
 	  std::cout << "unit prune disjunct b" << y << " because ";
 	  printClause( std::cout, cl );
 	  std::cout << std::endl;

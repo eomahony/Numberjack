@@ -89,6 +89,9 @@ int main(int argc, char **argv)
 
 
       solver.parseDimacs(argv[1]);
+
+      solver.printAll(std::cout);
+
       solver.solve();
     }
   return 0;

@@ -173,10 +173,11 @@ void Solver::init()
   ENDTIME = TOTTIME = SOLTIME = 0;
 
 
-  BTSLIMIT  =  0;
-  NDSLIMIT  =  0;
+  BTSLIMIT  =  ~0;
+  NDSLIMIT  =  ~0;
   TIMELIMIT = .0;
-  FAILLIMIT =  0;
+  FAILLIMIT =  ~0;
+  PROPLIMIT =  ~0;
   LIMIT = 0;
 
   level = 0;
@@ -1615,7 +1616,11 @@ bool Solver::restart(const double decay, const int reinit) {
 
 
   FAILLIMIT = (FAILURES + fail_increment);
-  return( (NDSLIMIT <= 0 || NODES < NDSLIMIT) &&
+
+  //std::cout << "END RESTART: " << PROPAGS << "/" << PROPLIMIT << std::endl;
+
+  return( (// NDSLIMIT <= 0 ||
+	   PROPAGS < PROPLIMIT) &&
 	  (TIMELIMIT <= .0 || (getRunTime() - STARTTIME < TIMELIMIT)) );
 }
 
@@ -2089,7 +2094,7 @@ unsigned long int Solver::getBacktracks() const {return BACKTRACKS;}
 unsigned long int Solver::getNodes     () const {return NODES     ;}
 unsigned long int Solver::getFailures  () const {return FAILURES  ;}
 unsigned long int Solver::getChecks    () const {return CHECKS    ;}
-unsigned long int Solver::getPropags   () const {return PROPAGS   ;}
+unsigned long long int Solver::getPropags   () const {return PROPAGS   ;}
 double            Solver::getTime      () const {return TOTTIME   ;}
 
 
@@ -3505,6 +3510,9 @@ void Solver::setGuidedOrdering(VarArray& scope, int* ideal, const char*planb) {
   else if(!strcmp(planb,"2nd")) pb = 1;
   else if(!strcmp(planb,"spl")) pb = 2;
   else if(!strcmp(planb,"nbd")) pb = 3;
+
+  //std::cout << "set guided ordering plan b = " << planb << " " << pb << std::endl;
+
   setGuidedOrdering(bvar, l, ideal, pb);
 }
 
@@ -3532,10 +3540,14 @@ void Solver::setGuidedOrdering(BuildObject **bvar, const int l, int* ideal, cons
       //       bv->print(std::cout);
       //       std::cout << std::endl;
 
+      //std::cout << ideal[i] ;
+
       delete x->branch;
       x->branch = new ValSelectorGuided( x, ideal[i], pb );
     }
   }
+  
+  //std::cout << std::endl;
 }
 
 void Solver::setGuidedSplitOrdering(BuildObject **bvar, const int l, int* ideal, int* proba) {

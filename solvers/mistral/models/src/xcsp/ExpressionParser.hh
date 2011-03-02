@@ -1349,7 +1349,7 @@ namespace CSPXMLParser
      ************************************/
   virtual BuildObject* getPredicate( VarArray& scope )
   {
-    return CSP::_Add( args[0]->getPredicate( scope ),
+    return CSP::_Div( args[0]->getPredicate( scope ),
 		     args[1]->getPredicate( scope ) );
     //    return ENV[ConstraintStore::DIV]->declare( args[0]->getPredicate( scope ),
     //				       args[1]->getPredicate( scope ) );

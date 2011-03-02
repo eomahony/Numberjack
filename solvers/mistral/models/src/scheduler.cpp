@@ -226,7 +226,10 @@ int main( int argc, char** argv )
        << left << setw(30) << "d FAILS "       << right << setw(21) << total_fails << endl
        << left << setw(30) << "d PROPAGS "     << right << setw(21) << total_propags << endl
        << left << setw(30) << "d RESTARTS "    << right << setw(21) << total_restarts << endl
-       << left << setw(30) << "d OPTIMAL "     << right << setw(21) << Solved << endl;
+       << left << setw(30) << "d OPTIMAL "     << right << setw(21) << Solved << endl
+       << left << setw(30) << "d NOGOODS     "     << right << setw(21) << nNogoods << endl;
+  if(nNogoods)
+    cout << left << setw(30) << "d NOGOODSIZE  "     << right << setw(21) << avg_nogood_size/(double)nNogoods << endl;
     //<< "d NOGOODSIZE " << (double)(nogood_size)/(double)(nb_nogood) << endl
   cout << "c =================[ statistics ]==================" << endl
        << endl;

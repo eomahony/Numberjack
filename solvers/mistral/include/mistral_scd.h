@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 
+//_DEBUGSCHED = 1
 
 #ifdef _DEBUGSCHED
   #define DBG(fmt, args...) printf("dbg - l%d: "fmt,__LINE__,args)
@@ -29,6 +30,7 @@ namespace MistralScheduler {
     int    lower_bound;
     int    upper_bound;
 
+    double avg_nogood_size;
     double avg_cutoff_time;
     double avg_distance;
     double min_distance;
@@ -96,7 +98,7 @@ namespace MistralScheduler {
     int Checked; // "check": whether the solution is checked
     int Seed; // "seed": random seed
     int Cutoff; // "cutoff": time cutoff of dichotomic steps
-    int NodeCutoff; // "nodes": node cutoff of dichotomic steps
+    unsigned long long int NodeCutoff; // "nodes": node cutoff of dichotomic steps
     int NodeBase; // "dyncutoff": node cutoff trying to mimic time cutoff
     int Dichotomy; // "dichotomy": max number of dichotomic steps
     int Base; // "base": base cutoff for restarts
@@ -384,6 +386,8 @@ namespace MistralScheduler {
     double distance(Solution* s);
 
     void guide_search();
+
+    std::ostream& print(std::ostream& os);
     
   };
 
@@ -501,6 +505,8 @@ public:
     StatisticList   *stats;
     SchedulingModel *model;
     SolutionPool     *pool;
+    WeighterRestartGenNogood *nogoods;
+
 
     SchedulingSolver(SchedulingModel* m, 
 		     ParameterList* p,

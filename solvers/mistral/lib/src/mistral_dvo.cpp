@@ -1562,6 +1562,9 @@ DVO* OSP::extract( Solver* s )
 {
   s->setLearner( Weighter::WDG );
   if( size > 1 ) {
+
+    //std::cout << "c extract random dvo" << std::endl;
+
     int i;
     switch(strategy) {
     case DOMAIN_O_NOT: {
@@ -1670,6 +1673,9 @@ DVO* OSP::extract( Solver* s )
     }
     // return new GenericRandomDVO<VarSelectorOSP>(s, size);
   } else {
+
+    //std::cout << "c extract determinist dvo" << std::endl;
+
     switch(strategy) {
     case DOMAIN_O_NOT: {
       GenericSchedulingDVO<VarSelectorOSP_Domain> *var_heuristic = 
@@ -1690,6 +1696,9 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOM_O_BOOLWEIGHT: {
+
+      //std::cout << "c bool weight heuristic" << std::endl;
+
       GenericSchedulingDVO<VarSelectorOSP_DoBoolWeight> *var_heuristic = 
 	new GenericSchedulingDVO<VarSelectorOSP_DoBoolWeight>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
@@ -1699,6 +1708,9 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOM_O_TASKWEIGHT: {
+
+      //std::cout << "c task weight heuristic" << std::endl;
+
       GenericSchedulingDVO<VarSelectorOSP_DoTaskWeight> *var_heuristic = 
 	new GenericSchedulingDVO<VarSelectorOSP_DoTaskWeight>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
@@ -1708,6 +1720,9 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOM_O_BOOLTASKWEIGHT: {
+
+      //std::cout << "c bool+task weight heuristic" << std::endl;
+
       GenericSchedulingDVO<VarSelectorOSP_DoBoolTaskWeight> *var_heuristic = 
 	new GenericSchedulingDVO<VarSelectorOSP_DoBoolTaskWeight>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
@@ -1726,6 +1741,9 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOM_O_BOOLWEIGHTTYPE: {
+
+      //std::cout << "c bool weight (type) heuristic" << std::endl;
+
       GenericSchedulingDVO<VarSelectorOSP_DoBoolWeightType> *var_heuristic = 
 	new GenericSchedulingDVO<VarSelectorOSP_DoBoolWeightType>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
@@ -1735,6 +1753,9 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOM_O_TASKWEIGHTTYPE: {
+
+      //std::cout << "c task weight (type) heuristic" << std::endl;
+
       GenericSchedulingDVO<VarSelectorOSP_DoTaskWeightType> *var_heuristic = 
 	new GenericSchedulingDVO<VarSelectorOSP_DoTaskWeightType>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
@@ -1744,6 +1765,9 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOM_O_BOOLTASKWEIGHTTYPE: {
+
+      //std::cout << "c bool+task weight (type) heuristic" << std::endl;
+
       GenericSchedulingDVO<VarSelectorOSP_DoBoolTaskWeightType> *var_heuristic = 
 	new GenericSchedulingDVO<VarSelectorOSP_DoBoolTaskWeightType>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);

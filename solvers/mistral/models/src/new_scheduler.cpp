@@ -8,6 +8,7 @@ using namespace MistralScheduler;
 
 int main( int argc, char** argv )
 {
+
   ParameterList params(argc, argv);
   usrand(params.Seed);
 

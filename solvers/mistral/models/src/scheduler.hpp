@@ -83,6 +83,8 @@ double dsrun_time = 0.0;
 double proof_time = 0.0;
 double total_time = 0.0;
 
+int nNogoods = 0;
+double avg_nogood_size = 0.0;
 
 int Seed, Cutoff, Dichotomy, Base, PIterations, PLimit, Probe, UpdateW, UpdateI, 
 		  SAC, Randomized, Verbose, Step, Weight, Optimise, Rngd, Gap, 
@@ -1397,8 +1399,15 @@ void updateBestSolution(VarArray& disjuncts, VarArray& tasks) {
   }
   //cerr << "  " << n_discrepancies << endl ;
 
+
+
+  //if(solutions.size)
   cout << left << setw(30) << "c Distance " << ":" 
        << right << setw(20) << n_discrepancies << endl;
+
+  //cout << solutions.size() << endl;
+
+  //exit(1);
 
   //   for(i=0; i<ntasks; ++i) {
   //     bvar = tasks[i].var_ptr_;
@@ -1410,12 +1419,12 @@ void updateBestSolution(VarArray& disjuncts, VarArray& tasks) {
   //   task_weights.push_back(new_tweight);
   //   disjunct_weights.push_back(new_dweight);
 
-  
+
 
   solutions.push_back(new_solution);
   best_solution = new_solution;
 
-  if(solutions.size() > 1) {
+  if(solutions.size() > 2) {
     double factor = ((double)total_solutions / (double)(total_solutions+1));
     ++total_solutions;
     //    cout << "avg distance " << factor << " * " << avg_distance << " + " 
@@ -1734,7 +1743,6 @@ public:
   
   virtual void execute() 
   { 
-
     if(Verbose>1)
       cout << "c  found an improving solution, update probabilities:" << endl;
 
@@ -1779,6 +1787,7 @@ public:
 
 void dichotomic_search()
 {
+  WeighterRestartGenNogood* nog = NULL;
   int new_makespan = 0;
   double dsopttime = 0.0,  maxidstime=0.0, curr_time=0.0;
   bool first_step = true;
@@ -1860,7 +1869,7 @@ void dichotomic_search()
 	  if( Rngd == 1 )
 	    s.setRestartNogood();
 	  else 
-	    s.setRestartGenNogood();
+	    nog = s.setRestartGenNogood();
 	  s.setForgetfulness( 0.0 );
 	}
 
@@ -1912,6 +1921,18 @@ void dichotomic_search()
       }
 
       if( Result == SAT ) {
+
+	if( Rngd ) {
+	  if( Rngd == 1 ) {
+	    nNogoods += s.sat->learnt.size;
+	    for(int k=0; k<s.sat->learnt.size; ++k)
+	      avg_nogood_size += s.sat->learnt[k]->size;
+	  } else {
+	    nNogoods += nog->base->nogood.size;
+	    for(int k=0; k<nog->base->nogood.size; ++k)
+	      avg_nogood_size += nog->base->nogood[k]->size;
+	  }
+	}
 
 	updateBestSolution(disjuncts, tasks);
 
@@ -1988,7 +2009,10 @@ void dichotomic_search()
        << left << setw(30) << "d DSSOLUTIONS "     << right << setw(21) << total_solutions << endl
        << left << setw(30) << "d AVGDISTANCE "     << right << setw(21) << avg_distance << endl
        << left << setw(30) << "d MINDISTANCE "     << right << setw(21) << min_distance << endl
-       << left << setw(30) << "d MAXDISTANCE "     << right << setw(21) << max_distance << endl;
+       << left << setw(30) << "d MAXDISTANCE "     << right << setw(21) << max_distance << endl
+       << left << setw(30) << "d DSNOGOODS     "     << right << setw(21) << nNogoods << endl;
+  if(nNogoods)
+    cout << left << setw(30) << "d DSNOGOODSIZE  "     << right << setw(21) << avg_nogood_size/(double)nNogoods << endl;
 
   if(Weight) 
     cout << left << setw(30) << "d AVGAVGDWEIGHT " << right << setw(21) << avg_disjunct_avg_weight << endl
@@ -2376,6 +2400,7 @@ void mks_dec_search()
 
 void branch_and_bound()
 {
+  WeighterRestartGenNogood* nog = NULL;
   int i, j;
 
   VarArray disjuncts;
@@ -2424,11 +2449,11 @@ void branch_and_bound()
     s.function = new SolutionRandGuidedSearch( &s, disjuncts );
 
   if( Rngd ) {
-	  if( Rngd == 1 )
-	    s.setRestartNogood();
-	  else 
-	    s.setRestartGenNogood();
-	  //s.setRestartNogood();      
+    if( Rngd == 1 )
+      s.setRestartNogood();
+    else 
+      nog = s.setRestartGenNogood();
+    //s.setRestartNogood();      
     s.setForgetfulness( 0.0 );
   }
   if( Randomized > 0 ) s.setRandomized();
@@ -2465,6 +2490,19 @@ void branch_and_bound()
     s.setTimeLimit( TIME );
     s.setVerbosity(Verbose);
     Result = s.solve_and_restart(PolicyRestart, Base, Factor, Decay);
+
+
+    if( Rngd ) {
+      if( Rngd == 1 ) {
+	nNogoods += s.sat->learnt.size;
+	for(int k=0; k<s.sat->learnt.size; ++k)
+	  avg_nogood_size += s.sat->learnt[k]->size;
+      } else {
+	nNogoods += nog->base->nogood.size;
+	for(int k=0; k<nog->base->nogood.size; ++k)
+	  avg_nogood_size += nog->base->nogood[k]->size;
+      }
+    }
 
     //Solved = ( Result != LIMITOUT && Result != UNKNOWN );
     Solved = ( Result == OPT || Result == UNSAT );

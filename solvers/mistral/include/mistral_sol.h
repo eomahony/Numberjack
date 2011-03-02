@@ -298,7 +298,9 @@ namespace Mistral {
     /// Limit on the number of failures, used for probing
     unsigned long int FAILLIMIT;
     /// Number of calls to a constraint propagator
-    unsigned long int PROPAGS;
+    unsigned long long int PROPAGS;
+    /// Limit on the number of propagations
+    unsigned long long int PROPLIMIT;
     /// Number of constraint checks (unused)
     unsigned long int CHECKS;
     /// Number of solutions found so far
@@ -1672,8 +1674,11 @@ namespace Mistral {
       if(NDSLIMIT  >  0 && NODES   >=  NDSLIMIT)
 	std::cout << "NDS LIMIT " << NODES << " " << NDSLIMIT << std::endl;
 
-      if(FAILLIMIT == 1 && FAILURES   >=  FAILLIMIT)
+      if(FAILLIMIT  >  0 && FAILURES   >=  FAILLIMIT)
 	std::cout << "FAIL LIMIT " << FAILURES << " " << FAILLIMIT << std::endl;
+
+      if(PROPLIMIT  >  0 && PROPAGS   >=  PROPLIMIT)
+	std::cout << "PROP LIMIT " << PROPAGS << " " << PROPLIMIT << std::endl;
       }
 #endif
 
@@ -1681,9 +1686,14 @@ namespace Mistral {
 
       return (
 	      (TIMELIMIT > .0 && getRunTime() - STARTTIME >= TIMELIMIT) ||
-	      (BTSLIMIT  >  0 && BACKTRACKS   >=  BTSLIMIT)      ||
-	      (NDSLIMIT  >  0 && NODES   >=  NDSLIMIT)      ||
-	      (FAILLIMIT  >  0 && FAILURES   >=  FAILLIMIT)      //DG Change
+	      (// BTSLIMIT  >  0 &&
+	       BACKTRACKS   >=  BTSLIMIT)      ||
+	      (// NDSLIMIT  >  0 &&
+	       NODES   >=  NDSLIMIT)      ||
+	      (// FAILLIMIT  >  0 &&
+	       FAILURES   >=  FAILLIMIT)  ||    //DG Change
+	      (// PROPLIMIT  >  0 &&
+	       PROPAGS   >=  PROPLIMIT)  
 	      );
     }
     //@}
@@ -1763,13 +1773,21 @@ namespace Mistral {
     void setUpperBounds(BuildObject **x, const int l, int*);
 
 
-    /// Cutoff in number of backtracks
+    /// Cutoff in number of propags
+    void resetPropagsLimit   (){ PROPLIMIT  = ~0; // std::cout << "PROPLIMIT: " << PROPLIMIT << std::endl;
+    }
+    void setPropagsLimit     (unsigned long long nl){ PROPLIMIT  = nl; LIMIT = 1; }
+    /// Cutoff in number of nodes
+    void resetNodeLimit   (){ NDSLIMIT  = ~0; }
     void setNodeLimit     (unsigned long nl){ NDSLIMIT  = nl; LIMIT = 1; }
     /// Cutoff in number of backtracks
+    void resetBacktrackLimit(){ BTSLIMIT  = ~0; }
     void setBacktrackLimit(unsigned long nl){ BTSLIMIT  = nl; LIMIT = 1; }
     /// Cutoff in number of failures
+    void resetFailureLimit  (){ FAILLIMIT = ~0; }
     void setFailureLimit  (unsigned long nl){ FAILLIMIT = nl; LIMIT = 1; }
     /// Cutoff in cpu time (s)
+    void setTimeLimit     ()       { TIMELIMIT = ~0; }
     void setTimeLimit     (double tl)       { TIMELIMIT = tl; LIMIT = 1; }
     /// Print satisfiability, number of backtracks and cpu time
     void setVerbosity     (const int v)     { verbosity =  v; }
@@ -1801,7 +1819,7 @@ namespace Mistral {
     unsigned long int getNodes     () const ;
     unsigned long int getFailures  () const ;
     unsigned long int getChecks    () const ;
-    unsigned long int getPropags   () const ;
+    unsigned long long int getPropags   () const ;
     double            getTime      () const ;
  
     void test_x60() {

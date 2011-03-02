@@ -22,6 +22,7 @@ StatisticList::StatisticList() {
   upper_bound             = 0;
 
   num_nogoods             = 0;
+  avg_nogood_size         = 0;
   num_solutions           = 0;
   
   avg_distance            = 0;
@@ -180,7 +181,10 @@ std::ostream& StatisticList::print(std::ostream& os,
      << "d " << prefix << std::left << std::setw(28-plength)  << "BACKTRACKS "    << std::right << std::setw(21) << total_backtracks << std::endl
      << "d " << prefix << std::left << std::setw(28-plength)  << "FAILS "         << std::right << std::setw(21) << total_fails << std::endl
      << "d " << prefix << std::left << std::setw(28-plength)  << "PROPAGS "       << std::right << std::setw(21) << total_propags << std::endl
-     << "d " << prefix << std::left << std::setw(28-plength)  << "NODES/s "       << std::right << std::setw(21) ;
+     << "d " << prefix << std::left << std::setw(28-plength)  << "NOGOODS "       << std::right << std::setw(21) << num_nogoods << std::endl;
+  if(num_nogoods)
+    std::cout << "d " << prefix << std::left << std::setw(28-plength)  << "NOGOODSIZE "    << std::right << std::setw(21) << avg_nogood_size/(double)num_nogoods << std::endl;
+  std::cout << "d " << prefix << std::left << std::setw(28-plength)  << "NODES/s "       << std::right << std::setw(21) ;
   if(total_time > 0)
     std::cout << (int)((double)total_nodes/total_time);
   else 
@@ -285,7 +289,7 @@ ParameterList::ParameterList(int length, char **commandline) {
 
   Verbose     = 1;
   Optimise    = 3600;
-  Rngd        = 1;
+  Rngd        = 2;
 
   Policy    = "geom";
   Factor    = 1.3;
@@ -297,7 +301,7 @@ ParameterList::ParameterList(int length, char **commandline) {
   Objective = "makespan";
   Algorithm = "bnb";
 
-  Heuristic = "osp-t";
+  Heuristic = "none";
   PolicyRestart = GEOMETRIC;
 
   if(int_param[0]  != NOVAL) UBinit      = int_param[0];
@@ -331,28 +335,36 @@ ParameterList::ParameterList(int length, char **commandline) {
 
   if(Type == "osp") {
     Objective = "makespan";
-    Heuristic = "osp-b";
+    if(Heuristic == "none")
+      Heuristic = "osp-b";
   } else if(Type == "sds") {
     Objective = "makespan";
-    Heuristic = "osp-b";
+    if(Heuristic == "none")
+      Heuristic = "osp-b";
   } else if(Type == "jtl") {
     Objective = "makespan";
-    Heuristic = "osp-t";
+    if(Heuristic == "none")
+      Heuristic = "osp-t";
   } else if(Type == "now") {
     Objective = "makespan";
-    Heuristic = "osp-dw";
+    if(Heuristic == "none")
+      Heuristic = "osp-dw";
   } else if(Type == "jla") {
     Objective = "makespan";
-    Heuristic = "osp-t";
+    if(Heuristic == "none")
+      Heuristic = "osp-t";
   } else if(Type == "jsp") {
     Objective = "makespan";
-    Heuristic = "osp-t";
+    if(Heuristic == "none")
+      Heuristic = "osp-t";
   } else if(Type == "jet") {
     Objective = "tardiness";
-    Heuristic = "osp-t";
+    if(Heuristic == "none")
+      Heuristic = "osp-t";
   } else if(Type == "dyn") {
     Objective = "tardiness";
-    Heuristic = "osp-t";
+    if(Heuristic == "none")
+      Heuristic = "osp-t";
   }
 
 
@@ -426,16 +438,16 @@ void ParameterList::initialise(SchedulingSolver *s) {
   if(int_param[11] != NOVAL) NodeBase    = int_param[11];
 
   // since the model is different for no-wait, we use a different factor
-  double NodeFactor = 12500000.0;
+  double NodeFactor = 125000000000.0;
   if(Type == "now") NodeFactor *= 8;
  
-  NodeCutoff  = (int)((double)NodeBase * 
-		      (NodeFactor/(double)(model->data->nDisjuncts()+
-					   model->data->nPrecedences())));
-  if(model->ub_C_max - model->lb_C_max > 4000)
-    NodeCutoff /= 2;
-  if(model->ub_C_max - model->lb_C_max > 6000)
-    NodeCutoff /= 2;
+  NodeCutoff  = (unsigned long long int)((double)NodeBase * 
+					 (NodeFactor/(double)(model->data->nDisjuncts()+
+							      model->data->nPrecedences())));
+//   if(model->ub_C_max - model->lb_C_max > 4000)
+//     NodeCutoff /= 2;
+//   if(model->ub_C_max - model->lb_C_max > 6000)
+//     NodeCutoff /= 2;
   if(int_param[12] != NOVAL) NodeCutoff  = int_param[12]; 
 //   if(int_param[13] != NOVAL) Hlimit      = int_param[13]; 
 //   if(int_param[14] != NOVAL) InitBound   = int_param[14]; 
@@ -508,6 +520,24 @@ std::ostream& ParameterList::print(std::ostream& os) {
   os << std::left << std::setw(30) << "c value ordering (init step) " << ":" << std::right << std::setw(20) << IValue << std::endl;
   os << std::left << std::setw(30) << "c value ordering (dichotomy) " << ":" << std::right << std::setw(20) << DValue << std::endl;
   os << std::left << std::setw(30) << "c value ordering (optim) " << ":" << std::right << std::setw(20) << Value << std::endl;
+  os << std::left << std::setw(30) << "c randomization " << ":" ;
+     
+  if(Randomized<-1) 
+    os << std::right
+       << std::setw(17) << "i-shuff random (" << std::setw(2) << -Randomized << ")" << std::endl;
+  else if(Randomized>1) 
+    os << std::right
+       << std::setw(17) << "shuff & random (" << std::setw(2) << Randomized << ")" << std::endl;
+  else if(Randomized==1) 
+    os << std::right
+       << std::setw(20) << "shuffled" << std::endl;
+  else if(Randomized==0) 
+    os << std::right
+       << std::setw(20) << "not random" << std::endl;
+  else 
+    os << std::right
+       << std::setw(20) << "init shuffle" << std::endl;
+  
   os << "c =================[ parameters ]==================" << std::endl;
   
   return os;
@@ -786,13 +816,19 @@ int Instance::getMakespanUpperBound(const int iterations) {
     int current_job_bound[nJobs()];
     int current_machine_bound[nMachines()];
     int current_machine_task[nMachines()];
-    int random_jobs[nTasks()];
+    int ranks[nTasks()];
+    int random_jobs[nTasks()+1];
     int m[nMachines()];
-    int k=0;
+    int k=0, i, j, t, n=0;
 
-    for(int i=0; i<nJobs(); ++i)
-      for(int j=0; j<nTasksInJob(i); ++j)
-	random_jobs[k++] = i;
+    std::fill(current_job, current_job+nJobs(), 0);
+    while(k<nTasks()) {
+      ranks[n++] = k;
+      for(i=0; i<nJobs(); ++i)
+	if(current_job[i]<nTasksInJob(i))
+	  random_jobs[k++] = i;
+    }
+    ranks[n] = nTasks();
 
     int iter = iterations;
   
@@ -804,41 +840,68 @@ int Instance::getMakespanUpperBound(const int iterations) {
   
       int makespan = 0;
 
-      for(int i=0; i<nTasks(); ++i) {
-	int j = randint(nTasks()-i);
-	int k = random_jobs[i];
-	random_jobs[i] = random_jobs[i+j];
-	random_jobs[i+j] = k;
-      }
+      if(iter<iterations-1)
+	for(i=0; i<n; ++i) {
+	  for(t=ranks[i]; t<ranks[i+1]; ++t) {
+	    j = randint(ranks[i+1]-t);
+	    k = random_jobs[t];
+	    random_jobs[t] = random_jobs[ranks[i]+j];
+	    random_jobs[ranks[i]+j] = k;
+	  }
+	}
+      //      for(i=0; i<nTasks(); ++i) {
+      //	j = randint(nTasks()-i);
+      // 	k = random_jobs[i];
+      // 	random_jobs[i] = random_jobs[i+j];
+      // 	random_jobs[i+j] = k;
+      //       }
     
-      for(int i=0; i<nTasks(); ++i) {
+      for(i=0; i<nTasks(); ++i) {
+
+// 	for(int jj=0; jj<nJobs(); ++jj) {
+// 	  std::cout << " " << std::setw(4) << current_job_bound[jj];
+// 	}
+// 	std::cout << std::endl;
+
+// 	for(int jj=0; jj<nMachines(); ++jj) {
+// 	  std::cout << " " << std::setw(4) << current_machine_bound[jj];
+// 	}
+// 	std::cout << std::endl;
+
+
 	// pick the next job
-	int j = random_jobs[i];
+	j = random_jobs[i];
 	// find out which task is that
-	int t = getJobTask(j, current_job[j]);
+	t = getJobTask(j, current_job[j]);
 
 	DBG("pick task t%d\n", t);
 
 	// find out which machine is that
-	for(int j=0; j<nMachines(t); ++j) {
-	  m[j] = getMachine(t,j);
-	  DBG("  -> uses machine%d\n", m[j]);
+	for(k=0; k<nMachines(t); ++k) {
+	  m[k] = getMachine(t,k);
+	  DBG("  -> uses machine%d\n", m[k]);
 	}
       
+// 	std::cout << "pick task " << t << "(job=" << j 
+// 		  << ", mach=" << m[0] << ")" << std::endl;
+
+
 	// find the current timepoint for this job
 	int j_mkp = current_job_bound[j];
 
 	// find the current timepoint for this machine
 	int m_mkp = current_machine_bound[m[0]];
 	DBG("m%d = %d\n", m[0], current_machine_bound[m[0]]);
-	for(int j=1; j<nMachines(t); ++j)
-	  if(m_mkp < current_machine_bound[m[j]]) {
-	    m_mkp = current_machine_bound[m[j]];
-	    DBG("m%d = %d\n", m[j], current_machine_bound[m[j]]);
+	for(k=1; k<nMachines(t); ++k)
+	  if(m_mkp < current_machine_bound[m[k]]) {
+	    m_mkp = current_machine_bound[m[k]];
+	    DBG("m%d = %d\n", m[k], current_machine_bound[m[k]]);
 	  }
 
 	// get the start time for this task
 	int timepoint = (j_mkp < m_mkp ? m_mkp : j_mkp);
+
+	//	std::cout << "earliest start time = " << timepoint << std::endl;
 
 	// check its release date
 	if(getReleaseDate(t) > timepoint) timepoint = getReleaseDate(t);
@@ -848,12 +911,12 @@ int Instance::getMakespanUpperBound(const int iterations) {
 	// add setup time, if any
 	if(hasSetupTime()) {
 	  int setup = 0;
-	  int setup_mj;
-	  for(int j=0; j<nMachines(t); ++j) {
-	    if(current_machine_task[m[j]] >= 0) {
-	      setup_mj = getSetupTime(m[j], current_machine_task[m[j]], t);
-	      if(setup < setup_mj) setup = setup_mj;
-	      DBG("setup = %d\n", setup_mj);
+	  int setup_mk;
+	  for(k=0; k<nMachines(t); ++k) {
+	    if(current_machine_task[m[k]] >= 0) {
+	      setup_mk = getSetupTime(m[k], current_machine_task[m[k]], t);
+	      if(setup < setup_mk) setup = setup_mk;
+	      DBG("setup = %d\n", setup_mk);
 	    }
 	  }
 	  timepoint += setup;
@@ -863,9 +926,9 @@ int Instance::getMakespanUpperBound(const int iterations) {
 	timepoint += getDuration(t);
 
 	// update machin and job bounds
-	for(int j=0; j<nMachines(t); ++j) {
-	  current_machine_bound[m[j]] = timepoint;
-	  current_machine_task[m[j]] = t;
+	for(k=0; k<nMachines(t); ++k) {
+	  current_machine_bound[m[k]] = timepoint;
+	  current_machine_task[m[k]] = t;
 	}
 	//current_machine_bound[m] = timepoint;
 	current_job_bound[j] = timepoint;
@@ -877,6 +940,7 @@ int Instance::getMakespanUpperBound(const int iterations) {
       }
       if(best_makespan > makespan) best_makespan = makespan;
 
+      //exit(1);
       //std::cout << "\t" << makespan << " " << best_makespan << std::endl;
     }
   } else {
@@ -1714,6 +1778,8 @@ Solution::~Solution() {
 }
 
 void Solution::guide_search() {
+  //print(std::cout);
+
   solver->setGuidedOrdering(model->disjuncts, disjunct_value);
   if(model->data->hasJobDueDate()) {
     solver->setGuidedOrdering(model->earlybool, earlybool_value);
@@ -1740,6 +1806,17 @@ double Solution::distance(Solution* s) {
   return sqrt(dist);
 }
 
+std::ostream& Solution::print(std::ostream& os) {
+  int i, n = model->disjuncts.size();
+
+  for(i=0; i<n; ++i) {
+    os << disjunct_value[i] ;
+  } 
+  os << std::endl;
+
+  return os;
+}
+
 
 SchedulingSolver::SchedulingSolver(SchedulingModel* m, 
 				   ParameterList* p,
@@ -1762,7 +1839,7 @@ SchedulingSolver::SchedulingSolver(SchedulingModel* m,
 
   params->getSkew();
   
-
+  nogoods = NULL;
   pool = new SolutionPool();
 
   //s.normalizer = m->data->getNormalizer();
@@ -1820,17 +1897,19 @@ void SchedulingSolver::dichotomic_search()
   presolve();
   
   setVerbosity(params->Verbose);
+  //if(params->Cutoff>0)
   setTimeLimit(params->Cutoff);
   //setRandomSeed( params->Seed );
   //if(params->Randomized) 
   //randomizeSequence();
   if(params->Randomized > 0)
     setRandomized(params->Randomized);
-  else
+  else if(params->Randomized < 0) {
     randomizeSequence();
+  }
 
-
-  WeighterRestartGenNogood *nogoods = NULL;
+  //WeighterRestartGenNogood *nogoods = NULL;
+  nogoods = NULL;
   if(params->Rngd) nogoods = setRestartGenNogood();
   
 //   if(!pool->size()) {
@@ -1890,12 +1969,14 @@ void SchedulingSolver::dichotomic_search()
       // set node limit (short for initial step)
       if(!pool->size() && !iteration) {
 	std::cout << "c ===========[ initial dichotomic step ]===========" << std::endl;
-	std::cout << std::left << std::setw(30) << "c node cutoff" << ":"  
+	std::cout << std::left << std::setw(30) << "c propag cutoff" << ":"  
 		  << std::right << std::setw(20) << (params->NodeCutoff/100) << std::endl;
-	setNodeLimit(params->NodeCutoff/100);
+	//setNodeLimit(params->NodeCutoff/100);
+	setPropagsLimit(params->NodeCutoff/100);
       } else { 
 	std::cout << "c ============[ start dichotomic step ]============" << std::endl;
-	setNodeLimit(params->NodeCutoff);
+	//setNodeLimit(params->NodeCutoff);
+	setPropagsLimit(params->NodeCutoff);
       }     
       //reorderSequence();
 
@@ -1914,14 +1995,9 @@ void SchedulingSolver::dichotomic_search()
       }
       
       if(nogoods) {
-	ngd_stamp = nogoods->base->nogood.size;
+	ngd_stamp = (params->Rngd>1 ? nogoods->base->nogood.size : 0);
 	lit_stamp = sUnaryCons.size;
       }
-
- //      if(verbosity == 4) heuristic->verbosity = 4;
-//       print_weights(std::cout);
-//       //heuristic->print_weights();
-//       ////std::cout << std::endl;
 
       if(status == UNKNOWN) {
 	solve_and_restart(params->PolicyRestart, params->Base, params->Factor);
@@ -1935,10 +2011,16 @@ void SchedulingSolver::dichotomic_search()
 
 	stats->normalized_objective = model->get_normalized_objective();
 	
-
 	maxfsble = new_objective;
 	pool->add(new Solution(model, this));
 	
+	if(nogoods) {
+	  for(int i=ngd_stamp; i<nogoods->base->nogood.size; ++i)
+	    stats->avg_nogood_size += (double)(nogoods->base->nogood[i]->size);
+	  if(params->Rngd>1) stats->num_nogoods = nogoods->base->nogood.size;
+	  else stats->num_nogoods += nogoods->base->nogood.size;
+	}
+
 	std::cout << std::left << std::setw(30) << "c solutions's objective" << ":" << std::right << std::setw(20) << new_objective << std::endl;
 
       } else {
@@ -1994,7 +2076,10 @@ void SchedulingSolver::dichotomic_search()
 
 void SchedulingSolver::branch_and_bound()
 {
-  setNodeLimit(0);
+  int ngd_stamp = 0;
+  int lit_stamp = 0;
+  //resetNodeLimit();
+  resetPropagsLimit();
 
   save();
   model->set_objective(stats->upper_bound-1);
@@ -2022,7 +2107,21 @@ void SchedulingSolver::branch_and_bound()
 	      << std::right << std::setw(19) << (time_limit) << "s" << std::endl;
     
     if(status == UNKNOWN) {
+
+      if(nogoods) {
+	ngd_stamp = nogoods->base->nogood.size;
+	lit_stamp = sUnaryCons.size;
+      }
+
       solve_and_restart(params->PolicyRestart, params->Base, params->Factor);
+
+      if(nogoods) {
+	for(int i=ngd_stamp; i<nogoods->base->nogood.size; ++i)
+	  stats->avg_nogood_size += (double)(nogoods->base->nogood[i]->size);
+	if(params->Rngd>1) stats->num_nogoods = nogoods->base->nogood.size;
+	else stats->num_nogoods += nogoods->base->nogood.size;
+	//stats->num_nogoods = nogoods->base->nogood.size;
+      }
     }
 
 //      std::cout << "c OUTCOME: " <<

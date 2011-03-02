@@ -1199,6 +1199,9 @@ namespace Mistral {
     /**@name Utils*/
     //@{ 
     inline bool operator<( VarSelectorOSP_DoBoolWeight& x ) const { 
+//       if (domsize_ * x.weight_ < x.domsize_ * weight_) {
+// 	std::cout << domsize_ << "/" << weight_ << std::endl;
+//       }
       return (domsize_ * x.weight_ < x.domsize_ * weight_) ;
     }
     inline void operator=( VarSelectorOSP_DoBoolWeight& x ) { 
@@ -1214,6 +1217,7 @@ namespace Mistral {
 	domsize_ = x->domsize();
       }
       weight_ = x->weight;
+
 
     }
     //@}  
@@ -1298,7 +1302,10 @@ namespace Mistral {
   
     /**@name Utils*/
     //@{ 
-    inline bool operator<( VarSelectorOSP_DoTaskWeight& x ) const { 
+    inline bool operator<( VarSelectorOSP_DoTaskWeight& x ) const {
+ //      if (domsize_ * x.task_weight_ < x.domsize_ * task_weight_) {
+// 	std::cout << domsize_ << "/" << task_weight_ << std::endl;
+//       }
       return (domsize_ * x.task_weight_ < x.domsize_ * task_weight_) ;
     }
     inline void operator=( VarSelectorOSP_DoTaskWeight& x ) { 
@@ -1307,13 +1314,13 @@ namespace Mistral {
     inline void operator=( VariableInt    *x ) 
     { 
       PredicateDisjunctive* d = disjuncts[x->id];
-      //if(d) {
+      if(d) {
 	domsize_ = d->domsize();
 	task_weight_ = (d->scope[0]->weight + d->scope[1]->weight);
-//       } else {
-// 	domsize_ = x->domsize();
-// 	task_weight_ = x->weight;
-//       }
+       } else {
+ 	domsize_ = x->domsize();
+ 	task_weight_ = x->weight;
+      }
     }
       
     //@}  
@@ -1451,6 +1458,9 @@ namespace Mistral {
     /**@name Utils*/
     //@{ 
     inline bool operator<( VarSelectorOSP_DoBoolTaskWeight& x ) const { 
+//       if(domsize_ * (x.weight_ + x.task_weight_) < x.domsize_ * (weight_ + task_weight_)) {
+// 	std::cout << domsize_ << "/(" << weight_ << "+" << task_weight_ << ")" << std::endl;
+//       }
       return (domsize_ * (x.weight_ + x.task_weight_) < x.domsize_ * (weight_ + task_weight_)) ;
     }
     inline void operator=( VarSelectorOSP_DoBoolTaskWeight& x ) { 

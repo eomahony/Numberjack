@@ -2403,6 +2403,74 @@ v=_X->min(); t=Decision::ASSIGNMENT;
   };
 
 
+  class Instance;
+  class ValSelectorJob : public ValSelector
+  {
+  public:
+
+    int val;
+    int id;
+    Instance *data;
+    VariableInt *first;
+    int nTasks;
+
+    /**@name Constructors*/
+    //@{
+    ValSelectorJob( VariableInt *x, const int i, Instance *d, VariableInt *f ) ;
+//       : ValSelector(x) {
+//       val = -1;
+//       id  = i;
+//       data = d;
+//       first = f;
+//       nTasks = data->nTasksInJob(id)
+//     }
+    //@}   
+  
+    /**@name Utils*/
+    //@{ 
+    void make(int& t, int& v) ;// { 
+//       getBest();
+//       t=Decision::UPPERBOUND;
+//     }
+    int getBest() ;// { 
+//       val = first->min();
+//       for(int i=0; i<nTasks-1; ++i) {
+// 	val += data->getDuration(data->getJobTask(id,i));
+// 	val += data->getMaxLag(id,i);
+//       }
+//       return val;
+//     }
+    void left() ;// { 
+//       getBest(); 
+//       _X->setMax( val ); 
+//     }
+    void right() ;// { 
+//       getBest(); 
+//       _X->setMin( val+1 ); 
+//     }
+    void reverse_left() ;// {
+//       getBest(); 
+//       _X->setMin( val+1 ); 
+//     }
+    void reverse_right() ;// {
+//       getBest(); 
+//       _X->setMax( val ); 
+//     }
+    void postCut( const int p ) ;//{ }
+    //@}  
+
+    /**@name Miscellanous*/
+    //@{
+    virtual void printLeft(std::ostream& o) const ;// { 
+//       std::cout << " <= " << val;
+//     }
+    virtual void printRight(std::ostream& o) const ;// {
+//       std::cout << " > " << val;
+//     }
+    //@}
+  };
+
+
   class ValSelectorRandomSplit : public ValSelector
   {
   public:
@@ -3462,6 +3530,10 @@ v=_X->min(); t=Decision::ASSIGNMENT;
       for( var_iterator = first+1; var_iterator != last_var; ++var_iterator ) 
 	{  
 	
+
+// 	  std::cout << "check ";
+// 	  (*var_iterator)->print(std::cout);
+	  
 	  // 	  	VariableInt *x = (*var_iterator);
 	  // 	  	int var_weight = x->weight;
 	  // 	  	int con_weight = 0;
@@ -3483,14 +3555,22 @@ v=_X->min(); t=Decision::ASSIGNMENT;
 	      best = current;
 	      var = (*var_iterator);
 
-
+	      //	      std::cout << "*" ;
 // 	      //std::cout << "jjjjjjj " << verbosity << std::endl;
 // 	      if(verbosity > 3) {
 // 		var->print(std::cout);
 // 		std::cout << " " << best.value() << std::endl;
 // 	      } 
 	    }
+
+	  //	  std::cout << std::endl;
 	}
+
+
+//       std::cout << "choose ";
+//       var->print(std::cout);
+// 	  std::cout << std::endl;
+// 	  std::cout << std::endl;
 
       return var;
     }
@@ -4284,6 +4364,69 @@ v=_X->min(); t=Decision::ASSIGNMENT;
 
 
   /**********************************************
+   * JOB Heuristic
+   **********************************************/
+
+  /*! \class JOB
+    \brief  Wrapper for DVOJOB
+
+    Jobs are scheduled in sequence (all ordering relations
+    between the already scheduled and the current job are 
+    treated before switching to a new job).
+  */
+  class SchedulingModel;
+  class JOB : public VariableOrdering {
+  public:
+  
+    SchedulingModel *model;
+    JOB( SchedulingModel *m ) { model=m;}
+    virtual ~JOB();
+  
+    /**@name Utils*/
+    //@{
+    DVO* extract( Solver* s );
+    //@}
+  };
+
+  /**********************************************
+   * JobByJob Ordering
+   **********************************************/
+
+  /*! \class JobByJob
+    \brief  JobByJob variable ordering
+
+  */
+  class JobByJob : public DVO {
+  public:
+
+    ReversibleNum<int> curJob;
+    int nJobs;
+    int nTasks;
+    Vector<PredicateDisjunctive*>** jobs;
+    Vector< int > done;
+    VariableInt** last_tasks;
+    VariableInt** other_tasks;
+
+    /**@name Constructors*/
+    //@{
+    JobByJob(Solver* s, Vector<PredicateDisjunctive*>** jo, 
+	     VariableInt** lt, VariableInt** ot, const int n, 
+	     Instance *data);
+    virtual ~JobByJob();
+    void shuffle();
+    //@}
+
+    /**@name Utils*/
+    //@{
+    /**!
+       The variable selection method.
+       Return the first unassigned variable
+    */
+    virtual VariableInt* select();
+    //@}
+  };
+
+  /**********************************************
    * PFSP Heuristic
    **********************************************/
 
@@ -4477,6 +4620,10 @@ inline void Mistral::SimpleUnaryConstraint::make() {
 //        std::cout << "make a decision for ";
 //   var->print(std::cout);
 //        std::cout << std::endl;
+
+  //std::cout << var << std::endl;
+
+  //std::cout << var->branch << std::endl;
 
   var->branch->make(t,v); 
   _data_ = ((v<<2)+t);

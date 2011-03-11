@@ -814,12 +814,21 @@ int Solver::presolve()
 	status = UNSAT;
 	return status;
       }
+      
+
       //std::cout << "END FILTER IN PRESOLVE" << std::endl;
 
+      //std::cout << "SET DEFAULT BRANCHING" << std::endl;
 
       i = length;
-      while( i-- )
+      while( i-- ) {
+
+	//variables[i]->print(std::cout);	
+
 	if( !variables[i]->isGround() && !variables[i]->branch ) {
+	 
+	  //std::cout << " set default" << std::endl;
+
 	  if( domainSplitting && variables[i]->domsize() > 3 && variables[i]->getType() != VariableInt::LIST ) {
 	    variables[i]->branch = new ValSelectorSplit( variables[i] );
 	  } else if( variables[i]->getType() == VariableInt::BOOL ) {
@@ -840,19 +849,23 @@ int Solver::presolve()
 	  } else {
 	    variables[i]->branch = new ValSelectorMin( variables[i] );
 	  }
-	}
-    }
+	} 
 
+// 	else 
+// 	  std::cout << " branching already set, or variable not searchable" << std::endl;
+      }
+    }
+  
 #ifdef _DEBUGAC
-      if(verbosity > 2) {
-  for(int k=0; k<numvars; ++k) {
-    variables[k]->print( cout );
+  if(verbosity > 2) {
+    for(int k=0; k<numvars; ++k) {
+      variables[k]->print( cout );
+      cout << endl;
+    }
     cout << endl;
   }
-  cout << endl;
-      }
 #endif
-
+  
   return status;
 }
 
@@ -871,7 +884,17 @@ int Solver::solve()
       if( presolve() == UNKNOWN ) {
 	if(function)
 	  function->initialise();
+
+#ifdef _VIRTUAL_TRACE
+
+	virtual_iterative_dfs( );
+
+#else
+
 	iterative_dfs( );
+
+#endif
+
       }
       closeSearch();
     }
@@ -1536,6 +1559,10 @@ unsigned long int luby_seq( unsigned long int iteration ) {
   return luby_seq( iteration - (1 << thelog) + 1 );
 }
 
+int Solver::virtual_iterative_dfs() {
+  return iterative_dfs();
+}
+
 bool Solver::restart(const double decay, const int reinit) {
 
 //   std::cout << "X[0,0] just before a restart: ";
@@ -1561,27 +1588,18 @@ bool Solver::restart(const double decay, const int reinit) {
   while( i-- )
     learners[i]->notifyRestart( );
 
+#ifdef _VIRTUAL_TRACE
+
+  if( virtual_iterative_dfs() == LIMITOUT ) {
+
+#else
+
   if( iterative_dfs() == LIMITOUT ) {
+
+#endif
+
     status = UNKNOWN;
-
-//     // BUGGY!! it should be init_level, but the roadef challenge model doesn't like it.
-//      std::cout << "c " << reinit << " " << BTSLIST.size << std::endl
-//  	      << "c reset structs (" 
-// 	       << ((reinit >= 0 && BTSLIST.size >= reinit) ? "full" : "standard") 
-// 	       << ")" << std::endl; 
-
-    
-//     std::cout 
-//       << ((reinit >= 0 && BTSLIST.size >= reinit) ? "f" : "s") ;
-//     std::cout.flush();
-    
-//    backtrackTo(init_level-(reinit >= 0 && BTSLIST.size >= reinit));
     backtrackTo(init_level);
-
-//     std::cout << "X[0,0] after a reset: ";
-//     variables[0]->print(std::cout);
-//     std::cout << std::endl;
-
     if( decay > 0.0 )
       weightDecay( decay );
     if( sat ) {
@@ -1619,9 +1637,12 @@ bool Solver::restart(const double decay, const int reinit) {
 
   //std::cout << "END RESTART: " << PROPAGS << "/" << PROPLIMIT << std::endl;
 
-  return( (// NDSLIMIT <= 0 ||
-	   PROPAGS < PROPLIMIT) &&
-	  (TIMELIMIT <= .0 || (getRunTime() - STARTTIME < TIMELIMIT)) );
+  return( 
+	 (// NDSLIMIT <= 0 ||
+	  NODES < NDSLIMIT) &&
+	 (// NDSLIMIT <= 0 ||
+	  PROPAGS < PROPLIMIT) &&
+	 (TIMELIMIT <= .0 || (getRunTime() - STARTTIME < TIMELIMIT)) );
 }
 
 int Solver::solve_and_restart( const int policy,

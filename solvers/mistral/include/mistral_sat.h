@@ -472,7 +472,7 @@ inline int SatSolver::iterative_search()
     Clause *conflict = unitPropagate();
 
 #ifdef _DEBUGSEARCH
-    for(unsigned int i=0; i<decisions.size; ++i) std::cout << " " ;
+    for(int i=0; i<decisions.size; ++i) std::cout << " " ;
     printDecisions(std::cout);
 #endif
 
@@ -503,7 +503,7 @@ inline int SatSolver::iterative_search()
 	  nextDeduction = assumptions.size;
 
 #ifdef _DEBUGSEARCH
-	  for(unsigned int i=0; i<decisions.size; ++i) std::cout << " " ;
+	  for(int i=0; i<decisions.size; ++i) std::cout << " " ;
 	  std::cout << "deduce:" << (p>0 ? " +" : " ") << p;
 	  //printLiteral(std::cout, p);
 	  std::cout << std::endl;
@@ -724,7 +724,7 @@ inline void SatSolver::backtrackTo( const int backtrackLevel )
   assumptions.revertTo( decisions.popUntil(backtrackLevel) );
 
 #ifdef _DEBUGSEARCH
-  for(unsigned int i=0; i<decisions.size; ++i) std::cout << " " ;
+  for(int i=0; i<decisions.size; ++i) std::cout << " " ;
   std::cout << "backtrack to level " << backtrackLevel << std::endl;
 #endif
 

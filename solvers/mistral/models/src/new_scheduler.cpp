@@ -3,7 +3,7 @@
 #include "mistral_scd.h"
 
 
-using namespace MistralScheduler;
+using namespace Mistral;
 
 
 int main( int argc, char** argv )
@@ -17,7 +17,7 @@ int main( int argc, char** argv )
 
   Instance jsp(params);
   
-  //jsp.print(std::cout);
+  jsp.print(std::cout);
   jsp.printStats(std::cout);
 
   SchedulingModel *model;
@@ -36,10 +36,19 @@ int main( int argc, char** argv )
   SchedulingSolver solver(model, &params, &stats);
   usrand(params.Seed);
 
+  //solver.print(std::cout);
+  //exit(1);
+
   params.print(std::cout);  
 
   model->printStats(std::cout);  
   stats.print(std::cout, "INIT");  
+
+
+  //if
+  //solver.jtl_presolve();
+
+  //exit(1);
 
   if(solver.status == UNKNOWN) solver.dichotomic_search();
   else if( solver.status == SAT ) {

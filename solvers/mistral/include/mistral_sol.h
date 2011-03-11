@@ -414,6 +414,7 @@ namespace Mistral {
     
     inline void newNode( )
     {
+
       if(level++ > init_level) learnSuccess();
 
       past.push( future );
@@ -600,6 +601,8 @@ namespace Mistral {
 	learners[i]->notifyChoice( );
     }
 
+
+    virtual int virtual_iterative_dfs();
 
     inline int iterative_dfs()
     {

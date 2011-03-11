@@ -13,7 +13,7 @@
 #endif
 
 
-namespace MistralScheduler {
+namespace Mistral {
 
   class SchedulingSolver;
   class StatisticList {
@@ -78,10 +78,10 @@ namespace MistralScheduler {
     static const int RGUIDED =  3;
     static const int RAND    =  4;
 
-    static const int nia = 17;
+    static const int nia = 18;
     static const char* int_ident[nia];
     
-    static const int nsa = 11;
+    static const int nsa = 12;
     static const char* str_ident[nsa];
     
     
@@ -111,6 +111,7 @@ namespace MistralScheduler {
     int InitBound; // "init": number of iterations when initialising the upper bound
     int Neighbor; // "neighbor": number of machines to re-schedule during LNS
     int InitStep; // "initstep": whether an initial probe with high makespan should be performed
+    int FixTasks; // Whether tasks' starting time should be fixed (searched)
 
     double Factor;
     double Decay;
@@ -124,6 +125,7 @@ namespace MistralScheduler {
     std::string IValue;
     std::string Objective;
     std::string Algorithm;
+    std::string Presolve;
 
     int PolicyRestart;
 
@@ -452,11 +454,13 @@ public:
   {
   }
   
-  virtual void execute() 
-  { 
-    if(pool->size()) pool->getBestSolution()->guide_search();
-    StoreStats::execute();
-  }
+  virtual void execute() ;
+//   { 
+//     SchedulingSolver *ss = (SchedulingSolver *)solver;
+//     pool->add(new Solution(ss->model, solver));
+//     if(pool->size()) pool->getBestSolution()->guide_search();
+//     StoreStats::execute();
+//   }
 
   virtual void initialise() 
   {
@@ -528,6 +532,9 @@ public:
       delete pool;
     }
 
+
+    virtual int virtual_iterative_dfs();
+
     std::ostream& print_weights(std::ostream& os);
     void decay_weights(const double decay);
 
@@ -541,6 +548,22 @@ public:
       if(  vo == "rand"   )   val_ord = ParameterList::RAND;
       if(  vo == "promise")   val_ord = ParameterList::PROMISE;
       if(  vo == "anti"   )   val_ord = ParameterList::ANTI;
+
+
+      if(val_ord == ParameterList::LEX ||
+	 val_ord == ParameterList::RAND)
+      for(int i=0; i<length; ++i) {
+
+	std::cout << "SET VALUE HEURISTIC" << std::endl;
+
+	delete sequence[i]->branch;
+	if(val_ord == ParameterList::LEX) {
+	  sequence[i]->branch = new ValSelectorMin(sequence[i]);
+	} else {
+	  sequence[i]->branch = new ValSelectorRandMinMax(sequence[i]);
+	}
+      }
+
 
       if( Heu == "dom" ) {
 	MinDomain h(abs(rdz));
@@ -638,6 +661,10 @@ public:
 	OSP h(abs(rdz), val_ord, OSP::DOM_O_BOOLTASKWEIGHTTYPE);
 	add( h );
       }
+      else if( Heu == "job") {
+	JOB h( model );
+	add( h );
+      }
 //       else if( Heu == "osp-w") {
 // 	OSP h(abs(rdz), val_ord, OSP_Type);
 // 	add( h );
@@ -651,6 +678,8 @@ public:
     }
     
 
+    bool probe_ub();
+    void jtl_presolve();
     void dichotomic_search();
     void branch_and_bound();
     void large_neighborhood_search();

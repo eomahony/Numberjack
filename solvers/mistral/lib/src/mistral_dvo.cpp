@@ -28,6 +28,7 @@
 #include <mistral_sol.h>
 #include <mistral_csp.h>
 #include <mistral_dvo.h>
+#include <mistral_scd.h>
 
 #include <math.h>
 
@@ -1528,6 +1529,178 @@ inline VariableInt* DVOAntiLex::select()
   return sequence[i];
 }
 
+
+JOB::~JOB() {
+}
+  
+DVO* JOB::extract( Solver* s ) {
+  int i, k, j, l, h, ti, tj, ji, jj, d = 0, n = model->data->nJobs();
+  Vector< PredicateDisjunctive* > ** job_order = new Vector< PredicateDisjunctive* >*[n];
+  for(i=0; i<n; ++i) {
+    job_order[i] = new Vector< PredicateDisjunctive* >[n];
+  }
+
+  VariableInt *x;
+  MistralNode<Constraint*> *nd;
+  
+  for(k=0; k<model->data->nMachines(); ++k) 
+    for(i=0; i<model->data->nTasksInMachine(k); ++i)
+      for(j=i+1; j<model->data->nTasksInMachine(k); ++j) {
+	ti = model->data->getMachineTask(k,i);
+	tj = model->data->getMachineTask(k,j);
+
+
+// 	std::cout << "tasks " << ti << ", " << tj ;//<< std::endl;
+	
+	for(l=0; l<model->data->nJobs(ti); ++l) {
+	  ji = model->data->getJob(ti,l);
+	  for(h=0; h<model->data->nJobs(tj); ++h) {
+	    jj = model->data->getJob(tj,h);
+
+	    x = model->disjuncts[d].getVariable();
+	    nd = x->constraintsOnValue();
+	    while( nextNode(nd) ) 
+	      if(nd->elt->arity == 3) {
+
+// 		std::cout << " -> jobs " << ji << ", " << jj << " " ;//<< std::endl;
+		
+		job_order[ji][jj].push((PredicateDisjunctive*)(nd->elt));
+		job_order[jj][ji].push((PredicateDisjunctive*)(nd->elt));
+
+// 		nd->elt->print(std::cout);
+// 		std::cout << std::endl;
+
+		++d;
+	      }
+	  }
+	}
+      }
+
+  VariableInt **lt = new VariableInt*[n];
+  //VariableInt **ot = new VariableInt*[model->data->nTasks()-n];
+  VariableInt **ot = new VariableInt*[n];
+
+  for(i=0; i<n; ++i) {
+    lt[i] = model->tasks[model->data->getLastTaskofJob(i)].getVariable();
+  }
+
+  //k=0;
+  for(i=0; i<n; ++i) {
+    ot[i] = model->tasks[model->data->getJobTask(i,0)].getVariable();
+    //for(j=0; j<model->data->nTasksInJob(i)-1; ++j) {
+    //ot[k++] = model->tasks[model->data->getJobTask(i,j)].getVariable();
+    //}
+  }
+
+  
+
+//   for(i=1; i<n; ++i) {
+//     for(j=0; j<i; ++j) {
+//       std::cout << "jobs " << j << "x" << i << ":";
+//       for(k=0; k<job_order[j][i].size; ++k) {
+// 	std::cout << " ";
+// 	job_order[j][i][k]->scope[2]->printshort(std::cout);
+//       }
+//       std::cout << std::endl;
+//     }
+//   }
+
+  return new JobByJob(s, job_order, lt, ot, n, model->data);
+}
+
+JobByJob::JobByJob(Solver* s, Vector<PredicateDisjunctive*>** jo, 
+		   VariableInt **lt, VariableInt **ot, 
+		   const int n, Instance *data) 
+  : DVO(s) {
+
+  s->binds( curJob );
+  curJob.setValue( 0 );
+
+  jobs = jo;
+  last_tasks = lt;
+  other_tasks = ot;
+
+  for(int i=0; i<n; ++i) {
+    done.push(i);
+    //last_tasks[i]->branch = new ValSelectorMin( last_tasks[i] );
+    last_tasks[i]->branch = 
+      new ValSelectorJob( last_tasks[i], i, data, other_tasks[i] );
+  }
+  
+  nJobs = n;
+  nTasks = data->nTasks();
+}
+
+JobByJob::~JobByJob() {
+  for(int i=0; i<nJobs; ++i) 
+    delete [] jobs[i];
+  delete [] jobs;
+  delete [] last_tasks;
+  delete [] other_tasks;
+}
+
+void JobByJob::shuffle() {
+  //std::cout << "shuffle: " << std::endl;
+  for(int i=0; i<done.size; ++i) {
+    int j = randint(done.size-i);
+    int k = done[i+j];
+    done[i+j] = done[i];
+    done[i] = k;
+    //std::cout << " " << done[i];
+  }
+  //std::cout << std::endl;
+}
+
+VariableInt* JobByJob::select() {  
+  PredicateDisjunctive *p = NULL;
+  VariableInt *x = NULL;
+
+  if(!done.size) { // first call, select a job (lex for now)
+    curJob = 1;
+    x = last_tasks[done[0]];
+  }
+  
+  int i, j;//, job = done.back();
+  while(!x) {
+    //if(!)
+    // go to the next job
+    
+    //if(done.size)
+    for(i=0; !x && i<curJob; ++i) {
+//       std::cout << "find tasks in jobs " << done[curJob] 
+// 		<< "," << done[i] << ":";
+//       std::cout.flush();
+
+      for(j=0; !x && j<jobs[done[curJob]][done[i]].size; ++j) {
+// 	std::cout << " ";
+// 	//jobs[done[curJob]][done[i]][j]->print(std::cout);
+// 	jobs[done[curJob]][done[i]][j]->scope[2]->print(std::cout);
+	p = jobs[done[curJob]][done[i]][j];
+
+
+	if(!p->scope[2]->isGround()) {
+	  x = p->scope[2];
+	  
+// 	  std::cout << " ok, ";
+// 	  x->print(std::cout);
+	}
+      }
+
+      //      std::cout << std::endl;
+    }
+
+    if(!x) {
+      //done.push(done[curJob]);
+      x = last_tasks[done[curJob]];
+      ++curJob;
+    }
+  }
+
+//   x->print(std::cout);
+//   std::cout << std::endl;
+  return x;
+}
+
 OSP::~OSP() {
 }
 
@@ -2273,6 +2446,64 @@ int MinimiseVar::update()
     uless->activate();
     //}
   return res; 
+}
+
+
+ValSelectorJob::ValSelectorJob( VariableInt *x, const int i, 
+				Instance *d, VariableInt *f ) 
+  : ValSelector(x) {
+  val = -1;
+  id  = i;
+  data = d;
+  first = f;
+  nTasks = data->nTasksInJob(id);
+}
+
+void ValSelectorJob::make(int& t, int& v) { 
+  v = getBest();
+  t=Decision::UPPERBOUND;
+}
+int ValSelectorJob::getBest() { 
+  val = first->min();
+
+  //std::cout << val ;
+
+  for(int i=0; i<nTasks-1; ++i) {
+
+//     std::cout << " + " << data->getDuration(data->getJobTask(id,i)) 
+// 	      << " + " << data->getMaxLag(id,i);
+
+    val += data->getDuration(data->getJobTask(id,i));
+    val += data->getMaxLag(id,i);
+  }
+
+  //std::cout << std::endl;
+
+  return val;
+}
+
+void ValSelectorJob::left() { 
+  getBest(); 
+  _X->setMax( val ); 
+}
+void ValSelectorJob::right() { 
+  getBest(); 
+  _X->setMin( val+1 ); 
+}
+void ValSelectorJob::reverse_left() {
+  getBest(); 
+  _X->setMin( val+1 ); 
+}
+void ValSelectorJob::reverse_right() {
+  getBest(); 
+  _X->setMax( val ); 
+}
+void ValSelectorJob::postCut( const int p ) { }
+void ValSelectorJob::printLeft(std::ostream& o) const { 
+  std::cout << " <= " << val;
+}
+void ValSelectorJob::printRight(std::ostream& o) const {
+  std::cout << " > " << val;
 }
 
 

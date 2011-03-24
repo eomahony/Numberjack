@@ -11617,3 +11617,54 @@ void ConstraintClauseBase::print(std::ostream& o) const
 }
 
 
+
+/**********************************************
+ * Boolean Sum Equality Constraint  
+ **********************************************/
+
+ConstraintDummyFail::ConstraintDummyFail(Solver *s, 
+					       VariableInt **v, 
+					       const int n)
+  : Constraint(s, v, n, VALUETRIGGER)
+{
+}
+
+ConstraintDummyFail::~ConstraintDummyFail()
+{
+}
+
+int ConstraintDummyFail::check( const int* s ) const 
+{
+  return 0;
+}
+
+bool ConstraintDummyFail::propagate()
+{
+  return true;
+} 
+ 
+
+bool ConstraintDummyFail::propagate(const int changedIdx, const int event) 
+{
+  int n_assigned = 0;
+  for(int i=0; i<arity; ++i) {
+    n_assigned += scope[i]->isGround();
+  }
+
+  if (n_assigned < arity-1) return true;
+  else {
+    for(int i=0; i<arity-1; ++i) {
+      std::cout << " " << scope[i]->min() ;
+    }
+    std::cout << std::endl;
+  }
+}
+
+
+
+
+void ConstraintDummyFail::print(std::ostream& o) const
+{ 
+  o << "DUMMY FAIL" ;
+}
+

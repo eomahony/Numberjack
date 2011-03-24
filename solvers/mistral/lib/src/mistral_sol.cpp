@@ -82,9 +82,12 @@ void Solver::randomizeSequence()
       aux = future[j];
       future[j] = future[i];
       future[i] = aux;
-      future[i]->seqIdx = &future[i];
-      future[j]->seqIdx = &future[j];
+      //future[i]->seqIdx = &future[i];
+      //future[j]->seqIdx = &future[j];
     }
+
+  for(i=0; i<n; ++i)
+    future[i]->seqIdx = &future[i];
 
   //   for(i=0; i<n; ++i) {
   //     future[i]->printshort( cout );
@@ -2426,7 +2429,7 @@ int Solver::solutionFound(int init_level)
       cout << endl;
       if(FAILLIMIT)
 	cout << "c  ----------------------------------------------------------------------------------" << endl;
-
+      
     } else {
       cout << left  << setw(13) << "c | solution: "
 	   << left  << setw(8)  << (goal ? goal->solution_score() : SOLUTIONS)
@@ -2442,7 +2445,9 @@ int Solver::solutionFound(int init_level)
 	status = SAT;
       } else if( level > init_level ) {
 	backtrackLevel = level-1;
-	//VariableInt *lastDecision = decision[level];
+
+
+
 	SimpleUnaryConstraint last_decision = branching_decision[level];
 	backtrackTo( backtrackLevel );
 #ifdef _DEBUGSEARCH
@@ -2454,7 +2459,7 @@ int Solver::solutionFound(int init_level)
 #endif
       
       //lastDecision->branch->right();
-      last_decision.right();
+      last_decision.deduce();
 #ifdef _DEBUGSEARCH
       if(verbosity > 2) {
 	//lastDecision->branch->printRight( std::cout );
@@ -2478,7 +2483,7 @@ int Solver::solutionFound(int init_level)
       SimpleUnaryConstraint last_decision = branching_decision[level];
       backtrackTo( backtrackLevel );
       //lastDecision->branch->right();
-      last_decision.right();
+      last_decision.deduce();
     } else status = UNSAT;
   }
 
@@ -2833,7 +2838,7 @@ int Solver::getNextSolution()
 #endif
 
     //lastDecision->branch->right();
-    last_decision.right();
+    last_decision.deduce();
   }
 
   int res = iterative_dfs();
@@ -2894,6 +2899,20 @@ void Solver::print(std::ostream& o) const
     o << endl << "subject to" << endl;
   }
 
+
+//   int i;
+//   MistralNode<Constraint*> *nd;
+
+//   for(i = 0; i < variables.size; ++i) {
+//     nd = variables[i]->constraintsOnValue();
+//     variables[i]->print(o);
+//     while( nextNode(nd) ) {
+//       o << " ";
+//       nd->elt->print(o);
+//       o << std::endl;
+//     }
+//   }
+  
   int i;
   o << "Variables: " << endl;
   for(i = 0; i < variables.size; ++i)

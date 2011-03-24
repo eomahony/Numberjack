@@ -867,6 +867,17 @@ namespace Mistral {
       --value;
     } 
     //@}
+
+    void print() {
+      for(int i=0; i<lvl_.size; ++i) {
+	std::cout << " " << std::setw(2) << lvl_[i];
+      }
+      std::cout << std::endl;
+      for(int i=0; i<val_.size; ++i) {
+	std::cout << " " << std::setw(2) << val_[i];
+      }
+      std::cout << std::endl;
+    }
   };
 
 

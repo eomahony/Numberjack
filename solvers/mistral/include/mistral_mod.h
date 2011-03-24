@@ -302,8 +302,10 @@ namespace Mistral {
     static const int TDAG        = 25 ;
     static const int CLAUSE      = 26 ;
 
+    static const int DUMMY       = 27 ;
+
     // COUNT
-    static const int NUMCONS     = 27 ;
+    static const int NUMCONS     = 28 ;
 
 
     // private:
@@ -1087,6 +1089,14 @@ namespace Mistral {
     //virtual int computeValue( BuildObjectPredicate *pred ) const;
   };
 
+
+  /**********************************************
+   * Dummy Constraint BuildObject
+   **********************************************/
+  class BuildObjectDummy : public BuildObjectConstraint {
+    virtual void   build  (Solver *, VariableInt **, BuildObjectPredicate *) ;
+  };
+
   /**********************************************
    * Cardinality Constraint BuildObject
    **********************************************/
@@ -1626,6 +1636,15 @@ namespace Mistral {
     Element( VarArray& x );
     Element( VarArray& x, Variable& y );
   };
+
+  /**********************************************
+   * Dummy Predicate Wrapper
+   **********************************************/
+  class Dummy : public Variable {
+  public:
+    Dummy( VarArray& x );
+    Dummy( VarArray& x, Variable& y );
+  };
   // /**********************************************
   //  *  Clause Wrapper
   //  **********************************************/ 
@@ -1875,6 +1894,7 @@ namespace Mistral {
     static BuildObject* _Min( BuildObject **x, const int n );
     static BuildObject* _Max( BuildObject **x, const int n );
     static BuildObject* _Element( BuildObject **x, const int nx, const int k );
+    static BuildObject* _Dummy( BuildObject **x, const int nx );
     static BuildObject* _Tree( BuildObject **x, const int nx );
     static BuildObject* _TDAG( BuildObject **x, const int nx );
     static BuildObject* _AllDifferent( BuildObject **x, const int nx );

@@ -3599,6 +3599,14 @@ string BuildObjectMember::toString(const BuildObjectPredicate* pred) const
 
 
 /**********************************************
+ * Dummy Constraint BuildObject
+ **********************************************/
+void BuildObjectDummy::build( Solver *s, VariableInt **tmp, BuildObjectPredicate *pred ) 
+{
+  new ConstraintDummyFail( s, tmp, pred->arity );
+}
+
+/**********************************************
  * Element Constraint BuildObject
  **********************************************/
 void BuildObjectElement::build( Solver *s, VariableInt **tmp, BuildObjectPredicate *pred ) 
@@ -6421,6 +6429,11 @@ Element::Element( VarArray& x_ )
   var_ptr_->id = NOVAL;
 }
 
+Dummy::Dummy( VarArray& x_ )
+{
+  var_ptr_ = CSP::_Dummy( x_.getArgs(), x_.size() );
+}
+
 /**********************************************
  * Cardinality < Constraint Wrapper
  **********************************************/
@@ -7194,6 +7207,10 @@ BuildObject* CSP::_Cardinality( BuildObject **x_, const int n, const int k )
   p[0] = k;
   return CSP::_Constraint(ConstraintStore::CARD, x_, n, p );
 }
+BuildObject* CSP::_Dummy( BuildObject **x_, const int n )
+{
+  return CSP::_Constraint(ConstraintStore::DUMMY, x_, n, NULL );
+}
 BuildObject* CSP::_Element( BuildObject **x_, const int n, const int k )
 {
   int *p = new int[1];
@@ -7619,6 +7636,7 @@ BuildObjectConstraint* ConstraintStore::getConstraint(const int c)
     case TREE        : store[c] = new BuildObjectTree();             break;
     case TDAG        : store[c] = new BuildObjectTDAG();             break;
     case CLAUSE      : store[c] = new BuildObjectClause();           break;
+    case DUMMY       : store[c] = new BuildObjectDummy();            break;
       //case REGULAR     : store[c] = new BuildObjectRegular();          break;
 
     }

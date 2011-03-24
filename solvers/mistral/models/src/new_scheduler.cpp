@@ -17,7 +17,7 @@ int main( int argc, char** argv )
 
   Instance jsp(params);
   
-  jsp.print(std::cout);
+  //jsp.print(std::cout);
   jsp.printStats(std::cout);
 
   SchedulingModel *model;
@@ -36,7 +36,7 @@ int main( int argc, char** argv )
   SchedulingSolver solver(model, &params, &stats);
   usrand(params.Seed);
 
-  //solver.print(std::cout);
+  solver.print(std::cout);
   //exit(1);
 
   params.print(std::cout);  

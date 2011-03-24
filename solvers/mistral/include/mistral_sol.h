@@ -412,27 +412,23 @@ namespace Mistral {
 
 
     
-    inline void newNode( )
+    inline void newNode( int direction=LEFT_BRANCH,
+			 VariableInt *var=NULL
+			 )
     {
-
       if(level++ > init_level) learnSuccess();
-
       past.push( future );
       auxv.push( auxilliary  );
       lvl_.push( store.size );
 
-
-      VariableInt *x = heuristic->select();
+      VariableInt *x = (var ? var : heuristic->select());
       decision.push( x );
-
 
       SimpleUnaryConstraint dec( x );
       branching_decision.push( dec );
 
-      //decision[level]->branch->left();
-
-      branching_decision[level].make();
-      branching_decision[level].left();
+      branching_decision[level].make(direction);
+      branching_decision[level].propagate();
 
 #ifdef _DEBUGSEARCH
       if(verbosity > 2) {
@@ -457,45 +453,45 @@ namespace Mistral {
     }
 
 
-    inline void newNode(VariableInt *currentDecision)
-    {
-      if(level++ > init_level) learnSuccess();
+//     inline void newNode(VariableInt *currentDecision)
+//     {
+//       if(level++ > init_level) learnSuccess();
 
-      past.push( future );
-      auxv.push( auxilliary  );
-      lvl_.push( store.size );
+//       past.push( future );
+//       auxv.push( auxilliary  );
+//       lvl_.push( store.size );
 
-      SimpleUnaryConstraint dec(currentDecision);
-      branching_decision.push( dec );
+//       SimpleUnaryConstraint dec(currentDecision);
+//       branching_decision.push( dec );
 
-      decision.push( currentDecision );
+//       decision.push( currentDecision );
 
-      //decision[level]->branch->left();
+//       //decision[level]->branch->left();
 
-      branching_decision[level].make();
-      branching_decision[level].left();
+//       branching_decision[level].make();
+//       branching_decision[level].propagate();
 
-#ifdef _DEBUGSEARCH
-      if(verbosity > 2) {
-	std::cout << "c";
-	for(int k=0; k<=level; ++k) std::cout << " ";
-	branching_decision[level].print(std::cout);
-	std::cout << std::endl;
-      }
-#endif
+// #ifdef _DEBUGSEARCH
+//       if(verbosity > 2) {
+// 	std::cout << "c";
+// 	for(int k=0; k<=level; ++k) std::cout << " ";
+// 	branching_decision[level].print(std::cout);
+// 	std::cout << std::endl;
+//       }
+// #endif
 
-#ifdef _DRAW_EXPLORATION
-      if((*expFile)) {
-	(*expFile) << "+ newNode\n";
-	branching_decision[level].print(*expFile);
-      }
-#endif
+// #ifdef _DRAW_EXPLORATION
+//       if((*expFile)) {
+// 	(*expFile) << "+ newNode\n";
+// 	branching_decision[level].print(*expFile);
+//       }
+// #endif
 
-      ++NODES;
-      int i=learners.size;
-      while( i-- )
-	learners[i]->notifyChoice( );
-    }
+//       ++NODES;
+//       int i=learners.size;
+//       while( i-- )
+// 	learners[i]->notifyChoice( );
+//     }
 
 
     inline void save()
@@ -606,44 +602,16 @@ namespace Mistral {
 
     inline int iterative_dfs()
     {
-      //VariableInt *lastDecision;
       SimpleUnaryConstraint last_decision;
       
       while( status == UNKNOWN ) {
-
-	//checkDecisions();
-
 	if( filtering() ) {
-
-// 	  for(int i=0; i<length; ++i) {
-// 	    variables[i]->print(std::cout);
-// 	    std::cout << std::endl;
-// 	  }
-	  
 	  if( future == empty ) {
 	    solutionFound(init_level);
 	  } else {
-
-// 	    variables[1]->print(std::cout);
-// 	    std::cout << " " << variables[1]->weight << std::endl;
-// 	    variables[18]->print(std::cout);
-// 	    std::cout << " " << variables[18]->weight << std::endl;
-
-// 	    if(verbosity > 2) {
-// 	      for(int i=0; i<(empty-future); ++i) {
-// 		std::cout << "future: ";
-// 		future[i]->print(std::cout);
-// 		std::cout << heuristic->get_value(future[i]) << std::endl;
-// 	      }
-// 	    }
-
-
 	    newNode();
 	  }
 	} else {
-	  
-	  //	  std::cout << "FAIL" << std::endl;
-
 	  if( level <= init_level ) {
 	    
 #ifdef _DEBUGSEARCH
@@ -668,7 +636,6 @@ namespace Mistral {
 	    
 	    status = LIMITOUT;
 	  } else {
-	    //lastDecision = decision[level];
 	    last_decision = branching_decision[level];
 
 #ifdef _DEBUGSEARCH
@@ -682,11 +649,7 @@ namespace Mistral {
 #endif
 	    
 	    backtrackTo( backtrackLevel );
-	    
-	    last_decision.right();
-	    //lastDecision->branch->right();
-	    //lastDecision->branch->left();
-	    //lastDecision->branch->reverse_right();
+	    last_decision.deduce();
 
 #ifdef _DEBUGSEARCH
 	    if(verbosity > 2) {
@@ -707,7 +670,6 @@ namespace Mistral {
     int pseudoRldsProbe(int K, ReversibleNum<int>& numDiscrepancies)
     {
       std::cout << std::endl << "pseudoRldsProbe -=- K=" << K << std::endl;
-      //		std::cout << "1 - ";
 
 #ifdef _DRAW_EXPLORATION
       std::stringstream ossK;
@@ -719,7 +681,8 @@ namespace Mistral {
       }
 #endif
 
-      VariableInt *lastDecision;
+      //VariableInt *lastDecision;
+      SimpleUnaryConstraint last_decision;
       bool enoughDiscrepanciesAllowed = true;
 
       while( status == UNKNOWN ) {
@@ -742,26 +705,34 @@ namespace Mistral {
 	    break;
 	  } else if( limitsExpired() ) {
 	    status = LIMITOUT;
-	    //					std::cout << "limitout" << std::endl;
 	  } else {
-	    lastDecision = decision[level];
-	    backtrackTo( level-1 );
+
+	    last_decision = branching_decision[level];
+	    
+	    backtrackTo( level-1 );	    
+
 	    ++numDiscrepancies;
 
-	    // do the right branch only if the threshold is not met
 	    if(numDiscrepancies <= K) {
+
+	      last_decision.deduce();
 #ifdef _DEBUGSEARCH
-	      std::cout << "c";
-	      for(int k=0; k<=level; ++k) std::cout << " ";
-	      lastDecision->print(std::cout);
-#endif
-	      lastDecision->branch->right();
-#ifdef _DEBUGSEARCH
-	      lastDecision->branch->printRight( std::cout );
-	      std::cout << std::endl;
+	      if(verbosity > 2) {
+		std::cout << "c";
+		for(int k=0; k<=level; ++k) std::cout << " ";
+		last_decision.print( std::cout );
+		std::cout << std::endl;
+	      }
 #endif
 	    } else {
 	      enoughDiscrepanciesAllowed = false;
+// #ifdef _DEBUGSEARCH
+// 	      if(verbosity > 2) {
+// 		std::cout << "c";
+// 		for(int k=0; k<=level; ++k) std::cout << " ";
+// 		std::cout << "no more discrepancy allowed"<< std::endl;
+// 	      }
+// #endif
 	    }
 	  }
 	}
@@ -771,7 +742,7 @@ namespace Mistral {
 
     int pseudoRldsProbe_level(unsigned int K, ReversibleIntList& discrepancy_level)
     {
-      //		std::cout << "\n\npseudoRldsProbe_level -=- K=" << K << std::endl;
+      std::cout << "\n\npseudoRldsProbe_level -=- K=" << K << std::endl;
 
 #ifdef _DRAW_EXPLORATION
       std::stringstream ossK;
@@ -783,7 +754,8 @@ namespace Mistral {
       }
 #endif
 
-      VariableInt *lastDecision;
+
+      SimpleUnaryConstraint last_decision;
       bool enoughDiscrepanciesAllowed = true;
 
       while( status == UNKNOWN ) {
@@ -806,23 +778,24 @@ namespace Mistral {
 	  } else if( limitsExpired() ) {
 	    status = LIMITOUT;
 	  } else {
-	    lastDecision = decision[level];
-	    backtrackTo( level-1 );
+	    last_decision = branching_decision[level];
+	    
+	    backtrackTo( level-1 );	    
+
 	    if (!discrepancy_level.member(level)) {
 	      discrepancy_level.insert(level);
 	    }
 
 	    // do the right branch only if the threshold is not met
 	    if(discrepancy_level.size <= K) {
+	      last_decision.deduce();
 #ifdef _DEBUGSEARCH
-	      std::cout << "c";
-	      for(int k=0; k<=level; ++k) std::cout << " ";
-	      lastDecision->print(std::cout);
-#endif
-	      lastDecision->branch->right();
-#ifdef _DEBUGSEARCH
-	      lastDecision->branch->printRight( std::cout );
-	      std::cout << std::endl;
+	      if(verbosity > 2) {
+		std::cout << "c";
+		for(int k=0; k<=level; ++k) std::cout << " ";
+		last_decision.print( std::cout );
+		std::cout << std::endl;
+	      }
 #endif
 	    }
 	  }
@@ -833,7 +806,7 @@ namespace Mistral {
 
     int pseudoRldsProbe_variable(unsigned int K, ReversibleIntList& discrepancy_variable)
     {
-      //		std::cout << "\n\npseudoRldsProbe_variable -=- K=" << K << std::endl;
+      std::cout << "\n\npseudoRldsProbe_variable -=- K=" << K << std::endl;
 
 #ifdef _DRAW_EXPLORATION
       std::stringstream ossK;
@@ -845,7 +818,9 @@ namespace Mistral {
       }
 #endif
 
-      VariableInt *lastDecision;
+      //VariableInt *lastDecisionVar;
+      int lastDecisionVarId;
+      SimpleUnaryConstraint last_decision;
       bool enoughDiscrepanciesAllowed = true;
 
       while( status == UNKNOWN ) {
@@ -868,23 +843,24 @@ namespace Mistral {
 	  } else if( limitsExpired() ) {
 	    status = LIMITOUT;
 	  } else {
-	    lastDecision = decision[level];
-	    backtrackTo( level-1 );
-	    if (!discrepancy_variable.member(lastDecision->id)) {
-	      discrepancy_variable.insert(lastDecision->id);
+	    lastDecisionVarId = decision[level]->id;
+	    last_decision = branching_decision[level];
+	    backtrackTo( level-1 );	    
+
+	    if (!discrepancy_variable.member(lastDecisionVarId)) {
+	      discrepancy_variable.insert(lastDecisionVarId);
 	    }
 
 	    // do the right branch only if the threshold is not met
 	    if(discrepancy_variable.size <= K) {
+	      last_decision.deduce();
 #ifdef _DEBUGSEARCH
-	      std::cout << "c";
-	      for(int k=0; k<=level; ++k) std::cout << " ";
-	      lastDecision->print(std::cout);
-#endif
-	      lastDecision->branch->right();
-#ifdef _DEBUGSEARCH
-	      lastDecision->branch->printRight( std::cout );
-	      std::cout << std::endl;
+	      if(verbosity > 2) {
+		std::cout << "c";
+		for(int k=0; k<=level; ++k) std::cout << " ";
+		last_decision.print( std::cout );
+		std::cout << std::endl;
+	      }
 #endif
 	    }
 	  }
@@ -895,7 +871,7 @@ namespace Mistral {
 
     int ldsProbe(int K, ReversibleNum<int>& numDiscrepancies)
     {
-      //		std::cout << "\n\nldsProbe -=- K=" << K << std::endl;
+      std::cout << "\n\nldsProbe -=- K=" << K << std::endl;
 
 #ifdef _DRAW_EXPLORATION
       std::stringstream ossK;
@@ -907,7 +883,8 @@ namespace Mistral {
       }
 #endif
 
-      VariableInt *lastDecision;
+      //VariableInt *lastDecision;
+      SimpleUnaryConstraint last_decision;
       bool enoughDiscrepanciesAllowed = true;
 
       while( status == UNKNOWN ) {
@@ -917,7 +894,8 @@ namespace Mistral {
 	if( numDiscrepancies <= K && filtering() ) {
 	  if( future == empty ) solutionFound(init_level);
 	  else {
-	    reverseNewNode();
+	    //reverseNewNode();
+	    newNode(RIGHT_BRANCH);
 	    ++numDiscrepancies;
 	  }
 	} else {
@@ -933,17 +911,16 @@ namespace Mistral {
 	  } else if( limitsExpired() ) {
 	    status = LIMITOUT;
 	  } else {
-	    lastDecision = decision[level];
-	    backtrackTo( level-1 );
+	    last_decision = branching_decision[level];
+	    backtrackTo( level-1 );	    
+	    last_decision.deduce();
 #ifdef _DEBUGSEARCH
-	    std::cout << "c";
-	    for(int k=0; k<=level; ++k) std::cout << " ";
-	    lastDecision->print(std::cout);
-#endif
-	    lastDecision->branch->reverse_right();
-#ifdef _DEBUGSEARCH
-	    lastDecision->branch->printLeft( std::cout );
-	    std::cout << std::endl;
+	    if(verbosity > 2) {
+	      std::cout << "c";
+	      for(int k=0; k<=level; ++k) std::cout << " ";
+	      last_decision.print( std::cout );
+	      std::cout << std::endl;
+	    }
 #endif
 	  }
 	}
@@ -953,7 +930,7 @@ namespace Mistral {
 
     int ldsStackProbe(int K, ReversibleNum<int>& numDiscrepancies)
     {
-      //		std::cout << "\n\nldsStackProbe -=- K=" << K << std::endl;
+      std::cout << "\n\nldsStackProbe -=- K=" << K << std::endl;
 
 #ifdef _DRAW_EXPLORATION
       std::stringstream ossK;
@@ -966,7 +943,8 @@ namespace Mistral {
 #endif
 
       std::stack<int> backtrackLevels;
-      VariableInt *lastDecision;
+      SimpleUnaryConstraint last_decision;
+      //VariableInt *lastDecision;
       bool enoughDiscrepanciesAllowed = true;
 
       while( status == UNKNOWN ) {
@@ -978,7 +956,8 @@ namespace Mistral {
 	  else {
 	    if( numDiscrepancies < K ){
 	      backtrackLevels.push(level);
-	      reverseNewNode();
+	      //reverseNewNode();
+	      newNode(RIGHT_BRANCH);
 	      ++numDiscrepancies;
 	    } else {
 	      enoughDiscrepanciesAllowed = false;
@@ -998,17 +977,16 @@ namespace Mistral {
 
 	    int levelForBacktrack = backtrackLevels.top();
 	    backtrackLevels.pop();
-	    lastDecision = decision[levelForBacktrack+1];
-	    backtrackTo( levelForBacktrack );
+	    last_decision = branching_decision[levelForBacktrack+1];
+	    backtrackTo( levelForBacktrack );	    
+	    last_decision.deduce();
 #ifdef _DEBUGSEARCH
-	    std::cout << "c";
-	    for(int k=0; k<=level; ++k) std::cout << " ";
-	    lastDecision->print(std::cout);
-#endif
-	    lastDecision->branch->reverse_right();
-#ifdef _DEBUGSEARCH
-	    lastDecision->branch->printLeft( std::cout );
-	    std::cout << std::endl;
+	    if(verbosity > 2) {
+	      std::cout << "c";
+	      for(int k=0; k<=level; ++k) std::cout << " ";
+	      last_decision.print( std::cout );
+	      std::cout << std::endl;
+	    }
 #endif
 	  }
 	}
@@ -1018,7 +996,7 @@ namespace Mistral {
 
     int ldsDeltaProbe(int K, ReversibleNum<int>& numDiscrepancies)
     {
-      //		std::cout << "\n\nldsDeltaProbe -=- K=" << K << std::endl;
+      std::cout << "\n\nldsDeltaProbe -=- K=" << K << std::endl;
 
 #ifdef _DRAW_EXPLORATION
       std::stringstream ossK;
@@ -1033,10 +1011,14 @@ namespace Mistral {
 #endif
 
       int deltaBacktrack = 1;
-      VariableInt *lastDecision;
+      //VariableInt *lastDecision;
+      SimpleUnaryConstraint last_decision;
       bool enoughDiscrepanciesAllowed = true;
 
       while( status == UNKNOWN ) {
+
+	//deltaBacktrack.print();
+	
 	// Fail either if
 	//  - the maximum number of discrepancies is reached
 	//  - the problem is inconsistent
@@ -1044,20 +1026,27 @@ namespace Mistral {
 	  if( future == empty ) solutionFound(init_level);
 	  else {
 	    if( numDiscrepancies < K ){
-	      reverseNewNode();
+	      //reverseNewNode();
+	      //std::cout << level << " " << 1 << " ";
+	      newNode(RIGHT_BRANCH);
 	      deltaBacktrack = 1;
 	      ++numDiscrepancies;
 	    } else {
+	      //std::cout << level << " " << (deltaBacktrack+1) << " ";
 	      enoughDiscrepanciesAllowed = false;
-	      newNode();
-	      deltaBacktrack++;
+	      newNode(LEFT_BRANCH);
+	      ++deltaBacktrack;
 	    }
 	  }
 	} else {
+// 	  std::cout << "c";
+// 	  for(int k=0; k<=level; ++k) std::cout << " ";
+// 	  std::cout << "fail" << std::endl;
 	  if( limitsExpired() ) {
 	    status = LIMITOUT;
 	  } else {
 	    int levelForBacktrack = level - deltaBacktrack;
+	    //if(deltaBacktrack > 1) deltaBacktrack = 1;
 	    if( levelForBacktrack < init_level ) {
 	      // distinguish if we exit because of lds or not
 	      if(enoughDiscrepanciesAllowed) {
@@ -1065,7 +1054,8 @@ namespace Mistral {
 	      }
 	      break;
 	    }
-	    lastDecision = decision[levelForBacktrack+1];
+	    //lastDecision = decision[levelForBacktrack+1];
+	    last_decision = branching_decision[levelForBacktrack+1];
 
 #ifdef _DRAW_EXPLORATION
 	    if((*expFile)) {
@@ -1074,29 +1064,26 @@ namespace Mistral {
 	      (*expFile) << std::endl;
 	    }
 #endif
+
+	    //std::cout << level << " " << (deltaBacktrack) << " ";
+
 	    backtrackTo( levelForBacktrack );
+	    deltaBacktrack = 1;
+	    last_decision.deduce();
 
 #ifdef _DEBUGSEARCH
-	    std::cout << "c";
-	    for(int k=0; k<=level; ++k) std::cout << " ";
-	    lastDecision->print(std::cout);
+	    if(verbosity > 2) {
+	      std::cout << "c";
+	      for(int k=0; k<=level; ++k) std::cout << " ";
+	      last_decision.print( std::cout );
+	      std::cout << std::endl;
+	    }
 #endif
 
 #ifdef _DRAW_EXPLORATION
 	    if((*expFile)) {
 	      (*expFile) << "+ reverse_right\n";
-	      lastDecision->print(*expFile);
-	    }
-#endif
-	    lastDecision->branch->reverse_right();
-#ifdef _DEBUGSEARCH
-	    lastDecision->branch->printLeft( std::cout );
-	    std::cout << std::endl;
-#endif
-
-#ifdef _DRAW_EXPLORATION
-	    if((*expFile)) {
-	      lastDecision->branch->printLeft(*expFile);
+	      last_decision->print(*expFile);
 	      (*expFile) << std::endl;
 	    }
 #endif
@@ -1113,7 +1100,7 @@ namespace Mistral {
 
     int ldsProbe_level(unsigned int K,ReversibleIntList& discrepancy_levels, ReversibleNum<int>& myLevel)
     {
-      //		std::cout << "\n\nldsProbe_level -=- K=" << K << std::endl;
+      std::cout << "\n\nldsProbe_level -=- K=" << K << std::endl;
 
 #ifdef _DRAW_EXPLORATION
       std::stringstream ossK;
@@ -1125,7 +1112,8 @@ namespace Mistral {
       }
 #endif
 
-      VariableInt *lastDecision;
+      //VariableInt *lastDecision;
+      SimpleUnaryConstraint last_decision;
       bool enoughDiscrepanciesAllowed = true;
       //		int myLevel = 1;
       int deltaBacktrack = 1;
@@ -1137,15 +1125,17 @@ namespace Mistral {
 	  }
 	  else {
 	    if (discrepancy_levels.member(myLevel)) {
-	      reverseNewNode();
+	      //reverseNewNode();
+	      newNode(RIGHT_BRANCH);
 	      deltaBacktrack = 1;
 	    }else if (discrepancy_levels.size < K) {
-	      reverseNewNode();
+	      //reverseNewNode();
+	      newNode(RIGHT_BRANCH);
 	      discrepancy_levels.insert(myLevel);
 	      deltaBacktrack = 1;
 	    }else{
 	      enoughDiscrepanciesAllowed = false;
-	      newNode();
+	      newNode(LEFT_BRANCH);
 	      deltaBacktrack++;
 	    }
 	  }
@@ -1154,6 +1144,7 @@ namespace Mistral {
 	    status = LIMITOUT;
 	  } else {
 	    int levelForBacktrack = level - deltaBacktrack;
+	    //if(deltaBacktrack > 1) deltaBacktrack = 1;
 	    if( levelForBacktrack < init_level ) {
 	      // distinguish if we exit because of lds or not
 	      if(enoughDiscrepanciesAllowed) {
@@ -1161,19 +1152,28 @@ namespace Mistral {
 	      }
 	      break;
 	    }
-	    lastDecision = decision[levelForBacktrack+1];
+	    //lastDecision = decision[levelForBacktrack+1];
+	    last_decision = branching_decision[levelForBacktrack+1];
 	    backtrackTo( levelForBacktrack );
 	    deltaBacktrack = 1;
 	    ++myLevel;
+	    last_decision.deduce();
+
 #ifdef _DEBUGSEARCH
-	    std::cout << "c";
-	    for(int k=0; k<=level; ++k) std::cout << " ";
-	    lastDecision->print(std::cout);
+	    if(verbosity > 2) {
+	      std::cout << "c";
+	      for(int k=0; k<=level; ++k) std::cout << " ";
+	      last_decision.print( std::cout );
+	      std::cout << std::endl;
+	    }
 #endif
-	    lastDecision->branch->reverse_right();
-#ifdef _DEBUGSEARCH
-	    lastDecision->branch->printLeft( std::cout );
-	    std::cout << std::endl;
+
+#ifdef _DRAW_EXPLORATION
+	    if((*expFile)) {
+	      (*expFile) << "+ reverse_right\n";
+	      last_decision->print(*expFile);
+	      (*expFile) << std::endl;
+	    }
 #endif
 	  }
 	}
@@ -1183,7 +1183,7 @@ namespace Mistral {
 
     int ldsProbe_variable(unsigned int K, ReversibleIntList& discrepancy_variable)
     {
-      //		std::cout << "\n\nldsProbe_variable -=- K=" << K << std::endl;
+      std::cout << "\n\nldsProbe_variable -=- K=" << K << std::endl;
 
 #ifdef _DRAW_EXPLORATION
       std::stringstream ossK;
@@ -1195,8 +1195,10 @@ namespace Mistral {
       }
 #endif
 
-      std::stack<int> backtrackLevels;
+      //std::stack<int> backtrackLevels;
+      Vector<int> backtrackLevels;
       VariableInt *currentDecision;
+      SimpleUnaryConstraint last_decision;
       bool enoughDiscrepanciesAllowed = true;
 
       while( status == UNKNOWN ) {
@@ -1206,14 +1208,14 @@ namespace Mistral {
 	    currentDecision = heuristic->select();
 	    if (discrepancy_variable.member(currentDecision->id)) {
 	      backtrackLevels.push(level);
-	      reverseNewNode(currentDecision);
+	      newNode(RIGHT_BRANCH, currentDecision);
 	    } else if( discrepancy_variable.size < K ){
 	      backtrackLevels.push(level);
-	      reverseNewNode(currentDecision);
+	      newNode(RIGHT_BRANCH, currentDecision);
 	      discrepancy_variable.insert(currentDecision->id);
 	    } else {
 	      enoughDiscrepanciesAllowed = false;
-	      newNode(currentDecision);
+	      newNode(LEFT_BRANCH, currentDecision);
 	    }
 	  }
 	} else {
@@ -1226,20 +1228,21 @@ namespace Mistral {
 	  } else if( limitsExpired() ) {
 	    status = LIMITOUT;
 	  } else {
-	    int levelForBacktrack = backtrackLevels.top();
-	    backtrackLevels.pop();
-	    currentDecision = decision[levelForBacktrack+1];
+	    int levelForBacktrack = backtrackLevels.pop();
+	    //int levelForBacktrack = backtrackLevels.top();
+	    //backtrackLevels.pop();
+	    
+	    last_decision = branching_decision[levelForBacktrack+1];
 	    backtrackTo( levelForBacktrack );
 
+	    last_decision.deduce();
 #ifdef _DEBUGSEARCH
-	    std::cout << "c";
-	    for(int k=0; k<=level; ++k) std::cout << " ";
-	    currentDecision->print(std::cout);
-#endif
-	    currentDecision->branch->reverse_right();
-#ifdef _DEBUGSEARCH
-	    currentDecision->branch->printLeft( std::cout );
-	    std::cout << std::endl;
+	    if(verbosity > 2) {
+	      std::cout << "c";
+	      for(int k=0; k<=level; ++k) std::cout << " ";
+	      last_decision.print( std::cout );
+	      std::cout << std::endl;
+	    }
 #endif
 	  }
 	}
@@ -1249,7 +1252,7 @@ namespace Mistral {
 
     int ddsProbe(signed int K, ReversibleNum<int>& numDiscrepancies)
     {
-      //		std::cout << "\n\nddsProbe -=- K=" << K << std::endl;
+      std::cout << "\n\nddsProbe -=- K=" << K << std::endl;
 
 #ifdef _DRAW_EXPLORATION
       std::stringstream ossK;
@@ -1263,18 +1266,29 @@ namespace Mistral {
 
       int deltaBacktrack = 1;
       bool enoughDiscrepanciesAllowed = true;
-      VariableInt *lastDecision;
+      SimpleUnaryConstraint last_decision;
+      //VariableInt *lastDecision;
 
       while( status == UNKNOWN ) {
 	if( filtering() ) {
 	  if( future == empty ) {
 	    solutionFound(init_level);
 	  } else {
-	    if (level-init_level+numDiscrepancies > K-1) {
+
+// 	    std::cout << level << "-" << init_level << "+" 
+// 		 << numDiscrepancies << " > " << (K-1) << ": ";
+
+	    if ((level-init_level+numDiscrepancies) >= K) {
+
+	      //std::cout << "jp " ;//<< endl;
+
 	      enoughDiscrepanciesAllowed = false;
 	      newNode();
 	      deltaBacktrack++;
 	    } else {
+
+	      //std::cout << "ok " ;//<< endl;
+
 	      newNode();
 	      deltaBacktrack = 1;
 	    }
@@ -1286,23 +1300,29 @@ namespace Mistral {
 	    int levelForBacktrack = level - deltaBacktrack;
 
 	    if( levelForBacktrack < init_level ) {
+	      
+	      //std::cout << "backtrack to " << levelForBacktrack << ": exit" << std::endl;
+
 	      // distinguish if we exit because of lds or not
 	      if(enoughDiscrepanciesAllowed) {
 		status = UNSAT;
 	      }
 	      break;
 	    }
-	    lastDecision = decision[levelForBacktrack+1];
+
+	    last_decision = branching_decision[levelForBacktrack+1];
 	    backtrackTo( levelForBacktrack );
+	    //enoughDiscrepanciesAllowed = true;
+	    deltaBacktrack = 1;
+
+	    last_decision.deduce();
 #ifdef _DEBUGSEARCH
-	    std::cout << "c";
-	    for(int k=0; k<=level; ++k) std::cout << " ";
-	    lastDecision->print(std::cout);
-#endif
-	    lastDecision->branch->right();
-#ifdef _DEBUGSEARCH
-	    lastDecision->branch->printRight( std::cout );
-	    std::cout << std::endl;
+	    if(verbosity > 2) {
+	      std::cout << "c";
+	      for(int k=0; k<=level; ++k) std::cout << " ";
+	      last_decision.print( std::cout );
+	      std::cout << std::endl;
+	    }
 #endif
 	    ++numDiscrepancies;
 	  }
@@ -1313,7 +1333,7 @@ namespace Mistral {
 
     int ddsProbe_level(signed int K)
     {
-      //		std::cout << "\n\nddsProbe_level -=- K=" << K << std::endl;
+      std::cout << "\n\nddsProbe_level -=- K=" << K << std::endl;
 
 #ifdef _DRAW_EXPLORATION
       std::stringstream ossK;
@@ -1327,7 +1347,8 @@ namespace Mistral {
 
       std::stack<int> backtrackLevels;
       bool enoughDiscrepanciesAllowed = true;
-      VariableInt *lastDecision;
+      SimpleUnaryConstraint last_decision;
+      //VariableInt *lastDecision;
 
       while( status == UNKNOWN ) {
 	if( filtering() ) {
@@ -1354,17 +1375,17 @@ namespace Mistral {
 	    } else {
 	      int levelForBacktrack = backtrackLevels.top();
 	      backtrackLevels.pop();
-	      lastDecision = decision[levelForBacktrack+1];
+	      //lastDecision = decision[levelForBacktrack+1];
+	      last_decision = branching_decision[levelForBacktrack+1];
 	      backtrackTo( levelForBacktrack );
+	    last_decision.deduce();
 #ifdef _DEBUGSEARCH
+	    if(verbosity > 2) {
 	      std::cout << "c";
 	      for(int k=0; k<=level; ++k) std::cout << " ";
-	      lastDecision->print(std::cout);
-#endif
-	      lastDecision->branch->right();
-#ifdef _DEBUGSEARCH
-	      lastDecision->branch->printRight( std::cout );
+	      last_decision.print( std::cout );
 	      std::cout << std::endl;
+	    }
 #endif
 	    }
 	  }
@@ -1375,7 +1396,7 @@ namespace Mistral {
 
     int ddsProbe_variable(signed int K, ReversibleIntList& discrepancy_variable)
     {
-      //		std::cout << "\n\nddsProbe_variable -=- K=" << K << std::endl;
+      std::cout << "\n\nddsProbe_variable -=- K=" << K << std::endl;
 
 #ifdef _DRAW_EXPLORATION
       std::stringstream ossK;
@@ -1390,6 +1411,7 @@ namespace Mistral {
       std::stack<int> backtrackLevels;
       bool enoughDiscrepanciesAllowed = true;
       VariableInt *currentDecision;
+      SimpleUnaryConstraint last_decision;
 
       while( status == UNKNOWN ) {
 	if( filtering() ) {
@@ -1404,7 +1426,7 @@ namespace Mistral {
 	    } else {
 	      enoughDiscrepanciesAllowed = false;
 	    }
-	    newNode(currentDecision);
+	    newNode(LEFT_BRANCH, currentDecision);
 	  }
 	} else {
 	  if(backtrackLevels.empty()) {
@@ -1427,17 +1449,19 @@ namespace Mistral {
 	      }
 	    }
 	    currentDecision = decision[levelForBacktrack+1];
+	    last_decision = branching_decision[levelForBacktrack+1];
 	    backtrackTo( levelForBacktrack );
+
+	    last_decision.deduce();
 #ifdef _DEBUGSEARCH
-	    std::cout << "c";
-	    for(int k=0; k<=level; ++k) std::cout << " ";
-	    currentDecision->print(std::cout);
+	    if(verbosity > 2) {
+	      std::cout << "c";
+	      for(int k=0; k<=level; ++k) std::cout << " ";
+	      last_decision.print( std::cout );
+	      std::cout << std::endl;
+	    }
 #endif
-	    currentDecision->branch->right();
-#ifdef _DEBUGSEARCH
-	    currentDecision->branch->printRight( std::cout );
-	    std::cout << std::endl;
-#endif
+
 	    if (!discrepancy_variable.member(currentDecision->id)) {
 	      discrepancy_variable.insert(currentDecision->id);
 	    }

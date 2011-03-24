@@ -49,6 +49,7 @@ namespace Mistral {
     static const int LOWERBOUND = 2;
     // 3 -> upper bound 'l'
     static const int UPPERBOUND = 3;
+   
     
     /**
        2 bits for the type 
@@ -117,14 +118,14 @@ namespace Mistral {
     }
 
     inline void revert() { _data_^=1; }
-    inline void make();
+    inline void make(int dir=0);
 //  { 
 //       int v;
 //       int t;
 //       var->branch->make(t,v); 
 //       _data_ = ((v<<2)+t);
 //     }
-    inline bool left() {
+    inline bool propagate() {
       switch(type()) {
       case REMOVAL: return var->remove(value());
       case ASSIGNMENT: return var->setDomain(value());
@@ -133,14 +134,14 @@ namespace Mistral {
       }
       return true;
     }
-    inline bool right() { 
+    inline bool deduce() { 
       revert();
-      return left();
+      return propagate();
     }
 
-    inline bool propagate() {
-      return left();
-    }
+//     inline bool propagate() {
+//       return left();
+//     }
 
     std::ostream& print(std::ostream& os) const {
       var->printshort(os);
@@ -4613,7 +4614,7 @@ v=_X->min(); t=Decision::ASSIGNMENT;
 };
 
 
-inline void Mistral::SimpleUnaryConstraint::make() { 
+inline void Mistral::SimpleUnaryConstraint::make(int dir) { 
   int v;
   int t;
 
@@ -4625,8 +4626,8 @@ inline void Mistral::SimpleUnaryConstraint::make() {
 
   //std::cout << var->branch << std::endl;
 
-  var->branch->make(t,v); 
-  _data_ = ((v<<2)+t);
+  var->branch->make(t,v);
+  _data_ = ((v<<2)+(t^dir));
 }
 
 

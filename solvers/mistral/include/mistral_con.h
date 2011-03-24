@@ -3452,6 +3452,29 @@ namespace Mistral {
   //   //@}
   // };
 
+
+  class ConstraintDummyFail : public Constraint {
+ 
+  public:
+    /**@name Constructors*/
+    //@{
+    ConstraintDummyFail(Solver*, VariableInt** v, const int n);
+    virtual ~ConstraintDummyFail();
+    //@}
+
+    /**@name Solving*/
+    //@{
+    inline int check( const int* ) const ;
+    inline bool propagate();
+    inline bool propagate(const int changedIdx, const int e);
+    //@}
+  
+    /**@name Miscellaneous*/
+    //@{  
+    virtual void print(std::ostream& o) const ;
+    //@}
+  };
+
 };
 
 #endif // _CONSTRAINT_H

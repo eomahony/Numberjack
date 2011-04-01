@@ -11658,6 +11658,7 @@ bool ConstraintDummyFail::propagate(const int changedIdx, const int event)
     }
     std::cout << std::endl;
   }
+  return false;
 }
 
 

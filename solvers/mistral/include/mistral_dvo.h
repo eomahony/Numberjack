@@ -91,10 +91,10 @@ namespace Mistral {
     void init_data(const char t, const int v) {
       _data_ = ((v - (t == 'g')) << 2);
       switch(t) {
-      case 'n': _data_ |= REMOVAL;
-      case 'e': _data_ |= ASSIGNMENT;
-      case 'g': _data_ |= LOWERBOUND;
-      case 'l': _data_ |= UPPERBOUND;
+      case 'n': _data_ |= REMOVAL; break;
+      case 'e': _data_ |= ASSIGNMENT; break;
+      case 'g': _data_ |= LOWERBOUND; break;
+      case 'l': _data_ |= UPPERBOUND; break;
       }
       //type = t;
       //val = v;
@@ -4380,7 +4380,8 @@ v=_X->min(); t=Decision::ASSIGNMENT;
   public:
   
     SchedulingModel *model;
-    JOB( SchedulingModel *m ) { model=m;}
+    bool old;
+    JOB( SchedulingModel *m, bool o=false ) { model=m; old=o; }
     virtual ~JOB();
   
     /**@name Utils*/
@@ -4400,21 +4401,24 @@ v=_X->min(); t=Decision::ASSIGNMENT;
   class JobByJob : public DVO {
   public:
 
+    Instance *data;
     ReversibleNum<int> curJob;
     int nJobs;
     int nTasks;
     Vector<PredicateDisjunctive*>** jobs;
     Vector< int > done;
     VariableInt** last_tasks;
-    VariableInt** other_tasks;
+    Vector<VariableInt*>* other_tasks;
+    bool old;
 
     /**@name Constructors*/
     //@{
     JobByJob(Solver* s, Vector<PredicateDisjunctive*>** jo, 
-	     VariableInt** lt, VariableInt** ot, const int n, 
-	     Instance *data);
+	     VariableInt** lt, Vector< VariableInt* >* ot, const int n, 
+	     Instance *data, bool o);
     virtual ~JobByJob();
     void shuffle();
+    void select_job();
     //@}
 
     /**@name Utils*/

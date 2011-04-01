@@ -228,7 +228,7 @@ const char* ParameterList::int_ident[ParameterList::nia] =
   {"-ub", "-lb", "-check", "-seed", "-cutoff", "-dichotomy", 
    "-base", "-randomized", "-verbose", "-optimise", "-nogood", 
    "-dyncutoff", "-nodes", "-hlimit", "-init", "-neighbor", 
-   "-initstep", "-fixtasks"};
+   "-initstep", "-fixtasks", "-order"};
 
 const char* ParameterList::str_ident[ParameterList::nsa] = 
   {"-heuristic", "-restart", "-factor", "-decay", "-type", 
@@ -307,6 +307,8 @@ ParameterList::ParameterList(int length, char **commandline) {
   Heuristic = "none";
   PolicyRestart = GEOMETRIC;
   FixTasks  = 0;
+  //MinRank   = 0;
+  OrderTasks = 1;
 
   if(int_param[0]  != NOVAL) UBinit      = int_param[0];
   if(int_param[1]  != NOVAL) LBinit      = int_param[1];
@@ -324,7 +326,7 @@ ParameterList::ParameterList(int length, char **commandline) {
   if(int_param[15] != NOVAL) Neighbor    = int_param[15]; 
   if(int_param[16] != NOVAL) InitStep    = int_param[16]; 
   if(int_param[17] != NOVAL) FixTasks    = int_param[17]; 
-  
+  //if(int_param[18] != NOVAL) MinRank     = int_param[18]; 
 
 
   if(strcmp(str_param[0 ],"nil")) Heuristic  = str_param[0];
@@ -335,7 +337,6 @@ ParameterList::ParameterList(int length, char **commandline) {
   if(strcmp(str_param[6 ],"nil")) DValue     = str_param[6];
   if(strcmp(str_param[7 ],"nil")) IValue     = str_param[7];
   if(strcmp(str_param[8 ],"nil")) Skew       = atof(str_param[8]);
-  if(strcmp(str_param[9 ],"nil")) Objective  = str_param[9];
   if(strcmp(str_param[10],"nil")) Algorithm  = str_param[10];
 
   if(Type == "osp") {
@@ -353,6 +354,7 @@ ParameterList::ParameterList(int length, char **commandline) {
       Heuristic = "osp-b";
   } else if(Type == "now") {
     Objective = "makespan";
+    Presolve = "default";
     if(Heuristic == "none")
       Heuristic = "osp-dw";
   } else if(Type == "jla") {
@@ -360,6 +362,12 @@ ParameterList::ParameterList(int length, char **commandline) {
     if(Heuristic == "none")
       Heuristic = "osp-t";
   } else if(Type == "jsp") {
+    Objective = "makespan";
+    if(Heuristic == "none")
+      Heuristic = "osp-t";
+  } else if(Type == "fsp") {
+    Verbose = -1;
+    OrderTasks = -1;
     Objective = "makespan";
     if(Heuristic == "none")
       Heuristic = "osp-t";
@@ -373,112 +381,21 @@ ParameterList::ParameterList(int length, char **commandline) {
       Heuristic = "osp-t";
   }
 
+  if(int_param[18] != NOVAL) OrderTasks      = int_param[18]; 
+  if(strcmp(str_param[9 ],"nil")) Objective  = str_param[9];
   if(strcmp(str_param[11],"nil")) Presolve   = str_param[11];
 
 }
 
-// void ParameterList::initialise(const ParameterList& pl) {
-//   UBinit      = pl.UBinit;
-//   LBinit      = LBinit;
-//   Checked     = Checked;
-//   Seed        = Seed;
-//   Cutoff      = Cutoff;
-//   NodeCutoff  = NodeCutoff;
-//   NodeBase    = NodeBase;
-//   Dichotomy   = Dichotomy;
-//   Base        = Base;
-//   Randomized  = Randomized;
-//   Precision   = Precision;
-
-//   Verbose     = Verbose;
-//   Optimise    = Optimise;
-//   Rngd        = Rngd;
-
-//   Policy    = Policy;
-//   Factor    = Factor;
-//   Decay     = Decay;
-//   Value     = Value;
-//   DValue    = DValue;
-//   IValue    = IValue;
-//   Skew      = Skew;
-//   Objective = Objective;
-
-//   Heuristic = Heuristic;
-//   PolicyRestart = PolicyRestart;
-
-//   std::memcpy(int_param, pl.int_param, nia*sizeof(int));
-
-//   data_file = pl.data_file;
-//   data_file_name = pl.data_file_name;
-// }
-
-//void ParameterList::initialise(const int n_constraints) {
 void ParameterList::initialise(SchedulingSolver *s) {
 
   solver = s;
-  //  SchedulingModel *model = solver->model;
-
-//   if(UBinit >= 0) solver->stats->upper_bound = UBinit;
-//   if(LBinit >= 0) solver->stats->lower_bound = LBinit;
-
-//   if(Type == "jla") {
-//     Cutoff      = 1000;
-//     NodeBase   *= 10;
-//   } else if(Type == "jsp") {
-//     Cutoff      = 1000;
-//     NodeBase   *= 10;
-//   }
-
-//   if(int_param[0]  != NOVAL) UBinit      = int_param[0];
-//   if(int_param[1]  != NOVAL) LBinit      = int_param[1];
-//   if(int_param[2]  != NOVAL) Checked     = int_param[2];
-//   if(int_param[3]  != NOVAL) Seed        = int_param[3];
-//   if(int_param[4]  != NOVAL) Cutoff      = int_param[4];
-//   if(int_param[5]  != NOVAL) Dichotomy   = int_param[5];
-//   if(int_param[6]  != NOVAL) Base        = int_param[6];
-//   if(int_param[7]  != NOVAL) Randomized  = int_param[7]; 
-//   if(int_param[8]  != NOVAL) Verbose     = int_param[8];
-//   if(int_param[9]  != NOVAL) Optimise    = int_param[9]; 
-//   if(int_param[10] != NOVAL) Rngd        = int_param[10];
-
-//   if(int_param[11] != NOVAL) NodeBase    = int_param[11]; 
   if(int_param[11] != NOVAL) NodeBase    = int_param[11];
 
   // since the model is different for no-wait, we use a different factor
   unsigned long long int NodeFactor = 20000000;
-  //if(Type == "now") NodeFactor *= 8;
- 
-//   std::cout << (double)(model->data->nDisjuncts()+
-// 			model->data->nPrecedences()) << std::endl;
-
   NodeCutoff = (NodeFactor * NodeBase);
-
-  //exit(1);
-
-  //NodeCutoff  = (unsigned long long int)((double)NodeBase * 
-// 					 (NodeFactor/(double)(model->data->nDisjuncts()+
-// 							      model->data->nPrecedences())));
-//   if(model->ub_C_max - model->lb_C_max > 4000)
-//     NodeCutoff /= 2;
-//   if(model->ub_C_max - model->lb_C_max > 6000)
-//     NodeCutoff /= 2;
   if(int_param[12] != NOVAL) NodeCutoff  = int_param[12]; 
-//   if(int_param[13] != NOVAL) Hlimit      = int_param[13]; 
-//   if(int_param[14] != NOVAL) InitBound   = int_param[14]; 
-
-  
-
-
-//   if(strcmp(str_param[0],"nil")) Heuristic  = str_param[0];
-//   if(strcmp(str_param[1],"nil")) Policy     = str_param[1];
-//   if(strcmp(str_param[2],"nil")) Factor     = atof(str_param[2]);
-//   if(strcmp(str_param[3],"nil")) Decay      = atof(str_param[3]);
-//   if(strcmp(str_param[5],"nil")) Value      = str_param[5];
-//   if(strcmp(str_param[6],"nil")) DValue     = str_param[6];
-//   if(strcmp(str_param[7],"nil")) IValue     = str_param[7];
-//   if(strcmp(str_param[8],"nil")) Skew       = atof(str_param[8]);
-//   if(strcmp(str_param[9],"nil")) Objective  = str_param[9];
-
 
   if(Policy == "luby")
     PolicyRestart = LUBY;
@@ -486,20 +403,9 @@ void ParameterList::initialise(SchedulingSolver *s) {
     PolicyRestart = GEOMETRIC;
   else
     PolicyRestart = NO;
-
-  //  if(model->ub_C_max - model->lb_C_max > 3000)
-
 }
 
 double ParameterList::getSkew() {
-
-//   double ub = (double)(solver->stats->upper_bound);
-//   double lb = (double)(solver->stats->lower_bound+1);
-
-//   if(Skew < 0) {
-//     if(ub/1000 > lb) Skew = 1000;
-//     else Skew = ub/lb;
-//   }
 
   if(Skew < 0) Skew = ((double)(solver->stats->upper_bound)/
 		       ((double)solver->stats->lower_bound+1));
@@ -570,6 +476,8 @@ Instance::Instance(ParameterList& params) {
   jsp_latecost  = NULL;
   jsp_earlycost = NULL;
   jsp_floatcost = NULL;
+
+  max_makespan  = INFTY;
   
   if(params.Type == "osp") {
     osp_readData( params.data_file );
@@ -594,36 +502,6 @@ Instance::Instance(ParameterList& params) {
   } else if(params.Type == "dyn") {
     dyn_readData( params.data_file, params.Precision );
   }
-
-//   for(int j=0; j<nJobs(); ++j) {
-//     for(int i=0; i<nTasksInJob(j); ++i) {
-//       std::cout << getRankInJob(getJobTask(j,i)) << " ";
-//     }
-//     std::cout << std::endl;
-//   }
-//   std::cout << std::endl;
-
-//   for(int j=0; j<nJobs(); ++j) {
-//     for(int i=0; i<nTasksInJob(j); ++i) {
-//       std::cout << getDuration(getJobTask(j,i)) << " ";
-//     }
-//     std::cout << std::endl;
-//   }
-//   std::cout << std::endl;
-
-//   for(int j=0; j<nJobs(); ++j) {
-//     for(int i=0; i<nTasksInJob(j); ++i) {
-//       std::cout << getHeadInJob(getJobTask(j,i)) << " ";
-//     }
-//     std::cout << std::endl;
-//   }
-//   std::cout << std::endl;
-  
-
-  // close();
-
-  //params.initialise(nDisjuncts()+nPrecedences());
-  //params.initialise(model);
 }
 
 Instance::~Instance() {
@@ -824,6 +702,9 @@ int Instance::getMakespanLowerBound() {
 }
 
 int Instance::getMakespanUpperBound(const int iterations) {
+
+
+  if(max_makespan < INFTY) return max_makespan;
 
   int best_makespan = INFTY;
   if(!hasTimeLag()) {
@@ -1249,6 +1130,32 @@ void Instance::fsp_readData( const char* filename ) {
 
   DBG("Read (fsp)%s\n", "");
 
+  int dur;
+  std::vector<int> duration;
+  double obj;
+  std::ifstream infile( filename, std::ios_base::in );
+	
+  infile >> obj;
+  max_makespan = (int)obj;
+
+  while( true ) {
+    infile >> dur;
+    if(!infile.good()) break;
+    duration.push_back(dur);
+
+    //std::cout << dur << std::endl;
+  }
+
+  int nJobs = duration.size()/2;
+
+  for(int i=0; i<nJobs; ++i) {
+    addTask(duration[i], i, 0);
+    addTask(duration[i+nJobs], i, 1);
+  }
+
+  //this->print(std::cout);
+
+  //exit(1);
 }
 
 void Instance::jsp_readData( const char* filename ) {
@@ -1402,7 +1309,7 @@ void SchedulingModel::setup(Instance& inst,
   lb_C_max = (params->LBinit<0 ? inst.getMakespanLowerBound() : params->LBinit);
   if(max_makespan < 0) ub_C_max = (params->UBinit<0 ? inst.getMakespanUpperBound(params->InitBound) : params->UBinit);
   else ub_C_max = max_makespan; 
-  if(params->Objective != "makespan") {
+  if(params->Objective == "tardiness") {
     int max_due_date = inst.getJobDueDate(0);
     for(int i=1; i<inst.nJobs(); ++i) {
       if(max_due_date < inst.getJobDueDate(i))
@@ -1417,6 +1324,7 @@ void SchedulingModel::setup(Instance& inst,
 
   lb_L_sum = inst.getEarlinessTardinessLowerBound(ub_C_max);
   ub_L_sum = inst.getEarlinessTardinessUpperBound(ub_C_max);
+
 
   data = &inst;
 
@@ -1463,19 +1371,31 @@ void SchedulingModel::setup(Instance& inst,
       for(j=i+1; j<inst.nTasksInMachine(k); ++j) {
 	ti = inst.getMachineTask(k,i);
 	tj = inst.getMachineTask(k,j);
-
 	
-	rki = inst.getRankInJob(ti);
-	rkj = inst.getRankInJob(tj);
-	hi = inst.getHeadInJob(ti);
-	hj = inst.getHeadInJob(tj);
+	if(params->OrderTasks==1) {
+	  rki = inst.getRankInJob(ti);
+	  rkj = inst.getRankInJob(tj);
+	  hi = inst.getHeadInJob(ti);
+	  hj = inst.getHeadInJob(tj);
+	  
+	  if(rkj < rki || (rkj == rki && hj < hi))
+	    {
+	      aux = ti;
+	      ti = tj;
+	      tj = aux;
+	    }
+	} else if(params->OrderTasks==-1) {
+      
+	  aux = ti;
+	  ti = tj;
+	  tj = aux;
 
-	if(rkj < rki || (rkj == rki && hj < hi))
-	  {
-	    aux = ti;
-	    ti = tj;
-	    tj = aux;
-	  }
+	}
+
+//  	std::cout << "t" << ti << " <> t" << tj 
+//  		  << " (" << inst.getDuration(ti) << "." 
+// 		  << inst.getDuration(tj) << ")" 
+// 		  << std::endl; 
 
 	disjuncts.add( Disjunctive( tasks[ti],
 				    
@@ -1488,6 +1408,8 @@ void SchedulingModel::setup(Instance& inst,
 				    +(inst.hasSetupTime() ? inst.getSetupTime(k,tj,ti) : 0) ) );
       }
   add( disjuncts );
+
+  //exit(1);
 
   Variable x_cmax(lb_C_max, ub_C_max);
   C_max = x_cmax;
@@ -1557,6 +1479,20 @@ void SchedulingModel::setup(Instance& inst,
   for(int i=0; i<disjuncts.size(); ++i) SearchVars.add(disjuncts[i]);
   if(params->FixTasks)
     for(int i=0; i<tasks.size(); ++i) SearchVars.add(tasks[i]);
+
+  lb_Depth = 0;
+  ub_Depth = disjuncts.size();
+
+  if(params->Objective == "depth") {
+    Variable depth(lb_Depth, ub_Depth);
+    Depth = depth;
+    VarArray scope;
+    for(int i=0; i<disjuncts.size()/2; ++i) {
+      add(disjuncts[i] == disjuncts[i+disjuncts.size()/2]);
+      scope.add(disjuncts[i]);
+    }
+    add(depth == Sum(scope));
+  }
 }
 
 SchedulingModel::~SchedulingModel() {}
@@ -1642,6 +1578,14 @@ int L_sum_Model::get_ub() {
   return ub_L_sum;
 }
 
+int Depth_Model::get_lb() {
+  return lb_Depth;
+}
+
+int Depth_Model::get_ub() {
+  return ub_Depth;
+}
+
 int C_max_Model::get_lb() {
   return lb_C_max;
 }
@@ -1654,6 +1598,10 @@ VariableInt* L_sum_Model::get_objective_var() {
   return L_sum.getVariable();
 }
 
+VariableInt* Depth_Model::get_objective_var() {
+  return Depth.getVariable();
+}
+
 VariableInt* C_max_Model::get_objective_var() {
   return C_max.getVariable();
 }
@@ -1661,6 +1609,15 @@ VariableInt* C_max_Model::get_objective_var() {
 int L_sum_Model::set_objective(const int obj) {
   //VariableInt *x_lsum = L_sum.getVariable();
   return (L_sum.getVariable()->setMax(obj) ? UNKNOWN : UNSAT);
+}
+
+int Depth_Model::set_objective(const int obj) {
+//   //VariableInt *x_lsum = Depth.getVariable();
+//   Depth.print(std::cout);
+//   std::cout << std::endl;
+//   Depth.getVariable()->print(std::cout);
+//   std::cout << std::endl;
+  return (Depth.getVariable()->setMax(obj) ? UNKNOWN : UNSAT);
 }
 
 int C_max_Model::set_objective(const int obj) {
@@ -1685,17 +1642,11 @@ int C_max_Model::set_objective(const int obj) {
 }
 
 int L_sum_Model::get_objective() {
-//   int total_cost = 0, cost;
-//   for(int i=0; i<latebool.size(); ++i) {
-//     cost = 0;
-//     if(earlybool[i].value()) {
-//       cost = (data->getJobDueDate(i) - (last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i))))*data->getJobEarlyCost(i);
-//     } else if(latebool[i].value()) {
-//       cost = ((last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i))) - data->getJobDueDate(i))*data->getJobLateCost(i);
-//     }
-//     total_cost += cost;
-//   }
   return L_sum.value();
+}
+
+int Depth_Model::get_objective() {
+  return Depth.value();
 }
 
 double L_sum_Model::get_normalized_objective() {
@@ -1703,29 +1654,14 @@ double L_sum_Model::get_normalized_objective() {
   for(int i=0; i<latebool.size(); ++i) {
     cost = 0.0;
     if(earlybool[i].value()) {
-
-//       std::cout << "E " << (data->getJobDueDate(i) - (last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i)))) << " * "
-// 		<< (data->hasFloatCost() ? data->getJobFloatCost(i) : data->getJobEarlyCost(i)) 
-// 		<< std::endl;
-      
       cost = (data->getJobDueDate(i) - (last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i))))*(data->hasFloatCost() ? data->getJobFloatCost(i) : data->getJobEarlyCost(i));
     } else if(latebool[i].value()) {
-
-
-//       std::cout << "L " << ((last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i))) - data->getJobDueDate(i)) << " * "
-// 		<< (data->hasFloatCost() ? data->getJobFloatCost(i) : data->getJobLateCost(i))
-// 		<< std::endl;
-
       cost = ((last_tasks[i].value()+data->getDuration(data->getLastTaskofJob(i))) - data->getJobDueDate(i))*(data->hasFloatCost() ? data->getJobFloatCost(i) : data->getJobLateCost(i));
     }
     total_cost += cost;
   }
   
-  //std::cout << " => " << total_cost << "/" << data->getNormalizer();
-
   total_cost /= data->getNormalizer();
-
-  //std::cout << " == " << total_cost << std::endl;
 
   return total_cost;
 }
@@ -1834,14 +1770,48 @@ double Solution::distance(Solution* s) {
   return sqrt(dist);
 }
 
-std::ostream& Solution::print(std::ostream& os) {
+std::ostream& Solution::print(std::ostream& os, std::string type) {
   int i, n = model->disjuncts.size();
 
-  for(i=0; i<n; ++i) {
-    os << disjunct_value[i] ;
-  } 
-  os << std::endl;
+//   for(i=0; i<n; ++i) {
+//     os << disjunct_value[i] ;
+//   } 
+//   os << std::endl;
 
+  if(type == "fsp") {
+    int j, m = model->data->nJobs(), k = 0;
+    int *rank = new int[m];
+    int *order = new int[m];
+    std::fill(rank, rank+m, 0);
+
+    for(i=0; i<m-1; ++i) {
+      for(j=i+1; j<m; ++j) {
+	if(!disjunct_value[k++]) ++rank[i];
+	else ++rank[j];
+      }
+    }
+    
+    for(i=0; i<m; ++i) {
+      order[rank[i]] = i;
+    }
+
+    os << "c ";
+
+    for(i=0; i<m; ++i) {
+      os << (order[i]+1) << " ";
+    }
+
+    os << std::endl;
+
+    delete [] rank;
+    delete [] order;
+
+  } else {
+    for(i=0; i<n; ++i) {
+      os << disjunct_value[i] ;
+    } 
+    os << std::endl;
+  }
   return os;
 }
 
@@ -1909,60 +1879,133 @@ void SchedulingSolver::jtl_presolve()
   
   setVerbosity(params->Verbose);
 
+  setNodeLimit(50000);
+
+  addHeuristic("osp-t", 1, "anti", 1);
+  JOB Heuristic( model, false );
+  add( Heuristic );
+
+  model->set_objective(stats->upper_bound);
+  addObjective();
+  
+  std::cout << "c =============[ greedy step for jtl ]=============" << std::endl;
+  std::cout << std::left << std::setw(30) << "c node cutoff" << ":"  
+	    << std::right << std::setw(20) << 50000 << std::endl;
+  //for(int iteration=0; iteration<params->InitBound; ++iteration) {
+
+  ((JobByJob*)heuristic)->shuffle();
+  solve_and_restart();
+  //solve();
+  
+  if( status == SAT ) {
+    new_objective = model->get_objective();
+    
+    if(objective>new_objective) {
+      objective = new_objective;
+      pool->add(new Solution(model, this));
+      
+      //std::cout << std::left << std::setw(30) << "c iteration / objective" << ":" << std::right << std::setw(11) << (iteration+1) << " / " << std::setw(6) << objective << ")" << std::endl;
+      std::cout << std::left << std::setw(30) << "c objective" << ":" << std::right << std::setw(20) << objective << std::endl;
+    }
+    
+  } else {
+    std::cout << std::left << std::setw(30) << "c jtl presolve " << ":" << std::right << std::setw(20) << "failed" << std::endl;
+    params->InitBound = 0;
+  }
+  
+  reset(true);
+  decay_weights(params->Decay);
+  
+  
+  //exit(1);
+  //}
+  
+  std::cout << "c ===============[ end greedy step ]===============" << std::endl;   
+  std::cout << std::endl;
+  
+  //resetBacktrackLimit();
+  resetNodeLimit();
+  removeObjective();
+  
+  if(pool->size()) {
+    addHeuristic( params->Heuristic, params->Randomized, params->DValue, params->Hlimit );
+  } else {
+    addHeuristic( params->Heuristic, params->Randomized, params->IValue, params->Hlimit );
+  }
+  
+  stats->upper_bound = objective;
+  
+}
+
+void SchedulingSolver::old_jtl_presolve() 
+{
+  int objective = stats->upper_bound, new_objective;
+  
+  setVerbosity(params->Verbose);
+
   setBacktrackLimit(1000);
 
   addHeuristic("osp-t", 1, "anti", 1);
-  JOB Heuristic( model );
+  JOB Heuristic( model, true );
   add( Heuristic );
+
+ //  model->set_objective(stats->upper_bound);
+//   addObjective();
   
   std::cout << "c =============[ greedy step for jtl ]=============" << std::endl;
   std::cout << std::left << std::setw(30) << "c backtrack cutoff" << ":"  
 	    << std::right << std::setw(20) << 1000 << std::endl;
   for(int iteration=0; iteration<params->InitBound; ++iteration) {
-
+    
     ((JobByJob*)heuristic)->shuffle();
+    //solve_and_restart();
     solve();
-
+    
     if( status == SAT ) {
       new_objective = model->get_objective();
-
+      
       if(objective>new_objective) {
 	objective = new_objective;
 	pool->add(new Solution(model, this));
-
+	
 	std::cout << std::left << std::setw(30) << "c iteration / objective" << ":" << std::right << std::setw(11) << (iteration+1) << " / " << std::setw(6) << objective << ")" << std::endl;
+	//std::cout << std::left << std::setw(30) << "c objective" << ":" << std::right << std::setw(20) << objective << std::endl;
       }
       
     } else {
       std::cout << std::left << std::setw(30) << "c jtl presolve " << ":" << std::right << std::setw(20) << "failed" << std::endl;
       params->InitBound = 0;
     }
-      
+    
     reset(true);
     decay_weights(params->Decay);
 
+    
+    //exit(1);
   }
    
   std::cout << "c ===============[ end greedy step ]===============" << std::endl;   
   std::cout << std::endl;
-
+  
   resetBacktrackLimit();
-
+  //resetNodeLimit();
+  //removeObjective();
+  
   if(pool->size()) {
     addHeuristic( params->Heuristic, params->Randomized, params->DValue, params->Hlimit );
   } else {
     addHeuristic( params->Heuristic, params->Randomized, params->IValue, params->Hlimit );
   }
-
+  
   stats->upper_bound = objective;
-
+  
 }
 
 
 bool SchedulingSolver::probe_ub() 
 {
   bool ret_value = false;
-  int objective = stats->upper_bound-1;
+  int objective = stats->upper_bound;
   
   setVerbosity(params->Verbose);
 
@@ -2019,8 +2062,12 @@ void SchedulingSolver::dichotomic_search()
 
   presolve();
   
-  if(stats->upper_bound!=1323 && !probe_ub() && params->Presolve == "jtl") {
-    jtl_presolve();
+  if(!probe_ub()) {
+    if(params->Presolve == "jtl_old") {
+      old_jtl_presolve();
+    } else if(params->Presolve == "jtl") {
+      jtl_presolve();
+    }
   }
   
   int iteration = 1;
@@ -2137,6 +2184,159 @@ void SchedulingSolver::dichotomic_search()
   }
       
   std::cout << std::endl;
+}
+
+
+void SchedulingSolver::all_solutions_search()
+{
+
+  presolve();
+  
+  int iteration = 0;
+  int minfsble = stats->lower_bound;
+  int maxfsble = stats->upper_bound;
+
+  setVerbosity(params->Verbose);
+  setTimeLimit(params->Cutoff);
+  if(params->Randomized > 0)
+    setRandomized(params->Randomized);
+  else if(params->Randomized < 0) {
+    randomizeSequence();
+  }
+
+  nogoods = setRestartGenNogood();
+
+  while(true) {
+
+    int ds_iteration = 1;
+
+    int objective = -1;
+    int new_objective = -1;
+    int ngd_stamp = 0;
+    int lit_stamp = 0;
+    
+    bool solution_found = false;
+
+    if(params->Verbose>=0)
+      std::cout << "c ============[ start dichotomic step ]============" << std::endl;
+
+    ////////// dichotomic search ///////////////
+    if(status == UNKNOWN) {
+      while( minfsble<maxfsble && 
+	     ds_iteration<params->Dichotomy
+	     ) {
+	
+	double remaining_time = params->Optimise - stats->get_total_time();
+	
+	if(remaining_time < (2*params->NodeBase)) break;
+
+	objective = (int)(floor(((double)minfsble + (double)maxfsble)/2));
+
+	setPropagsLimit(params->NodeCutoff);
+
+	if(params->Verbose>=0) {
+	  std::cout << std::left << std::setw(30) << "c current dichotomic range" << ":" 
+		  << std::right << std::setw(6) << " " << std::setw(5) << minfsble 
+		    << " to " << std::setw(5) << maxfsble << std::endl;
+	  std::cout << std::left << std::setw(30) << "c target objective" << ":"  
+		    << std::right << std::setw(20) << objective << std::endl;
+	}
+
+	save();
+	
+	status = model->set_objective(objective);
+	if(pool->size()) {
+	  if(params->DValue == "guided") pool->getBestSolution()->guide_search();
+	}
+	
+	ngd_stamp = (params->Rngd>1 ? nogoods->base->nogood.size : 0);
+	lit_stamp = sUnaryCons.size;
+	
+	if(status == UNKNOWN) {
+	  
+// 	  std::cout << "nogood base:" << std::endl;
+// 	  nogoods->print(std::cout);
+
+	  solve_and_restart(params->PolicyRestart, params->Base, params->Factor);
+	}
+	
+	nogoods->forget(ngd_stamp);
+	nogoods->reinit();
+	
+	if( status == SAT ) {
+	  solution_found = true;
+	  new_objective = model->get_objective();
+	  
+	  stats->normalized_objective = model->get_normalized_objective();
+	  
+	  maxfsble = new_objective;
+	  pool->add(new Solution(model, this));
+	  
+	  if(params->Verbose>=0) {
+	    std::cout << std::left << std::setw(30) << "c solutions's objective" << ":" << std::right << std::setw(20) << new_objective << std::endl;
+	  }
+
+	} else {
+	  
+	  new_objective = objective;
+	  minfsble = objective+1;
+	  
+	}
+
+	stats->add_info(new_objective, DICHO);
+	
+	//printStatistics(std::cout, ((params->Verbose ? RUNTIME : 0) + ((params->Verbose || status != UNKNOWN)  ? BTS + PPGS : 0) + OUTCOME) );
+	
+	
+	reset(true);
+	decay_weights(params->Decay);
+
+	if(pool->size() && (params->DValue != params->IValue)) {
+	  addHeuristic( params->Heuristic, params->Randomized, params->DValue, params->Hlimit );
+	}
+      
+      
+	++ds_iteration;
+      } 
+    } else if( status == SAT ) {
+      std::cout << "c Solved during preprocessing!" << std::endl;
+      
+    } else if( status == UNSAT ) {
+      std::cout << "c Found inconsistent during preprocessing!" << std::endl;
+      
+    }
+    if(params->Verbose>=0) {
+      std::cout << "c =============[ end dichotomic step ]=============" << std::endl;
+    }
+
+    //std::cout << status << " =?= " << UNKNOWN << std::endl;
+
+    if(!solution_found) break;
+
+    pool->getBestSolution()->print(std::cout, "fsp");
+    // add the nogood corresponding to that solution
+    Vector< Decision > learnt;
+    for(int i=0; i<model->disjuncts.size()/2; ++i) {
+      if(pool->getBestSolution()->disjunct_value[i] == 1) {
+	Decision d('n', 1, model->disjuncts[i].getVariable());
+	learnt.push(d);
+	//d.print(std::cout);
+	//std::cout << " ";
+      }
+    }
+    //std::cout << std::endl;
+    nogoods->base->add(learnt);
+    
+    stats->upper_bound = maxfsble = model->disjuncts.size();
+
+    ++iteration;
+
+    //if(iteration>2)
+    //break;
+  }
+      
+  stats->num_solutions = iteration;
+  std::cout << "d ITERATIONS  " << iteration << std::endl;
 }
 
 
@@ -2374,3 +2574,7 @@ void SchedulingSolver::repair(Solution *sol, Vector<VariableInt*>& stable)
 }
 
 
+void SchedulingSolver::print_solution(std::ostream& os, std::string type)
+{
+  pool->getBestSolution()->print(os, type);
+}

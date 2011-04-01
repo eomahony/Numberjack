@@ -17,7 +17,7 @@ int main( int argc, char** argv )
 
   Instance jsp(params);
   
-  //jsp.print(std::cout);
+  jsp.print(std::cout);
   jsp.printStats(std::cout);
 
   SchedulingModel *model;
@@ -28,6 +28,9 @@ int main( int argc, char** argv )
   } else if(params.Objective == "tardiness") {
     std::cout << "c Minimising Tardiness" << std::endl;
     model = new L_sum_Model(jsp, &params, -1);
+  } else if(params.Objective == "depth") {
+    std::cout << "c Minimising Depth" << std::endl;
+    model = new Depth_Model(jsp, &params, jsp.getMakespanUpperBound());
   } else {
     std::cout << "c unknown objective, exiting" << std::endl;
     exit(1);
@@ -74,6 +77,7 @@ int main( int argc, char** argv )
   stats.print(std::cout, "");  
   std::cout << "s " << (stats.num_solutions ? "SATISFIABLE" : "UNSATISFIABLE") 
 	    << " \nv 00" << std::endl;
+
 
   delete model;
 

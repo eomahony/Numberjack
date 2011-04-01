@@ -78,7 +78,7 @@ namespace Mistral {
     static const int RGUIDED =  3;
     static const int RAND    =  4;
 
-    static const int nia = 18;
+    static const int nia = 19;
     static const char* int_ident[nia];
     
     static const int nsa = 12;
@@ -112,6 +112,8 @@ namespace Mistral {
     int Neighbor; // "neighbor": number of machines to re-schedule during LNS
     int InitStep; // "initstep": whether an initial probe with high makespan should be performed
     int FixTasks; // Whether tasks' starting time should be fixed (searched)
+    //int MinRank; // Whether the sum of the disjunct should be minimised
+    int OrderTasks; // Whetheer tasks should be ordered within the disjuncts
 
     double Factor;
     double Decay;
@@ -172,13 +174,16 @@ namespace Mistral {
     int*    jsp_earlycost;
     double* jsp_floatcost;
 
-    
+    int max_makespan;
+
+
     int addTask(const int dur, const int job, const int machine) ;
     void addTaskToJob(const unsigned int index, const unsigned int j) ;
     void addTaskToMachine(const unsigned int index, const unsigned int j) ;
 
 
     void osp_readData( const char* filename );
+    //void osp_readData( const char* filename );
     void sds_readData( const char* filename );
     void jtl_readData( const char* filename );
     void now_readData( const char* filename );
@@ -276,7 +281,7 @@ namespace Mistral {
     }
 
     int getMakespanLowerBound();
-    int getMakespanUpperBound(const int);
+    int getMakespanUpperBound(const int it=-1);
 
     int getEarlinessTardinessLowerBound(const int);
     int getEarlinessTardinessUpperBound(const int);
@@ -301,6 +306,9 @@ namespace Mistral {
     int ub_L_sum;
     int lb_L_sum;
 
+    int ub_Depth;
+    int lb_Depth;
+
     VarArray SearchVars;
     
     VarArray tasks;
@@ -310,6 +318,7 @@ namespace Mistral {
     VarArray latebool;
     Variable C_max;
     Variable L_sum;
+    Variable Depth;
 
     SchedulingModel() : CSP() {}
     SchedulingModel(Instance& prob, ParameterList *params, const int C_max);
@@ -353,7 +362,23 @@ namespace Mistral {
     virtual int get_ub();    
     virtual VariableInt* get_objective_var();
     virtual int  get_objective();
-    virtual double  get_normalized_objective();
+    virtual double  get_normalized_objective() ;
+    virtual int  set_objective(const int obj);
+  };
+
+
+  class Depth_Model : public SchedulingModel {
+  public:
+
+    Depth_Model() : SchedulingModel() {}
+    Depth_Model(Instance& prob, ParameterList *params, const int Depth) { setup(prob, params, Depth); }
+    virtual ~Depth_Model() {}
+
+    virtual int get_lb();
+    virtual int get_ub();    
+    virtual VariableInt* get_objective_var();
+    virtual int  get_objective();
+    virtual double  get_normalized_objective() {return (double)(get_objective())/(double)(disjuncts.size());}
     virtual int  set_objective(const int obj);
   };
 
@@ -367,7 +392,7 @@ namespace Mistral {
   };
 
   class Solution {
-  private:
+  public:
     int *earlybool_value;
     int *latebool_value;
     int *task_min;
@@ -389,7 +414,7 @@ namespace Mistral {
 
     void guide_search();
 
-    std::ostream& print(std::ostream& os);
+    std::ostream& print(std::ostream& os, std::string type="jsp");
     
   };
 
@@ -539,6 +564,7 @@ public:
     void decay_weights(const double decay);
 
     void addObjective() { goal = new MinimiseVar(this, model->get_objective_var()); }
+    void removeObjective() { delete goal; goal = NULL; }
     void addHeuristic( std::string Heu, const int rdz, std::string vo, const int hlimit ) {
       
 
@@ -553,9 +579,6 @@ public:
       if(val_ord == ParameterList::LEX ||
 	 val_ord == ParameterList::RAND)
       for(int i=0; i<length; ++i) {
-
-	std::cout << "SET VALUE HEURISTIC" << std::endl;
-
 	delete sequence[i]->branch;
 	if(val_ord == ParameterList::LEX) {
 	  sequence[i]->branch = new ValSelectorMin(sequence[i]);
@@ -680,12 +703,16 @@ public:
 
     bool probe_ub();
     void jtl_presolve();
+    void old_jtl_presolve();
     void dichotomic_search();
+    void all_solutions_search();
     void branch_and_bound();
     void large_neighborhood_search();
     void extract_stable(List& neighbors, Vector<VariableInt*>& stable);
     void repair(Solution *sol, Vector<VariableInt*>& stable);
 
+
+    void print_solution(std::ostream& os, std::string tp);
   };
 
 

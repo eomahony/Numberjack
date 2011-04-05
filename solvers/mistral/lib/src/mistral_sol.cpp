@@ -155,6 +155,7 @@ Weighter* Solver::setLearner( int wtype )
     learners.push( new WeighterRestartGenNogood( this ) );
   }
 
+
   return learners.back();
 }
 
@@ -803,6 +804,9 @@ int Solver::presolve()
 
 	}
       }
+
+
+      //std::cout << "PRESOLVE" << std::endl;
       unaryCons_size = unaryCons.size;
       unaryCons.size = 0;
 
@@ -2549,11 +2553,12 @@ bool Solver::filtering()
       ++PROPAGS;
       SimpleUnaryConstraint cons = sUnaryCons.pop();
 
-      if(verbosity > 2) {
-        std::cout << "PROPAGATE UNARY CONSTRAINT AT LEVEL " << level << ": ";
-        cons.print(std::cout);
-        std::cout << std::endl;
-      }
+ //      if(verbosity > 2) {
+//         std::cout << "PROPAGATE UNARY CONSTRAINT AT LEVEL " << level << "/" 
+// 		  << init_level << ": ";
+//         cons.print(std::cout);
+//         std::cout << std::endl;
+//       }
 
 //       if(cons.val > cons.var->min()) {
 // 	++nuaryprop;
@@ -3097,7 +3102,7 @@ void Solver::setHeuristic(const char* var_name, const char* val_name, const int 
 	heuristic = H.extract(this);
       }
       else if( Heu == "Scheduling") {
-	OSP H(rdz, (Val == "Promise" ? 1 : 0), OSP::DOM_O_TASKWEIGHT);
+	OSP H(NULL, rdz, (Val == "Promise" ? 1 : 0), OSP::DOM_O_TASKWEIGHT);
 	heuristic = H.extract(this);
       }
     } else {
@@ -3146,7 +3151,7 @@ void Solver::setHeuristic(const char* var_name, const char* val_name, const int 
 	heuristic = H.extract(this);
       }
       else if( Heu == "Scheduling") {
-	OSP H(1, (Val == "Promise" ? 1 : 0), OSP::DOM_O_TASKWEIGHT);
+	OSP H(NULL, 1, (Val == "Promise" ? 1 : 0), OSP::DOM_O_TASKWEIGHT);
 	heuristic = H.extract(this);
       }
     }
@@ -3432,7 +3437,10 @@ void Solver::reset_stats() {
 
 void Solver::reset_trail(const bool full) {
   backtrackTo(init_level-full);
-  if(full) unaryCons.size = unaryCons_size;
+  if(full) {
+    //std::cout << "reset unary constraint's size to" << unaryCons_size << std::endl;
+    unaryCons.size = unaryCons_size;
+  }
 }
 
 void Solver::reset(const bool full) {

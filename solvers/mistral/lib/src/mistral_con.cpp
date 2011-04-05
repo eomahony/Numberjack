@@ -1200,6 +1200,7 @@ void ConstraintGenNogoodBase::add( Vector<GeneralLiteral>& conflict ) {
   } else {
     //SimpleUnaryConstraint cons('r', conflict[0].value(), conflict[0].var);
     scope[0]->solver->sUnaryCons.push(conflict[0]);
+    //++scope[0]->solver->unaryCons_size;
     //std::cout << conflict[0].var->id << "," << conflict[0].value() << ":" ;
     //conflict[0].print(std::cout);
     //std::cerr << " is a unary nogood!!" << std::endl;

@@ -37,7 +37,7 @@ void free_disjuncts();
 
 namespace Mistral {
 
-
+  class SchedulingModel;
 
   class SimpleUnaryConstraint {
   public:
@@ -236,6 +236,7 @@ namespace Mistral {
     static const int ISAC=64;
     static const int RNGD=128;
     static const int RGNGD=256;
+    static const int JD=512;
 
     int& level;
 
@@ -306,6 +307,33 @@ namespace Mistral {
 
     virtual void notifyFailure( Constraint *con ) ;
     virtual int getType() { return WDG; }
+    //@}  
+  };
+
+
+  class WeighterJobDecision : public Weighter
+  {
+  public:
+
+    int *first_job;
+    int *second_job;
+    SchedulingModel *model;
+    Solver *solver;
+
+    ReversibleIntList done_jobs;
+
+    /**@name Constructors*/
+    //@{  
+    WeighterJobDecision( Solver* s,  SchedulingModel *m );  
+    virtual ~WeighterJobDecision( ) {
+
+    }
+    //@}  
+
+    /**@name Utils*/
+    //@{
+    virtual void notifySuccess() ; 
+    virtual int getType() { return JD; }
     //@}  
   };
 
@@ -1331,6 +1359,73 @@ namespace Mistral {
       return os;
     }
   };
+
+  class VarSelectorOSP_DoTaskWeightJob 
+  {
+  public: 
+    /**@name Constructors*/
+    //@{
+    VarSelectorOSP_DoTaskWeightJob() {
+      domsize_ = 0; task_weight_ = 0; job_score = 0;
+      j1 = 0; j2 = 0; 
+    }
+    //@}
+
+    double value() { return ((double)task_weight_); }
+
+    /**@name Parameters*/
+    //@{ 
+    int domsize_;
+    int task_weight_;
+    int j1;
+    int j2;
+    int job_score;
+
+    WeighterJobDecision *job_recorder;
+
+    PredicateDisjunctive **disjuncts;
+    Solver *solver;
+    int *first_job;
+    int *second_job;
+    //@}  
+
+    int get_job_score();
+  
+    /**@name Utils*/
+    //@{ 
+    inline bool operator<( VarSelectorOSP_DoTaskWeightJob& x ) const {
+ //      if (domsize_ * x.task_weight_ < x.domsize_ * task_weight_) {
+// 	std::cout << domsize_ << "/" << task_weight_ << std::endl;
+//       }
+      return job_score > x.job_score || (job_score == x.job_score && (domsize_ * x.task_weight_ < x.domsize_ * task_weight_)) ;
+    }
+    inline void operator=( VarSelectorOSP_DoTaskWeightJob& x ) { 
+      task_weight_ = x.task_weight_; domsize_ = x.domsize_; j1 = x.j1; j2 = x.j2; job_score = x.job_score;
+    }
+    inline void operator=( VariableInt    *x ) 
+    { 
+      int xid = x->id;
+      PredicateDisjunctive* d = disjuncts[xid];
+      if(d) {
+	domsize_ = d->domsize();
+	task_weight_ = (d->scope[0]->weight + d->scope[1]->weight);
+	j1 = first_job[xid];
+	j2 = second_job[xid];
+	job_score = get_job_score();
+       } else {
+ 	domsize_ = x->domsize();
+ 	task_weight_ = x->weight;
+      }
+    }
+      
+    //@}  
+
+    std::ostream& print(std::ostream& os) const {
+      os << "-" ;
+      return os;
+    }
+  };
+
 
   class VarSelectorOSP_DoTaskWeightType
   {
@@ -3568,10 +3663,10 @@ v=_X->min(); t=Decision::ASSIGNMENT;
 	}
 
 
-//       std::cout << "choose ";
-//       var->print(std::cout);
-// 	  std::cout << std::endl;
-// 	  std::cout << std::endl;
+//        std::cout << "choose ";
+//        var->print(std::cout);
+//  	  std::cout << std::endl;
+//  	  std::cout << std::endl;
 
       return var;
     }
@@ -4349,16 +4444,26 @@ v=_X->min(); t=Decision::ASSIGNMENT;
     static const int DOM_O_TASKWEIGHTTYPE = 6;
     static const int DOM_O_BOOLTASKWEIGHTTYPE = 7;
     //static const int DOM_O_WEAKWEIGHT = 3;
+    static const int DOM_O_TASKWEIGHTPJOB = 9;
 
     int size;
     int promise;
     int strategy;
-    OSP( const int sz=0, const int pr=0, const int st=DOM_O_BOOLWEIGHT ) { size=sz; promise=pr; strategy=st;}
+    SchedulingModel *model;
+    OSP( SchedulingModel *m, const int sz=0, const int pr=0, 
+	 const int st=DOM_O_BOOLWEIGHT ) { 
+      size=sz; 
+      promise=pr; 
+      strategy=st;
+      model=m;
+    }
     virtual ~OSP();
   
     /**@name Utils*/
     //@{
     PredicateDisjunctive** get_disjuncts(Solver *s);
+    int *get_first_job();
+    int *get_second_job();
     DVO* extract( Solver* s );
     //@}
   };
@@ -4375,7 +4480,6 @@ v=_X->min(); t=Decision::ASSIGNMENT;
     between the already scheduled and the current job are 
     treated before switching to a new job).
   */
-  class SchedulingModel;
   class JOB : public VariableOrdering {
   public:
   

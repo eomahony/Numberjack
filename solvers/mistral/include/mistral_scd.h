@@ -78,7 +78,7 @@ namespace Mistral {
     static const int RGUIDED =  3;
     static const int RAND    =  4;
 
-    static const int nia = 19;
+    static const int nia = 20;
     static const char* int_ident[nia];
     
     static const int nsa = 12;
@@ -114,6 +114,7 @@ namespace Mistral {
     int FixTasks; // Whether tasks' starting time should be fixed (searched)
     //int MinRank; // Whether the sum of the disjunct should be minimised
     int OrderTasks; // Whetheer tasks should be ordered within the disjuncts
+    int NgdType; // nogood type for solution removal
 
     double Factor;
     double Decay;
@@ -319,6 +320,9 @@ namespace Mistral {
     Variable C_max;
     Variable L_sum;
     Variable Depth;
+
+    Vector<int> first_job;
+    Vector<int> second_job;
 
     SchedulingModel() : CSP() {}
     SchedulingModel(Instance& prob, ParameterList *params, const int C_max);
@@ -645,43 +649,47 @@ public:
 	add( h );
       }
       else if( Heu == "osp") {
-	OSP h(abs(rdz), val_ord);
+	OSP h(model, abs(rdz), val_ord);
 	add( h );
       }
       else if( Heu == "osp-dw") {
- 	OSP h(abs(rdz), val_ord, OSP::DOMAIN_P_TWEIGHT);
+ 	OSP h(model, abs(rdz), val_ord, OSP::DOMAIN_P_TWEIGHT);
  	add( h );
       }
       else if( Heu == "osp-d") {
-	OSP h(abs(rdz), val_ord, OSP::DOMAIN_O_NOT);
+	OSP h(model, abs(rdz), val_ord, OSP::DOMAIN_O_NOT);
 	add( h );
       }
       else if( Heu == "osp-b") {
-	OSP h(abs(rdz), val_ord, OSP::DOM_O_BOOLWEIGHT);
+	OSP h(model, abs(rdz), val_ord, OSP::DOM_O_BOOLWEIGHT);
 	add( h );
       }
       else if( Heu == "osp-t") {
-	OSP h(abs(rdz), val_ord, OSP::DOM_O_TASKWEIGHT);
+	OSP h(model, abs(rdz), val_ord, OSP::DOM_O_TASKWEIGHT);
 	add( h );
       }
       else if( Heu == "osp-bt") {
-	OSP h(abs(rdz), val_ord, OSP::DOM_O_BOOLTASKWEIGHT);
+	OSP h(model, abs(rdz), val_ord, OSP::DOM_O_BOOLTASKWEIGHT);
 	add( h );
       }
       else if( Heu == "osp-dr") {
-	OSP h(abs(rdz), val_ord, OSP::DOMAIN_O_NOTTYPE);
+	OSP h(model, abs(rdz), val_ord, OSP::DOMAIN_O_NOTTYPE);
 	add( h );
       }
       else if( Heu == "osp-br") {
-	OSP h(abs(rdz), val_ord, OSP::DOM_O_BOOLWEIGHTTYPE);
+	OSP h(model, abs(rdz), val_ord, OSP::DOM_O_BOOLWEIGHTTYPE);
 	add( h );
       }
       else if( Heu == "osp-tr") {
-	OSP h(abs(rdz), val_ord, OSP::DOM_O_TASKWEIGHTTYPE);
+	OSP h(model, abs(rdz), val_ord, OSP::DOM_O_TASKWEIGHTTYPE);
 	add( h );
       }
       else if( Heu == "osp-btr") {
-	OSP h(abs(rdz), val_ord, OSP::DOM_O_BOOLTASKWEIGHTTYPE);
+	OSP h(model, abs(rdz), val_ord, OSP::DOM_O_BOOLTASKWEIGHTTYPE);
+	add( h );
+      }
+      else if( Heu == "osp-jt") {
+	OSP h(model, abs(rdz), val_ord, OSP::DOM_O_TASKWEIGHTPJOB);
 	add( h );
       }
       else if( Heu == "job") {

@@ -228,7 +228,7 @@ const char* ParameterList::int_ident[ParameterList::nia] =
   {"-ub", "-lb", "-check", "-seed", "-cutoff", "-dichotomy", 
    "-base", "-randomized", "-verbose", "-optimise", "-nogood", 
    "-dyncutoff", "-nodes", "-hlimit", "-init", "-neighbor", 
-   "-initstep", "-fixtasks", "-order"};
+   "-initstep", "-fixtasks", "-order", "-ngdt"};
 
 const char* ParameterList::str_ident[ParameterList::nsa] = 
   {"-heuristic", "-restart", "-factor", "-decay", "-type", 
@@ -307,37 +307,10 @@ ParameterList::ParameterList(int length, char **commandline) {
   Heuristic = "none";
   PolicyRestart = GEOMETRIC;
   FixTasks  = 0;
-  //MinRank   = 0;
+  NgdType   = 2;
   OrderTasks = 1;
 
-  if(int_param[0]  != NOVAL) UBinit      = int_param[0];
-  if(int_param[1]  != NOVAL) LBinit      = int_param[1];
-  if(int_param[2]  != NOVAL) Checked     = int_param[2];
-  if(int_param[3]  != NOVAL) Seed        = int_param[3];
-  if(int_param[4]  != NOVAL) Cutoff      = int_param[4];
-  if(int_param[5]  != NOVAL) Dichotomy   = int_param[5];
-  if(int_param[6]  != NOVAL) Base        = int_param[6];
-  if(int_param[7]  != NOVAL) Randomized  = int_param[7]; 
-  if(int_param[8]  != NOVAL) Verbose     = int_param[8];
-  if(int_param[9]  != NOVAL) Optimise    = int_param[9]; 
-  if(int_param[10] != NOVAL) Rngd        = int_param[10];
-  if(int_param[13] != NOVAL) Hlimit      = int_param[13]; 
-  if(int_param[14] != NOVAL) InitBound   = int_param[14]; 
-  if(int_param[15] != NOVAL) Neighbor    = int_param[15]; 
-  if(int_param[16] != NOVAL) InitStep    = int_param[16]; 
-  if(int_param[17] != NOVAL) FixTasks    = int_param[17]; 
-  //if(int_param[18] != NOVAL) MinRank     = int_param[18]; 
 
-
-  if(strcmp(str_param[0 ],"nil")) Heuristic  = str_param[0];
-  if(strcmp(str_param[1 ],"nil")) Policy     = str_param[1];
-  if(strcmp(str_param[2 ],"nil")) Factor     = atof(str_param[2]);
-  if(strcmp(str_param[3 ],"nil")) Decay      = atof(str_param[3]);
-  if(strcmp(str_param[5 ],"nil")) Value      = str_param[5];
-  if(strcmp(str_param[6 ],"nil")) DValue     = str_param[6];
-  if(strcmp(str_param[7 ],"nil")) IValue     = str_param[7];
-  if(strcmp(str_param[8 ],"nil")) Skew       = atof(str_param[8]);
-  if(strcmp(str_param[10],"nil")) Algorithm  = str_param[10];
 
   if(Type == "osp") {
     Objective = "makespan";
@@ -381,8 +354,35 @@ ParameterList::ParameterList(int length, char **commandline) {
       Heuristic = "osp-t";
   }
 
-  if(int_param[18] != NOVAL) OrderTasks      = int_param[18]; 
+  if(int_param[0]  != NOVAL) UBinit      = int_param[0];
+  if(int_param[1]  != NOVAL) LBinit      = int_param[1];
+  if(int_param[2]  != NOVAL) Checked     = int_param[2];
+  if(int_param[3]  != NOVAL) Seed        = int_param[3];
+  if(int_param[4]  != NOVAL) Cutoff      = int_param[4];
+  if(int_param[5]  != NOVAL) Dichotomy   = int_param[5];
+  if(int_param[6]  != NOVAL) Base        = int_param[6];
+  if(int_param[7]  != NOVAL) Randomized  = int_param[7]; 
+  if(int_param[8]  != NOVAL) Verbose     = int_param[8];
+  if(int_param[9]  != NOVAL) Optimise    = int_param[9]; 
+  if(int_param[10] != NOVAL) Rngd        = int_param[10];
+  if(int_param[13] != NOVAL) Hlimit      = int_param[13]; 
+  if(int_param[14] != NOVAL) InitBound   = int_param[14]; 
+  if(int_param[15] != NOVAL) Neighbor    = int_param[15]; 
+  if(int_param[16] != NOVAL) InitStep    = int_param[16]; 
+  if(int_param[17] != NOVAL) FixTasks    = int_param[17]; 
+  if(int_param[18] != NOVAL) OrderTasks  = int_param[18]; 
+  if(int_param[19] != NOVAL) NgdType     = int_param[19]; 
+
+  if(strcmp(str_param[0 ],"nil")) Heuristic  = str_param[0];
+  if(strcmp(str_param[1 ],"nil")) Policy     = str_param[1];
+  if(strcmp(str_param[2 ],"nil")) Factor     = atof(str_param[2]);
+  if(strcmp(str_param[3 ],"nil")) Decay      = atof(str_param[3]);
+  if(strcmp(str_param[5 ],"nil")) Value      = str_param[5];
+  if(strcmp(str_param[6 ],"nil")) DValue     = str_param[6];
+  if(strcmp(str_param[7 ],"nil")) IValue     = str_param[7];
+  if(strcmp(str_param[8 ],"nil")) Skew       = atof(str_param[8]);
   if(strcmp(str_param[9 ],"nil")) Objective  = str_param[9];
+  if(strcmp(str_param[10],"nil")) Algorithm  = str_param[10];
   if(strcmp(str_param[11],"nil")) Presolve   = str_param[11];
 
 }
@@ -1397,6 +1397,9 @@ void SchedulingModel::setup(Instance& inst,
 // 		  << inst.getDuration(tj) << ")" 
 // 		  << std::endl; 
 
+	first_job.push(inst.getJob(ti,0));
+	second_job.push(inst.getJob(tj,0));
+
 	disjuncts.add( Disjunctive( tasks[ti],
 				    
 				    inst.getDuration(ti)
@@ -1801,7 +1804,7 @@ std::ostream& Solution::print(std::ostream& os, std::string type) {
       os << (order[i]+1) << " ";
     }
 
-    os << std::endl;
+    //os << std::endl;
 
     delete [] rank;
     delete [] order;
@@ -1810,7 +1813,7 @@ std::ostream& Solution::print(std::ostream& os, std::string type) {
     for(i=0; i<n; ++i) {
       os << disjunct_value[i] ;
     } 
-    os << std::endl;
+    //os << std::endl;
   }
   return os;
 }
@@ -2190,8 +2193,11 @@ void SchedulingSolver::dichotomic_search()
 void SchedulingSolver::all_solutions_search()
 {
 
+  SolutionPool *second_pool = new SolutionPool();
+
   presolve();
   
+  Vector< Decision > literals;
   int iteration = 0;
   int minfsble = stats->lower_bound;
   int maxfsble = stats->upper_bound;
@@ -2257,6 +2263,10 @@ void SchedulingSolver::all_solutions_search()
 // 	  std::cout << "nogood base:" << std::endl;
 // 	  nogoods->print(std::cout);
 
+	  for(int i=0; i<literals.size; ++i) {
+	    sUnaryCons.push(literals[i]);
+	  }
+
 	  solve_and_restart(params->PolicyRestart, params->Base, params->Factor);
 	}
 	
@@ -2264,6 +2274,9 @@ void SchedulingSolver::all_solutions_search()
 	nogoods->reinit();
 	
 	if( status == SAT ) {
+
+	  //std::cout << "c makespan " << model->C_max.value() << std::endl;
+
 	  solution_found = true;
 	  new_objective = model->get_objective();
 	  
@@ -2313,30 +2326,68 @@ void SchedulingSolver::all_solutions_search()
 
     if(!solution_found) break;
 
-    pool->getBestSolution()->print(std::cout, "fsp");
+    std::cout << maxfsble << ": ";
+     pool->getBestSolution()->print(std::cout, "fsp");
+     std::cout << " ";
+    pool->getBestSolution()->print(std::cout, "jsp");
+    std::cout << std::endl;
     // add the nogood corresponding to that solution
-    Vector< Decision > learnt;
-    for(int i=0; i<model->disjuncts.size()/2; ++i) {
-      if(pool->getBestSolution()->disjunct_value[i] == 1) {
-	Decision d('n', 1, model->disjuncts[i].getVariable());
-	learnt.push(d);
-	//d.print(std::cout);
-	//std::cout << " ";
-      }
+
+    second_pool->add(pool->getBestSolution());
+
+    //std::cout << maxfsble << std::endl;
+
+    if(maxfsble>0) {
+
+      //int choice = params->NgdType;
+      //if(choice == 2) choice = (maxfsble<=(model->disjuncts.size()/4));
+      
+      //for(int k=0; k<2; ++k) {
+	Vector< Decision > learnt;
+	int k=1;
+	for(int i=0; i<model->disjuncts.size()/2; ++i) {
+	  if(pool->getBestSolution()->disjunct_value[i] == k) {
+	    Decision d('n', k, model->disjuncts[i].getVariable());
+	    learnt.push(d);
+	    // 	  d.print(std::cout);
+	    // 	  std::cout << " ";
+	  }
+	}
+	//std::cout << std::endl;
+	if(learnt.size>1)
+	  nogoods->base->add(learnt);
+	else
+	  literals.push(learnt[0]);
+	//}
+
+      //learnt[0].propagate();
+      stats->upper_bound = maxfsble = model->disjuncts.size();
+
+      //exit(1);
     }
-    //std::cout << std::endl;
-    nogoods->base->add(learnt);
-    
-    stats->upper_bound = maxfsble = model->disjuncts.size();
 
     ++iteration;
 
+    if(maxfsble == 0) break;
     //if(iteration>2)
     //break;
   }
       
   stats->num_solutions = iteration;
   std::cout << "d ITERATIONS  " << iteration << std::endl;
+
+
+//   for(int i=0; i<second_pool->size(); ++i) {
+//     for(int j=i+1; j<second_pool->size(); ++j) {
+//       std::cout << "dist=" << (*second_pool)[i]->distance((*second_pool)[j]) << " (";
+//       (*second_pool)[i]->print(std::cout, "fsp");
+//       std::cout << " / " ;
+//       (*second_pool)[j]->print(std::cout, "fsp");
+//       std::cout << ")" << std::endl ;
+
+//     }
+//   }
+
 }
 
 
@@ -2356,6 +2407,8 @@ int SchedulingSolver::virtual_iterative_dfs()
       while( status == UNKNOWN ) {
 	
 	if( filtering() ) {
+
+	  std::cout << "  HERE  " << verbosity << std::endl;
 
 	  if(verbosity>2) {
 	    VariableInt *t;
@@ -2577,4 +2630,5 @@ void SchedulingSolver::repair(Solution *sol, Vector<VariableInt*>& stable)
 void SchedulingSolver::print_solution(std::ostream& os, std::string type)
 {
   pool->getBestSolution()->print(os, type);
+  os << std::endl;
 }

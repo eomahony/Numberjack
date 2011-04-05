@@ -268,6 +268,32 @@ Weighter::Weighter( Solver* s )
   init_level = s->init_level;
 }
 
+WeighterJobDecision::WeighterJobDecision( Solver* s, SchedulingModel *m ) 
+  : Weighter(s)
+{
+  solver = s;
+  model = m;
+  first_job = model->first_job.stack_;
+  second_job = model->first_job.stack_;
+  
+  s->binds( done_jobs );
+  done_jobs.setValue(0, model->data->nJobs()-1, 0);
+}
+
+void WeighterJobDecision::notifySuccess( )
+{
+  int idx = solver->branching_decision.back().var->id;
+  int j = first_job[idx];
+  if(!done_jobs.member(j)) done_jobs.insert(j);
+  j = second_job[idx];
+  if(!done_jobs.member(j)) done_jobs.insert(j);
+
+//   for(int i=0; i<done_jobs.size; ++i) {
+//     std::cout << done_jobs[i] << " ";
+//   }
+//   std::cout << std::endl;
+}
+
 WeighterDegree::WeighterDegree( Solver* s ) 
   : Weighter(s)
 {
@@ -1792,6 +1818,17 @@ VariableInt* JobByJob::select() {
 OSP::~OSP() {
 }
 
+int* OSP::get_first_job() {
+  //int *fj = new int[model->disjuncts.size()];
+  //for(int i=0; i<model->disjuncts.size(); ++i)
+  //fj[i] = 
+  return model->first_job.stack_;
+}
+
+int* OSP::get_second_job() {
+  return model->second_job.stack_;
+}
+
 PredicateDisjunctive** OSP::get_disjuncts(Solver *s) {
   // collect disjuncts
   
@@ -1821,7 +1858,17 @@ PredicateDisjunctive** OSP::get_disjuncts(Solver *s) {
 
 DVO* OSP::extract( Solver* s )
 {
+//   if(strategy == DOM_O_TASKWEIGHTPJOB) {
+//     model->print(std::cout);
+//     std::cout << std::endl;
+//     exit(1);
+//   }
+
   s->setLearner( Weighter::WDG );
+  
+  //if(strategy == DOM_O_TASKWEIGHTPJOB)
+    
+
   if( size > 1 ) {
 
     //std::cout << "c extract random dvo" << std::endl;
@@ -1908,6 +1955,24 @@ DVO* OSP::extract( Solver* s )
       var_heuristic->the_disjuncts = disjunct;
       return var_heuristic;
     }
+    case DOM_O_TASKWEIGHTPJOB: {
+      GenericSchedulingRandomDVO<VarSelectorOSP_DoTaskWeightJob> *var_heuristic = 
+	new GenericSchedulingRandomDVO<VarSelectorOSP_DoTaskWeightJob>(s, size);
+      PredicateDisjunctive** disjunct = get_disjuncts(s);
+      for(i=0; i<=size; ++i) {
+	var_heuristic->bests[i].solver = s;
+	var_heuristic->bests[i].disjuncts = disjunct;
+	var_heuristic->bests[i].first_job = get_first_job();
+	var_heuristic->bests[i].second_job = get_second_job();
+      }
+      var_heuristic->current.solver = s;
+      var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->current.first_job = get_first_job();
+      var_heuristic->current.second_job = get_second_job();
+      var_heuristic->the_disjuncts = disjunct;
+      //var_heuristic->the_disjuncts = disjunct;
+      return var_heuristic;
+    }
     case DOM_O_BOOLTASKWEIGHTTYPE: {
       GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolTaskWeightType> *var_heuristic = 
 	new GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolTaskWeightType>(s, size);
@@ -1978,6 +2043,32 @@ DVO* OSP::extract( Solver* s )
       var_heuristic->best.disjuncts = disjunct;
       var_heuristic->current.disjuncts = disjunct;
       var_heuristic->the_disjuncts = disjunct;
+      return var_heuristic;
+    }
+    case DOM_O_TASKWEIGHTPJOB: {
+
+      WeighterJobDecision *wjd = new WeighterJobDecision(s, model);
+      s->learners.push( wjd );
+
+      GenericSchedulingDVO<VarSelectorOSP_DoTaskWeightJob> *var_heuristic = 
+	new GenericSchedulingDVO<VarSelectorOSP_DoTaskWeightJob>(s, size);
+      PredicateDisjunctive** disjunct = get_disjuncts(s);
+
+
+      var_heuristic->best.job_recorder = wjd;
+      var_heuristic->best.solver = s;
+      var_heuristic->best.disjuncts = disjunct;
+      var_heuristic->best.first_job = get_first_job();
+      var_heuristic->best.second_job = get_second_job();
+
+      var_heuristic->current.job_recorder = wjd;
+      var_heuristic->current.solver = s;
+      var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->current.first_job = get_first_job();
+      var_heuristic->current.second_job = get_second_job();
+
+      var_heuristic->the_disjuncts = disjunct;
+      //var_heuristic->the_disjuncts = disjunct;
       return var_heuristic;
     }
     case DOM_O_BOOLTASKWEIGHT: {
@@ -2589,4 +2680,20 @@ void ValSelectorJob::printRight(std::ostream& o) const {
   std::cout << " > " << val;
 }
 
+int VarSelectorOSP_DoTaskWeightJob::get_job_score() {
+
+//   if(solver->branching_decision.size && solver->branching_decision.back().var) {
+//     int xid = solver->branching_decision.back().var->id;
+//     std::cout << first_job[xid] << "." << second_job[xid] << " => " << j1 << "." << j2 << std::endl;
+//   }
+
+//   std::cout << job_recorder->done_jobs.member(j1) << " " 
+// 	    << job_recorder->done_jobs.member(j2) << std::endl; 
+
+
+  return (job_recorder->done_jobs.member(j1) + job_recorder->done_jobs.member(j2)); 
+
+
+  //return 0;
+}
 

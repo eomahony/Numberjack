@@ -39,7 +39,7 @@ int main( int argc, char** argv )
   SchedulingSolver solver(model, &params, &stats);
   usrand(params.Seed);
 
-  solver.print(std::cout);
+  //solver.print(std::cout);
   //exit(1);
 
   params.print(std::cout);  

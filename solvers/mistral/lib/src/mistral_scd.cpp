@@ -325,7 +325,7 @@ ParameterList::ParameterList(int length, char **commandline) {
     Presolve = "jtl";
     if(Heuristic == "none")
       Heuristic = "osp-b";
-  } else if(Type == "now") {
+  } else if(Type == "now" || Type == "now2") {
     Objective = "makespan";
     Presolve = "default";
     if(Heuristic == "none")
@@ -485,7 +485,7 @@ Instance::Instance(ParameterList& params) {
     sds_readData( params.data_file );
   } else if(params.Type == "jtl") {
     jtl_readData( params.data_file );
-  } else if(params.Type == "now") {
+  } else if(params.Type == "now" || params.Type == "now2") {
     now_readData( params.data_file );
   } else if(params.Type == "jla") {
     jla_readData( params.data_file );
@@ -537,6 +537,301 @@ Instance::~Instance() {
   if(hasEarlyCost()) {
     delete [] jsp_earlycost;
   }
+}
+
+
+int straight_compar(const void *x, const void *y) {
+  int a = *(int*)x;
+  int b = *(int*)y;
+  return(a==b ? 0 : (a<b ? -1 : 1));
+}
+
+void Instance::get_placement(const int x, const int y, Vector<int>& intervals) 
+{  
+  Vector<int> forbidden_starts;
+  Vector<int> forbidden_ends;
+
+  int *timetable_x = new int[nMachines()];
+  int *timetable_y = new int[nMachines()];
+
+  int *duration_x = new int[nMachines()];
+  int *duration_y = new int[nMachines()];
+
+
+  int dur = 0;
+  for(int k=0; k<nTasksInJob(x); ++k) {
+    int t = getJobTask(x,k);
+    for(int i=0; i<nMachines(t); ++i) {
+      int m = getMachine(t,i);
+      duration_x[m] = getDuration(t);
+      timetable_x[m] = dur;
+    }
+    dur += getDuration(t);
+  }
+  dur = 0;
+  for(int k=0; k<nTasksInJob(y); ++k) {
+    int t = getJobTask(y,k);
+    for(int i=0; i<nMachines(t); ++i) {
+      int m = getMachine(t,i);
+      duration_y[m] = getDuration(t);
+      timetable_y[m] = dur;
+    }
+    dur += getDuration(t);
+  }
+
+
+
+//   std::cout << "job" << x << ": " ;
+//   for(int k=0; k<nTasksInJob(x); ++k) {
+//     int t = getJobTask(x,k);
+//     for(int i=0; i<nMachines(t); ++i) {
+//       int m = getMachine(t,i);
+//       std::cout << "[" << std::setw(4) << timetable_x[m] << ":"
+// 		<< std::setw(2) << getDuration(t) 
+// 		<< " " << m
+// 		<< "]";
+//     }
+//   }
+//   std::cout << std::endl;
+  
+//   std::cout << "job" << y << ": " ;
+//   for(int k=0; k<nTasksInJob(y); ++k) {
+//     int t = getJobTask(y,k);
+//     for(int i=0; i<nMachines(t); ++i) {
+//       int m = getMachine(t,i);
+//       std::cout << "[" << std::setw(4) << timetable_y[m] << ":"
+// 		  << std::setw(2) << getDuration(t) 
+// 		<< " " << m
+// 		<< "]";
+//     }
+//   }
+//   std::cout << std::endl;
+  
+  for(int k=0; k<nMachines(); ++k) {
+    // forbidden interval for machine k
+    // y cannot start in [st_x-duration_y+1, st_x+duration_x-1]
+    forbidden_starts.push(timetable_x[k]-timetable_y[k]-duration_y[k]+1);
+    forbidden_ends.push(timetable_x[k]-timetable_y[k]+duration_x[k]);
+
+//     std::cout << "[" << forbidden_starts.back() << ".." 
+// 	      << forbidden_ends.back() << "]" << std::endl; 
+  }
+
+  //forbidden_starts.push(-INFTY);
+  //forbidden_ends.push(INFTY);
+  qsort(forbidden_starts.stack_, forbidden_starts.size, sizeof(int), straight_compar);
+  qsort(forbidden_ends.stack_, forbidden_ends.size, sizeof(int), straight_compar);
+
+
+//   forbidden_starts.print(std::cout);
+//   //std::cout << std::endl;
+
+//   forbidden_ends.print(std::cout);
+//   std::cout << std::endl;
+
+  int i=0, j=0;
+  int current = 0;
+    
+  
+//   while(i<forbidden_starts.size && j<forbidden_ends.size) {
+
+//     std::cout << "(" << forbidden_starts[i] << "|" << forbidden_ends[j] << ")" << ": ";
+
+//     if(forbidden_starts[i]<forbidden_ends[j]) {
+//       ++i;
+//       std::cout << " up ";
+//       if(current++==0) std::cout << "." << forbidden_starts[i-1]-1 << "]";
+//     } else if(forbidden_starts[i]>forbidden_ends[j]) {
+//       ++j;
+//       std::cout << " down ";
+//       if(--current==0) std::cout << "[" << forbidden_ends[j-1] << ".";
+//     } else {
+//       ++i;
+//       ++j;
+//       std::cout << " equal " << std::endl;
+//     }
+
+//     std::cout << std::endl;
+//   }
+
+//   std::cout << "[" << forbidden_ends.back() << ".";
+  
+
+//   std::cout << std::endl;
+  
+//   exit(1);
+
+  while(i<forbidden_starts.size && j<forbidden_ends.size) {
+    if(forbidden_starts[i]<forbidden_ends[j]) {
+      ++i;
+      if(current++==0) intervals.push(forbidden_starts[i-1]-1);
+    } else if(forbidden_starts[i]>forbidden_ends[j]) {
+      ++j;
+      if(--current==0) intervals.push(forbidden_ends[j-1]);
+    } else {
+      ++i;
+      ++j;
+    }
+  }
+
+  intervals.push(forbidden_ends.back());
+
+  int num__intervals = intervals.size/2+1;
+  int *max__intervals = new int[num__intervals];
+  int *min__intervals = new int[num__intervals];
+  min__intervals[0] = -NOVAL;
+  max__intervals[num__intervals-1] = NOVAL;
+  int k=0;
+  for(int i=0; i<num__intervals-1; ++i) {
+    max__intervals[i] = intervals[k++];
+    min__intervals[i+1] = intervals[k++];
+  }
+
+//   int lb, ub;
+//   for(int i=0; i<num__intervals; ++i) {
+    
+//     lb = min__intervals[i];
+//     ub = max__intervals[i];
+
+//     std::cout << "z=" << i << " <->  x" << (lb>0 ? "+" : "") << lb  << " <= y AND y <= x" <<(ub>0 ? "+" : "") << ub << std::endl;
+
+//     //std::cout << "z=" << i << " <->  + " << min__intervals[i] << " <= y OR x >= y - " << max__intervals[i] << std::endl;
+
+//   }
+
+
+// //   intervals.print(std::cout);
+
+// //  exit(1);
+}
+
+void Instance::get_placement2(const int x, const int y) {
+  // compute x's and y's lengths.
+  int x_length=0, y_length=0;
+
+  for(int k=0; k<nTasksInJob(x); ++k) {
+    x_length += getDuration(getJobTask(x,k));
+  }
+
+  for(int k=0; k<nTasksInJob(y); ++k) {
+    y_length += getDuration(getJobTask(y,k));
+  }
+
+
+
+  int *timetable_x_start = new int[nMachines()];
+  int *timetable_x_end = new int[nMachines()];
+
+  int *timetable_y_start = new int[nMachines()];
+  int *timetable_y_end = new int[nMachines()];
+
+  int *duration_x = new int[nMachines()];
+  int *duration_y = new int[nMachines()];
+
+  // the slack is the maximum right shift of y staying right of the given machine
+  int *slack = new int[nMachines()];
+  // the delay is the minimum right shift of y to get past the given machine
+  int *delay = new int[nMachines()];
+
+  //BitSet *timetable_y = new BitSet[nMachines()];
+
+  
+  int dur = 0;
+  for(int k=0; k<nTasksInJob(x); ++k) {
+    int t = getJobTask(x,k);
+    for(int i=0; i<nMachines(t); ++i) {
+      int m = getMachine(t,i);
+      duration_x[m] = getDuration(t);
+      timetable_x_start[m] = dur;
+      timetable_x_end[m] = dur+getDuration(t);
+    }
+    dur += getDuration(t);
+  }
+
+  dur = -y_length;
+  for(int k=0; k<nTasksInJob(y); ++k) {
+    int t = getJobTask(y,k);
+    for(int i=0; i<nMachines(t); ++i) {
+      int m = getMachine(t,i);
+      duration_y[m] = getDuration(t);
+      timetable_y_start[m] = dur;
+      timetable_y_end[m] = dur+getDuration(t);
+    }
+    dur += getDuration(t);
+  }
+
+  while(true) {
+    int lb_shift=INFTY;
+    int ub_shift=0;
+
+    for(int i=0; i<nMachines(); ++i) {
+      slack[i] = timetable_x_start[i]-timetable_y_end[i];
+      delay[i] = timetable_x_end[i]-timetable_y_start[i];
+      if(slack[i]<0) slack[i] = INFTY;
+
+      if(slack[i]<lb_shift) lb_shift=slack[i];
+      if(delay[i]>ub_shift) ub_shift=delay[i];
+    }
+  
+    std::cout << "job" << x << ": " << x_length << " ";
+    for(int k=0; k<nTasksInJob(x); ++k) {
+      int t = getJobTask(x,k);
+      for(int i=0; i<nMachines(t); ++i) {
+	int m = getMachine(t,i);
+	std::cout << "[" << std::setw(4) << timetable_x_start[m] << ":"
+		  << std::setw(2) << getDuration(t) 
+		  << " " << m
+		  << "]";
+      }
+    }
+    std::cout << std::endl;
+    
+    std::cout << "job" << y << ": " << y_length << " ";
+    for(int k=0; k<nTasksInJob(y); ++k) {
+      int t = getJobTask(y,k);
+      for(int i=0; i<nMachines(t); ++i) {
+	int m = getMachine(t,i);
+	std::cout << "[" << std::setw(4) << timetable_y_start[m] << ":"
+		  << std::setw(2) << getDuration(t) 
+		  << " " << m
+		  << "]";
+      }
+    }
+    std::cout << std::endl;
+
+    std::cout << "job" << y << ": " << y_length << " ";
+    for(int k=0; k<nTasksInJob(y); ++k) {
+      int t = getJobTask(y,k);
+      for(int i=0; i<nMachines(t); ++i) {
+	int m = getMachine(t,i);
+	std::cout << "[" << std::setw(4) << slack[m] << "," << std::setw(4) << delay[m] << "]";
+      }
+    }
+    std::cout << std::endl;
+
+    //std::cout << min_forced_shift << " " << max_accepted_shift << " " << max_jump_shift << std::endl;
+  
+
+    
+    // the shift should be, for each machine, either less than the slack, or more than the delay
+    // therefore, we compute a forbidden interval, between the minimum slack, and the maximum delay
+    if(lb_shift>=0) {
+      std::cout << lb_shift << "]";
+    }
+    if(ub_shift>=0) {
+      std::cout << "[" << ub_shift ;
+    }
+
+    std::cout << std::endl;
+
+    
+    for(int i=0; i<nMachines(); ++i) {
+      timetable_y_start[i] += ub_shift;
+      timetable_y_end[i] += ub_shift;
+    }
+  }
+
+  exit(1);
 }
 
 int Instance::addTask(const int dur, const int job, const int machine) {
@@ -1099,6 +1394,20 @@ void Instance::now_readData( const char* filename ) {
 
   }
 
+//   print(std::cout);
+//   std::cout << std::endl;
+ 
+//   Vector<int> intervals;
+
+//   for(int i=0; i<nJobs; ++i) {
+//     for(int j=i+1; j<nJobs; ++j) {
+//       intervals.clear();
+//       get_placement(i,j,intervals);
+//       intervals.print(std::cout);
+//     }
+//     std::cout << std::endl;
+//   }
+//   //exit(1);
 }
 void Instance::jla_readData( const char* filename ) {
 
@@ -1503,6 +1812,7 @@ SchedulingModel::~SchedulingModel() {}
 
 void No_wait_Model::setup(Instance& inst, ParameterList *params, const int max_makespan) {
 
+  //if(type==0) {
   int i,j,k, lb, ub, ti=0, tj=0;
   std::vector<int> offset;
   for(i=0; i<inst.nJobs(); ++i) {
@@ -1538,28 +1848,53 @@ void No_wait_Model::setup(Instance& inst, ParameterList *params, const int max_m
     tasks.add(t);
   }
 
-  // mutual exclusion constraints
-  for(k=0; k<inst.nMachines(); ++k) 
-    for(i=0; i<inst.nTasksInMachine(k); ++i)
-      for(j=i+1; j<inst.nTasksInMachine(k); ++j) {
-	ti = inst.getMachineTask(k,i);
-	tj = inst.getMachineTask(k,j);
+  if(type==0) {
+    // mutual exclusion constraints
+    for(k=0; k<inst.nMachines(); ++k) 
+      for(i=0; i<inst.nTasksInMachine(k); ++i)
+	for(j=i+1; j<inst.nTasksInMachine(k); ++j) {
+	  ti = inst.getMachineTask(k,i);
+	  tj = inst.getMachineTask(k,j);
+	  
+	  disjuncts.add( Disjunctive( tasks[inst.getJob(ti,0)],
+				      
+				      inst.getDuration(ti)
+				      +(inst.hasSetupTime() ? inst.getSetupTime(k,ti,tj) : 0)
+				      +offset[ti]
+				      -offset[tj],
+				      
+				      tasks[inst.getJob(tj,0)],
+				      
+				      inst.getDuration(tj)
+				      +(inst.hasSetupTime() ? inst.getSetupTime(k,tj,ti) : 0)
+				      +offset[tj]
+				      -offset[ti] ) );
+	}
+    add( disjuncts );
+  } else {
+    
+    //       print(std::cout);
+    //   std::cout << std::endl;
+    
+    Vector<int> intervals;
+    
+    for(int i=0; i<data->nJobs(); ++i) {
+      for(int j=i+1; j<data->nJobs(); ++j) {
+	intervals.clear();
+	data->get_placement(i,j,intervals);
+	intervals.print(std::cout);
+      	gen_disjuncts.add( GenDisjunctive(tasks[i], tasks[j], intervals) );
 
-	disjuncts.add( Disjunctive( tasks[inst.getJob(ti,0)],
-				    
-				    inst.getDuration(ti)
-				    +(inst.hasSetupTime() ? inst.getSetupTime(k,ti,tj) : 0)
-				    +offset[ti]
-				    -offset[tj],
-				    
-				    tasks[inst.getJob(tj,0)],
-				    
-				    inst.getDuration(tj)
-				    +(inst.hasSetupTime() ? inst.getSetupTime(k,tj,ti) : 0)
-				    +offset[tj]
-				    -offset[ti] ) );
       }
-  add( disjuncts );
+      std::cout << std::endl;
+    }
+    
+    add(gen_disjuncts);
+    //exit(1);
+
+  }
+
+
 
   Variable x_cmax(lb_C_max, ub_C_max);
   C_max = x_cmax;
@@ -1568,7 +1903,15 @@ void No_wait_Model::setup(Instance& inst, ParameterList *params, const int max_m
     k = inst.getDuration(ti) + offset[ti];
     add(Precedence(tasks[i], k, C_max));
   }
-  for(int i=0; i<disjuncts.size(); ++i) SearchVars.add(disjuncts[i]);
+
+  
+  if(type==0) {
+    for(int i=0; i<disjuncts.size(); ++i) SearchVars.add(disjuncts[i]);
+  } else {
+    for(int i=0; i<gen_disjuncts.size(); ++i) SearchVars.add(gen_disjuncts[i]);
+  }
+
+  
 
 }
 
@@ -2407,16 +2750,21 @@ int SchedulingSolver::virtual_iterative_dfs()
       while( status == UNKNOWN ) {
 	
 	if( filtering() ) {
-
-	  std::cout << "  HERE  " << verbosity << std::endl;
-
 	  if(verbosity>2) {
 	    VariableInt *t;
-	    //std::cout << "    ";
 	    for(int i=0; i<model->data->nJobs(); ++i) {
 	      std::cout << "j" << std::left << std::setw(2) << i << std::right ; //<< " ";
-	      for(int j=0; j<model->data->nTasksInJob(i); ++j) {
-		t = model->tasks[model->data->getJobTask(i,j)].getVariable();
+	      //std::cout << " (" << model->data->nTasksInJob(i) << ") ";
+	      //std::cout.flush();
+
+	      //if(params->Type != "now" && params->Type != "now2") {
+	      if(model->tasks.size() > model->data->nJobs()) {
+		for(int j=0; j<model->data->nTasksInJob(i); ++j) {
+		  t = model->tasks[model->data->getJobTask(i,j)].getVariable();
+		  std::cout << " " << t->id+1 << "[" << t->min() << ".." << t->max() << "]" ;
+		}
+	      } else {
+		t = model->tasks[i].getVariable();
 		std::cout << " " << t->id+1 << "[" << t->min() << ".." << t->max() << "]" ;
 	      }
 	      std::cout << std::endl;

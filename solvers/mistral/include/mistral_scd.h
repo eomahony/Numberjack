@@ -287,6 +287,9 @@ namespace Mistral {
     int getEarlinessTardinessLowerBound(const int);
     int getEarlinessTardinessUpperBound(const int);
 
+    void get_placement(const int i, const int j, Vector<int>& intervals);
+    void get_placement2(const int i, const int j);
+
     int nDisjuncts() const;
     int nPrecedences() const;
 
@@ -387,10 +390,14 @@ namespace Mistral {
   };
 
   class No_wait_Model : public C_max_Model {
+    
   public:
+    
+    int type;
+    VarArray gen_disjuncts;
  
     No_wait_Model() : C_max_Model() {} 
-    No_wait_Model(Instance& prob, ParameterList *params, const int C_max) : C_max_Model() { setup(prob, params, C_max); }
+    No_wait_Model(Instance& prob, ParameterList *params, const int C_max, const int t=1) : C_max_Model() { type=t; setup(prob, params, C_max); }
     virtual void setup(Instance& prob, ParameterList *params, const int C_max);
     virtual ~No_wait_Model() {}
   };
@@ -690,6 +697,10 @@ public:
       }
       else if( Heu == "osp-jt") {
 	OSP h(model, abs(rdz), val_ord, OSP::DOM_O_TASKWEIGHTPJOB);
+	add( h );
+      }
+      else if( Heu == "now") {
+	NOW h(model, abs(rdz));
 	add( h );
       }
       else if( Heu == "job") {

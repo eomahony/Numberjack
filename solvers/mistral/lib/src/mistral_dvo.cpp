@@ -257,6 +257,8 @@ std::ostream& Contention::print(std::ostream& os) const {
 }
 
 PredicateDisjunctive** _garbage_disjuncts;
+PredicateGenDisjunctive** _garbage_gen_disjuncts;
+//Constraint **_garbage_disjuncts;
 void free_disjuncts() {
 //   for(int i=0; i<_garbage_disjuncts.size; ++i)
 //     delete [] _garbage_disjuncts[i];
@@ -1471,7 +1473,9 @@ DVO::DVO(Solver *s, const int l)
   //verbosity = 0;
 }
 
-PredicateDisjunctive** DVO::get_disjuncts() { return _garbage_disjuncts; }
+//Constraint** DVO::get_disjuncts() { return _garbage_disjuncts; }
+PredicateDisjunctive** DVO::get_disjuncts(Solver *s) { return _garbage_disjuncts; }
+PredicateGenDisjunctive** DVO::get_gen_disjuncts(Solver *s) { return _garbage_gen_disjuncts; }
 
 inline VariableInt* DVONoOrder::select() 
 {
@@ -1814,6 +1818,51 @@ VariableInt* JobByJob::select() {
 
   return x;
 }
+
+NOW::~NOW() {
+}
+
+PredicateGenDisjunctive** NOW::get_gen_disjuncts(Solver *s) {
+  // collect disjuncts
+  
+  PredicateGenDisjunctive **disjunct = new PredicateGenDisjunctive*[s->variables.size];
+  std::fill(disjunct, disjunct+(s->variables.size), (PredicateGenDisjunctive *)NULL);
+  _garbage_gen_disjuncts = disjunct;
+  //_garbage_disjuncts = disjunct;
+  int i, j, n = s->constraints.size;
+  Constraint **cons = s->constraints.stack_;
+  VariableInt *x;
+  for(i=0; i<n; ++i)
+    if( cons[i]->arity == 3 ) {
+      x = cons[i]->scope[2];
+      j = x->id;
+      disjunct[j] = (PredicateGenDisjunctive*)(cons[i]);
+//       if(promise == 1) {
+// 	//std::cout << "PROMISE" << std::endl;
+// 	delete x->branch;
+// 	x->branch = new ValSelectorLNOW( x, disjunct[j] );
+//       } else if(promise == -1) {
+// 	//std::cout << "ANTI" << std::endl;
+// 	delete x->branch;
+// 	x->branch = new ValSelectorMNOW( x, disjunct[j] );
+//       }
+    }
+  return disjunct;
+}
+
+DVO* NOW::extract( Solver* s )
+{
+  s->setLearner( Weighter::WDG );
+  GenericSchedulingDVO<VarSelectorNOW> *var_heuristic = 
+    new GenericSchedulingDVO<VarSelectorNOW>(s);
+  PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
+  var_heuristic->best.disjuncts = disjunct;
+  var_heuristic->current.disjuncts = disjunct;
+  var_heuristic->the_gen_disjuncts = disjunct;
+  return var_heuristic;
+
+}
+
 
 OSP::~OSP() {
 }

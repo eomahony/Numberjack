@@ -302,10 +302,12 @@ namespace Mistral {
     static const int TDAG        = 25 ;
     static const int CLAUSE      = 26 ;
 
-    static const int DUMMY       = 27 ;
+    static const int GENDISJUNCT = 27 ;
+
+    static const int DUMMY       = 28 ;
 
     // COUNT
-    static const int NUMCONS     = 28 ;
+    static const int NUMCONS     = 29 ;
 
 
     // private:
@@ -833,6 +835,24 @@ namespace Mistral {
    *  Disjunctive Predicate BuildObject
    **********************************************/ 
   class BuildObjectDisjunctive : public BuildObjectConstraint {
+ 
+  public:
+
+    virtual const char* get_type(const BuildObjectPredicate *p) const {return "dis";}
+    virtual int propagateDownward( BuildObjectPredicate *pred ) const ;
+    virtual int propagateUpward( BuildObjectPredicate *pred ) const ;
+    virtual void close( BuildObjectPredicate *pred ) ;
+    virtual void   build  (Solver *, VariableInt **, BuildObjectPredicate *) ;
+    virtual void   print  (std::ostream&, const BuildObjectPredicate*) const ;
+    virtual std::string xmlPred(int&, int, const BuildObjectPredicate*, int*) const ;
+    virtual std::string toString(const BuildObjectPredicate*) const ;
+  };
+
+  //////////// COMPARISON PREDICATES ////////////
+  /**********************************************
+   *  GenDisjunctive Predicate BuildObject
+   **********************************************/ 
+  class BuildObjectGenDisjunctive : public BuildObjectConstraint {
  
   public:
 
@@ -1551,6 +1571,14 @@ namespace Mistral {
     //Disjunct( Variable& x, int dx, Variable& y, int dy );
   };
   /**********************************************
+   *  GenDisjunctive Predicate Wrapper
+   **********************************************/ 
+  class GenDisjunctive : public Variable {
+  public:
+    GenDisjunctive( Variable& x, Variable& y, Vector<int>& it );
+    //GenDisjunct( Variable& x, int dx, Variable& y, int dy );
+  };
+  /**********************************************
    *  Overlap Predicate Wrapper
    **********************************************/ 
   class Overlap : public Variable {
@@ -1871,6 +1899,7 @@ namespace Mistral {
     static BuildObject* _Or( BuildObject *x, BuildObject *y );
     static BuildObject* _IfThenElse( BuildObject *x, BuildObject *y, BuildObject *z );
     static BuildObject* _Disjunctive( BuildObject *x, const int dx, BuildObject *y, int const dy, const int t );
+    static BuildObject* _GenDisjunctive( BuildObject *x, BuildObject *y, Vector<int>& it );
     static BuildObject* _Overlap( BuildObject *x, const int dx, BuildObject *y, int const dy );
     static BuildObject* _Precedence( BuildObject *x, const int d, BuildObject *y );
     static BuildObject* _Precedence( const int d, BuildObject *y );

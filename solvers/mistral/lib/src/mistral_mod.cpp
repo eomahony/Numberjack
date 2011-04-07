@@ -2736,6 +2736,70 @@ string BuildObjectDisjunctive::xmlPred(int& idx, int level, const BuildObjectPre
 
 
 /**********************************************
+ *  GenDisjunctive Predicate BuildObject
+ **********************************************/ 
+void BuildObjectGenDisjunctive::build( Solver *s, VariableInt **tmp, BuildObjectPredicate *pred ) 
+{
+  new PredicateGenDisjunctive( s, tmp, pred->params[0], &(pred->params[1]));
+}
+
+int BuildObjectGenDisjunctive::propagateUpward( BuildObjectPredicate *pred ) const 
+{
+  return propagateDownward(pred);
+}
+
+int BuildObjectGenDisjunctive::propagateDownward( BuildObjectPredicate *pred ) const 
+{
+  return ( pred->setMin( 0 ) && pred->setMax( pred->params[0]/2 ) );
+}
+
+void BuildObjectGenDisjunctive::close( BuildObjectPredicate *pred ) 
+{  
+  BuildObject **x = pred->scope;
+
+  pred->model->unsetSat();
+  x[0]->unsetBList();
+  x[0]->unsetIList();
+  x[1]->unsetBList();
+  x[1]->unsetIList();
+  pred->unsetBList();
+  pred->unsetIList();
+}
+
+void BuildObjectGenDisjunctive::print(std::ostream& o, const BuildObjectPredicate *pred) const
+{
+//   o << "(";
+//   pred->scope[0]->print( o );
+//   o << " + " << pred->params[0] << " <= ";
+//   pred->scope[1]->print( o );
+//   o << " || ";
+//   pred->scope[1]->print( o );
+//   o << " + " << pred->params[1] << " <= ";
+//   pred->scope[0]->print( o );
+//   o << ") ";
+//   o << (pred->isReferenced()) << " ";
+//   pred->BuildObject::print(cout);
+}
+
+string BuildObjectGenDisjunctive::toString(const BuildObjectPredicate* pred) const 
+{
+  string x1 = pred->scope[0]->toString();
+  string x2 = pred->scope[1]->toString();
+  string s = ( x1 + " + " + int2string(pred->params[0]) + " <= " + x2 + " or " + x2 + " + " + int2string(pred->params[1]) + " <= " + x1 );
+  return s;
+}
+
+string BuildObjectGenDisjunctive::xmlPred(int& idx, int level, const BuildObjectPredicate *pred, int *sub) const 
+{
+  string x1 = pred->scope[0]->xmlPred(idx, level+1, sub);
+  string x2 = pred->scope[1]->xmlPred(idx, level+1, sub);
+  string s = ( "or(le(add(" + x1 + "," + int2string(pred->params[0]) + ")," + x2 + ")," +
+	       "le(add(" + x2 + "," + int2string(pred->params[1]) + ")," + x1 + "))" );
+  return s;
+}
+
+
+/**********************************************
  *  Overlap Predicate BuildObject
  **********************************************/ 
 void BuildObjectOverlap::build( Solver *s, VariableInt **tmp, BuildObjectPredicate *pred ) 
@@ -6281,6 +6345,14 @@ Disjunctive::Disjunctive( Variable& x_, int dx, Variable& y_, int dy, const int 
 }
 
 /**********************************************
+ *  GenDisjunctive Predicate Wrapper
+ **********************************************/ 
+GenDisjunctive::GenDisjunctive( Variable& x_, Variable& y_, Vector<int>& it )
+{
+  var_ptr_ = CSP::_GenDisjunctive( x_.var_ptr_, y_.var_ptr_, it );
+}
+
+/**********************************************
  *  Overlap Predicate Wrapper
  **********************************************/ 
 Overlap::Overlap( Variable& x_, int dx, Variable& y_, int dy )
@@ -6852,6 +6924,17 @@ BuildObject* CSP::_Disjunctive( BuildObject *x_, const int dx, BuildObject *y_, 
   p[1] = dy;
   p[2] = t;
   return CSP::_Constraint(ConstraintStore::DISJUNCTIVE, x, 2, p);
+}
+BuildObject* CSP::_GenDisjunctive( BuildObject *x_,  BuildObject *y_, Vector<int>& it )
+{
+  BuildObject **x = new BuildObject*[3];  
+  x[0] = x_;
+  x[1] = y_;
+  int *p = new int[it.size+1];
+  p[0] = it.size;
+  for(int i=1; i<=p[0]; ++i) 
+    p[i] = it[i-1];
+  return CSP::_Constraint(ConstraintStore::GENDISJUNCT, x, 2, p);
 }
 BuildObject* CSP::_Overlap( BuildObject *x_, const int dx, BuildObject *y_, const int dy )
 {
@@ -7614,6 +7697,7 @@ BuildObjectConstraint* ConstraintStore::getConstraint(const int c)
     case ALLDIFF     : store[c] = new BuildObjectAllDiff();          break;
     case AND         : store[c] = new BuildObjectAnd();              break;
     case DISJUNCTIVE : store[c] = new BuildObjectDisjunctive();      break;
+    case GENDISJUNCT : store[c] = new BuildObjectGenDisjunctive();   break;
     case OVERLAP     : store[c] = new BuildObjectOverlap();          break;
     case DIV         : store[c] = new BuildObjectDiv();              break;
     case ELEMENT     : store[c] = new BuildObjectElement();          break;

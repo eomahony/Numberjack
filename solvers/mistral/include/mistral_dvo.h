@@ -1004,6 +1004,55 @@ namespace Mistral {
   };
 
 
+  class VarSelectorNOW 
+  {
+  public: 
+
+    /**@name Constructors*/
+    //@{
+    VarSelectorNOW() {weight_ = 0; weight_task_ = 0; domsize_ = 0;}
+    //@}
+
+    double value() { return ((double)weight_task_); }
+
+    /**@name Parameters*/
+    //@{ 
+    int domsize_;
+    int weight_;
+    int weight_task_;
+    PredicateGenDisjunctive **disjuncts;
+    //@}  
+  
+    /**@name Utils*/
+    //@{ 
+    inline bool operator<( VarSelectorNOW& x ) const { 
+      return (domsize_ * (x.weight_task_ + x.weight_
+			  ) < x.domsize_ * (weight_task_ + weight_
+					    )) ;
+
+
+    }
+    inline void operator=( VarSelectorNOW& x ) { // impact_ = x.impact_;
+      weight_task_ = x.weight_task_;
+      weight_ = x.weight_; 
+      domsize_ = x.domsize_; 
+    }
+    inline void operator=( VariableInt    *x ) 
+    { 
+      domsize_ = disjuncts[x->id]->domsize();
+      weight_task_ = (disjuncts[x->id]->scope[0]->weight
+		      +disjuncts[x->id]->scope[1]->weight);
+      weight_ = x->weight;
+    }
+    //@}  
+
+    std::ostream& print(std::ostream& os) const {
+      os << "-" ;
+      return os;
+    }
+  };
+
+
   class VarSelectorOSP 
   {
   public: 
@@ -3544,8 +3593,10 @@ v=_X->min(); t=Decision::ASSIGNMENT;
     /// Structure used to learn weights
     //Weighter *learner;
     //@}
+
+    PredicateDisjunctive** get_disjuncts(Solver *s);
+    PredicateGenDisjunctive** get_gen_disjuncts(Solver *s);
     
-    PredicateDisjunctive **get_disjuncts();
     virtual double get_value(VariableInt *X) { return 1.0; }
 
     /**@name Constructors*/
@@ -3685,15 +3736,18 @@ v=_X->min(); t=Decision::ASSIGNMENT;
 
     /**@name Parameters*/
     //@{ 
+    //Constraint **the_disjuncts;
     PredicateDisjunctive **the_disjuncts;
+    PredicateGenDisjunctive **the_gen_disjuncts;
     //@}
 
     /**@name Constructors*/
     //@{
-    GenericSchedulingDVO(Solver* s, const int l=NOVAL) : GenericDVO< T >(s,l) {}
+    GenericSchedulingDVO(Solver* s, const int l=NOVAL) : GenericDVO< T >(s,l) { the_disjuncts=NULL; the_gen_disjuncts=NULL; }
     virtual ~GenericSchedulingDVO()
     {
       delete [] the_disjuncts;
+      delete [] the_gen_disjuncts;
     }
     //@}
   };
@@ -3854,15 +3908,18 @@ v=_X->min(); t=Decision::ASSIGNMENT;
 
     /**@name Parameters*/
     //@{ 
+    //Constraint **the_disjuncts;
     PredicateDisjunctive **the_disjuncts;
+    PredicateGenDisjunctive **the_gen_disjuncts;
     //@}
 
     /**@name Constructors*/
     //@{
-    GenericSchedulingRandomDVO(Solver* s, const int sz) : GenericRandomDVO< T >(s, sz) {}
+    GenericSchedulingRandomDVO(Solver* s, const int sz) : GenericRandomDVO< T >(s, sz) { the_disjuncts=NULL; the_gen_disjuncts=NULL; }
     virtual ~GenericSchedulingRandomDVO()
     {
       delete [] the_disjuncts;
+      delete [] the_gen_disjuncts;
     }
     //@}
   };
@@ -4464,6 +4521,32 @@ v=_X->min(); t=Decision::ASSIGNMENT;
     PredicateDisjunctive** get_disjuncts(Solver *s);
     int *get_first_job();
     int *get_second_job();
+    DVO* extract( Solver* s );
+    //@}
+  };
+
+
+  /**********************************************
+   * NOW Heuristic
+   **********************************************/
+
+  /*! \class NOW
+    \brief  Wrapper for DVONOW
+  */
+  class NOW : public VariableOrdering {
+  public:
+
+    int size;
+    SchedulingModel *model;
+    NOW( SchedulingModel *m, const int sz=0 ) { 
+      size=sz; 
+      model=m;
+    }
+    virtual ~NOW();
+  
+    /**@name Utils*/
+    //@{
+    PredicateGenDisjunctive** get_gen_disjuncts(Solver *s);
     DVO* extract( Solver* s );
     //@}
   };

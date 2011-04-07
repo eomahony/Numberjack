@@ -2207,6 +2207,71 @@ namespace Mistral {
 
 
   /**********************************************
+   * GenDisjunctive Predicate
+   **********************************************/
+  /*! \class PredicateGenDisjunctive
+    \brief  Set possible time windows between two tasks
+  */
+  class PredicateGenDisjunctive : public Constraint
+  {
+
+  public:
+    /**@name Parameters*/
+    //@{ 
+    int num_intervals;
+    int *min_intervals;
+    int *max_intervals;
+    //@}
+
+    /**@name Constructors*/
+    //@{
+    PredicateGenDisjunctive(Solver*, VariableInt**, Vector<int>& it);
+    PredicateGenDisjunctive(Solver*, VariableInt**, const int n, const int* it);
+    void init(const int n, const int* it);
+    virtual ~PredicateGenDisjunctive();
+    //@}
+
+    /**@name Solving*/
+    //@{
+    inline int check( const int* ) const ;
+    inline bool propagate(const int changedIdx, const int e);
+    //@}
+
+    inline int domsize() {
+      int lb0 = scope[0]->min();
+      int ub0 = scope[0]->max();
+      int lb1 = scope[1]->min();
+      int ub1 = scope[1]->max();
+      int i, lb, ub, total = 0;
+      DomainIterator *valit = scope[2]->begin();
+      do {
+	i = *valit;
+
+	lb = lb1-max_intervals[i];
+	ub = ub1-min_intervals[i];
+	if(lb<lb0) lb = lb0;
+	if(ub>ub0) ub = ub0;
+	total += (ub-lb+1);
+
+	lb = lb0+min_intervals[i];
+	ub = ub0+max_intervals[i];
+	if(lb<lb1) lb = lb1;
+	if(ub>ub1) ub = ub1;
+	total += (ub-lb+1);
+    
+      } while( valit->next() );
+      
+      return total;
+    }
+
+    /**@name Miscellaneous*/
+    //@{  
+    virtual void print(std::ostream& o) const ;
+    //@}
+  };
+
+
+  /**********************************************
    * Overlap Predicate | 0 = overlap, 1 = (t0 < t1), 2 = (t1 < t0)
    **********************************************/
   /*! \class PredicateOverlap

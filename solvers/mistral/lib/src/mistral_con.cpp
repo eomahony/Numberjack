@@ -6752,6 +6752,164 @@ void PredicateDisjunctive::print(std::ostream& o) const
 }
 
 
+/**********************************************
+ * GenDisjunctive Predicate 
+ **********************************************/
+/// 0 :-> (x0 + d0 < x1), 1 :-> (x1 + d1 < x0) 
+PredicateGenDisjunctive::PredicateGenDisjunctive(Solver *s, VariableInt** v, Vector<int>& it) 
+  : Constraint(s, v, 3, RANGETRIGGER) 
+{
+  init(it.size, it.stack_);
+}
+
+PredicateGenDisjunctive::PredicateGenDisjunctive(Solver* s, VariableInt** v, const int n, const int* it) 
+  : Constraint(s, v, 3, RANGETRIGGER) 
+{
+  init(n, it);
+}
+
+void PredicateGenDisjunctive::init(const int n, const int* it) {
+  num_intervals = n/2+1;
+  max_intervals = new int[num_intervals];
+  min_intervals = new int[num_intervals];
+  min_intervals[0] = -NOVAL/2;
+  max_intervals[num_intervals-1] = NOVAL/2;
+  int k=0;
+  for(int i=0; i<num_intervals-1; ++i) {
+    max_intervals[i] = it[k++];
+    min_intervals[i+1] = it[k++];
+  }
+}
+
+PredicateGenDisjunctive::~PredicateGenDisjunctive()
+{
+  delete [] min_intervals;
+  delete [] max_intervals;
+}
+
+int PredicateGenDisjunctive::check( const int* s ) const 
+{
+
+  //return( s[0]+min_intervals[s[2]] <= s[1] && s[1] <= s[0]+max_intervals[s[2]]);
+  return( s[0]+min_intervals[s[2]] > s[1] || s[1] > s[0]+max_intervals[s[2]]);
+}
+
+bool PredicateGenDisjunctive::propagate(const int changedIdx, const int e) 
+{
+
+//   std::cout << "PROPAGATE " ;
+//   print(std::cout);
+//   std::cout << std::endl;
+
+  int i, j, consistent=true;
+  if( changedIdx != 2 ) {
+    //scope[2]->print(std::cout);
+    // for each value of scope[2], check if the current bounds are consistent
+    DomainIterator *valit = scope[2]->begin();
+    do {
+      i = *valit;
+      // check if the following can hold:
+      // x[0]+min_intervals[x[2]] <= x[1] <= x[0]+max_intervals[x[2]]
+      // (or put differently)
+      // x[1]-max_intervals[x[2]] <= x[0] <= x[1]-min_intervals[x[2]]
+
+//       scope[1]->print(std::cout);
+//       std::cout << " >=? " << (scope[0]->min()+min_intervals[i]) << std::endl;
+//       scope[1]->print(std::cout);
+//       std::cout << " <=? " << (scope[0]->max()+max_intervals[i]) << std::endl;
+
+      if( scope[0]->min()+min_intervals[i] > scope[1]->max() ||
+	  scope[0]->max()+max_intervals[i] < scope[1]->min() )
+
+	consistent = scope[2]->remove(i);
+    } while( consistent && valit->next() );
+
+//     std::cout << " back propagate: ";
+//     scope[2]->print(std::cout);
+//     std::cout << std::endl;
+  }
+
+  
+
+  i = scope[2]->min();
+  j = scope[2]->max();
+
+  // exist i in x[2]:
+  //    x[1] <= x[0]+max_intervals[x[2]]
+  // -> use the greatest value j in x[2] (since max_intervals is max for j)
+  //    x[1] >= x[0]+min_intervals[x[2]]
+  // -> use the smallest value i in x[2] (since min_intervals is min for i)
+  
+
+  // x[0]+min_intervals[x[2]] <= x[1] <= x[0]+max_intervals[x[2]]
+  // (or put differently)
+  // x[1]-max_intervals[x[2]] <= x[0] <= x[1]-min_intervals[x[2]]
+
+//   std::cout << "set ";
+//   scope[0]->printshort(std::cout);
+//   std::cout << " to [" 
+// 	    << scope[1]->min()-max_intervals[j] << ".."
+// 	    << scope[1]->max()-min_intervals[i] << "]" << std::endl;
+
+//   std::cout << "set ";
+//   scope[1]->printshort(std::cout);
+//   std::cout << " to [" 
+// 	    << scope[0]->min()+min_intervals[i] << ".."
+// 	    << scope[0]->max()+max_intervals[j] << "]" << std::endl;
+
+//971
+//937
+//820
+//887
+//777
+
+  consistent = (scope[0]->setMin(scope[1]->min()-max_intervals[j]) &&
+		scope[0]->setMax(scope[1]->max()-min_intervals[i]) &&
+		scope[1]->setMin(scope[0]->min()+min_intervals[i]) &&		
+		scope[1]->setMax(scope[0]->max()+max_intervals[j]));
+
+//   scope[0]->print(std::cout);
+//   std::cout << std::endl;
+//   scope[1]->print(std::cout);
+//   std::cout << std::endl;
+//   std::cout << std::endl;
+
+  return consistent;
+}
+
+void PredicateGenDisjunctive::print(std::ostream& o) const
+{  
+  int i, lb, ub;
+  DomainIterator *valit = scope[2]->begin();
+  do {
+    i = *valit;
+
+    //for(int i=0; i<num_intervals; ++i) {
+    
+    lb = min_intervals[i];
+    ub = max_intervals[i];
+
+    o << "(";
+    scope[2]->printshort(std::cout);
+    std::cout << "=" << i << " <-> ";
+    if(lb>-NOVAL/2) {
+      scope[0]->printshort(o);
+      o << (lb>0 ? "+" : "") << lb  << " <= ";
+    }
+    scope[1]->printshort(o);
+    if(ub<NOVAL/2) {
+      o << " <= ";
+      scope[0]->printshort(o);
+      o << (ub>0 ? "+" : "") << ub ;
+    }
+    o << ") ";
+    if(i<num_intervals-1) o << "OR ";
+    //o << std::endl;
+  } while( valit->next() );
+  //}
+}
+
+
 
 /**********************************************
  * Overlap Predicate 

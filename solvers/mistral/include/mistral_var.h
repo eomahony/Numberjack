@@ -5250,6 +5250,8 @@ namespace Mistral {
     */
     inline bool intersect(const int lo, const int up) const
     {
+      //  std::cout << up << " >= " << vmin << " && " << lo << " <= " << vmax << std::endl;
+
       return ( up >= vmin && lo <= vmax );
     }
     /*!

@@ -410,6 +410,7 @@ namespace Mistral {
     int *task_max;
     int *ltask_value;
     int *disjunct_value;
+    int *search_value;
     int *all_value;
 
   public:
@@ -424,6 +425,7 @@ namespace Mistral {
     double distance(Solution* s);
 
     void guide_search();
+    void guide_search_bounds();
 
     std::ostream& print(std::ostream& os, std::string type="jsp");
     

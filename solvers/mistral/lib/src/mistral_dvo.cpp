@@ -1280,8 +1280,8 @@ void WeighterRestartGenNogood::notifyRestart()
 
 //       std::cout << "add ";
 //       for(int j=0; j<=(d-init_level-2); ++j) {
-//    	learnt[j].print(std::cout);
-//    	std::cout << " ";
+//     	learnt[j].print(std::cout);
+//     	std::cout << " ";
 //       }
 //       std::cout << std::endl;
       
@@ -1297,6 +1297,13 @@ void WeighterRestartGenNogood::notifyRestart()
   }
 
   depth = init_level+2;
+
+//   //if(base->nogood.size) {
+//     Solver *solver = decision[depth].var->solver;
+//     solver->print(std::cout);
+//     std::cout << std::endl;
+//     //exit(1);
+//     //}
 
 //   int i=1, j=0, n=lvl, m=path.size;
 //   choices[n] = 0;
@@ -1853,14 +1860,26 @@ PredicateGenDisjunctive** NOW::get_gen_disjuncts(Solver *s) {
 DVO* NOW::extract( Solver* s )
 {
   s->setLearner( Weighter::WDG );
-  GenericSchedulingDVO<VarSelectorNOW> *var_heuristic = 
-    new GenericSchedulingDVO<VarSelectorNOW>(s);
-  PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
-  var_heuristic->best.disjuncts = disjunct;
-  var_heuristic->current.disjuncts = disjunct;
-  var_heuristic->the_gen_disjuncts = disjunct;
-  return var_heuristic;
 
+  if( size > 1 ) {
+    int i;
+    GenericSchedulingRandomDVO<VarSelectorNOW> *var_heuristic = 
+      new GenericSchedulingRandomDVO<VarSelectorNOW>(s, size);
+      PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
+      for(i=0; i<=size; ++i)
+	var_heuristic->bests[i].disjuncts = disjunct;
+      var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_gen_disjuncts = disjunct;
+      return var_heuristic;
+  } else {
+    GenericSchedulingDVO<VarSelectorNOW> *var_heuristic = 
+      new GenericSchedulingDVO<VarSelectorNOW>(s);
+    PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
+    var_heuristic->best.disjuncts = disjunct;
+    var_heuristic->current.disjuncts = disjunct;
+    var_heuristic->the_gen_disjuncts = disjunct;
+    return var_heuristic;
+  }
 }
 
 

@@ -2760,9 +2760,15 @@ void BuildObjectGenDisjunctive::close( BuildObjectPredicate *pred )
   pred->model->unsetSat();
   x[0]->unsetBList();
   x[0]->unsetIList();
+#ifdef _AC_DISJUNCT
+  x[0]->unsetRange();
+#endif
   x[1]->unsetBList();
   x[1]->unsetIList();
-  pred->unsetBList();
+#ifdef _AC_DISJUNCT
+  x[1]->unsetRange();
+#endif
+  //pred->unsetBList();
   pred->unsetIList();
 }
 

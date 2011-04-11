@@ -2875,10 +2875,14 @@ void Solver::setRestartNogood()
 
 WeighterRestartGenNogood* Solver::setRestartGenNogood()
 {
+  //  std::cout << constraints.size << std::endl;
 
   ConstraintGenNogoodBase* base = new ConstraintGenNogoodBase(this);
   setLearner( Weighter::RGNGD );
   ((WeighterRestartGenNogood*)(learners.back()))->base = base;
+
+//   std::cout << constraints.size << std::endl;
+//   exit(1);
 
   return ((WeighterRestartGenNogood*)(learners.back()));
 }
@@ -2905,36 +2909,63 @@ void Solver::print(std::ostream& o) const
   }
 
 
-//   int i;
-//   MistralNode<Constraint*> *nd;
+  int i;
+  MistralNode<Constraint*> *nd;
+  MistralNode<Constraint*> *dnd;
+  MistralNode<Constraint*> *rnd;
 
-//   for(i = 0; i < variables.size; ++i) {
-//     nd = variables[i]->constraintsOnValue();
-//     variables[i]->print(o);
-//     while( nextNode(nd) ) {
-//       o << " ";
-//       nd->elt->print(o);
+  for(i = 0; i < variables.size; ++i) {
+    dnd = NULL;
+    rnd = NULL;
+
+    variables[i]->print(o);
+
+    o << "d ";
+    nd = variables[i]->constraintsOnDomain();
+    while( nextNode(nd) ) {
+      if(!dnd) dnd = nd;
+      nd->elt->print(o);
+      o << " ";
+    }
+
+    o << "r ";
+    nd = variables[i]->constraintsOnRange();
+    while( nd != dnd && nextNode(nd) ) {
+      if(!rnd) rnd = nd;
+      if(nd == dnd) break;
+      nd->elt->print(o);
+      o << " ";
+    }
+
+    o << "v ";
+    nd = variables[i]->constraintsOnValue();
+    while( nextNode(nd) ) {
+      if(nd == rnd) break;
+      nd->elt->print(o);
+      o << " ";
+    }
+
+    o << std::endl;
+
+  }
+  
+//   int i;
+//   o << "Variables: " << endl;
+//   for(i = 0; i < variables.size; ++i)
+//     {
+//       o << "\t" ;
+//       variables[i]->print(o);
 //       o << std::endl;
 //     }
-//   }
-  
-  int i;
-  o << "Variables: " << endl;
-  for(i = 0; i < variables.size; ++i)
-    {
-      o << "\t" ;
-      variables[i]->print(o);
-      o << std::endl;
-    }
-  o << endl;
-  o << "Constraints:" << endl;
-  for(i = 0; i < constraints.size; ++i)
-    {
-      o << "\t" ;
-      constraints[i]->print(o);
-      o << std::endl;
-    }
-  o << endl;
+//   o << endl;
+//   o << "Constraints (" << constraints.size << "):" << endl;
+//   for(i = 0; i < constraints.size; ++i)
+//     {
+//       o << "\t" << i << " " ;
+//       constraints[i]->print(o);
+//       o << std::endl;
+//     }
+//   o << endl;
 }
 
 void Solver::printXML(std::ostream& o) const
@@ -3564,6 +3595,14 @@ void Solver::setGuidedOrdering(VarArray& scope, int* ideal, const char*planb) {
   setGuidedOrdering(bvar, l, ideal, pb);
 }
 
+void Solver::setGuidedBoundsOrdering(VarArray& scope, int* ideal) {
+  BuildObject *bvar[scope.size()];
+  int i, l = scope.size();
+  for(i=0; i<l; ++i)
+    bvar[i] = scope[i].var_ptr_;
+  setGuidedBoundsOrdering(bvar, l, ideal);
+}
+
 void Solver::setGuidedOrdering(BuildObject **bvar, const int l, int* ideal, const int pb) {
   VariableInt *x;
   BuildObject *bv;
@@ -3592,6 +3631,41 @@ void Solver::setGuidedOrdering(BuildObject **bvar, const int l, int* ideal, cons
 
       delete x->branch;
       x->branch = new ValSelectorGuided( x, ideal[i], pb );
+    }
+  }
+  
+  //std::cout << std::endl;
+}
+
+
+void Solver::setGuidedBoundsOrdering(BuildObject **bvar, const int l, int* ideal) {
+  VariableInt *x;
+  BuildObject *bv;
+
+  //  std::cout << "GUIDE2" <<std::endl;
+
+  for(int i=0; i<l; ++i) {
+
+    bv = bvar[i];
+    if(bv != bv->getBuildObject())
+      bv = bv->getBuildObject();
+
+    //     bv->print(std::cout);
+    //     std::cout << std::endl;
+
+    if( bv->isSearchable() &&
+	((x = bv->getVariable()) != NULL) // &&
+	// 	(x->getType() == VariableInt::BOOL)
+	) {
+
+      //       std::cout << '        ' << std::endl;
+      //       bv->print(std::cout);
+      //       std::cout << std::endl;
+
+      //std::cout << ideal[i] ;
+
+      delete x->branch;
+      x->branch = new ValSelectorGuidedBounds( x, ideal[i] );
     }
   }
   

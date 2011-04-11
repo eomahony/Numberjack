@@ -49,6 +49,13 @@ namespace Mistral {
     static const int LOWERBOUND = 2;
     // 3 -> upper bound 'l'
     static const int UPPERBOUND = 3;
+
+ //    static const int NOREL = 0;
+//     static const int SUBSUMED = 1;
+//     static const int ISSUBSUMED = 2;
+//     static const int EQUAL = 3;
+//     static const int COMPLEMENTARY = 4;
+
    
     
     /**
@@ -61,6 +68,12 @@ namespace Mistral {
 
     inline int type() const {return _data_&3; }
     inline int value() const {return _data_>>2; }
+    inline void setvalue(const int v) {
+      _data_ = (_data_&3 + v*4);
+    }
+    inline void settype(const int t) {
+      _data_ = (_data_/4 + t);
+    }
 
     inline bool satisfied() {
       switch(type()) {
@@ -139,9 +152,86 @@ namespace Mistral {
       return propagate();
     }
 
-//     inline bool propagate() {
-//       return left();
+    // return true if self can be merged to x
+    // (result in x)
+    inline bool merge_and(SimpleUnaryConstraint& x) {
+      if(var == x.var) {
+	if(type() == REMOVAL) {
+	  if(x.type() == REMOVAL) {
+	    return(value() == x.value());
+	  } else if(x.type() == ASSIGNMENT) {
+	    return(value() != x.value());
+	  } else if(x.type() == LOWERBOUND) {
+	    if(x.value() == value()+1) {
+	      x.setvalue(value());
+	      return true;
+	    } else return x.value() <= value();
+	  } else if(x.type() == UPPERBOUND) {
+	    if(x.value() == value()-1) {
+	      x.setvalue(value());
+	      return true;
+	    } else return x.value() >= value();
+	  }
+	} else if(type() == ASSIGNMENT) {
+	  if(x.type() == REMOVAL) {
+	    if(value() == x.value()) {
+	      x._data_ = _data_;
+	      return true;
+	    } //else return false;
+	  } else if(x.type() == ASSIGNMENT) {
+	    return(value() == x.value());
+	  } else if(x.type() == LOWERBOUND) {
+	    if(value() >= x.value()) {
+	      x._data_ = _data_;
+	      return true;
+	    } //else return false;
+	  } else if(x.type() == UPPERBOUND) {
+	    if(value() <= x.value()) {
+	      x._data_ = _data_;
+	      return true;
+	    } //else return false;
+	  }
+	}
+      }
+      return false;
+    }
+
+
+    // return true if self can be merged to x
+    // (result in x)
+    inline bool merge_or(SimpleUnaryConstraint& x) {
+      if(var == x.var) {
+	if(_data_ == x._data_) return true;
+	if(type() == ASSIGNMENT) {
+	  return(x.type() == REMOVAL && value() != x.value());
+	}
+	else if(type() == REMOVAL) {
+	  if(x.type() == ASSIGNMENT && value() != x.value()) {
+	    x._data_ = _data_;
+	    return true;
+	  } 
+	}
+      }
+      return false;
+    }
+
+//     inline int compare(SimpleUnaryConstraint x) {
+//       if(var == x.var) {
+// 	if(type() ) {
+// 	  if(_data_&2)
+// 	    return value() == x.value()*EQUAL;
+// 	  else if(_data_&1)
+// 	    return (value()<=x.value())*SUBSUME + (value()>=x.value())*ISSUBSUMED;
+// 	  else {
+
+// 	  }
+	    
+// 	}
+//       }
 //     }
+// //     inline bool propagate() {
+// //       return left();
+// //     }
 
     std::ostream& print(std::ostream& os) const {
       var->printshort(os);
@@ -1029,13 +1119,14 @@ namespace Mistral {
       return (domsize_ * (x.weight_task_ + x.weight_
 			  ) < x.domsize_ * (weight_task_ + weight_
 					    )) ;
-
-
     }
     inline void operator=( VarSelectorNOW& x ) { // impact_ = x.impact_;
       weight_task_ = x.weight_task_;
       weight_ = x.weight_; 
       domsize_ = x.domsize_; 
+
+      //std::cout << domsize_ << "/(" << weight_ << "+" << weight_task_ << ")" << std::endl;
+
     }
     inline void operator=( VariableInt    *x ) 
     { 
@@ -2174,6 +2265,8 @@ v=_X->min(); t=Decision::ASSIGNMENT;
     //@{  
     void make(int& t, int& v) {
      
+      //std::cout << "here" << std::endl;
+
       if(_X->getType() == VariableInt::RANGE) {
 	if(_X->max()-ideal < ideal-_X->min())
 	  v = _X->max();
@@ -2185,6 +2278,9 @@ v=_X->min(); t=Decision::ASSIGNMENT;
 	  v = ideal;
 	  t=Decision::ASSIGNMENT;
 	} else {
+
+	  //std::cout << planB << std::endl;
+
 	  if(planB == 0) {
 	    v = _X->min();
 	    t=Decision::ASSIGNMENT;
@@ -2275,6 +2371,58 @@ v=_X->min(); t=Decision::ASSIGNMENT;
     inline void reverse_right() { 
       val = decision.pop();
       _X->setDomain( val );
+    }
+    void postCut( const int p ) { val = p; }
+    //@}   
+  };
+
+  class ValSelectorGuidedBounds : public ValSelector 
+  { 
+  public: 
+
+    /**@name Constructors*/
+    //@{
+    ValSelectorGuidedBounds( VariableInt *x, int i ) : ValSelector(x) { 
+      ideal = i; 
+    } 
+    //@}   
+
+    /**@name Parameters*/
+    //@{
+    int ideal;
+    int val;
+    //@}   
+
+    /**@name Utils*/ 
+    //@{  
+    void make(int& t, int& v) {
+      int x_min = _X->min();
+      int x_max = _X->max();
+      if(x_min == ideal || x_max == ideal) {
+	v = ideal;
+	t=Decision::ASSIGNMENT;
+      } else {
+	v = ((x_max-ideal >= ideal-x_min) ? x_min : x_max);
+	t=Decision::REMOVAL;
+      }
+    }
+    inline int getBest() { return ideal; }
+
+    inline void left() { 
+      std::cout << "should not call that!" << std::endl;
+      exit(1);
+    } 
+    inline void right() {
+      std::cout << "should not call that!" << std::endl;
+      exit(1);
+    } 
+    inline void reverse_left() {
+      std::cout << "should not call that!" << std::endl;
+      exit(1);
+    }
+    inline void reverse_right() { 
+      std::cout << "should not call that!" << std::endl;
+      exit(1);
     }
     void postCut( const int p ) { val = p; }
     //@}   

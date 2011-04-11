@@ -17,7 +17,7 @@ int main( int argc, char** argv )
 
   Instance jsp(params);
   
-  jsp.print(std::cout);
+  //jsp.print(std::cout);
   jsp.printStats(std::cout);
 
   SchedulingModel *model;
@@ -25,7 +25,7 @@ int main( int argc, char** argv )
     std::cout << "c Minimising Makespan" << std::endl;
     if(params.Type == "now") model = new No_wait_Model(jsp, &params, -1, 0);
     else if(params.Type == "now2") {
-      params.Type = "now";
+      //params.Type = "now";
       model = new No_wait_Model(jsp, &params, -1, 1);
     }
     else model = new C_max_Model(jsp, &params, -1);
@@ -43,7 +43,7 @@ int main( int argc, char** argv )
   SchedulingSolver solver(model, &params, &stats);
   usrand(params.Seed);
 
-  solver.print(std::cout);
+  //solver.print(std::cout);
   //exit(1);
 
   params.print(std::cout);  

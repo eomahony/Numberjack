@@ -563,6 +563,7 @@ namespace Mistral {
     ConstraintGenNogoodBase(Solver*);
     virtual ~ConstraintGenNogoodBase();
     void add( Vector<GeneralLiteral>& );
+    void reduce( Vector<GeneralLiteral>& cl );
     //@}
 
     /**@name Solving*/
@@ -570,6 +571,8 @@ namespace Mistral {
     inline int check( const int* ) const ;
     inline bool propagate();
     inline bool propagate(const int changedIdx, const int e);
+    bool propagate(Vector< Array < GeneralLiteral >* >& clist, 
+		   VariableInt *X);
     //@}
 
     /**@name Miscellaneous*/

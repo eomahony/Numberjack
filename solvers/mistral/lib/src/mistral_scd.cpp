@@ -1882,11 +1882,11 @@ void No_wait_Model::setup(Instance& inst, ParameterList *params, const int max_m
       for(int j=i+1; j<data->nJobs(); ++j) {
 	intervals.clear();
 	data->get_placement(i,j,intervals);
-	intervals.print(std::cout);
+	//intervals.print(std::cout);
       	gen_disjuncts.add( GenDisjunctive(tasks[i], tasks[j], intervals) );
 
       }
-      std::cout << std::endl;
+      //std::cout << std::endl;
     }
     
     add(gen_disjuncts);
@@ -2029,6 +2029,7 @@ Solution::Solution(SchedulingModel *m, SchedulingSolver *s) {
   task_max = NULL;
   ltask_value = NULL;
   disjunct_value = NULL;
+  search_value = NULL;
   all_value = new int[n];
 
   for(i=0; i<n; ++i) {
@@ -2044,6 +2045,12 @@ Solution::Solution(SchedulingModel *m, SchedulingSolver *s) {
     disjunct_value = new int[n];
     for(i=0; i<n; ++i) disjunct_value[i] = m->disjuncts[i].value();
   } 
+
+  n = m->SearchVars.size();
+  if(n) {
+    search_value = new int[n];
+    for(i=0; i<n; ++i) search_value[i] = m->SearchVars[i].value();
+  }
 
   if(model->data->hasJobDueDate()) {
     n = m->earlybool.size();
@@ -2084,13 +2091,33 @@ Solution::~Solution() {
   delete [] task_max;
   delete [] ltask_value;
   delete [] disjunct_value;
+  delete [] search_value;
   delete [] all_value;
 }
 
 void Solution::guide_search() {
-  //print(std::cout);
+  
+//   std::cout << "guide search with ";
+//   print(std::cout);
+//   std::cout << std::endl;
 
-  solver->setGuidedOrdering(model->disjuncts, disjunct_value);
+  //solver->setGuidedOrdering(model->disjuncts, disjunct_value, "spl");
+  solver->setGuidedOrdering(model->SearchVars, search_value);
+  if(model->data->hasJobDueDate()) {
+    solver->setGuidedOrdering(model->earlybool, earlybool_value);
+    solver->setGuidedOrdering(model->latebool, latebool_value);
+    solver->setGuidedOrdering(model->last_tasks, ltask_value, "nbd");
+  }
+}
+
+void Solution::guide_search_bounds() {
+  
+//   std::cout << "guide bound search with ";
+//   print(std::cout);
+//   std::cout << std::endl;
+
+  //solver->setGuidedOrdering(model->disjuncts, disjunct_value, "spl");
+  solver->setGuidedBoundsOrdering(model->SearchVars, search_value);
   if(model->data->hasJobDueDate()) {
     solver->setGuidedOrdering(model->earlybool, earlybool_value);
     solver->setGuidedOrdering(model->latebool, latebool_value);
@@ -2100,11 +2127,13 @@ void Solution::guide_search() {
 
 double Solution::distance(Solution* s) {
   
-  int i, n = model->disjuncts.size();
+  int i, //n = model->disjuncts.size();
+    n = model->SearchVars.size();
   double dist = 0.0;
 
   for(i=0; i<n; ++i) {
-    dist += (double)(disjunct_value[i] != s->disjunct_value[i]);
+    //dist += (double)(disjunct_value[i] != s->disjunct_value[i]);
+    dist += (double)(search_value[i] != s->search_value[i]);
   } 
   if(model->data->hasJobDueDate()) {
     n = model->last_tasks.size();
@@ -2117,7 +2146,8 @@ double Solution::distance(Solution* s) {
 }
 
 std::ostream& Solution::print(std::ostream& os, std::string type) {
-  int i, n = model->disjuncts.size();
+  int i, //n = model->disjuncts.size();
+    n = model->SearchVars.size();
 
 //   for(i=0; i<n; ++i) {
 //     os << disjunct_value[i] ;
@@ -2132,6 +2162,7 @@ std::ostream& Solution::print(std::ostream& os, std::string type) {
 
     for(i=0; i<m-1; ++i) {
       for(j=i+1; j<m; ++j) {
+	//if(!disjunct_value[k++]) ++rank[i];
 	if(!disjunct_value[k++]) ++rank[i];
 	else ++rank[j];
       }
@@ -2154,7 +2185,7 @@ std::ostream& Solution::print(std::ostream& os, std::string type) {
 
   } else {
     for(i=0; i<n; ++i) {
-      os << disjunct_value[i] ;
+      os << search_value[i] ;
     } 
     //os << std::endl;
   }
@@ -2465,7 +2496,15 @@ void SchedulingSolver::dichotomic_search()
 
       status = model->set_objective(objective);
       if(pool->size()) {
-	if(params->DValue == "guided") pool->getBestSolution()->guide_search();
+	if(params->DValue == "guided") {
+	  
+	  //std::cout << params->Type << std::endl;
+
+	  if(params->Type == "now2") 
+	    pool->getBestSolution()->guide_search_bounds();
+	  else
+	    pool->getBestSolution()->guide_search();
+	}
       }
       
       if(nogoods) {
@@ -2595,7 +2634,15 @@ void SchedulingSolver::all_solutions_search()
 	
 	status = model->set_objective(objective);
 	if(pool->size()) {
-	  if(params->DValue == "guided") pool->getBestSolution()->guide_search();
+	  if(params->DValue == "guided") {
+
+	    //std::cout << params->Type << std::endl;
+
+	    if(params->Type == "now2")
+	      pool->getBestSolution()->guide_search_bounds();
+	    else
+	      pool->getBestSolution()->guide_search();
+	  }
 	}
 	
 	ngd_stamp = (params->Rngd>1 ? nogoods->base->nogood.size : 0);

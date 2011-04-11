@@ -1172,12 +1172,75 @@ ConstraintGenNogoodBase::~ConstraintGenNogoodBase() {
   }
 }
 
+
+void ConstraintGenNogoodBase::reduce( Vector<GeneralLiteral>& cl ) {
+  
+//   std::cout << "reduce: ";
+//   for(int i=0; i<cl.size; ++i) {
+//     cl[i].print(std::cout);
+//     std::cout << " ";
+//   }
+//   std::cout << std::endl;
+
+  int i=cl.size;
+  while(i--) {
+    //for(int i=0; i<cl.size; ++i) {
+    for(int j=0; j<i; ++j) { 
+      if(cl[i].merge_or(cl[j])) {
+	cl[i] = cl[--cl.size];
+// 	std::cout << "  =>  : ";
+// 	for(int k=0; k<cl.size; ++k) {
+// 	  cl[k].print(std::cout);
+// 	  std::cout << " ";
+// 	}
+// 	std::cout << std::endl;
+      }
+    }
+  }
+  //std::cout << std::endl;
+
+
+
+//       // look for a literal that subsume, is subsumed or is in conflict with cl[i]
+//       switch(cl[i].compare(cl[j])) {
+//       case Decision::SUBSUME: {
+// 	// cl[i] is stronger than cl[j], we remove cl[j]
+// 	cl[j] = cl[--cl.size];
+//       } break;
+//       case Decision::ISSUBSUMED: {
+// 	// cl[j] is stronger than cl[i], we remove cl[i]
+// 	cl[i] = cl[--cl.size];
+//       } break;
+// //       case Decision::COMPLEMENTARY: {
+// // 	// cl[j] or cl[i] => T, the clause is empty
+	
+// //       }
+//       }
+//     }
+//   }
+}
+
 void ConstraintGenNogoodBase::add( Vector<GeneralLiteral>& conflict ) {
+
+  reduce(conflict);
+
+
   if(conflict.size > 1) {
     Array<GeneralLiteral> *cl = Array<GeneralLiteral>::Array_new(conflict);
     nogood.push( cl );
     
     int var, val;
+
+    for(int i=0; i<cl->size; ++i) {
+      if((*cl)[i].type() == Decision::ASSIGNMENT) {
+	int idx = (*cl)[i].var->id;
+	if(triggers[idx] != scope[idx]->triggerOnDomain()) {
+	  triggers[idx] = scope[idx]->triggerOnDomain();
+	  elements[idx].erase();
+	  triggers[idx]->insert(elements[idx]);
+	}
+      }
+    }
 
     for(int i=0; i<2; ++i) {
       var = conflict[i].var->id;
@@ -1213,7 +1276,7 @@ void ConstraintGenNogoodBase::removeClause( const int idx ) {
 
   int var, val;
 
-//   std::cout << "remove";
+//   std::cout << "remove " << nogood[idx] << " ";
 //   for(int i=0; i<nogood[idx]->size; ++i) {
 //     std::cout << " ";
 //     (*(nogood[idx]))[i].print(std::cout);
@@ -1223,6 +1286,9 @@ void ConstraintGenNogoodBase::removeClause( const int idx ) {
   for(int i=0; i<2; ++i) {
     var = (*(nogood[idx]))[i].var->id;
     val = (*(nogood[idx]))[i].value();
+
+//     (*(nogood[idx]))[i].print(std::cout);
+//     std::cout << std::endl; 
 
     if((*(nogood[idx]))[i].type() == GeneralLiteral::REMOVAL) {
      
@@ -1236,6 +1302,16 @@ void ConstraintGenNogoodBase::removeClause( const int idx ) {
     } else if((*(nogood[idx]))[i].type() == GeneralLiteral::ASSIGNMENT) {
 
       //std::cout << "this should not happen" << std::endl; 
+
+      //nogood.print(std::cout);
+
+      //(*(nogood[idx]))[i].print(std::cout);
+
+      //std::cout << std::endl; 
+
+      //watched_domains[var].print(std::cout);
+
+      //std::cout << std::endl;
 
       watched_domains[var].remove(nogood[idx]);
     } else {
@@ -1272,70 +1348,231 @@ bool ConstraintGenNogoodBase::propagate() {
 }
 
 bool ConstraintGenNogoodBase::propagate(const int changedIdx, const int e) {
-  int j, rank, consistent=true, v=scope[changedIdx]->value();
-  int i;
+//   int j, rank, consistent=true, v=scope[changedIdx]->value();
+//   int i, ptype;
+//   Array < GeneralLiteral >* propagated;
 
-  if(e == VALUETRIGGER && watched_values[changedIdx]) {
-    i=watched_values[changedIdx][v].size;
-    GeneralLiteral p;
-    while(consistent && i--) {
-      Array< GeneralLiteral >& cl = *(watched_values[changedIdx][v][i]);
-      if(cl[0].satisfied() || cl[1].satisfied()) {
-	continue;
-      }
+//   if(e == VALUETRIGGER && watched_values[changedIdx]) {
+//     i=watched_values[changedIdx][v].size;
+//     GeneralLiteral p;
+//     while(consistent && i--) {
+//       propagetd = watched_values[changedIdx][v][i];
+//       Array< GeneralLiteral >& cl = *propagated;
+//       if(cl[0].satisfied() || cl[1].satisfied()) {
+// 	continue;
+//       }
       
-      // otherwise, find out if the literal is the first, or second 
-      rank = (cl[1].var == scope[changedIdx]);
+//       // otherwise, find out if the literal is the first, or second 
+//       rank = (cl[1].var == scope[changedIdx]);
       
-      //assert(scope[changedIdx]->id == cl[rank].var->id);
-      //assert(scope[changedIdx]->equal(cl[rank].value()));
+//       //assert(scope[changedIdx]->id == cl[rank].var->id);
+//       //assert(scope[changedIdx]->equal(cl[rank].value()));
       
-      for(j=2; j<cl.size; ++j) {
-	// for each subsequent literal, if it non-violated, it is a possible watcher
-	if(!cl[j].violated()) {
-	  // in which case we swap it with cl[rank]
-	  p = cl[j];
-	  cl[j] = cl[rank];
-	  cl[rank] = p;
+//       for(j=2; j<cl.size; ++j) {
+// 	// for each subsequent literal, if it non-violated, it is a possible watcher
+// 	if(!cl[j].violated()) {
+// 	  // in which case we swap it with cl[rank]
+// 	  p = cl[j];
+// 	  cl[j] = cl[rank];
+// 	  cl[rank] = p;
+
+// 	  watched_values[changedIdx][v][i]
+
+// 	  ptype = p.type();
+// 	  if(ptype == Decision::REMOVAL)
+// 	    watched_values[p.var->id][p.value()].push();
+// 	  else if(ptype == Decision::ASSIGNMENT)
+// 	    watched_domains[p.var->id].push(watched_values[changedIdx][v][i]);
+// 	  else 
+// 	    watched_bounds[p.var->id].push(watched_values[changedIdx][v][i]);
+
+// 	  watched_values[changedIdx][v].erase(i);
 	  
-	  watched_values[p.var->id][p.value()].push(watched_values[changedIdx][v][i]);
-	  watched_values[changedIdx][v].erase(i);
-	  
-	  break;
-	} 
-      }
+// 	  break;
+// 	} 
+//       }
       
-      if(j>=cl.size) {
+//       if(j>=cl.size) {
 
-// 	if(!cl[1-rank].var->equal(cl[1-rank].value())) {
-// 	  std::cout << "prune ";
-// 	  cl[1-rank].var->print(std::cout);
-// 	  std::cout << std::endl;
-// 	}
+// // 	if(!cl[1-rank].var->equal(cl[1-rank].value())) {
+// // 	  std::cout << "prune ";
+// // 	  cl[1-rank].var->print(std::cout);
+// // 	  std::cout << std::endl;
+// // 	}
 
-	// there wasn't any possible replacement, so we need to propagate:
-	consistent = cl[1-rank].var->remove(cl[1-rank].value());
-      }
+// 	// there wasn't any possible replacement, so we need to propagate:
+// 	consistent = cl[1-rank].var->remove(cl[1-rank].value());
+//       }
+//     }
+//   } else if(e == RANGETRIGGER) {
+//     std::cout << "this should not happen" << std::endl; 
+//   } else if(e == DOMAINTRIGGER) {
+//     std::cout << "this should not happen" << std::endl; 
+//   }
+
+//   //  std::cout << "end propag" << std::endl;
+  
+//   return consistent;
+
+  bool consistent = true;
+  VariableInt* X = scope[changedIdx];
+
+  //std::cout << e << std::endl;
+
+  switch(e) {
+  case VALUETRIGGER: {
+    //std::cout << "value" << std::endl;
+    if(consistent && watched_values[changedIdx]) {
+      //std::cout << "value" << std::endl;
+      consistent = propagate(watched_values[changedIdx][X->value()], X);
     }
-  } else if(e == RANGETRIGGER) {
-    std::cout << "this should not happen" << std::endl; 
-  } else if(e == DOMAINTRIGGER) {
-    std::cout << "this should not happen" << std::endl; 
+  }
+  case RANGETRIGGER: {
+    //std::cout << "range" << std::endl;
+    if(consistent && watched_bounds[changedIdx].size) {
+      //std::cout << "range" << std::endl;
+      consistent = propagate(watched_bounds[changedIdx], X);
+    }
+  }
+  case DOMAINTRIGGER: {
+    //std::cout << "domain" << std::endl;
+    if(watched_domains[changedIdx].size) {
+      //std::cout << "domain" << std::endl;
+      consistent = propagate(watched_domains[changedIdx], X);
+    }
+  }
   }
 
-  //  std::cout << "end propag" << std::endl;
+  return consistent;
+
+}
+
+
+bool ConstraintGenNogoodBase::propagate(Vector< Array < GeneralLiteral >* >& clist, VariableInt *X) {
+
+  //int v = scope[changedIdx]->value();
+  int j, rank, consistent=true, i, ptype;
+  Array < GeneralLiteral >* propagated;
+  GeneralLiteral p;
+
+  i=clist.size;
+  while(consistent && i--) {
+    propagated = clist[i];
+    Array< GeneralLiteral >& cl = *propagated;
+    if(cl[0].satisfied() || cl[1].satisfied()) {
+      continue;
+    }
+    
+    // otherwise, find out if the literal is the first, or second 
+    rank = (cl[1].var == X);      
+    //assert(scope[changedIdx]->id == cl[rank].var->id);
+    //assert(scope[changedIdx]->equal(cl[rank].value()));
+    
+    for(j=2; j<cl.size; ++j) {
+      // for each subsequent literal, if it non-violated, it is a possible watcher
+      if(!cl[j].violated()) {
+	// in which case we swap it with cl[rank]
+	p = cl[j];
+	cl[j] = cl[rank];
+	cl[rank] = p;
+	
+	
+// 	std::cout << clist[i] << " is watched by " ;
+//  	cl[j].print(std::cout);
+//  	std::cout << " which is no longer valid, replace with: ";
+
+// 	std::cout << "         ";
+//   	p.print(std::cout);
+//  	std::cout << " " ; //std::endl;
+	
+	
+	ptype = p.type();
+	if(ptype == Decision::REMOVAL) {
+	  //std::cout << " add to w-values" << std::endl;
+	  watched_values[p.var->id][p.value()].push(clist[i]);
+	} else if(ptype == Decision::ASSIGNMENT) {
+	  //std::cout << " add to w-domains" << std::endl;
+	  watched_domains[p.var->id].push(clist[i]);
+	} else {
+	  //std::cout << " add to w-bounds" << std::endl;
+	  watched_bounds[p.var->id].push(clist[i]);
+	}
+
+
+	if(cl[j].type() == Decision::REMOVAL) {
+	  if(clist.size != watched_values[cl[j].var->id][cl[j].value()].size ||
+	     clist.stack_ != watched_values[cl[j].var->id][cl[j].value()].stack_) {
+	    
+	    cl[j].print(std::cout);
+	    std::cout << " remove from: ";
+	    if(clist.size == watched_domains[cl[j].var->id].size &&
+	       clist.stack_ == watched_domains[cl[j].var->id].stack_) {
+	      
+	      std::cout << "domain stack " << std::endl;
+	      for(int o=0; o<cl.size; ++o) {
+		cl[o].print(std::cout);
+		std::cout << " ";
+	      }
+	      std::cout << std::endl;
+
+	    } else if(clist.size != watched_bounds[cl[j].var->id].size ||
+	     clist.stack_ != watched_bounds[cl[j].var->id].stack_) {
+
+	      std::cout << "range stack " << std::endl;
+
+	    }
+	    std::cout << "problem 1" << std::endl;
+	    exit(1);
+	  }
+	}
+	else if(cl[j].type() == Decision::ASSIGNMENT) {
+	  if(clist.size != watched_domains[cl[j].var->id].size ||
+	     clist.stack_ != watched_domains[cl[j].var->id].stack_) {
+	    std::cout << "problem 2" << std::endl;
+	    exit(1);
+	  }
+	} else {
+	  if(clist.size != watched_bounds[cl[j].var->id].size ||
+	     clist.stack_ != watched_bounds[cl[j].var->id].stack_) {
+	    std::cout << "problem 3" << std::endl;
+	    exit(1);
+	  }
+	}
+
+	clist.erase(i);
+	  
+	break;
+      } 
+    }
+      
+    if(j>=cl.size) {
+
+      // 	if(!cl[1-rank].var->equal(cl[1-rank].value())) {
+      // 	  std::cout << "prune ";
+      // 	  cl[1-rank].var->print(std::cout);
+      // 	  std::cout << std::endl;
+      // 	}
+      
+      // there wasn't any possible replacement, so we need to propagate:
+      consistent = cl[1-rank].var->remove(cl[1-rank].value());
+    }
+  }
   
   return consistent;
 }
 
 void ConstraintGenNogoodBase::print(std::ostream& o) const {
+  o << "ngd:";
   for(int i=0; i<nogood.size; ++i) {
     Array< GeneralLiteral >& cl = *(nogood[i]);
-    for(int j=0; j<cl.size; ++j) {
-      cl[j].print(o);
+    o << " (";
+    cl[0].print(o);
+    for(int j=1; j<cl.size; ++j) {
       o << " ";
+      cl[j].print(o);
     }
-    o << std::endl;
+    o << ")";
+    //o << std::endl;
   }
 //   for(int i=0; i<arity; ++i) {
 //     for(int j=minimums[i]; j<)
@@ -6801,7 +7038,12 @@ bool PredicateGenDisjunctive::propagate(const int changedIdx, const int e)
 //   print(std::cout);
 //   std::cout << std::endl;
 
-  int i, j, consistent=true;
+  int i, lb0, ub0, lb1, ub1, lb2, ub2, consistent=true;
+
+    lb0 = scope[0]->min();
+    ub0 = scope[0]->max();
+    lb1 = scope[1]->min();
+    ub1 = scope[1]->max();
   if( changedIdx != 2 ) {
     //scope[2]->print(std::cout);
     // for each value of scope[2], check if the current bounds are consistent
@@ -6818,10 +7060,34 @@ bool PredicateGenDisjunctive::propagate(const int changedIdx, const int e)
 //       scope[1]->print(std::cout);
 //       std::cout << " <=? " << (scope[0]->max()+max_intervals[i]) << std::endl;
 
-      if( scope[0]->min()+min_intervals[i] > scope[1]->max() ||
-	  scope[0]->max()+max_intervals[i] < scope[1]->min() )
+//       if( scope[0]->min()+min_intervals[i] > scope[1]->max() ||
+// 	  scope[0]->max()+max_intervals[i] < scope[1]->min() )
+
+//        if( lb0+min_intervals[i] > ub1 ||
+// 	   ub0+max_intervals[i] < lb1 )
+
+//       std::cout << ub0+max_intervals[i] << " >= "
+// 		<< lb1 << " && "
+// 		<< lb0+min_intervals[i] << " <= " 
+// 		<< ub1 << std::endl;
+		
+
+      if(!(scope[1]->intersect(lb0+min_intervals[i], ub0+max_intervals[i]))) {
+	
+// 	if(i>scope[2]->min() && i<scope[2]->max()) {
+// 	  scope[1]->print(std::cout);
+// 	  std::cout << " does not intersect with [" 
+// 		    << lb0+min_intervals[i] << ".."
+// 		    << ub0+max_intervals[i] << "]" << std::endl;
+// 	}
 
 	consistent = scope[2]->remove(i);
+
+      }
+
+
+      //std::cout << std::endl;
+
     } while( consistent && valit->next() );
 
 //     std::cout << " back propagate: ";
@@ -6831,14 +7097,14 @@ bool PredicateGenDisjunctive::propagate(const int changedIdx, const int e)
 
   
 
-  i = scope[2]->min();
-  j = scope[2]->max();
+  lb2 = scope[2]->min();
+  ub2 = scope[2]->max();
 
   // exist i in x[2]:
   //    x[1] <= x[0]+max_intervals[x[2]]
-  // -> use the greatest value j in x[2] (since max_intervals is max for j)
+  // -> use the greatest value ub2 in x[2] (since max_intervals is max for ub2)
   //    x[1] >= x[0]+min_intervals[x[2]]
-  // -> use the smallest value i in x[2] (since min_intervals is min for i)
+  // -> use the smallest value lb2 in x[2] (since min_intervals is min for lb2)
   
 
   // x[0]+min_intervals[x[2]] <= x[1] <= x[0]+max_intervals[x[2]]
@@ -6848,14 +7114,14 @@ bool PredicateGenDisjunctive::propagate(const int changedIdx, const int e)
 //   std::cout << "set ";
 //   scope[0]->printshort(std::cout);
 //   std::cout << " to [" 
-// 	    << scope[1]->min()-max_intervals[j] << ".."
-// 	    << scope[1]->max()-min_intervals[i] << "]" << std::endl;
+// 	    << scope[1]->min()-max_intervals[ub2] << ".."
+// 	    << scope[1]->max()-min_intervals[lb2] << "]" << std::endl;
 
 //   std::cout << "set ";
 //   scope[1]->printshort(std::cout);
 //   std::cout << " to [" 
-// 	    << scope[0]->min()+min_intervals[i] << ".."
-// 	    << scope[0]->max()+max_intervals[j] << "]" << std::endl;
+// 	    << scope[0]->min()+min_intervals[lb2] << ".."
+// 	    << scope[0]->max()+max_intervals[ub2] << "]" << std::endl;
 
 //971
 //937
@@ -6863,16 +7129,50 @@ bool PredicateGenDisjunctive::propagate(const int changedIdx, const int e)
 //887
 //777
 
-  consistent = (scope[0]->setMin(scope[1]->min()-max_intervals[j]) &&
-		scope[0]->setMax(scope[1]->max()-min_intervals[i]) &&
-		scope[1]->setMin(scope[0]->min()+min_intervals[i]) &&		
-		scope[1]->setMax(scope[0]->max()+max_intervals[j]));
+  consistent = (scope[0]->setMin(lb1-max_intervals[ub2]) &&
+		scope[0]->setMax(ub1-min_intervals[lb2]) &&
+		scope[1]->setMin(lb0+min_intervals[lb2]) &&		
+		scope[1]->setMax(ub0+max_intervals[ub2]));
 
 //   scope[0]->print(std::cout);
 //   std::cout << std::endl;
 //   scope[1]->print(std::cout);
 //   std::cout << std::endl;
 //   std::cout << std::endl;
+
+
+#ifdef _AC_DISJUNCT
+//   lb0 = scope[0]->min();
+//   ub0 = scope[0]->max();
+//   lb1 = scope[1]->min();
+//   ub1 = scope[1]->max();
+  for(int k=lb2+1; consistent && k<ub2; ++k) {
+    if(!scope[2]->contain(k)) {
+      
+      if(ub0+max_intervals[k-1] < lb0+min_intervals[k]) {
+// 	scope[2]->print(std::cout);
+// 	std::cout << " => ";
+// 	scope[1]->print(std::cout);
+// 	std::cout << " cannot be in [" << ub0+max_intervals[k-1] << ".." 
+// 		  << lb0+min_intervals[k] << "]" << std::endl;
+
+	consistent = scope[1]->removeRange(ub0+max_intervals[k-1], lb0+min_intervals[k]);
+      }
+
+      if(ub1-min_intervals[k+1] < lb1-max_intervals[k]) {
+// 	scope[2]->print(std::cout);
+// 	std::cout << " => ";
+// 	scope[0]->print(std::cout);
+// 	std::cout << " can't be in [" << ub1-min_intervals[k+1] << ".." 
+// 		  << lb1-max_intervals[k] << "]" << std::endl;
+
+	consistent = scope[0]->removeRange(ub1-min_intervals[k], lb1-max_intervals[k+1]);
+      }
+
+    }
+  }
+  //std::cout << std::endl;
+#endif
 
   return consistent;
 }

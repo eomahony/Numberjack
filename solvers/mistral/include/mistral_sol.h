@@ -1789,8 +1789,10 @@ namespace Mistral {
      * std: x == ideal / x != ideal (min if ideal is not in the domain)
      */
     void setGuidedOrdering(VarArray&, int*, const char* flag="std");
+    void setGuidedBoundsOrdering(VarArray&, int*);
     void setRandGuidedOrdering(VarArray&, int*, int*, int*);
     void setGuidedOrdering(BuildObject **x, const int l, int*, int pb=0);
+    void setGuidedBoundsOrdering(BuildObject **x, const int l, int*);
     void setRandGuidedOrdering(BuildObject **x, const int l, int*, int*, int*);
     void setGuidedSplitOrdering(BuildObject **bvar, const int l, int* ideal, int* proba);
 

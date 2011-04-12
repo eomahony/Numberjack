@@ -1174,31 +1174,41 @@ ConstraintGenNogoodBase::~ConstraintGenNogoodBase() {
 
 
 void ConstraintGenNogoodBase::reduce( Vector<GeneralLiteral>& cl ) {
-  
-//   std::cout << "reduce: ";
-//   for(int i=0; i<cl.size; ++i) {
-//     cl[i].print(std::cout);
-//     std::cout << " ";
-//   }
-//   std::cout << std::endl;
+ 
 
+//   std::ostringstream o_propag;
+ 
+//   o_propag << "reduce: ";
+//   for(int i=0; i<cl.size; ++i) {
+//     cl[i].print(o_propag);
+//     o_propag << " ";
+//   }
+//   o_propag << std::endl;
+
+ 
+//  bool changed = false;
   int i=cl.size;
   while(i--) {
     //for(int i=0; i<cl.size; ++i) {
     for(int j=0; j<i; ++j) { 
       if(cl[i].merge_or(cl[j])) {
 	cl[i] = cl[--cl.size];
-// 	std::cout << "  =>  : ";
+
+// 	changed = true;
+// 	o_propag << "  =>  : ";
 // 	for(int k=0; k<cl.size; ++k) {
-// 	  cl[k].print(std::cout);
-// 	  std::cout << " ";
+// 	  cl[k].print(o_propag);
+// 	  o_propag << " ";
 // 	}
-// 	std::cout << std::endl;
+// 	o_propag << std::endl;
       }
     }
   }
-  //std::cout << std::endl;
 
+//   if(changed) {
+//     o_propag << std::endl;
+//     std::cout << o_propag.str();
+//   }
 
 
 //       // look for a literal that subsume, is subsumed or is in conflict with cl[i]
@@ -1462,9 +1472,61 @@ bool ConstraintGenNogoodBase::propagate(Vector< Array < GeneralLiteral >* >& cli
     if(cl[0].satisfied() || cl[1].satisfied()) {
       continue;
     }
+//     if(!cl[0].violated() && !cl[1].violated()) {
+      
+// //       std::cout << "nothing to do for:\n";
+// //      cl[0].var->print(std::cout);
+// //       std::cout << " ";
+// //       cl[0].print(std::cout) ;
+// //       std::cout << " | ";
+// //    cl[1].var->print(std::cout);
+// //       std::cout << " ";
+// //       cl[1].print(std::cout) ;
+// //       std::cout << "\n";
+
+//       continue;
+//     }
     
-    // otherwise, find out if the literal is the first, or second 
-    rank = (cl[1].var == X);      
+ //    // otherwise, find out if the literal is the first, or second 
+    rank = (cl[1].var == X);   
+    if(!cl[rank].violated()) continue;
+
+ //    if(rank == (cl[0].var == X) && cl[0].type() != cl[1].type()) {
+
+//       std::cout << "problem for:\n";
+//       cl[0].var->print(std::cout);
+//       std::cout << " ";
+//       cl[0].print(std::cout) ;
+//       std::cout << " | ";
+//       cl[1].var->print(std::cout);
+//       std::cout << " ";
+//       cl[1].print(std::cout) ;
+//       std::cout << "\n";
+      
+//       exit(1);
+//     }
+
+
+//     if(!cl[rank].violated()) {
+//       rank = 1-rank;
+//     }
+
+//     if(cl[rank].var == cl[1-rank].var) {
+//       std::cout << "HERE" << std::endl;
+      
+//       cl[0].print(std::cout) ;
+//       std::cout << " ";
+//       cl[1].print(std::cout) ;
+//       std::cout << "\n";
+
+//       cl[rank].var->print(std::cout) ;
+//       std::cout << "\n";
+
+//       //cl[rank].var
+
+//       exit(1);
+//     }
+   
     //assert(scope[changedIdx]->id == cl[rank].var->id);
     //assert(scope[changedIdx]->equal(cl[rank].value()));
     
@@ -1499,45 +1561,45 @@ bool ConstraintGenNogoodBase::propagate(Vector< Array < GeneralLiteral >* >& cli
 	}
 
 
-	if(cl[j].type() == Decision::REMOVAL) {
-	  if(clist.size != watched_values[cl[j].var->id][cl[j].value()].size ||
-	     clist.stack_ != watched_values[cl[j].var->id][cl[j].value()].stack_) {
+// 	if(cl[j].type() == Decision::REMOVAL) {
+// 	  if(clist.size != watched_values[cl[j].var->id][cl[j].value()].size ||
+// 	     clist.stack_ != watched_values[cl[j].var->id][cl[j].value()].stack_) {
 	    
-	    cl[j].print(std::cout);
-	    std::cout << " remove from: ";
-	    if(clist.size == watched_domains[cl[j].var->id].size &&
-	       clist.stack_ == watched_domains[cl[j].var->id].stack_) {
+// 	    cl[j].print(std::cout);
+// 	    std::cout << " remove from: ";
+// 	    if(clist.size == watched_domains[cl[j].var->id].size &&
+// 	       clist.stack_ == watched_domains[cl[j].var->id].stack_) {
 	      
-	      std::cout << "domain stack " << std::endl;
-	      for(int o=0; o<cl.size; ++o) {
-		cl[o].print(std::cout);
-		std::cout << " ";
-	      }
-	      std::cout << std::endl;
+// 	      std::cout << "domain stack " << std::endl;
+// 	      for(int o=0; o<cl.size; ++o) {
+// 		cl[o].print(std::cout);
+// 		std::cout << " ";
+// 	      }
+// 	      std::cout << std::endl;
 
-	    } else if(clist.size != watched_bounds[cl[j].var->id].size ||
-	     clist.stack_ != watched_bounds[cl[j].var->id].stack_) {
+// 	    } else if(clist.size != watched_bounds[cl[j].var->id].size ||
+// 	     clist.stack_ != watched_bounds[cl[j].var->id].stack_) {
 
-	      std::cout << "range stack " << std::endl;
+// 	      std::cout << "range stack " << std::endl;
 
-	    }
-	    std::cout << "problem 1" << std::endl;
-	    exit(1);
-	  }
-	}
-	else if(cl[j].type() == Decision::ASSIGNMENT) {
-	  if(clist.size != watched_domains[cl[j].var->id].size ||
-	     clist.stack_ != watched_domains[cl[j].var->id].stack_) {
-	    std::cout << "problem 2" << std::endl;
-	    exit(1);
-	  }
-	} else {
-	  if(clist.size != watched_bounds[cl[j].var->id].size ||
-	     clist.stack_ != watched_bounds[cl[j].var->id].stack_) {
-	    std::cout << "problem 3" << std::endl;
-	    exit(1);
-	  }
-	}
+// 	    }
+// 	    std::cout << "problem 1" << std::endl;
+// 	    exit(1);
+// 	  }
+// 	}
+// 	else if(cl[j].type() == Decision::ASSIGNMENT) {
+// 	  if(clist.size != watched_domains[cl[j].var->id].size ||
+// 	     clist.stack_ != watched_domains[cl[j].var->id].stack_) {
+// 	    std::cout << "problem 2" << std::endl;
+// 	    exit(1);
+// 	  }
+// 	} else {
+// 	  if(clist.size != watched_bounds[cl[j].var->id].size ||
+// 	     clist.stack_ != watched_bounds[cl[j].var->id].stack_) {
+// 	    std::cout << "problem 3" << std::endl;
+// 	    exit(1);
+// 	  }
+// 	}
 
 	clist.erase(i);
 	  
@@ -1554,7 +1616,21 @@ bool ConstraintGenNogoodBase::propagate(Vector< Array < GeneralLiteral >* >& cli
       // 	}
       
       // there wasn't any possible replacement, so we need to propagate:
-      consistent = cl[1-rank].var->remove(cl[1-rank].value());
+      //consistent = cl[1-rank].var->remove(cl[1-rank].value()); 
+
+ //      std::cout << "even on:";
+//       X->print(std::cout);
+//       std::cout << " ";
+      
+//       for(int k=0; k<cl.size; ++k) {
+// 	cl[k].print(std::cout);
+// 	std::cout << " ";
+//       }
+//       std::cout << " => ";
+//       cl[1-rank].print(std::cout);
+//       std::cout << std::endl;
+
+      consistent = cl[1-rank].propagate();
     }
   }
   
@@ -7190,8 +7266,8 @@ void PredicateGenDisjunctive::print(std::ostream& o) const
     ub = max_intervals[i];
 
     o << "(";
-    scope[2]->printshort(std::cout);
-    std::cout << "=" << i << " <-> ";
+    scope[2]->printshort(o);
+    o << "=" << i << " <-> ";
     if(lb>-NOVAL/2) {
       scope[0]->printshort(o);
       o << (lb>0 ? "+" : "") << lb  << " <= ";

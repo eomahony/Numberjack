@@ -548,12 +548,21 @@ int straight_compar(const void *x, const void *y) {
 
 void Instance::get_placement(const int x, const int y, Vector<int>& intervals) 
 {  
+  // we compute the allowed/forbidden start times of y relative to x
+  // (like 'y in [x+30, x+70])
+
+  // stores the start of each forbidden interval
   Vector<int> forbidden_starts;
+  // stores the end of each forbidden interval
   Vector<int> forbidden_ends;
 
+  // for each machine M the starting time of the task processed on M 
+  // for job x
   int *timetable_x = new int[nMachines()];
   int *timetable_y = new int[nMachines()];
 
+  // for each machine M the duration of the task processed on M
+  // for job y
   int *duration_x = new int[nMachines()];
   int *duration_y = new int[nMachines()];
 
@@ -581,93 +590,46 @@ void Instance::get_placement(const int x, const int y, Vector<int>& intervals)
 
 
 
-//   std::cout << "job" << x << ": " ;
-//   for(int k=0; k<nTasksInJob(x); ++k) {
-//     int t = getJobTask(x,k);
-//     for(int i=0; i<nMachines(t); ++i) {
-//       int m = getMachine(t,i);
-//       std::cout << "[" << std::setw(4) << timetable_x[m] << ":"
-// 		<< std::setw(2) << getDuration(t) 
-// 		<< " " << m
-// 		<< "]";
-//     }
-//   }
-//   std::cout << std::endl;
-  
-//   std::cout << "job" << y << ": " ;
-//   for(int k=0; k<nTasksInJob(y); ++k) {
-//     int t = getJobTask(y,k);
-//     for(int i=0; i<nMachines(t); ++i) {
-//       int m = getMachine(t,i);
-//       std::cout << "[" << std::setw(4) << timetable_y[m] << ":"
-// 		  << std::setw(2) << getDuration(t) 
-// 		<< " " << m
-// 		<< "]";
-//     }
-//   }
-//   std::cout << std::endl;
-  
+  // compute all the forbidden intervals
   for(int k=0; k<nMachines(); ++k) {
     // forbidden interval for machine k
     // y cannot start in [st_x-duration_y+1, st_x+duration_x-1]
+    // (since x is using machine k at this time)
     forbidden_starts.push(timetable_x[k]-timetable_y[k]-duration_y[k]+1);
     forbidden_ends.push(timetable_x[k]-timetable_y[k]+duration_x[k]);
-
-//     std::cout << "[" << forbidden_starts.back() << ".." 
-// 	      << forbidden_ends.back() << "]" << std::endl; 
   }
 
-  //forbidden_starts.push(-INFTY);
-  //forbidden_ends.push(INFTY);
+
+  // Now the cool part, we want to compute the 'real' intervals, since
+  // some that we just computed can be merged if they overlap
+
+  // we sort the intervals ends
   qsort(forbidden_starts.stack_, forbidden_starts.size, sizeof(int), straight_compar);
   qsort(forbidden_ends.stack_, forbidden_ends.size, sizeof(int), straight_compar);
 
-
-//   forbidden_starts.print(std::cout);
-//   //std::cout << std::endl;
-
-//   forbidden_ends.print(std::cout);
-//   std::cout << std::endl;
-
   int i=0, j=0;
-  int current = 0;
-    
+  int current = 0;    
   
-//   while(i<forbidden_starts.size && j<forbidden_ends.size) {
-
-//     std::cout << "(" << forbidden_starts[i] << "|" << forbidden_ends[j] << ")" << ": ";
-
-//     if(forbidden_starts[i]<forbidden_ends[j]) {
-//       ++i;
-//       std::cout << " up ";
-//       if(current++==0) std::cout << "." << forbidden_starts[i-1]-1 << "]";
-//     } else if(forbidden_starts[i]>forbidden_ends[j]) {
-//       ++j;
-//       std::cout << " down ";
-//       if(--current==0) std::cout << "[" << forbidden_ends[j-1] << ".";
-//     } else {
-//       ++i;
-//       ++j;
-//       std::cout << " equal " << std::endl;
-//     }
-
-//     std::cout << std::endl;
-//   }
-
-//   std::cout << "[" << forbidden_ends.back() << ".";
-  
-
-//   std::cout << std::endl;
-  
-//   exit(1);
-
+  // now we can go forward from the earliest interval to latest
   while(i<forbidden_starts.size && j<forbidden_ends.size) {
     if(forbidden_starts[i]<forbidden_ends[j]) {
       ++i;
-      if(current++==0) intervals.push(forbidden_starts[i-1]-1);
+
+      // when we see the start of an interval, the current number
+      // of machine that forbids this start time increases
+      if(current++==0) {
+	// if it goes from 0 to 1, it is the start of a forbidden interval
+	intervals.push(forbidden_starts[i-1]-1);
+      }
     } else if(forbidden_starts[i]>forbidden_ends[j]) {
       ++j;
-      if(--current==0) intervals.push(forbidden_ends[j-1]);
+
+      // when we see the end of an interval, the current number
+      // of machine that forbids this start time decreases
+      if(--current==0) {
+	// if it goes from 1 to 0, it is the end of a forbidden interval
+	intervals.push(forbidden_ends[j-1]);
+      }
     } else {
       ++i;
       ++j;
@@ -676,33 +638,17 @@ void Instance::get_placement(const int x, const int y, Vector<int>& intervals)
 
   intervals.push(forbidden_ends.back());
 
-  int num__intervals = intervals.size/2+1;
-  int *max__intervals = new int[num__intervals];
-  int *min__intervals = new int[num__intervals];
-  min__intervals[0] = -NOVAL;
-  max__intervals[num__intervals-1] = NOVAL;
-  int k=0;
-  for(int i=0; i<num__intervals-1; ++i) {
-    max__intervals[i] = intervals[k++];
-    min__intervals[i+1] = intervals[k++];
-  }
-
-//   int lb, ub;
-//   for(int i=0; i<num__intervals; ++i) {
-    
-//     lb = min__intervals[i];
-//     ub = max__intervals[i];
-
-//     std::cout << "z=" << i << " <->  x" << (lb>0 ? "+" : "") << lb  << " <= y AND y <= x" <<(ub>0 ? "+" : "") << ub << std::endl;
-
-//     //std::cout << "z=" << i << " <->  + " << min__intervals[i] << " <= y OR x >= y - " << max__intervals[i] << std::endl;
-
+//   int num__intervals = intervals.size/2+1;
+//   int *max__intervals = new int[num__intervals];
+//   int *min__intervals = new int[num__intervals];
+//   min__intervals[0] = -NOVAL;
+//   max__intervals[num__intervals-1] = NOVAL;
+//   int k=0;
+//   for(int i=0; i<num__intervals-1; ++i) {
+//     max__intervals[i] = intervals[k++];
+//     min__intervals[i+1] = intervals[k++];
 //   }
 
-
-// //   intervals.print(std::cout);
-
-// //  exit(1);
 }
 
 void Instance::get_placement2(const int x, const int y) {
@@ -2102,7 +2048,11 @@ void Solution::guide_search() {
 //   std::cout << std::endl;
 
   //solver->setGuidedOrdering(model->disjuncts, disjunct_value, "spl");
-  solver->setGuidedOrdering(model->SearchVars, search_value);
+  if( ((SchedulingSolver*)solver)->params->Type == "now2" )
+    solver->setGuidedBoundsOrdering(model->SearchVars, search_value);
+  else 
+    solver->setGuidedOrdering(model->SearchVars, search_value);
+
   if(model->data->hasJobDueDate()) {
     solver->setGuidedOrdering(model->earlybool, earlybool_value);
     solver->setGuidedOrdering(model->latebool, latebool_value);
@@ -2117,7 +2067,10 @@ void Solution::guide_search_bounds() {
 //   std::cout << std::endl;
 
   //solver->setGuidedOrdering(model->disjuncts, disjunct_value, "spl");
-  solver->setGuidedBoundsOrdering(model->SearchVars, search_value);
+  if( ((SchedulingSolver*)solver)->params->Type == "now2" )
+    solver->setGuidedBoundsOrdering(model->SearchVars, search_value);
+  else 
+    solver->setGuidedOrdering(model->SearchVars, search_value);
   if(model->data->hasJobDueDate()) {
     solver->setGuidedOrdering(model->earlybool, earlybool_value);
     solver->setGuidedOrdering(model->latebool, latebool_value);
@@ -2185,9 +2138,13 @@ std::ostream& Solution::print(std::ostream& os, std::string type) {
 
   } else {
     for(i=0; i<n; ++i) {
-      os << search_value[i] ;
+      os << std::setw(3) << model->SearchVars[i].getVariable()->id ;
+    }
+    os << std::endl;
+    for(i=0; i<n; ++i) {
+      os << std::setw(3) << search_value[i] ;
     } 
-    //os << std::endl;
+    os << std::endl;
   }
   return os;
 }
@@ -2280,6 +2237,7 @@ void SchedulingSolver::jtl_presolve()
     if(objective>new_objective) {
       objective = new_objective;
       pool->add(new Solution(model, this));
+     
       
       //std::cout << std::left << std::setw(30) << "c iteration / objective" << ":" << std::right << std::setw(11) << (iteration+1) << " / " << std::setw(6) << objective << ")" << std::endl;
       std::cout << std::left << std::setw(30) << "c objective" << ":" << std::right << std::setw(20) << objective << std::endl;
@@ -2500,9 +2458,9 @@ void SchedulingSolver::dichotomic_search()
 	  
 	  //std::cout << params->Type << std::endl;
 
-	  if(params->Type == "now2") 
-	    pool->getBestSolution()->guide_search_bounds();
-	  else
+// 	  if(params->Type == "now2") 
+// 	    pool->getBestSolution()->guide_search_bounds();
+// 	  else
 	    pool->getBestSolution()->guide_search();
 	}
       }
@@ -2532,6 +2490,8 @@ void SchedulingSolver::dichotomic_search()
 	}
 
 	std::cout << std::left << std::setw(30) << "c solutions's objective" << ":" << std::right << std::setw(20) << new_objective << std::endl;
+
+	//pool->getBestSolution()->print(std::cout);
 
       } else {
 
@@ -2638,9 +2598,9 @@ void SchedulingSolver::all_solutions_search()
 
 	    //std::cout << params->Type << std::endl;
 
-	    if(params->Type == "now2")
-	      pool->getBestSolution()->guide_search_bounds();
-	    else
+// 	    if(params->Type == "now2")
+// 	      pool->getBestSolution()->guide_search_bounds();
+// 	    else
 	      pool->getBestSolution()->guide_search();
 	  }
 	}

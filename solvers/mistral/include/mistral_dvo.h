@@ -69,7 +69,7 @@ namespace Mistral {
     inline int type() const {return _data_&3; }
     inline int value() const {return _data_>>2; }
     inline void setvalue(const int v) {
-      _data_ = (_data_&3 + v*4);
+      _data_ = (_data_&3) + (v*4);
     }
     inline void settype(const int t) {
       _data_ = (_data_/4 + t);
@@ -234,7 +234,7 @@ namespace Mistral {
 // //     }
 
     std::ostream& print(std::ostream& os) const {
-      var->printshort(os);
+      var->print(os);
       switch(type()) {
       case REMOVAL: {
 	os << " =/= " << value();
@@ -1116,8 +1116,10 @@ namespace Mistral {
     /**@name Utils*/
     //@{ 
     inline bool operator<( VarSelectorNOW& x ) const { 
-      return (domsize_ * (x.weight_task_ + x.weight_
-			  ) < x.domsize_ * (weight_task_ + weight_
+      return (domsize_ * ( x.weight_task_ +
+			  x.weight_
+			  ) < x.domsize_ * ( weight_task_ +
+					    weight_
 					    )) ;
     }
     inline void operator=( VarSelectorNOW& x ) { // impact_ = x.impact_;

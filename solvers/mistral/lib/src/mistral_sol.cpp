@@ -2521,16 +2521,16 @@ bool Solver::filtering()
   backtrackLevel = NOVAL;
 
 #ifdef _DEBUGAC
-      if(verbosity > 2) {
-  cout << "\tGAC" << endl;
-  for(int k=0; k<numvars; ++k) {
-    variables[k]->print( cout );
+  if(verbosity > 2) {
+    cout << "\tGAC" << endl;
+    for(int k=0; k<numvars; ++k) {
+      variables[k]->print( cout );
+      cout << endl;
+    }
     cout << endl;
   }
-  cout << endl;
-      }
 #endif
-
+  
 #ifdef _DEBUGPROPAG
   //std::ostringstream o_propag;
   std::string prop_str;
@@ -2539,37 +2539,37 @@ bool Solver::filtering()
 
   bool consistent = ( !goal || goal->score() <= goal->upper_bound );
   Constraint *con = NULL;
-
+  
   if( consistent ) {
     int sz = unaryCons.size, domain_event;
     while( consistent && sz-- ) {
       ++PROPAGS;
       if( !(unaryCons[sz]->propagate( )) ) consistent = false;
     }
-
+    
 
     //int nuaryprop = 0;
     while( consistent && !sUnaryCons.empty() ) {
       ++PROPAGS;
       SimpleUnaryConstraint cons = sUnaryCons.pop();
 
- //      if(verbosity > 2) {
-//         std::cout << "PROPAGATE UNARY CONSTRAINT AT LEVEL " << level << "/" 
-// 		  << init_level << ": ";
-//         cons.print(std::cout);
-//         std::cout << std::endl;
-//       }
-
-//       if(cons.val > cons.var->min()) {
-// 	++nuaryprop;
-//       }
+      //      if(verbosity > 2) {
+      //         std::cout << "PROPAGATE UNARY CONSTRAINT AT LEVEL " << level << "/" 
+      // 		  << init_level << ": ";
+      //         cons.print(std::cout);
+      //         std::cout << std::endl;
+      //       }
+      
+      //       if(cons.val > cons.var->min()) {
+      // 	++nuaryprop;
+      //       }
       consistent &= cons.propagate();
     }
-//     if(nuaryprop)
-//       //std::cout << "# unary propags: " 
-//       std::cout << nuaryprop ;
-// 	//<< std::endl; 
-
+    //     if(nuaryprop)
+    //       //std::cout << "# unary propags: " 
+    //       std::cout << nuaryprop ;
+    // 	//<< std::endl; 
+    
     if( consistent ) {
       VariableInt *pvar;
       MistralNode<Constraint*> *nd;
@@ -2577,11 +2577,11 @@ bool Solver::filtering()
       bool fixedPoint = (gacvarstack.empty() && gacconstack.empty());
 
       while( consistent && !fixedPoint ) {
-
+	
 	if( !gacvarstack.empty() ) {
 
 #ifdef _DEBUGPROPAGSTACK
-      if(verbosity > 2) {
+	  if(verbosity > 2) {
 	  cout << "stack:";
 	  int q = gacvarstack.head;
 	  do {
@@ -2634,18 +2634,18 @@ bool Solver::filtering()
 #ifdef _DEBUGPROPAG
 	    std::ostringstream o_propag;
 	    size_before = 0;
-      if(verbosity > 2) {
-	    o_propag << "PROPAGATE \n" ;
-	    con->print( o_propag );
-	    o_propag << endl;
-	    for(int a=0; a<con->arity; ++a) {
-	      size_before += con->scope[a]->domsize();
-	      con->scope[a]->print( o_propag );
-	      o_propag << " ";
+	    if(verbosity > 2) {
+	      o_propag << "PROPAGATE \n" ;
+	      con->print( o_propag );
+	      o_propag << endl;
+	      for(int a=0; a<con->arity; ++a) {
+		size_before += con->scope[a]->domsize();
+		con->scope[a]->print( o_propag );
+		o_propag << " ";
+	      }
+	      o_propag << endl;
+	      prop_str = o_propag.str();
 	    }
-	    o_propag << endl;
-	    prop_str = o_propag.str();
-      }
 #endif
 
 	    // 	bool is42 = false;

@@ -1173,7 +1173,7 @@ ConstraintGenNogoodBase::~ConstraintGenNogoodBase() {
 }
 
 
-void ConstraintGenNogoodBase::reduce( Vector<GeneralLiteral>& cl ) {
+bool ConstraintGenNogoodBase::reduce( Vector<GeneralLiteral>& cl ) {
  
 
 //   std::ostringstream o_propag;
@@ -1185,31 +1185,115 @@ void ConstraintGenNogoodBase::reduce( Vector<GeneralLiteral>& cl ) {
 //   }
 //   o_propag << std::endl;
 
+  bool reduced =false;
+
+  for(int i=0; i<cl.size && !reduced; ++i) {
+    for(int j=i+1; j<cl.size && !reduced; ++j) {
+      reduced = (cl[i].var == cl[j].var && cl[i].type() != cl[j].type());
+    }
+  }
+
+  return reduced;
+
+
+// //  bool changed = false;
+//   int i=cl.size;
+//   while(i--) {
+//     if(i>=cl.size)
+//       i = cl.size-1;
+//     //for(int i=0; i<cl.size; ++i) {
+//     for(int j=0; j<i; ++j) { 
+//       //       o_propag << "compare " << i << " " << j << " " << cl.size << " ";
+//       //       cl[i].print(o_propag);
+//       //       o_propag << " with " ;
+//       //       cl[j].print(o_propag);
+//       if(cl[i].merge_or(cl[j])) {
+// 	//	o_propag << " merged\n" ;
+	
+// 	cl[i] = cl[--cl.size];
+// 	reduced = true;
+	
+// 	// // 	changed = true;
+// 	// 	o_propag << "  =>  : ";
+// 	// 	for(int k=0; k<cl.size; ++k) {
+// 	// 	  cl[k].print(o_propag);
+// 	// 	  o_propag << " ";
+// 	// 	}
+// 	// 	o_propag << std::endl;
+// 	//       } else {
+// 	// 	o_propag << " not merged\n" ;
+// 	//       }
+//       }
+//     }
+//   }
  
 //  bool changed = false;
-  int i=cl.size;
-  while(i--) {
-    //for(int i=0; i<cl.size; ++i) {
-    for(int j=0; j<i; ++j) { 
-      if(cl[i].merge_or(cl[j])) {
-	cl[i] = cl[--cl.size];
 
-// 	changed = true;
+//   int min_e = cl[0].var->id;
+//   int max_e = cl[0].var->id;
+//   for(int i=1; i<cl.size; ++i) {
+//     if(min_e > cl[i].var->id) min_e = cl[i].var->id;
+//     if(max_e < cl[i].var->id) max_e = cl[i].var->id;
+//   }
+//   BitSet e(min_e, max_e, BitSet::empt);
+//   BitSet f(min_e, max_e, BitSet::empt);
+//   for(int i=0; i<cl.size; ++i) {
+//     e.insert( cl[i].var->id );
+//   }
+  
+
+  //std::cout << 11 << std::endl;
+  for(int i=0; i<cl.size; ++i) {
+    int j = i+1;
+    while(j<cl.size) {
+//     //for(int j=i+1; j<cl.size; ++j) { 
+//       o_propag << "compare " << i << " " << j << " " << cl.size << " ";
+//       cl[i].print(o_propag);
+//       o_propag << " with " ;
+//       cl[j].print(o_propag);
+      if(cl[j].merge_or(cl[i])) {
+	//	o_propag << " merged\n" ;
+	
+	cl[j] = cl[--cl.size];
+	reduced = true;
+	
+// 	// 	changed = true;
 // 	o_propag << "  =>  : ";
 // 	for(int k=0; k<cl.size; ++k) {
 // 	  cl[k].print(o_propag);
 // 	  o_propag << " ";
 // 	}
-// 	o_propag << std::endl;
+	
+	j = i+1;
+	//o_propag << ":" << i << " " << j << " " << cl.size << std::endl;
+      } else {
+	++j;
+	//o_propag << " not merged\n" ;
       }
     }
   }
+//   //std::cout << 22 << std::endl;
+  
+ //    if(reduced) {
+//       o_propag << std::endl;
+//       std::cout << o_propag.str();
+//     }
 
-//   if(changed) {
-//     o_propag << std::endl;
-//     std::cout << o_propag.str();
+//   for(int i=0; i<cl.size; ++i) {
+//     f.insert( cl[i].var->id );
 //   }
 
+//   if(!(e.equal(f))) {
+//     e.print(std::cout);
+//     std::cout << std::endl;
+//     f.print(std::cout);
+//     std::cout << std::endl;
+    
+//     exit(1);
+//   }
+
+  
+  return reduced;
 
 //       // look for a literal that subsume, is subsumed or is in conflict with cl[i]
 //       switch(cl[i].compare(cl[j])) {
@@ -1232,9 +1316,10 @@ void ConstraintGenNogoodBase::reduce( Vector<GeneralLiteral>& cl ) {
 
 void ConstraintGenNogoodBase::add( Vector<GeneralLiteral>& conflict ) {
 
-  reduce(conflict);
+  bool reduced = reduce(conflict);
 
 
+  if(!reduced) {
   if(conflict.size > 1) {
     Array<GeneralLiteral> *cl = Array<GeneralLiteral>::Array_new(conflict);
     nogood.push( cl );
@@ -1278,6 +1363,7 @@ void ConstraintGenNogoodBase::add( Vector<GeneralLiteral>& conflict ) {
     //conflict[0].print(std::cout);
     //std::cerr << " is a unary nogood!!" << std::endl;
     //exit(0);
+  }
   }
   //std::cout << "end add" << std::endl;
 }
@@ -1488,8 +1574,15 @@ bool ConstraintGenNogoodBase::propagate(Vector< Array < GeneralLiteral >* >& cli
 //     }
     
  //    // otherwise, find out if the literal is the first, or second 
-    rank = (cl[1].var == X);   
-    if(!cl[rank].violated()) continue;
+    rank = (cl[1].var == X);
+    if(!cl[rank].violated()) {
+//       if(X == cl[1-rank].var &&
+// 	 cl[rank].type() == cl[1-rank].type() &&
+// 	 cl[1-rank].violated())
+// 	rank = 1-rank;
+//       else 
+	continue;
+    }
 
  //    if(rank == (cl[0].var == X) && cl[0].type() != cl[1].type()) {
 
@@ -1590,6 +1683,28 @@ bool ConstraintGenNogoodBase::propagate(Vector< Array < GeneralLiteral >* >& cli
 // 	else if(cl[j].type() == Decision::ASSIGNMENT) {
 // 	  if(clist.size != watched_domains[cl[j].var->id].size ||
 // 	     clist.stack_ != watched_domains[cl[j].var->id].stack_) {
+
+
+
+// 	    cl[j].print(std::cout);
+// 	    std::cout << " remove from: ";
+// 	    if(clist.size == watched_values[cl[j].var->id][cl[j].var->min()].size &&
+// 	       clist.stack_ == watched_values[cl[j].var->id][cl[j].var->min()].stack_) {
+	      
+// 	      std::cout << "value stack " << std::endl;
+// 	      for(int o=0; o<cl.size; ++o) {
+// 		cl[o].print(std::cout);
+// 		std::cout << " ";
+// 	      }
+// 	      std::cout << std::endl;
+
+// 	    } else if(clist.size != watched_bounds[cl[j].var->id].size ||
+// 	     clist.stack_ != watched_bounds[cl[j].var->id].stack_) {
+
+// 	      std::cout << "range stack " << std::endl;
+
+// 	    }
+
 // 	    std::cout << "problem 2" << std::endl;
 // 	    exit(1);
 // 	  }
@@ -1618,19 +1733,28 @@ bool ConstraintGenNogoodBase::propagate(Vector< Array < GeneralLiteral >* >& cli
       // there wasn't any possible replacement, so we need to propagate:
       //consistent = cl[1-rank].var->remove(cl[1-rank].value()); 
 
- //      std::cout << "even on:";
-//       X->print(std::cout);
-//       std::cout << " ";
-      
-//       for(int k=0; k<cl.size; ++k) {
-// 	cl[k].print(std::cout);
-// 	std::cout << " ";
-//       }
-//       std::cout << " => ";
-//       cl[1-rank].print(std::cout);
-//       std::cout << std::endl;
-
       consistent = cl[1-rank].propagate();
+
+ //      for(int k=0; k<cl.size; ++k) 
+// 	if(k!=(1-rank) && !(cl[k].violated())) {
+
+// 	  std::cout << "event on:";
+// 	  X->print(std::cout);
+// 	  std::cout << " ";
+	  
+// 	  for(int kk=0; kk<cl.size; ++kk) {
+// 	    cl[kk].print(std::cout);
+// 	    std::cout << " ";
+// 	  }
+ 
+// 	  std::cout << " => ";
+// 	  cl[1-rank].print(std::cout);
+// 	  std::cout << std::endl;
+
+// 	  exit(1);
+// 	}
+
+
     }
   }
   

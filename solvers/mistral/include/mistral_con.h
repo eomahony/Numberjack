@@ -563,7 +563,7 @@ namespace Mistral {
     ConstraintGenNogoodBase(Solver*);
     virtual ~ConstraintGenNogoodBase();
     void add( Vector<GeneralLiteral>& );
-    void reduce( Vector<GeneralLiteral>& cl );
+    bool reduce( Vector<GeneralLiteral>& cl );
     //@}
 
     /**@name Solving*/

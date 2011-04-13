@@ -1795,6 +1795,7 @@ void No_wait_Model::setup(Instance& inst, ParameterList *params, const int max_m
   }
 
   if(type==0) {
+
     // mutual exclusion constraints
     for(k=0; k<inst.nMachines(); ++k) 
       for(i=0; i<inst.nTasksInMachine(k); ++i)
@@ -1821,7 +1822,46 @@ void No_wait_Model::setup(Instance& inst, ParameterList *params, const int max_m
     
     //       print(std::cout);
     //   std::cout << std::endl;
+
+    if(true) {
+    Vector<int> intervals;
     
+    for(int i=0; i<data->nJobs(); ++i) {
+      for(int j=i+1; j<data->nJobs(); ++j) {
+	intervals.clear();
+	data->get_placement(i,j,intervals);
+	
+	int job_start = disjuncts.size();
+	for(int k=0; k<intervals.size; k+=2) {
+	  //disjuncts.add( Disjunctive(tasks[j], -intervals[k], tasks[i], intervals[k+1]) );
+	  disjuncts.add( Disjunctive(tasks[i], intervals[k+1], tasks[j], -intervals[k]) );
+	}
+	int ds = disjuncts.size();
+  	for(int k=job_start; k<ds; ++k) {
+//  	  add(disjuncts[k-1] <= disjuncts[k]);
+
+	  job_size.push(ds-job_start);
+	  job_index.push(k-job_start);
+ 	}
+
+      	//gen_disjuncts.add( GenDisjunctive(tasks[i], tasks[j], intervals) );
+
+      }
+      //std::cout << std::endl;
+    }
+    
+    job_size.print(std::cout);
+    std::cout << std::endl;
+
+    job_index.print(std::cout);
+    std::cout << std::endl;
+
+    add(disjuncts);
+
+
+    } else {
+
+
     Vector<int> intervals;
     
     for(int i=0; i<data->nJobs(); ++i) {
@@ -1837,7 +1877,7 @@ void No_wait_Model::setup(Instance& inst, ParameterList *params, const int max_m
     
     add(gen_disjuncts);
     //exit(1);
-
+    }
   }
 
 
@@ -1851,9 +1891,10 @@ void No_wait_Model::setup(Instance& inst, ParameterList *params, const int max_m
   }
 
   
-  if(type==0) {
+  if(disjuncts.size()>0) {
     for(int i=0; i<disjuncts.size(); ++i) SearchVars.add(disjuncts[i]);
-  } else {
+  } 
+  if(gen_disjuncts.size()>0) {
     for(int i=0; i<gen_disjuncts.size(); ++i) SearchVars.add(gen_disjuncts[i]);
   }
 

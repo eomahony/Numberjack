@@ -2909,63 +2909,64 @@ void Solver::print(std::ostream& o) const
   }
 
 
-  int i;
-  MistralNode<Constraint*> *nd;
-  MistralNode<Constraint*> *dnd;
-  MistralNode<Constraint*> *rnd;
-
-  for(i = 0; i < variables.size; ++i) {
-    dnd = NULL;
-    rnd = NULL;
-
-    variables[i]->print(o);
-
-    o << "d ";
-    nd = variables[i]->constraintsOnDomain();
-    while( nextNode(nd) ) {
-      if(!dnd) dnd = nd;
-      nd->elt->print(o);
-      o << " ";
-    }
-
-    o << "r ";
-    nd = variables[i]->constraintsOnRange();
-    while( nd != dnd && nextNode(nd) ) {
-      if(!rnd) rnd = nd;
-      if(nd == dnd) break;
-      nd->elt->print(o);
-      o << " ";
-    }
-
-    o << "v ";
-    nd = variables[i]->constraintsOnValue();
-    while( nextNode(nd) ) {
-      if(nd == rnd) break;
-      nd->elt->print(o);
-      o << " ";
-    }
-
-    o << std::endl;
-
-  }
-  
 //   int i;
-//   o << "Variables: " << endl;
-//   for(i = 0; i < variables.size; ++i)
-//     {
-//       o << "\t" ;
-//       variables[i]->print(o);
-//       o << std::endl;
+//   MistralNode<Constraint*> *nd;
+//   MistralNode<Constraint*> *dnd;
+//   MistralNode<Constraint*> *rnd;
+
+//   for(i = 0; i < variables.size; ++i) {
+//     dnd = NULL;
+//     rnd = NULL;
+
+//     variables[i]->print(o);
+
+//     o << "d ";
+//     nd = variables[i]->constraintsOnDomain();
+//     while( nextNode(nd) ) {
+//       if(!dnd) dnd = nd;
+//       nd->elt->print(o);
+//       o << " ";
 //     }
-//   o << endl;
-//   o << "Constraints (" << constraints.size << "):" << endl;
-//   for(i = 0; i < constraints.size; ++i)
-//     {
-//       o << "\t" << i << " " ;
-//       constraints[i]->print(o);
-//       o << std::endl;
+
+//     o << "r ";
+//     nd = variables[i]->constraintsOnRange();
+//     while( nd != dnd && nextNode(nd) ) {
+//       if(!rnd) rnd = nd;
+//       if(nd == dnd) break;
+//       nd->elt->print(o);
+//       o << " ";
 //     }
-//   o << endl;
+
+//     o << "v ";
+//     nd = variables[i]->constraintsOnValue();
+//     while( nextNode(nd) ) {
+//       if(nd == rnd) break;
+//       nd->elt->print(o);
+//       o << " ";
+//     }
+
+//     o << std::endl;
+
+//   }
+
+  
+  int i;
+  o << "Variables: " << endl;
+  for(i = 0; i < variables.size; ++i)
+    {
+      o << "\t" ;
+      variables[i]->print(o);
+      o << std::endl;
+    }
+  o << endl;
+  o << "Constraints (" << constraints.size << "):" << endl;
+  for(i = 0; i < constraints.size; ++i)
+    {
+      o << "\t" << i << " " ;
+      constraints[i]->print(o);
+      o << std::endl;
+    }
+  o << endl;
 }
 
 void Solver::printXML(std::ostream& o) const

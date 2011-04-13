@@ -72,6 +72,7 @@ namespace Mistral {
   public:
 
     static const int LEX     =  0;
+    static const int ANTILEX = -2;
     static const int PROMISE =  1;
     static const int ANTI    = -1;
     static const int GUIDED  =  2;
@@ -395,6 +396,9 @@ namespace Mistral {
     
     int type;
     VarArray gen_disjuncts;
+
+    Vector<int> job_size;
+    Vector<int> job_index;
  
     No_wait_Model() : C_max_Model() {} 
     No_wait_Model(Instance& prob, ParameterList *params, const int C_max, const int t=1) : C_max_Model() { type=t; setup(prob, params, C_max); }
@@ -412,6 +416,7 @@ namespace Mistral {
     int *disjunct_value;
     int *search_value;
     int *all_value;
+
 
   public:
     SchedulingModel  * model;
@@ -584,21 +589,30 @@ public:
       int val_ord = ParameterList::GUIDED;
       if(  vo == "rguided")   val_ord = ParameterList::RGUIDED;
       if(  vo == "lex"    )   val_ord = ParameterList::LEX;
+      if(  vo == "antilex")   val_ord = ParameterList::ANTILEX;
       if(  vo == "rand"   )   val_ord = ParameterList::RAND;
       if(  vo == "promise")   val_ord = ParameterList::PROMISE;
       if(  vo == "anti"   )   val_ord = ParameterList::ANTI;
 
+      //std::cout << val_ord << std::endl;
+
 
       if(val_ord == ParameterList::LEX ||
+	 val_ord == ParameterList::ANTILEX ||
 	 val_ord == ParameterList::RAND)
       for(int i=0; i<length; ++i) {
 	delete sequence[i]->branch;
 	if(val_ord == ParameterList::LEX) {
 	  sequence[i]->branch = new ValSelectorMin(sequence[i]);
+	} else if(val_ord == ParameterList::ANTILEX) {
+	  //std::cout << "HERE" << std::endl;
+	  sequence[i]->branch = new ValSelectorMax(sequence[i]);
 	} else {
 	  sequence[i]->branch = new ValSelectorRandMinMax(sequence[i]);
 	}
       }
+
+      //exit(1);
 
 
       if( Heu == "dom" ) {
@@ -701,12 +715,40 @@ public:
 	OSP h(model, abs(rdz), val_ord, OSP::DOM_O_TASKWEIGHTPJOB);
 	add( h );
       }
-      else if( Heu == "now") {
-	NOW h(model, abs(rdz));
+      else if( Heu == "now-d") {
+	NOW h(model, abs(rdz), NOW::DOM);
+	add( h );
+      }
+      else if( Heu == "now-dob") {
+	NOW h(model, abs(rdz), NOW::DOM_O_BOOLWEIGHT);
+	add( h );
+      }
+      else if( Heu == "now-dot") {
+	NOW h(model, abs(rdz), NOW::DOM_O_TASKWEIGHT);
+	add( h );
+      }
+      else if( Heu == "now-dobt") {
+	NOW h(model, abs(rdz), NOW::DOM_O_BOOLTASKWEIGHT);
+	add( h );
+      }
+      else if( Heu == "now-dtt") {
+	NOW h(model, abs(rdz), NOW::DOM_P_TWEIGHT);
+	add( h );
+      }
+     else if( Heu == "now-dtb") {
+	NOW h(model, abs(rdz), NOW::DOM_P_BWEIGHT);
+	add( h );
+      }
+     else if( Heu == "now-dtbt") {
+	NOW h(model, abs(rdz), NOW::DOM_P_BTWEIGHT);
 	add( h );
       }
       else if( Heu == "job") {
 	JOB h( model );
+	add( h );
+      }
+      else if( Heu == "osp-now") {
+	OSP h(model, abs(rdz), val_ord, OSP::NOW);
 	add( h );
       }
 //       else if( Heu == "osp-w") {

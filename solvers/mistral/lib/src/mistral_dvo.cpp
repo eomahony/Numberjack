@@ -1863,23 +1863,101 @@ DVO* NOW::extract( Solver* s )
 
   if( size > 1 ) {
     int i;
-    GenericSchedulingRandomDVO<VarSelectorNOW> *var_heuristic = 
-      new GenericSchedulingRandomDVO<VarSelectorNOW>(s, size);
+
+    switch(strategy) {
+    case DOM_O_BOOLTASKWEIGHT: {
+      GenericSchedulingRandomDVO<VarSelectorNOW_domotaskpself> *var_heuristic = 
+	new GenericSchedulingRandomDVO<VarSelectorNOW_domotaskpself>(s, size);
       PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
       for(i=0; i<=size; ++i)
 	var_heuristic->bests[i].disjuncts = disjunct;
       var_heuristic->current.disjuncts = disjunct;
       var_heuristic->the_gen_disjuncts = disjunct;
       return var_heuristic;
+    } break;
+      
+    }
+
+
   } else {
-    GenericSchedulingDVO<VarSelectorNOW> *var_heuristic = 
-      new GenericSchedulingDVO<VarSelectorNOW>(s);
-    PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
-    var_heuristic->best.disjuncts = disjunct;
-    var_heuristic->current.disjuncts = disjunct;
-    var_heuristic->the_gen_disjuncts = disjunct;
-    return var_heuristic;
+
+    switch(strategy) {
+
+    case DOM: {
+      GenericSchedulingDVO<VarSelectorNOW_dom> *var_heuristic = 
+	new GenericSchedulingDVO<VarSelectorNOW_dom>(s);
+      PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
+      var_heuristic->best.disjuncts = disjunct;
+      var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_gen_disjuncts = disjunct;
+      return var_heuristic;
+    } break;
+
+   case DOM_O_BOOLWEIGHT: {
+      GenericSchedulingDVO<VarSelectorNOW_domoself> *var_heuristic = 
+	new GenericSchedulingDVO<VarSelectorNOW_domoself>(s);
+      PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
+      var_heuristic->best.disjuncts = disjunct;
+      var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_gen_disjuncts = disjunct;
+      return var_heuristic;
+    } break;
+
+   case DOM_O_TASKWEIGHT: {
+      GenericSchedulingDVO<VarSelectorNOW_domotask> *var_heuristic = 
+	new GenericSchedulingDVO<VarSelectorNOW_domotask>(s);
+      PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
+      var_heuristic->best.disjuncts = disjunct;
+      var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_gen_disjuncts = disjunct;
+      return var_heuristic;
+    } break;
+
+    case DOM_O_BOOLTASKWEIGHT: {
+      GenericSchedulingDVO<VarSelectorNOW_domotaskpself> *var_heuristic = 
+	new GenericSchedulingDVO<VarSelectorNOW_domotaskpself>(s);
+      PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
+      var_heuristic->best.disjuncts = disjunct;
+      var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_gen_disjuncts = disjunct;
+      return var_heuristic;
+    } break;
+
+   case DOM_P_BWEIGHT: {
+      GenericSchedulingDVO<VarSelectorNOW_domtself> *var_heuristic = 
+	new GenericSchedulingDVO<VarSelectorNOW_domtself>(s);
+      PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
+      var_heuristic->best.disjuncts = disjunct;
+      var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_gen_disjuncts = disjunct;
+      return var_heuristic;
+    } break;
+
+   case DOM_P_TWEIGHT: {
+      GenericSchedulingDVO<VarSelectorNOW_domttask> *var_heuristic = 
+	new GenericSchedulingDVO<VarSelectorNOW_domttask>(s);
+      PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
+      var_heuristic->best.disjuncts = disjunct;
+      var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_gen_disjuncts = disjunct;
+      return var_heuristic;
+    } break;
+
+    case DOM_P_BTWEIGHT: {
+      GenericSchedulingDVO<VarSelectorNOW_domttaskpself> *var_heuristic = 
+	new GenericSchedulingDVO<VarSelectorNOW_domttaskpself>(s);
+      PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
+      var_heuristic->best.disjuncts = disjunct;
+      var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->the_gen_disjuncts = disjunct;
+      return var_heuristic;
+    } break;
+      
+      
+    }
   }
+
+  return NULL;
 }
 
 
@@ -1943,6 +2021,22 @@ DVO* OSP::extract( Solver* s )
 
     int i;
     switch(strategy) {
+    case NOW: {
+      GenericSchedulingRandomDVO<VarSelectorOSP_NOW> *var_heuristic = 
+	new GenericSchedulingRandomDVO<VarSelectorOSP_NOW>(s, size);
+      PredicateDisjunctive** disjunct = get_disjuncts(s);
+      for(i=0; i<=size; ++i) {
+	var_heuristic->bests[i].disjuncts = disjunct;
+	var_heuristic->bests[i].job_size = ((No_wait_Model*)model)->job_size.stack_;
+	var_heuristic->bests[i].job_index = ((No_wait_Model*)model)->job_index.stack_;
+      }
+      var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->current.job_size = ((No_wait_Model*)model)->job_size.stack_;
+      var_heuristic->current.job_index = ((No_wait_Model*)model)->job_index.stack_;
+
+      var_heuristic->the_disjuncts = disjunct;
+      return var_heuristic;
+    }
     case DOMAIN_O_NOT: {
       GenericSchedulingRandomDVO<VarSelectorOSP_Domain> *var_heuristic = 
 	new GenericSchedulingRandomDVO<VarSelectorOSP_Domain>(s, size);
@@ -2071,6 +2165,21 @@ DVO* OSP::extract( Solver* s )
     //std::cout << "c extract determinist dvo" << std::endl;
 
     switch(strategy) {
+    case NOW: {
+      GenericSchedulingDVO<VarSelectorOSP_NOW> *var_heuristic = 
+	new GenericSchedulingDVO<VarSelectorOSP_NOW>(s);
+      PredicateDisjunctive** disjunct = get_disjuncts(s);
+      var_heuristic->best.disjuncts = disjunct;
+      var_heuristic->best.job_size = ((No_wait_Model*)model)->job_size.stack_;
+      var_heuristic->best.job_index = ((No_wait_Model*)model)->job_index.stack_;
+
+      var_heuristic->current.disjuncts = disjunct;
+      var_heuristic->current.job_size = ((No_wait_Model*)model)->job_size.stack_;
+      var_heuristic->current.job_index = ((No_wait_Model*)model)->job_index.stack_;
+
+      var_heuristic->the_disjuncts = disjunct;
+      return var_heuristic;
+    }
     case DOMAIN_O_NOT: {
       GenericSchedulingDVO<VarSelectorOSP_Domain> *var_heuristic = 
 	new GenericSchedulingDVO<VarSelectorOSP_Domain>(s);

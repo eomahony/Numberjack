@@ -1094,13 +1094,13 @@ namespace Mistral {
   };
 
 
-  class VarSelectorNOW 
+  class VarSelectorNOW_dom 
   {
   public: 
 
     /**@name Constructors*/
     //@{
-    VarSelectorNOW() {weight_ = 0; weight_task_ = 0; domsize_ = 0;}
+    VarSelectorNOW_dom() {weight_ = 0; weight_task_ = 0; domsize_ = 0;}
     //@}
 
     double value() { return ((double)weight_task_); }
@@ -1115,14 +1115,10 @@ namespace Mistral {
   
     /**@name Utils*/
     //@{ 
-    inline bool operator<( VarSelectorNOW& x ) const { 
-      return (domsize_ * ( x.weight_task_ +
-			  x.weight_
-			  ) < x.domsize_ * ( weight_task_ +
-					    weight_
-					    )) ;
+    inline bool operator<( VarSelectorNOW_dom& x ) const { 
+      return (domsize_  < x.domsize_ ) ;
     }
-    inline void operator=( VarSelectorNOW& x ) { // impact_ = x.impact_;
+    inline void operator=( VarSelectorNOW_dom& x ) { // impact_ = x.impact_;
       weight_task_ = x.weight_task_;
       weight_ = x.weight_; 
       domsize_ = x.domsize_; 
@@ -1144,6 +1140,316 @@ namespace Mistral {
       return os;
     }
   };
+
+
+  class VarSelectorNOW_domotask 
+  {
+  public: 
+
+    /**@name Constructors*/
+    //@{
+    VarSelectorNOW_domotask() {weight_ = 0; weight_task_ = 0; domsize_ = 0;}
+    //@}
+
+    double value() { return ((double)weight_task_); }
+
+    /**@name Parameters*/
+    //@{ 
+    int domsize_;
+    int weight_;
+    int weight_task_;
+    PredicateGenDisjunctive **disjuncts;
+    //@}  
+  
+    /**@name Utils*/
+    //@{ 
+    inline bool operator<( VarSelectorNOW_domotask& x ) const { 
+      return (domsize_ * ( x.weight_task_ 
+			   //x.weight_
+			  ) < x.domsize_ * ( weight_task_ 
+					     //weight_
+					    )) ;
+    }
+    inline void operator=( VarSelectorNOW_domotask& x ) { // impact_ = x.impact_;
+      weight_task_ = x.weight_task_;
+      weight_ = x.weight_; 
+      domsize_ = x.domsize_; 
+
+      //std::cout << domsize_ << "/(" << weight_ << "+" << weight_task_ << ")" << std::endl;
+
+    }
+    inline void operator=( VariableInt    *x ) 
+    { 
+      domsize_ = disjuncts[x->id]->domsize();
+      weight_task_ = (disjuncts[x->id]->scope[0]->weight
+		      +disjuncts[x->id]->scope[1]->weight);
+      weight_ = x->weight;
+    }
+    //@}  
+
+    std::ostream& print(std::ostream& os) const {
+      os << "-" ;
+      return os;
+    }
+  };
+
+
+  class VarSelectorNOW_domoself 
+  {
+  public: 
+
+    /**@name Constructors*/
+    //@{
+    VarSelectorNOW_domoself() {weight_ = 0; weight_task_ = 0; domsize_ = 0;}
+    //@}
+
+    double value() { return ((double)weight_task_); }
+
+    /**@name Parameters*/
+    //@{ 
+    int domsize_;
+    int weight_;
+    int weight_task_;
+    PredicateGenDisjunctive **disjuncts;
+    //@}  
+  
+    /**@name Utils*/
+    //@{ 
+    inline bool operator<( VarSelectorNOW_domoself& x ) const { 
+      return (domsize_ * (// x.weight_task_ +
+			  x.weight_
+			  ) < x.domsize_ * (// weight_task_ +
+					    weight_
+					    )) ;
+    }
+    inline void operator=( VarSelectorNOW_domoself& x ) { // impact_ = x.impact_;
+      weight_task_ = x.weight_task_;
+      weight_ = x.weight_; 
+      domsize_ = x.domsize_; 
+
+      //std::cout << domsize_ << "/(" << weight_ << "+" << weight_task_ << ")" << std::endl;
+
+    }
+    inline void operator=( VariableInt    *x ) 
+    { 
+      domsize_ = disjuncts[x->id]->domsize();
+      weight_task_ = (disjuncts[x->id]->scope[0]->weight
+		      +disjuncts[x->id]->scope[1]->weight);
+      weight_ = x->weight;
+    }
+    //@}  
+
+    std::ostream& print(std::ostream& os) const {
+      os << "-" ;
+      return os;
+    }
+  };
+
+
+
+  class VarSelectorNOW_domotaskpself 
+  {
+  public: 
+
+    /**@name Constructors*/
+    //@{
+    VarSelectorNOW_domotaskpself() {weight_ = 0; weight_task_ = 0; domsize_ = 0;}
+    //@}
+
+    double value() { return ((double)weight_task_); }
+
+    /**@name Parameters*/
+    //@{ 
+    int domsize_;
+    int weight_;
+    int weight_task_;
+    PredicateGenDisjunctive **disjuncts;
+    //@}  
+  
+    /**@name Utils*/
+    //@{ 
+    inline bool operator<( VarSelectorNOW_domotaskpself& x ) const { 
+      return (domsize_ * ( x.weight_task_ +
+			  x.weight_
+			  ) < x.domsize_ * ( weight_task_ +
+					    weight_
+					    )) ;
+    }
+    inline void operator=( VarSelectorNOW_domotaskpself& x ) { // impact_ = x.impact_;
+      weight_task_ = x.weight_task_;
+      weight_ = x.weight_; 
+      domsize_ = x.domsize_; 
+
+      //std::cout << domsize_ << "/(" << weight_ << "+" << weight_task_ << ")" << std::endl;
+
+    }
+    inline void operator=( VariableInt    *x ) 
+    { 
+      domsize_ = disjuncts[x->id]->domsize();
+      weight_task_ = (disjuncts[x->id]->scope[0]->weight
+		      +disjuncts[x->id]->scope[1]->weight);
+      weight_ = x->weight;
+    }
+    //@}  
+
+    std::ostream& print(std::ostream& os) const {
+      os << "-" ;
+      return os;
+    }
+  };
+
+
+
+  class VarSelectorNOW_domttask 
+  {
+  public: 
+
+    /**@name Constructors*/
+    //@{
+    VarSelectorNOW_domttask() {weight_ = 0; weight_task_ = 0; domsize_ = 0;}
+    //@}
+
+    double value() { return ((double)weight_task_); }
+
+    /**@name Parameters*/
+    //@{ 
+    int domsize_;
+    int weight_;
+    int weight_task_;
+    PredicateGenDisjunctive **disjuncts;
+    //@}  
+  
+    /**@name Utils*/
+    //@{ 
+    inline bool operator<( VarSelectorNOW_domttask& x ) const { 
+      return (domsize_ < x.domsize_  || 
+	      (domsize_ == x.domsize_ && weight_task_ > x.weight_task_));
+    }
+    inline void operator=( VarSelectorNOW_domttask& x ) { // impact_ = x.impact_;
+      weight_task_ = x.weight_task_;
+      weight_ = x.weight_; 
+      domsize_ = x.domsize_; 
+
+      //std::cout << domsize_ << "/(" << weight_ << "+" << weight_task_ << ")" << std::endl;
+
+    }
+    inline void operator=( VariableInt    *x ) 
+    { 
+      domsize_ = disjuncts[x->id]->domsize();
+      weight_task_ = (disjuncts[x->id]->scope[0]->weight
+		      +disjuncts[x->id]->scope[1]->weight);
+      weight_ = x->weight;
+    }
+    //@}  
+
+    std::ostream& print(std::ostream& os) const {
+      os << "-" ;
+      return os;
+    }
+  };
+
+
+
+  class VarSelectorNOW_domtself 
+  {
+  public: 
+
+    /**@name Constructors*/
+    //@{
+    VarSelectorNOW_domtself() {weight_ = 0; weight_task_ = 0; domsize_ = 0;}
+    //@}
+
+    double value() { return ((double)weight_task_); }
+
+    /**@name Parameters*/
+    //@{ 
+    int domsize_;
+    int weight_;
+    int weight_task_;
+    PredicateGenDisjunctive **disjuncts;
+    //@}  
+  
+    /**@name Utils*/
+    //@{ 
+    inline bool operator<( VarSelectorNOW_domtself& x ) const { 
+      return (domsize_ < x.domsize_  || 
+	      (domsize_ == x.domsize_ && weight_ > x.weight_));
+    }
+    inline void operator=( VarSelectorNOW_domtself& x ) { // impact_ = x.impact_;
+      weight_task_ = x.weight_task_;
+      weight_ = x.weight_; 
+      domsize_ = x.domsize_; 
+
+      //std::cout << domsize_ << "/(" << weight_ << "+" << weight_task_ << ")" << std::endl;
+
+    }
+    inline void operator=( VariableInt    *x ) 
+    { 
+      domsize_ = disjuncts[x->id]->domsize();
+      weight_task_ = (disjuncts[x->id]->scope[0]->weight
+		      +disjuncts[x->id]->scope[1]->weight);
+      weight_ = x->weight;
+    }
+    //@}  
+
+    std::ostream& print(std::ostream& os) const {
+      os << "-" ;
+      return os;
+    }
+  };
+
+
+
+  class VarSelectorNOW_domttaskpself 
+  {
+  public: 
+
+    /**@name Constructors*/
+    //@{
+    VarSelectorNOW_domttaskpself() {weight_ = 0; weight_task_ = 0; domsize_ = 0;}
+    //@}
+
+    double value() { return ((double)weight_task_); }
+
+    /**@name Parameters*/
+    //@{ 
+    int domsize_;
+    int weight_;
+    int weight_task_;
+    PredicateGenDisjunctive **disjuncts;
+    //@}  
+  
+    /**@name Utils*/
+    //@{ 
+    inline bool operator<( VarSelectorNOW_domttaskpself& x ) const { 
+      return (domsize_ < x.domsize_  || 
+	      (domsize_ == x.domsize_ && (weight_ + weight_task_) > (x.weight_ + x.weight_task_)));
+    }
+    inline void operator=( VarSelectorNOW_domttaskpself& x ) { // impact_ = x.impact_;
+      weight_task_ = x.weight_task_;
+      weight_ = x.weight_; 
+      domsize_ = x.domsize_; 
+
+      //std::cout << domsize_ << "/(" << weight_ << "+" << weight_task_ << ")" << std::endl;
+
+    }
+    inline void operator=( VariableInt    *x ) 
+    { 
+      domsize_ = disjuncts[x->id]->domsize();
+      weight_task_ = (disjuncts[x->id]->scope[0]->weight
+		      +disjuncts[x->id]->scope[1]->weight);
+      weight_ = x->weight;
+    }
+    //@}  
+
+    std::ostream& print(std::ostream& os) const {
+      os << "-" ;
+      return os;
+    }
+  };
+
+
+
 
 
   class VarSelectorOSP 
@@ -1711,6 +2017,76 @@ namespace Mistral {
 	domsize_ = d->domsize();
 	task_weight_ = (d->scope[0]->weight + d->scope[1]->weight);
 	//std::cout << domsize_ << " / " << task_weight_ << std::endl;
+      } else {
+	domsize_ = x->domsize();
+	task_weight_ = x->weight;
+      }
+      weight_ = x->weight;
+    }
+    //@}  public: 
+
+    std::ostream& print(std::ostream& os) const {
+      os << "-" ;
+      return os;
+    }
+  };
+
+
+  class VarSelectorOSP_NOW 
+  {
+  public: 
+
+    /**@name Constructors*/
+    //@{
+    VarSelectorOSP_NOW() {
+      domsize_ = 0; 
+      weight_ = 0; 
+      task_weight_ = 0;
+      job_size_ = 0;
+      job_index_ = 0;
+    }
+    //@}
+
+    double value() { return ((double)(weight_ + task_weight_)); }
+
+
+    /**@name Parameters*/
+    //@{ 
+    int domsize_;
+    int weight_;
+    int task_weight_;
+    int job_size_;
+    int job_index_;
+    
+    int *job_size;
+    int *job_index;
+    PredicateDisjunctive **disjuncts;
+    //@}  
+  
+    /**@name Utils*/
+    //@{ 
+    inline bool operator<( VarSelectorOSP_NOW& x ) const {
+      //return (job_size_ < x.job_size_ || (job_size_ == x.job_size_ && (domsize_ * (x.task_weight_) < x.domsize_ * (task_weight_)))) ;
+      return ((domsize_ // * job_size_
+	       * (x.task_weight_)) < (x.domsize_ // * x.job_size_
+				      * (task_weight_)));
+    }
+    inline void operator=( VarSelectorOSP_NOW& x ) { 
+      weight_ = x.weight_; 
+      task_weight_ = x.task_weight_; 
+      domsize_ = x.domsize_; 
+      job_size_ = x.job_size_;
+      job_index_ = x.job_index_;
+    }
+    inline void operator=( VariableInt    *x ) 
+    { 
+      int xid = x->id;
+      PredicateDisjunctive* d = disjuncts[xid];
+      if(d) {
+	domsize_ = d->domsize();
+	task_weight_ = (d->scope[0]->weight + d->scope[1]->weight);
+	job_size_ = job_size[xid];
+	job_index_ = job_index[xid];
       } else {
 	domsize_ = x->domsize();
 	task_weight_ = x->weight;
@@ -4652,6 +5028,7 @@ v=_X->min(); t=Decision::ASSIGNMENT;
     static const int DOM_O_BOOLTASKWEIGHTTYPE = 7;
     //static const int DOM_O_WEAKWEIGHT = 3;
     static const int DOM_O_TASKWEIGHTPJOB = 9;
+    static const int NOW = 10;
 
     int size;
     int promise;
@@ -4686,14 +5063,25 @@ v=_X->min(); t=Decision::ASSIGNMENT;
   class NOW : public VariableOrdering {
   public:
 
+    static const int DOM = 0;
+    static const int DOM_O_BOOLWEIGHT = 1;
+    static const int DOM_O_TASKWEIGHT = 2;
+    static const int DOM_O_BOOLTASKWEIGHT = 3;
+    static const int DOM_P_TWEIGHT = 4;
+    static const int DOM_P_BWEIGHT = 5;
+    static const int DOM_P_BTWEIGHT = 6;
+
+
     int size;
+    int strategy;
     SchedulingModel *model;
-    NOW( SchedulingModel *m, const int sz=0 ) { 
+    NOW( SchedulingModel *m, const int sz=0, const int st=DOM_O_BOOLTASKWEIGHT ) { 
+      strategy=st;
       size=sz; 
       model=m;
     }
     virtual ~NOW();
-  
+    
     /**@name Utils*/
     //@{
     PredicateGenDisjunctive** get_gen_disjuncts(Solver *s);

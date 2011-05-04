@@ -1449,7 +1449,75 @@ namespace Mistral {
   };
 
 
+  class VarSelectorOSP_DoTaskWeightJTL0
+  {
+  public:
+    /**@name Constructors*/
+    //@{
+    VarSelectorOSP_DoTaskWeightJTL0() {domsize_ = 0; weight_ = 0; type_ = 0; bweight_ = 0; }
+    //@}
+    
+    double value() { return ((double)weight_); }
+    
+    /**@name Parameters*/
+    //@{
+    int *current_;
+    int type_;
+    int domsize_;
+    int weight_;
+    int bweight_;
+    PredicateDisjunctive **disjuncts;
+    int nb_disjuncts;
+    //@}
+    
+   /**@name Utils*/
+   //@{
+   inline bool operator<( VarSelectorOSP_DoTaskWeightJTL0& x ) const {
+     return (type_ < x.type_ || 
+	     (type_ == x.type_ && 
+	      (domsize_ * x.weight_ < x.domsize_ * weight_)) || 
+	     ((type_ == x.type_ && 
+	       (domsize_ * x.weight_ == x.domsize_ * weight_) && 
+	       (bweight_ > x.bweight_))
+	      ));
+   }
+   inline void operator=( VarSelectorOSP_DoTaskWeightJTL0& x ) {
+       weight_ = x.weight_; bweight_ = x.bweight_;  domsize_ = x.domsize_; type_ = type_;
+   }
+   inline void operator=( VariableInt    *x )
+   {
 
+     PredicateDisjunctive* d = disjuncts[x->id];
+     // If there are bools of the current job pair left unassigned, then select from these based on tdom/bwt;
+       // else select a new pair of jobs based on  tdom/twt.
+       // bweight is only tie breaker for new pair of jobs, hence i just set it to 1 in first case
+     int idx[2];
+     idx[0] = d->scope[0]->id;
+     idx[1] = d->scope[1]->id;
+     int i = (idx[0]<idx[1]);
+     int jdx = idx[i]*nb_disjuncts+idx[1-i];
+
+     if(jdx == *current_) {
+       type_ = 1;
+       domsize_ = (d->domsize());
+       weight_ = x->weight;
+       bweight_ = 1;
+       //std::cout << domsize_ << " / " << weight_ << std::endl;
+     } else {
+       type_ = 2;
+       domsize_ = (d->domsize());
+       weight_ = (d->scope[0]->weight + d->scope[1]->weight);
+       bweight_ = x->weight;
+     }
+   }
+
+   //@}
+
+   std::ostream& print(std::ostream& os) const {
+     os << "-" ;
+     return os;
+   }
+ };
 
 
   class VarSelectorOSP 
@@ -1947,9 +2015,12 @@ namespace Mistral {
     //@{ 
     inline bool operator<( VarSelectorOSP_DomainWeight& x ) const { 
       
-      //std::cout << "osp d/bw" << std::endl;
+      //std::cout << domsize_ << " <> " << x.domsize_ << std::endl;
 
       return (domsize_ < x.domsize_ || ( domsize_ == x.domsize_ && x.weight_ < weight_ )) ;
+      return (domsize_ < (int)((double)(x.domsize_)*.5) || 
+	      ( domsize_ * x.weight_ < x.domsize_ * x.weight_ )) ;
+      //return (domsize_ < x.domsize_ || ( (int)((double)domsize_*1.01) <= x.domsize_ && x.weight_ < weight_ )) ;
 
 //       int self = ((domsize_ * domsize_) / intersize_);
 //       int other = ((x.domsize_ * x.domsize_) / x.intersize_);
@@ -2067,9 +2138,13 @@ namespace Mistral {
     //@{ 
     inline bool operator<( VarSelectorOSP_NOW& x ) const {
       //return (job_size_ < x.job_size_ || (job_size_ == x.job_size_ && (domsize_ * (x.task_weight_) < x.domsize_ * (task_weight_)))) ;
-      return ((domsize_ // * job_size_
-	       * (x.task_weight_)) < (x.domsize_ // * x.job_size_
-				      * (task_weight_)));
+//       return ((domsize_ // * job_size_
+// 	       * (x.task_weight_)) < (x.domsize_ // * x.job_size_
+// 				      * (task_weight_)));
+
+      return ((domsize_  //* job_size_
+	       * (x.weight_)) < (x.domsize_ //* x.job_size_
+				 * weight_));
     }
     inline void operator=( VarSelectorOSP_NOW& x ) { 
       weight_ = x.weight_; 
@@ -4278,6 +4353,69 @@ v=_X->min(); t=Decision::ASSIGNMENT;
     //@}
   };
 
+  /**********************************************
+   * Dedicated JTL0 heuristic
+   **********************************************/
+
+  class JTL0DVO : public DVO
+  {
+  public: 
+
+    /**@name Parameters*/
+    //@{ 
+    //Constraint **the_disjuncts;
+    PredicateDisjunctive **the_disjuncts;
+    ReversibleNum<int> current_job;
+    VarSelectorOSP_DoTaskWeightJTL0 best;
+    VarSelectorOSP_DoTaskWeightJTL0 current;
+    int nb_disjuncts;
+    //@}
+    
+    inline VariableInt* select()
+    {    
+
+      VariableInt *var=*first, **var_iterator;
+      VariableInt **last_var = (last-first > limit ? first+limit : last);
+      best = var; 
+
+      //std::cout << "select variable (current jobs: " << current_job << ")" << std::endl;
+
+      for( var_iterator = first+1; var_iterator != last_var; ++var_iterator ) 
+	{  
+	  current = (*var_iterator);
+	  if( current < best ) 
+	    {
+	      best = current;
+	      var = (*var_iterator);
+	    }
+	}
+      
+      PredicateDisjunctive *d = the_disjuncts[var->id];
+      int idx[2];
+      idx[0] = d->scope[0]->id;
+      idx[1] = d->scope[1]->id;
+      int i = (idx[0]<idx[1]);
+      int jdx = idx[i]*nb_disjuncts+idx[1-i];
+      if(current_job != jdx) {
+	//std::cout << "   => change current_job to " << jdx << std::endl;
+	current_job = jdx;
+      }
+      
+      return var;
+    }
+    //@}
+
+    /**@name Constructors*/
+    //@{
+    //JTL0(Solver* s, const int l=NOVAL) : DVO(s,l) { the_disjuncts=NULL; }
+    JTL0DVO(Solver* s, PredicateDisjunctive** disj, const int l=NOVAL);
+    virtual ~JTL0DVO()
+    {
+      delete [] the_disjuncts;
+    }
+    //@}
+  };
+
 
   /**********************************************
    * GenericRandom heuristic
@@ -5029,6 +5167,7 @@ v=_X->min(); t=Decision::ASSIGNMENT;
     //static const int DOM_O_WEAKWEIGHT = 3;
     static const int DOM_O_TASKWEIGHTPJOB = 9;
     static const int NOW = 10;
+    static const int JTL0 = 11;
 
     int size;
     int promise;

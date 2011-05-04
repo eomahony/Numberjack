@@ -1566,6 +1566,21 @@ inline VariableInt* DVOAntiLex::select()
   return sequence[i];
 }
 
+JTL0DVO::JTL0DVO(Solver* s, PredicateDisjunctive** disj, const int l) : DVO(s,NOVAL) { 
+  s->binds( current_job );
+  current_job.setValue( 0 );
+  the_disjuncts=disj;
+  nb_disjuncts = l;
+
+  best.disjuncts = the_disjuncts;
+  best.nb_disjuncts = nb_disjuncts;
+  best.current_ = &(current_job.value);
+  
+  current.disjuncts = the_disjuncts;
+  current.nb_disjuncts = nb_disjuncts;
+  current.current_ = &(current_job.value);
+}
+
 
 JOB::~JOB() {
 }
@@ -1696,8 +1711,8 @@ void JobByJob::shuffle() {
 
 void JobByJob::select_job() {
   int length = 0, jlength;
-  int max_min = 0, jmin;
-  int window_size = NOVAL, jsize;
+  int jmin;
+  int jsize;
   int best_job = curJob, i, j, k;
   
 //   std::cout << std::endl;
@@ -2165,6 +2180,22 @@ DVO* OSP::extract( Solver* s )
     //std::cout << "c extract determinist dvo" << std::endl;
 
     switch(strategy) {
+    case JTL0: {
+      JTL0DVO *var_heuristic = 
+	new JTL0DVO(s,get_disjuncts(s),((No_wait_Model*)model)->SearchVars.size());
+      // var_heuristic->nb_disjuncts = ((No_wait_Model*)model)->SearchVars.size();
+      // PredicateDisjunctive** disjunct = get_disjuncts(s);
+      // var_heuristic->best.disjuncts = disjunct;
+      // var_heuristic->best.nb_disjuncts = var_heuristic->nb_disjuncts;
+      // var_heuristic->best.current_ = &(var_heuristic->current_job.value);
+
+      // var_heuristic->current.disjuncts = disjunct;
+      // var_heuristic->current.job_size = var_heuristic->nb_disjuncts;
+      // var_heuristic->current.current_ = &(var_heuristic->current_job.value);
+
+      // var_heuristic->the_disjuncts = disjunct;
+      return var_heuristic;
+    }
     case NOW: {
       GenericSchedulingDVO<VarSelectorOSP_NOW> *var_heuristic = 
 	new GenericSchedulingDVO<VarSelectorOSP_NOW>(s);

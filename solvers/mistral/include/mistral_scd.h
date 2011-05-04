@@ -715,6 +715,10 @@ public:
 	OSP h(model, abs(rdz), val_ord, OSP::DOM_O_TASKWEIGHTPJOB);
 	add( h );
       }
+      else if( Heu == "osp-jtl0") {
+	OSP h(model, abs(rdz), val_ord, OSP::JTL0);
+	add( h );
+      }
       else if( Heu == "now-d") {
 	NOW h(model, abs(rdz), NOW::DOM);
 	add( h );

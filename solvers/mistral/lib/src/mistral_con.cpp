@@ -1316,10 +1316,10 @@ bool ConstraintGenNogoodBase::reduce( Vector<GeneralLiteral>& cl ) {
 
 void ConstraintGenNogoodBase::add( Vector<GeneralLiteral>& conflict ) {
 
-  bool reduced = reduce(conflict);
+  //bool reduced = reduce(conflict);
 
 
-  if(!reduced) {
+  //if(!reduced) {
   if(conflict.size > 1) {
     Array<GeneralLiteral> *cl = Array<GeneralLiteral>::Array_new(conflict);
     nogood.push( cl );
@@ -1364,7 +1364,7 @@ void ConstraintGenNogoodBase::add( Vector<GeneralLiteral>& conflict ) {
     //std::cerr << " is a unary nogood!!" << std::endl;
     //exit(0);
   }
-  }
+  //}
   //std::cout << "end add" << std::endl;
 }
 

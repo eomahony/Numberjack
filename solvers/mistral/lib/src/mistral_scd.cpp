@@ -324,7 +324,7 @@ ParameterList::ParameterList(int length, char **commandline) {
     Objective = "makespan";
     Presolve = "jtl";
     if(Heuristic == "none")
-      Heuristic = "osp-b";
+      Heuristic = "osp-t";
   } else if(Type == "now" || Type == "now2") {
     Objective = "makespan";
     Presolve = "default";
@@ -1850,11 +1850,11 @@ void No_wait_Model::setup(Instance& inst, ParameterList *params, const int max_m
       //std::cout << std::endl;
     }
     
-    job_size.print(std::cout);
-    std::cout << std::endl;
+//     job_size.print(std::cout);
+//     std::cout << std::endl;
 
-    job_index.print(std::cout);
-    std::cout << std::endl;
+//     job_index.print(std::cout);
+//     std::cout << std::endl;
 
     add(disjuncts);
 
@@ -2088,10 +2088,11 @@ void Solution::guide_search() {
 //   print(std::cout);
 //   std::cout << std::endl;
 
-  //solver->setGuidedOrdering(model->disjuncts, disjunct_value, "spl");
-  if( ((SchedulingSolver*)solver)->params->Type == "now2" )
-    solver->setGuidedBoundsOrdering(model->SearchVars, search_value);
-  else 
+//   //solver->setGuidedOrdering(model->disjuncts, disjunct_value, "spl");
+//   if( ((SchedulingSolver*)solver)->params->Type == "now2" )
+//     solver->setGuidedBoundsOrdering(model->SearchVars, search_value);
+//   else
+    
     solver->setGuidedOrdering(model->SearchVars, search_value);
 
   if(model->data->hasJobDueDate()) {
@@ -2107,10 +2108,11 @@ void Solution::guide_search_bounds() {
 //   print(std::cout);
 //   std::cout << std::endl;
 
-  //solver->setGuidedOrdering(model->disjuncts, disjunct_value, "spl");
-  if( ((SchedulingSolver*)solver)->params->Type == "now2" )
-    solver->setGuidedBoundsOrdering(model->SearchVars, search_value);
-  else 
+//   //solver->setGuidedOrdering(model->disjuncts, disjunct_value, "spl");
+//   if( ((SchedulingSolver*)solver)->params->Type == "now2" )
+//     solver->setGuidedBoundsOrdering(model->SearchVars, search_value);
+//   else
+    
     solver->setGuidedOrdering(model->SearchVars, search_value);
   if(model->data->hasJobDueDate()) {
     solver->setGuidedOrdering(model->earlybool, earlybool_value);

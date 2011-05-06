@@ -27,7 +27,7 @@ PYVERSION	:=	$(shell python -V 2>&1 | \
 
 ifeq ($(OSTYPE),darwin)
 BUNDLE = -bundle -undefined suppress 
-HACK = -I/usr/lib/gcc/i686-apple-darwin9/4.2.1/include
+HACK = -I/usr/lib/gcc/i686-apple-darwin10/4.2.1/include
 else
 BUNDLE = -shared 
 endif

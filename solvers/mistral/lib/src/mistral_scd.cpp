@@ -468,6 +468,12 @@ std::ostream& ParameterList::print(std::ostream& os) {
 Instance::Instance(ParameterList& params) {
 
   DBG("Build instance %s\n", params.data_file);
+
+  std::cout << "HERE" << std::endl;
+  exit(1);
+
+
+  dtp_nodes = 0;
   
   setup_time    = NULL;
   time_lag[0]   = NULL;
@@ -501,7 +507,9 @@ Instance::Instance(ParameterList& params) {
     jet_readData( params.data_file );
   } else if(params.Type == "dyn") {
     dyn_readData( params.data_file, params.Precision );
-  }
+  } else if(params.Type == "dtp") {
+    dtp_readData( params.data_file );
+  } 
 }
 
 Instance::~Instance() {
@@ -1537,6 +1545,74 @@ void Instance::dyn_readData( const char* filename, const int precision ) {
 
 }
 
+void Instance::dtp_readData( const char* filename ) {
+
+  DBG("Read (dtp)%s\n", "");
+
+  char comment = '#';
+  std::ifstream infile( filename, std::ios_base::in );
+
+  while(true) {
+    comment = infile.get();
+    if(comment == '#') {
+      infile.ignore(1000, '\n');
+    } else break;
+  }
+  infile.unget();
+  
+  std::string exp;
+  int i, j, x, y, d;
+  int step = 0;
+
+  while(true) {
+    infile >> exp;
+    if(!infile.good())  break;
+
+    if(step == 0) {
+      std::vector< Term > clause;
+      dtp_clauses.push_back(clause);
+      dtp_weights.push_back(randint(100)+1);
+    }
+
+    //
+
+    if(step%2 == 0) {
+      i = 0;
+      while(exp[++i] != '-');
+      x = atoi(exp.substr(1,i-1).c_str());
+      j = i+2;
+      while(exp[++j] != '<');
+      y = atoi(exp.substr(i+2,j-i-2).c_str());
+      d = atoi(exp.substr(j+2,10).c_str());
+
+      Term t;
+      t.X = x;
+      t.Y = y;
+      t.k = d;
+
+      if(t.X > dtp_nodes) dtp_nodes = t.X;
+      if(t.Y > dtp_nodes) dtp_nodes = t.Y;
+
+      dtp_clauses.back().push_back(t);
+
+      //std::cout << "t" << x << " - t" << y  << " <= " << d << std::endl << std::endl;
+    }
+
+    step = (step+1) % 4;
+  }
+
+    ++dtp_nodes;
+
+  // for(int i=0; i<dtp_clauses.size(); ++i) {
+  //   for(int j=0; j<dtp_clauses[i].size(); ++j) {
+  //     std::cout << "t" << dtp_clauses[i][j].X << " - t" << dtp_clauses[i][j].Y << " <= " << dtp_clauses[i][j].k << " OR ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+
+
+}
+
 
 
 SchedulingModel::SchedulingModel(Instance& inst, ParameterList *params, 
@@ -1903,6 +1979,42 @@ void No_wait_Model::setup(Instance& inst, ParameterList *params, const int max_m
 }
 
 
+void DTP_Model::setup(Instance& inst, ParameterList *params, const int max_makespan) {
+
+  ub_C_max = max_makespan; 
+  ub_Weight = 0;
+  for(int i=0; i<inst.dtp_clauses.size(); ++i) {
+    ub_Weight += inst.dtp_weights[i];
+  }
+  inst.dtp_weights.push_back(0);
+
+  for(int i=0; i<inst.dtp_nodes; ++i) {
+    Variable t(0, max_makespan);
+    tasks.add(t);
+  }
+
+  // x-y <= k
+  for(int i=0; i<inst.dtp_clauses.size(); ++i) {
+    for(int j=0; j<2; ++j) {
+      SearchVars.add( Precedence( tasks[inst.dtp_clauses[i][j].X], 
+				  -inst.dtp_clauses[i][j].k, 
+				  tasks[inst.dtp_clauses[i][j].Y] ) );
+    }
+    int k = SearchVars.size();
+    disjuncts.add( SearchVars[k-2] || SearchVars[k-1] );
+  }
+
+  // for(int i=0; i<disjuncts.size(); ++i) {
+  //   SearchVars.add(disjuncts[i]);
+  // }
+  
+  Weight = Variable(0,ub_Weight);
+  add(Weight == (-Sum(disjuncts, &(inst.dtp_weights[0])) + ub_Weight));
+  //  Weight = Sum(disjuncts, &(inst.dtp_weights[0]));
+  //add(Maximise(Weight));
+}
+
+
 int L_sum_Model::get_lb() {
   return lb_L_sum;
 }
@@ -1917,6 +2029,14 @@ int Depth_Model::get_lb() {
 
 int Depth_Model::get_ub() {
   return ub_Depth;
+}
+
+int DTP_Model::get_lb() {
+  return 0;
+}
+
+int DTP_Model::get_ub() {
+  return ub_Weight;
 }
 
 int C_max_Model::get_lb() {
@@ -1935,6 +2055,10 @@ VariableInt* Depth_Model::get_objective_var() {
   return Depth.getVariable();
 }
 
+VariableInt* DTP_Model::get_objective_var() {
+  return Weight.getVariable();
+}
+
 VariableInt* C_max_Model::get_objective_var() {
   return C_max.getVariable();
 }
@@ -1951,6 +2075,10 @@ int Depth_Model::set_objective(const int obj) {
 //   Depth.getVariable()->print(std::cout);
 //   std::cout << std::endl;
   return (Depth.getVariable()->setMax(obj) ? UNKNOWN : UNSAT);
+}
+
+int DTP_Model::set_objective(const int obj) {
+  return (Weight.getVariable()->setMax(obj) ? UNKNOWN : UNSAT);
 }
 
 int C_max_Model::set_objective(const int obj) {
@@ -1980,6 +2108,10 @@ int L_sum_Model::get_objective() {
 
 int Depth_Model::get_objective() {
   return Depth.value();
+}
+
+int DTP_Model::get_objective() {
+  return Weight.value();
 }
 
 double L_sum_Model::get_normalized_objective() {
@@ -2440,13 +2572,15 @@ void SchedulingSolver::dichotomic_search()
 
   presolve();
   
-  if(!probe_ub()) {
-    if(params->Presolve == "jtl_old") {
-      old_jtl_presolve();
-    } else if(params->Presolve == "jtl") {
-      jtl_presolve();
-    }
-  }
+
+  
+  // if(!probe_ub()) {
+  //   if(params->Presolve == "jtl_old") {
+  //     old_jtl_presolve();
+  //   } else if(params->Presolve == "jtl") {
+  //     jtl_presolve();
+  //   }
+  // }
   
   int iteration = 1;
   

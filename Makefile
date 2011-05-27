@@ -64,7 +64,7 @@ clean_swig: $(TARGET_CLEAN_SWIG)
 cluster: release
 	scp Numberjack.0.1.$(DATE).zip 4c131:/home/$(ACCOUNT)/
 
-release: local_install Numberjack.0.1.$(DATE).zip
+release:  Numberjack.0.1.$(DATE).zip
 
 Numberjack.0.1.$(DATE).zip: Numberjack.0.1.$(DATE)/src $(TARGET_RELEASE)
 	@echo Build archive

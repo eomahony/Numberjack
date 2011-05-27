@@ -1470,19 +1470,28 @@ DVO::DVO(Solver *s, const int l)
     first(s->future), 
     last(s->empty), 
     decision(s->decision.stack_), 
-    level(s->level)
+    level(s->level),
+    solver(s)
 {
 //   VariableInt **var_iterator;
 //   for(var_iterator = first; var_iterator != last; ++var_iterator)
 //     {
 //     }
   limit = l;
+  if(limit > s->length) limit = s->length;
   //verbosity = 0;
 }
 
 //Constraint** DVO::get_disjuncts() { return _garbage_disjuncts; }
 PredicateDisjunctive** DVO::get_disjuncts(Solver *s) { return _garbage_disjuncts; }
 PredicateGenDisjunctive** DVO::get_gen_disjuncts(Solver *s) { return _garbage_gen_disjuncts; }
+
+VariableInt** DVO::copy_sequence() {
+  VariableInt **sequence = new VariableInt*[solver->length];
+  std::memcpy(sequence, solver->sequence, (solver->length)*sizeof(VariableInt*));
+  return sequence;
+}
+
 
 inline VariableInt* DVONoOrder::select() 
 {
@@ -2567,6 +2576,12 @@ DVO* DomOverWDeg::extract( Solver* s )
     return new GenericDVO<VarSelectorDomainOverWeight>(s);
 }
 
+DVO* DetDomOverWDeg::extract( Solver* s )
+{
+  s->setLearner( Weighter::WDG );
+  return new GenericDeterministicDVO<VarSelectorDomainOverWeight>(s);
+}
+
 
 
 void linkImpact( Solver* s, double**** bdi, double*** cdi, const int size ) 
@@ -2678,8 +2693,8 @@ DVO* ImpactOverWDeg::extract( Solver* s )
     cdi = &(hr->current.decision_impact);
     h = hr;
   } else {
-    GenericDVO<VarSelectorImpactOverWeight> *hn = 
-      new GenericDVO<VarSelectorImpactOverWeight>(s);
+    GenericDeterministicDVO<VarSelectorImpactOverWeight> *hn = 
+      new GenericDeterministicDVO<VarSelectorImpactOverWeight>(s);
     bdi[0] = &(hn->best.decision_impact);
     cdi = &(hn->current.decision_impact);
     h = hn;

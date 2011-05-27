@@ -4189,6 +4189,8 @@ v=_X->min(); t=Decision::ASSIGNMENT;
     VariableInt**& decision;
     /// The number of decisions;
     int& level;
+
+    Solver *solver;
     //int verbosity;
     int limit;
     /// Structure used to learn weights
@@ -4219,17 +4221,19 @@ v=_X->min(); t=Decision::ASSIGNMENT;
     */
     virtual VariableInt* select() = 0;
     //virtual void print( std::ostream& o ) const { o << "DVO" << std::endl; }  
+
+    VariableInt **copy_sequence();
     //@} 
   };
-
+  
 
 
   /**********************************************
    * Generic heuristic
    **********************************************/
-
+  
   template <class T>
-  class GenericDVO : public DVO
+    class GenericDVO : public DVO
   {
   public: 
     
@@ -4246,7 +4250,7 @@ v=_X->min(); t=Decision::ASSIGNMENT;
 
     /**@name Constructors*/
     //@{
-    GenericDVO(Solver* s, const int l=NOVAL) : DVO(s,l) { }
+  GenericDVO(Solver* s, const int l=NOVAL) : DVO(s,l) { }
     virtual ~GenericDVO()
     {
       //delete [] _garbage_disjuncts;
@@ -4320,6 +4324,66 @@ v=_X->min(); t=Decision::ASSIGNMENT;
 //  	  std::cout << std::endl;
 //  	  std::cout << std::endl;
 
+      return var;
+    }
+    //@}
+  };
+
+
+  /**********************************************
+   * GenericDeterministic heuristic
+   **********************************************/
+
+  template <class T>
+    class GenericDeterministicDVO : public DVO
+  {
+  public: 
+    
+    /**@name Parameters*/
+    //@{ 
+    VariableInt **sequence;
+    
+    T best;
+    T current;
+    //@}
+    
+    virtual double get_value(VariableInt *X) {
+      current = X;
+      return current.value();
+    }
+    
+    /**@name Constructors*/
+    //@{
+  GenericDeterministicDVO(Solver* s, const int l=NOVAL) : DVO(s,l) {
+      sequence = copy_sequence();
+    }
+    virtual ~GenericDeterministicDVO()
+    {
+      free_disjuncts();
+      delete [] sequence;
+    }
+    //@}
+
+    /**@name Utils*/
+    //@{
+    inline VariableInt* select()
+    {    
+      VariableInt *var=NULL; //*sequence;//, **var_iterator;
+      //VariableInt **last_var = sequence;
+      //best = var; 
+      for( int i=1; i<limit; ++i ) {
+	
+	if(sequence[i]->isLinked()) {
+	  
+	  current = sequence[i];
+	  if( !var || current < best ) 
+	    {
+	      best = current;
+	      var = sequence[i];
+	    }
+	}
+      }
+      
       return var;
     }
     //@}
@@ -4980,6 +5044,25 @@ v=_X->min(); t=Decision::ASSIGNMENT;
 
     int size;
     DomOverWDeg( const int sz=0 ) { size=sz; }
+
+    /**@name Utils*/
+    //@{
+    DVO* extract( Solver* s );
+    //@}
+  };
+
+
+  /**********************************************
+   * Deterministic version of Min domain/weighted degree
+   **********************************************/
+
+  /*! \class DetDomOverWDeg
+    \brief  Wrapper for DVODetDomOverWDeg
+  */
+  class DetDomOverWDeg : public VariableOrdering {
+  public:
+
+    DetDomOverWDeg() {}
 
     /**@name Utils*/
     //@{

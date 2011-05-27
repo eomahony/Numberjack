@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
   //model.add( X[(N+1)/2] >= N/2 );
 
   /// search
-  ImpactOverWDeg heuristic(2);
+  ImpactOverWDeg heuristic;
   //MinDomain heuristic(3);
   Solver s(model, heuristic);
   s.setVerbosity(1);

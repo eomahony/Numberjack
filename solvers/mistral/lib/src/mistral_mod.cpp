@@ -3586,9 +3586,14 @@ int BuildObjectMember::propagateUpward( BuildObjectPredicate *pred ) const
   BuildObject *x = pred->scope[0];
   int i, n = pred->params[0], inter_size=0;
   int *vals = &(pred->params[1]);
-  for(i=0; i<n; ++i)
+
+  std::cout << "n=" << n << std::endl;
+
+  for(i=0; i<n; ++i) {
+    std::cout << "vals["<< i << "]=" << vals[i] << std::endl;
     if( x->contain(vals[i]) ) 
       ++inter_size;
+  }
   int lb = inter_size == x->size();
   int ub = inter_size > 0;
   int consistent = ( pred->setMin( lb ) && pred->setMax( ub ) );

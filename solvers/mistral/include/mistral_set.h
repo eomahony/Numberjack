@@ -584,6 +584,8 @@ namespace Mistral {
 	insert( elt[i] );
     }
 
+
+    
     Bitset(const int lb, const int ub, const uint p) 
     {
       init(lb,ub,p);

@@ -1171,7 +1171,7 @@ namespace Mistral {
 #ifdef _DRAW_EXPLORATION
 	    if((*expFile)) {
 	      (*expFile) << "+ reverse_right\n";
-	      last_decision->print(*expFile);
+	      last_decision.print(*expFile);
 	      (*expFile) << std::endl;
 	    }
 #endif

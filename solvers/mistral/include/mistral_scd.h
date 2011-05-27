@@ -155,7 +155,20 @@ namespace Mistral {
     pair_(const int elt, const int rk) : element(elt), rank(rk) {}
   };
 
+  struct Term {
+    int X;
+    int Y;
+    int k;
+  };
   class Instance {
+
+  public:
+
+    //dtp clauses (atoms are terms like x-y <= k)
+    int dtp_nodes;
+    std::vector< std::vector < Term > > dtp_clauses;
+    std::vector< int > dtp_weights;
+
   private:
 
     std::vector< std::vector<int> > tasks_in_job;
@@ -194,6 +207,7 @@ namespace Mistral {
     void fsp_readData( const char* filename );
     void jsp_readData( const char* filename );
     void jet_readData( const char* filename );
+    void dtp_readData( const char* filename );
     void dyn_readData( const char* filename, const int p );
 
 
@@ -304,6 +318,8 @@ namespace Mistral {
   public:
     
     Instance *data;
+
+    int ub_Weight;
     
     int ub_C_max;
     int lb_C_max;
@@ -324,6 +340,7 @@ namespace Mistral {
     Variable C_max;
     Variable L_sum;
     Variable Depth;
+    Variable Weight;
 
     Vector<int> first_job;
     Vector<int> second_job;
@@ -374,8 +391,8 @@ namespace Mistral {
     virtual int  set_objective(const int obj);
   };
 
-
   class Depth_Model : public SchedulingModel {
+
   public:
 
     Depth_Model() : SchedulingModel() {}
@@ -404,6 +421,25 @@ namespace Mistral {
     No_wait_Model(Instance& prob, ParameterList *params, const int C_max, const int t=1) : C_max_Model() { type=t; setup(prob, params, C_max); }
     virtual void setup(Instance& prob, ParameterList *params, const int C_max);
     virtual ~No_wait_Model() {}
+  };
+
+  class DTP_Model : public SchedulingModel {
+
+  public:
+
+    DTP_Model() : SchedulingModel() {}
+    DTP_Model(Instance& prob, ParameterList *params, const int C_max) { 
+      setup(prob, params, C_max); 
+    }
+    virtual ~DTP_Model() {}
+
+    virtual int get_lb();
+    virtual int get_ub();   
+    virtual void setup(Instance& prob, ParameterList *params, const int C_max); 
+    virtual VariableInt* get_objective_var();
+    virtual int  get_objective();
+    virtual double  get_normalized_objective() {return (double)(get_objective())/(double)(disjuncts.size());}
+    virtual int  set_objective(const int obj);
   };
 
   class Solution {

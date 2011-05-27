@@ -17,7 +17,7 @@ int main( int argc, char** argv )
 
   Instance jsp(params);
   
-  //jsp.print(std::cout);
+  jsp.print(std::cout);
   jsp.printStats(std::cout);
 
   SchedulingModel *model;
@@ -35,6 +35,9 @@ int main( int argc, char** argv )
   } else if(params.Objective == "depth") {
     std::cout << "c Minimising Depth" << std::endl;
     model = new Depth_Model(jsp, &params, jsp.getMakespanUpperBound());
+  } else if(params.Objective == "weight") {
+    std::cout << "c Minimising Weight" << std::endl;
+    model = new DTP_Model(jsp, &params, 1000);
   } else {
     std::cout << "c unknown objective, exiting" << std::endl;
     exit(1);
@@ -43,7 +46,7 @@ int main( int argc, char** argv )
   SchedulingSolver solver(model, &params, &stats);
   usrand(params.Seed);
 
-  //solver.print(std::cout);
+  solver.print(std::cout);
   //exit(1);
 
   params.print(std::cout);  

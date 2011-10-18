@@ -79,7 +79,7 @@ namespace Mistral {
     static const int RGUIDED =  3;
     static const int RAND    =  4;
 
-    static const int nia = 20;
+    static const int nia = 21;
     static const char* int_ident[nia];
     
     static const int nsa = 12;
@@ -116,6 +116,8 @@ namespace Mistral {
     //int MinRank; // Whether the sum of the disjunct should be minimised
     int OrderTasks; // Whetheer tasks should be ordered within the disjuncts
     int NgdType; // nogood type for solution removal
+    
+    int PrintSolution; // whether the solution should be printed
 
     double Factor;
     double Decay;
@@ -330,6 +332,10 @@ namespace Mistral {
     int ub_Depth;
     int lb_Depth;
 
+    std::vector< int > first_task_of_disjunct;
+    std::vector< int > second_task_of_disjunct;
+
+
     VarArray SearchVars;
     
     VarArray tasks;
@@ -452,13 +458,14 @@ namespace Mistral {
     int *disjunct_value;
     int *search_value;
     int *all_value;
-
+    int min_objective_value;
+    int max_objective_value;
 
   public:
     SchedulingModel  * model;
     SchedulingSolver *solver;
     
-    Solution(SchedulingModel *m, SchedulingSolver *s);
+    Solution(SchedulingModel *m, SchedulingSolver *s, int target=-1);
     virtual ~Solution();
 
     int& operator[](const VariableInt *x) {return all_value[x->id];}

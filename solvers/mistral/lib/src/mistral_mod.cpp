@@ -3578,19 +3578,19 @@ string BuildObjectMod::xmlPred(int& idx, int level, const BuildObjectPredicate *
 void BuildObjectMember::build( Solver *s, VariableInt **tmp, BuildObjectPredicate *pred ) 
 {
   if( !pred->isConstant() )
-    new PredicateMember( s, tmp, &(pred->params[1]), pred->params[0], 1 );
+    new PredicateMember( s, tmp, &(pred->params[2]), pred->params[1], 1 );
 }
 
 int BuildObjectMember::propagateUpward( BuildObjectPredicate *pred ) const 
 {
   BuildObject *x = pred->scope[0];
-  int i, n = pred->params[0], inter_size=0;
-  int *vals = &(pred->params[1]);
+  int i, n = pred->params[1], inter_size=0;
+  int *vals = &(pred->params[2]);
 
-  std::cout << "n=" << n << std::endl;
+  //std::cout << "n=" << n << std::endl;
 
   for(i=0; i<n; ++i) {
-    std::cout << "vals["<< i << "]=" << vals[i] << std::endl;
+    //std::cout << "vals["<< i << "]=" << vals[i] << std::endl;
     if( x->contain(vals[i]) ) 
       ++inter_size;
   }
@@ -3606,7 +3606,7 @@ int BuildObjectMember::propagateDownward( BuildObjectPredicate *pred ) const
 {
   bool consistent = true;
   BuildObject *x = pred->scope[0];
-  int i, inter_size=0, n=pred->params[0], *vals=&(pred->params[1]);
+  int i, inter_size=0, n=pred->params[1], *vals=&(pred->params[2]);
   if( pred->equal(0) ) {
     for(i=0; i<n; ++i)
       if( x->contain(vals[i]) ) 
@@ -3626,7 +3626,7 @@ void BuildObjectMember::close( BuildObjectPredicate *pred )
   BuildObject *x = pred->scope[0];
   bool valid = ( pred->equal(1) );
   if( pred->equal(0) ) { 
-    int i, inter_size=0, n=pred->params[0], *vals=&(pred->params[1]);
+    int i, inter_size=0, n=pred->params[1], *vals=&(pred->params[2]);
     for(i=0; i<n; ++i)
       if( x->contain(vals[i]) ) 
 	++inter_size;
@@ -3653,9 +3653,9 @@ void BuildObjectMember::print(std::ostream& o, const BuildObjectPredicate *pred)
   o << "(";
   pred->scope[0]->print( o );
   o << " in {" ;
-  for(int i=0; i<pred->params[0]-1; ++i)
-    o << (pred->params[1+i]) << ",";
-  o << pred->params[pred->params[0]] << "}";
+  for(int i=0; i<pred->params[1]-1; ++i)
+    o << (pred->params[2+i]) << ",";
+  o << pred->params[2+pred->params[1]] << "}";
 }
 
 string BuildObjectMember::toString(const BuildObjectPredicate* pred) const 
@@ -7119,6 +7119,7 @@ BuildObject* CSP::_Member( BuildObject *x_, const BitSet& k, const int spin )
   BitsetIterator bit(k);
   do p[p[1]++] = bit;
   while( ++bit );
+  p[1]-=2;
   return CSP::_Constraint(ConstraintStore::MEMBER, x, 1, p);
 }
 // BuildObject* CSP::_Sum( BuildObject *x_, const int o )

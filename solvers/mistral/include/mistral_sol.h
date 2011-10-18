@@ -120,14 +120,19 @@ namespace Mistral {
 
     inline VariableInt* pop( int& event )
     {
+      /* VariableInt* last = MistralGacVarStack_[--size]; */
+      /* event = trigger[last->id]; */
+      /* trigger[last->id] = 0; */
+      /* return last; */
+
       int j, i = size, mindom = NOVAL;
       VariableInt *best, *last = MistralGacVarStack_[--size];
       while( i-- )
-	if( mindom > MistralGacVarStack_[i]->domsize() )
-	  {
-	    j = i;
-	    mindom = MistralGacVarStack_[i]->domsize();
-	  }
+      	if( mindom > MistralGacVarStack_[i]->domsize() )
+      	  {
+      	    j = i;
+      	    mindom = MistralGacVarStack_[i]->domsize();
+      	  }
       event = trigger[MistralGacVarStack_[j]->id];
       trigger[MistralGacVarStack_[j]->id] = 0;
       best = MistralGacVarStack_[j];

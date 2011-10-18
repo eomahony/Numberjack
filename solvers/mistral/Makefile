@@ -1,5 +1,6 @@
 
 MAINDIR = $(shell pwd)/../..
+MISTRALDIR ?= .
 
 OSTYPE          :=      $(shell uname -s | \
                         tr '[:upper:]' '[:lower:]' | \
@@ -50,16 +51,15 @@ BOOSTDIR=/Users/ehebrard/work/dev/boost_1_44_0
 
 
 
-OPTFLAGS = -O3 #-m32
+#OPTFLAGS = -O3 #-m32
 #OPTFLAGS = -pg 
 #OPTFLAGS = -finstrument-functions 
-#OPTFLAGS = -g
+OPTFLAGS = -g -O3
 
 COMPILFLAGS = -Wall \
 -D_UNIX \
-#-D_DRAW_EXPLORATION
+-fPIC \
 #-D_DEBUGSEARCH \
-#-fPIC \
 #-D_DEBUGPROPAG \
 #-D_VIRTUAL_TRACE \
 #-D_DEBUGNOGOOD 
@@ -90,15 +90,15 @@ COMPILFLAGS = -Wall \
 
 CCC = g++ $(OPTFLAGS) $(COMPILFLAGS)
 
-BIN=./bin
-SRC=./lib/src
-MOD=./models
-OBJ=./lib/obj
-INC=./include
+BIN=$(MISTRALDIR)/bin
+SRC=$(MISTRALDIR)/lib/src
+MOD=$(MISTRALDIR)/models
+OBJ=$(MISTRALDIR)/lib/obj
+INC=$(MISTRALDIR)/include
 
-OBJDIR = ./obj
-SRCDIR = ./src
-PYTHON = ./python
+OBJDIR = $(MISTRALDIR)/obj
+SRCDIR = $(MISTRALDIR)/src
+PYTHON = $(MISTRALDIR)/python
 
 
 CFLAGS = -I$(INC) -I$(SRCDIR)\

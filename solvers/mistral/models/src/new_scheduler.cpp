@@ -17,12 +17,16 @@ int main( int argc, char** argv )
 
   Instance jsp(params);
   
-  jsp.print(std::cout);
-  jsp.printStats(std::cout);
+  if(params.Verbose >= 0) {
+    jsp.print(std::cout);
+    jsp.printStats(std::cout);
+  }
 
   SchedulingModel *model;
   if(params.Objective == "makespan") {
-    std::cout << "c Minimising Makespan" << std::endl;
+    if(params.Verbose >= 0) {
+      std::cout << "c Minimising Makespan" << std::endl;
+    }
     if(params.Type == "now") model = new No_wait_Model(jsp, &params, -1, 0);
     else if(params.Type == "now2") {
       //params.Type = "now";
@@ -30,13 +34,19 @@ int main( int argc, char** argv )
     }
     else model = new C_max_Model(jsp, &params, -1);
   } else if(params.Objective == "tardiness") {
-    std::cout << "c Minimising Tardiness" << std::endl;
+    if(params.Verbose >= 0) {
+      std::cout << "c Minimising Tardiness" << std::endl;
+    }
     model = new L_sum_Model(jsp, &params, -1);
   } else if(params.Objective == "depth") {
-    std::cout << "c Minimising Depth" << std::endl;
+    if(params.Verbose >= 0) {
+      std::cout << "c Minimising Depth" << std::endl;
+    }    
     model = new Depth_Model(jsp, &params, jsp.getMakespanUpperBound());
   } else if(params.Objective == "weight") {
-    std::cout << "c Minimising Weight" << std::endl;
+    if(params.Verbose >= 0) {
+      std::cout << "c Minimising Weight" << std::endl;
+    }
     model = new DTP_Model(jsp, &params, 1000);
   } else {
     std::cout << "c unknown objective, exiting" << std::endl;
@@ -46,14 +56,14 @@ int main( int argc, char** argv )
   SchedulingSolver solver(model, &params, &stats);
   usrand(params.Seed);
 
-  solver.print(std::cout);
+  //solver.print(std::cout);
   //exit(1);
 
-  params.print(std::cout);  
-
-  model->printStats(std::cout);  
-  stats.print(std::cout, "INIT");  
-
+  if(params.Verbose >= 0) {
+    params.print(std::cout);  
+    model->printStats(std::cout);  
+    stats.print(std::cout, "INIT");  
+  }
 
   //if
   //solver.jtl_presolve();
@@ -71,8 +81,9 @@ int main( int argc, char** argv )
 
   }
       
-
-  stats.print(std::cout, "DS");
+  if(params.Verbose >= 0) {
+    stats.print(std::cout, "DS");
+  }
 
   if(!stats.solved()) {
     if(params.Algorithm == "bnb")
@@ -81,11 +92,21 @@ int main( int argc, char** argv )
       solver.large_neighborhood_search();
   }
 
-  stats.print(std::cout, "");  
-  std::cout << "s " << (stats.num_solutions ? "SATISFIABLE" : "UNSATISFIABLE") 
-	    << " \nv 00" << std::endl;
+  if(params.Verbose >= 0) {
+    stats.print(std::cout, "");  
+    std::cout << "s " << (stats.num_solutions ? "SATISFIABLE" : "UNSATISFIABLE") 
+	      << " \nv 00" << std::endl;
+  }
 
+  int i = params.PrintSolution;
+  //if(i > solver.pool->size()) i = 
+  int j = solver.pool->size();
+  while(j-- && i--) {
 
+    //std::cout << i << " " << j << std::endl;
+
+    (*(solver.pool))[j]->print(std::cout);
+  }
   delete model;
 
 }

@@ -2,17 +2,17 @@
 /*
   Mistral is a constraint satisfaction and optimisation library
   Copyright (C) 2003-2005  Emmanuel Hebrard
-  
+
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation; either version 2 of the License, or
   (at your option) any later version.
-  
+
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with this program; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
@@ -30,15 +30,14 @@
 #include <mistral_dvo.h>
 #include <mistral_scd.h>
 
+
 #include <math.h>
 
 using namespace Mistral;
 
-
-
 BranchingStrategy::BranchingStrategy() {}
 BranchingStrategy::~BranchingStrategy() {}
-    
+
 Contention::Contention(VarArray* scp, int w) {
   width = w;
   length = scp[0].size();
@@ -52,7 +51,7 @@ Contention::Contention(VarArray* scp, int w) {
   proba_ = new double*[num_vars];
   scope_ = new VariableInt*[num_vars];
   neighborhood = new Vector<int>[num_vars];
-  
+
   for(i=0; i<width; ++i) {
     for(j=0; j<length; ++j) {
       x = scp[i][j].var_ptr_->getVariable();
@@ -62,8 +61,8 @@ Contention::Contention(VarArray* scp, int w) {
 	k = x->max() - x->min() + 1;
 	tmp_proba_[i*length+j] = new double[k];
 	proba_[i*length+j] = new double[k];
-	std::fill(proba_[i*length+j], 
-		  proba_[i*length+j]+k, 
+	std::fill(proba_[i*length+j],
+		  proba_[i*length+j]+k,
 		  1.0/(double)(x->domsize()));
 	min_dx[i*length+j] = x->min();
 	tmp_proba_[i*length+j] -= min_dx[i*length+j];
@@ -75,24 +74,24 @@ Contention::Contention(VarArray* scp, int w) {
     }
   }
 
-//   DomainIterator *valit;
-   for(i=0; i<width; ++i) 
-     for(j=0; j<length; ++j) if(scope_[i*length+j]) {
-	for(k=0; k<length; ++k) 
-	  if(k!=j && scope_[i*length+k] 
+  //   DomainIterator *valit;
+  for(i=0; i<width; ++i)
+    for(j=0; j<length; ++j) if(scope_[i*length+j]) {
+	for(k=0; k<length; ++k)
+	  if(k!=j && scope_[i*length+k]
 	     && scope_[i*length+k]->intersect(scope_[i*length+j]))
 	    neighborhood[i*length+j].push(i*length+k);
-	
-	for(k=0; k<width; ++k) 
+
+	for(k=0; k<width; ++k)
 	  if(k!=i && scope_[k*length+j]
 	     && scope_[k*length+j]->intersect(scope_[i*length+j]))
 	    neighborhood[i*length+j].push(k*length+j);
-       }
+      }
 
 
 }
 Contention::~Contention() {
-  for(int i=0; i<num_vars; ++i) 
+  for(int i=0; i<num_vars; ++i)
     if(scope_[i]) {
       proba_[i] += min_dx[i];
       tmp_proba_[i] += min_dx[i];
@@ -128,7 +127,7 @@ void Contention::compute_proba() {
 	l = neighborhood[k][j];
 	if(scope_[l]->contain(v)) {
 	  p *= (1.0-proba_[l][v]);
-	} 
+	}
       }
       tmp_proba_[k][v] = p;
       total += tmp_proba_[k][v];
@@ -163,14 +162,14 @@ int Contention::get_best(const int id) {
   int v, val = scope_[id]->min();
   DomainIterator *valit;
 
-//   std::cout << "branch on ";
-//   scope_[id]->print(std::cout);
-//   std::cout << std::endl;
+  //   std::cout << "branch on ";
+  //   scope_[id]->print(std::cout);
+  //   std::cout << std::endl;
 
   valit = scope_[id]->begin();
   do {
     v = *valit;
-    if(proba_[id][val] < proba_[id][v]) 
+    if(proba_[id][val] < proba_[id][v])
       val = v;
   } while( valit->next() );
 
@@ -184,9 +183,9 @@ int Contention::update(const int id) {
   double p, best = 0.0;
   DomainIterator *valit;
 
-//   std::cout << "branch on ";
-//   scope_[id]->print(std::cout);
-//   std::cout << std::endl;
+  //   std::cout << "branch on ";
+  //   scope_[id]->print(std::cout);
+  //   std::cout << std::endl;
 
   valit = scope_[id]->begin();
   do {
@@ -194,12 +193,12 @@ int Contention::update(const int id) {
     p = 1.0;
     for(j=0; j<neighborhood[id].size; ++j) {
       k = neighborhood[id][j];
-      if(scope_[k]->contain(v)) 
+      if(scope_[k]->contain(v))
 	p *= (1.0-(1.0/((double)(scope_[k]->domsize()))));
     }
 
 
-    //std::cout << "\t" << v << " (" << p << ")" << std::endl; 
+    //std::cout << "\t" << v << " (" << p << ")" << std::endl;
 
     if(best < p) {
       best = p;
@@ -216,7 +215,7 @@ std::ostream& Contention::print(std::ostream& os, const int id) const {
   DomainIterator *valit;
   valit = scope_[id]->begin();
   do {
-    os 
+    os
       << " " << std::setw(10)
       << std::setprecision(3)
       << (proba_[id][*valit] >= 0.001 ? proba_[id][*valit] : 0);
@@ -227,23 +226,23 @@ std::ostream& Contention::print(std::ostream& os, const int id) const {
 
 std::ostream& Contention::print(std::ostream& os) const {
   int i, j;
-//   for(i=0; i<width; ++i) {
-//     for(j=0; j<length; ++j) {
-//       if(scope[i][j] && !scope[i][j]->isGround()) {
+  //   for(i=0; i<width; ++i) {
+  //     for(j=0; j<length; ++j) {
+  //       if(scope[i][j] && !scope[i][j]->isGround()) {
 
-// 	os << setw(2) << i << "." 
-// 	   << setw(2) << j << " ";
-// 	scope[i][j]->print(os);
+  // 	os << setw(2) << i << "."
+  // 	   << setw(2) << j << " ";
+  // 	scope[i][j]->print(os);
 
-// 	valit = scope[i][j]->begin();
-// 	do {
-// 	  os << " " << (*valit) << " = " 
-// 	     << setprecision(3) << proba[i][j][*valit];
-// 	} while( valit->next() );
-// 	os << std::endl;
-//       }
-//     }
-//   }
+  // 	valit = scope[i][j]->begin();
+  // 	do {
+  // 	  os << " " << (*valit) << " = "
+  // 	     << setprecision(3) << proba[i][j][*valit];
+  // 	} while( valit->next() );
+  // 	os << std::endl;
+  //       }
+  //     }
+  //   }
 
   for(i=0; i<width; ++i) {
     for(j=0; j<length; ++j) {
@@ -252,16 +251,16 @@ std::ostream& Contention::print(std::ostream& os) const {
       }
     }
   }
-  
-  return os; 
+
+  return os;
 }
 
 PredicateDisjunctive** _garbage_disjuncts;
 PredicateGenDisjunctive** _garbage_gen_disjuncts;
 //Constraint **_garbage_disjuncts;
 void free_disjuncts() {
-//   for(int i=0; i<_garbage_disjuncts.size; ++i)
-//     delete [] _garbage_disjuncts[i];
+  //   for(int i=0; i<_garbage_disjuncts.size; ++i)
+  //     delete [] _garbage_disjuncts[i];
 }
 
 Weighter::Weighter( Solver* s ) 
@@ -277,7 +276,7 @@ WeighterJobDecision::WeighterJobDecision( Solver* s, SchedulingModel *m )
   model = m;
   first_job = model->first_job.stack_;
   second_job = model->first_job.stack_;
-  
+
   s->binds( done_jobs );
   done_jobs.setValue(0, model->data->nJobs()-1, 0);
 }
@@ -290,20 +289,20 @@ void WeighterJobDecision::notifySuccess( )
   j = second_job[idx];
   if(!done_jobs.member(j)) done_jobs.insert(j);
 
-//   for(int i=0; i<done_jobs.size; ++i) {
-//     std::cout << done_jobs[i] << " ";
-//   }
-//   std::cout << std::endl;
+  //   for(int i=0; i<done_jobs.size; ++i) {
+  //     std::cout << done_jobs[i] << " ";
+  //   }
+  //   std::cout << std::endl;
 }
 
 WeighterDegree::WeighterDegree( Solver* s ) 
   : Weighter(s)
 {
 
- #ifdef _WEIGHT_STATS
+#ifdef _WEIGHT_STATS
 
   int i;
-  
+
   solver = s;
   numvars = s->length;
   choice = new int*[numvars+1];
@@ -314,38 +313,38 @@ WeighterDegree::WeighterDegree( Solver* s )
   }
 
   choice[numvars] = new int[numvars];
-  for(i=0; i<numvars; ++i) 
+  for(i=0; i<numvars; ++i)
     choice[numvars][i] = (numvars-i);
 
 
-//   std::cout << "HERE" << std::endl;
+  //   std::cout << "HERE" << std::endl;
 
-//   int i, j;
-//   VariableInt *aux;
+  //   int i, j;
+  //   VariableInt *aux;
 
-//   numvars = s->length;
-//   vars = new VariableInt*[numvars];
-//   //vars = s->sequence;
-//   order = new int[numvars];
-//   mean_weight = 0.0;
-//   for(i=0; i<numvars; ++i) {
-//     order[i] = i;
-//     vars[i] = s->sequence[i];
-//     mean_weight += s->sequence[i]->weight; 
-//     for(j=i; j && vars[j]->weight < vars[j-1]->weight; --j) {
-//       aux = vars[j];
-//       vars[j] = vars[j-1];
-//       vars[j-1] = aux;
+  //   numvars = s->length;
+  //   vars = new VariableInt*[numvars];
+  //   //vars = s->sequence;
+  //   order = new int[numvars];
+  //   mean_weight = 0.0;
+  //   for(i=0; i<numvars; ++i) {
+  //     order[i] = i;
+  //     vars[i] = s->sequence[i];
+  //     mean_weight += s->sequence[i]->weight;
+  //     for(j=i; j && vars[j]->weight < vars[j-1]->weight; --j) {
+  //       aux = vars[j];
+  //       vars[j] = vars[j-1];
+  //       vars[j-1] = aux;
 
-//       order[vars[j]->id] = j;
-//       order[vars[j-1]->id] = j-1;
-//     }
-//   }
-//   mean_weight /= numvars;
+  //       order[vars[j]->id] = j;
+  //       order[vars[j-1]->id] = j-1;
+  //     }
+  //   }
+  //   mean_weight /= numvars;
 
-//   for(int i=1; i<numvars; ++i) {
-//     assert( vars[i-1]->weight <= vars[i]->weight );
-//   }
+  //   for(int i=1; i<numvars; ++i) {
+  //     assert( vars[i-1]->weight <= vars[i]->weight );
+  //   }
 
 #endif
 
@@ -386,12 +385,12 @@ int compar_qsort2(const void *a, const void *b) {
 
 void WeighterDegree::init_choices() {
   numchoices = 0;
-  for(int i=0; i<numvars; ++i) 
+  for(int i=0; i<numvars; ++i)
     std::fill(choice[i], choice[i]+numvars, 0);
 }
 
 void WeighterDegree::print_choices(std::ostream& o) {
-  int i, j, current, threshold, vars[numvars], total[numvars], 
+  int i, j, current, threshold, vars[numvars], total[numvars],
     count[numvars], cumul[numvars], vars90[numvars], ct90, cl90;
   BitSet is_in(0, numvars-1, BitSet::empt);
   BitSet is_in_90(0, numvars-1, BitSet::empt);
@@ -438,14 +437,14 @@ void WeighterDegree::print_choices(std::ostream& o) {
       o << cl90 << " ";
       o << (((double)(ct90))/((double)numvars)) << " ";
       o << (((double)(cl90))/((double)numvars)) << " ";
-//       //for(j=0; j<numvars && count[vars90[j]]>0; ++j)
-//       //std::cout << " " << (count[vars90[j]]) ;
-//       //std::cout << std::endl;
-//       for(j=0; j<numvars; ++j) {
-// 	if(total[i] && choice[i][vars[j]]) 
-// 	  o << (((double)(choice[i][vars[j]])) / ((double)(total[i]))) << " ";
-// 	else o << "0 ";
-//       }
+      //       //for(j=0; j<numvars && count[vars90[j]]>0; ++j)
+      //       //std::cout << " " << (count[vars90[j]]) ;
+      //       //std::cout << std::endl;
+      //       for(j=0; j<numvars; ++j) {
+      // 	if(total[i] && choice[i][vars[j]])
+      // 	  o << (((double)(choice[i][vars[j]])) / ((double)(total[i]))) << " ";
+      // 	else o << "0 ";
+      //       }
       o << std::endl;
     }
   }
@@ -458,34 +457,34 @@ void WeighterDegree::print_choices(std::ostream& o) {
 void WeighterDegree::notifyFailure( Constraint *con )
 {
 
-//   //++con->weight;
-//   int old_weight = con->weight;
-  
-  
-//   //int new_weight = (int)(1000 + ceil((double)old_weight * 0.9));
-
-//   int new_weight = (int)ceil(1.01 * (double)old_weight);
-
-//   con->weight = new_weight;
- 
-//   //std::cout << old_weight << " -> " << new_weight << std::endl;
-
-//   new_weight -= old_weight;
+  //   //++con->weight;
+  //   int old_weight = con->weight;
 
 
-//   for(int i=0; i<con->arity; ++i)
-//     con->scope[i]->weight += new_weight;
-//   //std::cout << con->weight << std::endl;
+  //   //int new_weight = (int)(1000 + ceil((double)old_weight * 0.9));
 
-// #ifdef _WEIGHT_STATS
+  //   int new_weight = (int)ceil(1.01 * (double)old_weight);
 
-//   std::cout << "THERE" << std::endl;
+  //   con->weight = new_weight;
 
-//   int id, j;
-//   VariableInt *aux;
-//   mean_weight = (mean_weight * numvars);// + con->arity) / numvars);
+  //   //std::cout << old_weight << " -> " << new_weight << std::endl;
 
-// #endif
+  //   new_weight -= old_weight;
+
+
+  //   for(int i=0; i<con->arity; ++i)
+  //     con->scope[i]->weight += new_weight;
+  //   //std::cout << con->weight << std::endl;
+
+  // #ifdef _WEIGHT_STATS
+
+  //   std::cout << "THERE" << std::endl;
+
+  //   int id, j;
+  //   VariableInt *aux;
+  //   mean_weight = (mean_weight * numvars);// + con->arity) / numvars);
+
+  // #endif
 
 
   if( con->arity <= threshold ) {
@@ -493,69 +492,69 @@ void WeighterDegree::notifyFailure( Constraint *con )
     for(int i=0; i<con->arity; ++i) {
       ++con->_scope[i]->weight;
 
-// #ifdef _WEIGHT_STATS
-      
-//       id = con->_scope[i]->id;
+      // #ifdef _WEIGHT_STATS
 
-//       if(id < numvars) {
+      //       id = con->_scope[i]->id;
 
-// 	assert( vars[order[id]] == con->_scope[i] );
+      //       if(id < numvars) {
 
-// 	mean_weight += 1.0;
+      // 	assert( vars[order[id]] == con->_scope[i] );
 
-// 	for(j=order[id]; (j < numvars-1) && (vars[j]->weight > vars[j+1]->weight); ++j) {
+      // 	mean_weight += 1.0;
 
-// // 	  for(int x=id; i<numvars; ++i) {
-// // 	    std::cout << " " << vars[x]->weight;
-// // 	  }
-// // 	  std::cout << std::endl;
+      // 	for(j=order[id]; (j < numvars-1) && (vars[j]->weight > vars[j+1]->weight); ++j) {
 
-// 	  aux = vars[j];
-// 	  vars[j] = vars[j+1];
-// 	  vars[j+1] = aux;
+      // // 	  for(int x=id; i<numvars; ++i) {
+      // // 	    std::cout << " " << vars[x]->weight;
+      // // 	  }
+      // // 	  std::cout << std::endl;
 
-// 	  order[vars[j]->id] = j;
-// 	  order[vars[j+1]->id] = j+1;
-// 	}
-//       }
+      // 	  aux = vars[j];
+      // 	  vars[j] = vars[j+1];
+      // 	  vars[j+1] = aux;
 
-// #endif
+      // 	  order[vars[j]->id] = j;
+      // 	  order[vars[j+1]->id] = j+1;
+      // 	}
+      //       }
+
+      // #endif
 
     }
   }
 
 
-// #ifdef _WEIGHT_STATS
+  // #ifdef _WEIGHT_STATS
 
-//   mean_weight = (mean_weight / numvars);
+  //   mean_weight = (mean_weight / numvars);
 
-//   for(int i=0; i<numvars; ++i) {
-//     std::cout << " " << vars[i]->weight;
-//   }
-//   std::cout << std::endl;
+  //   for(int i=0; i<numvars; ++i) {
+  //     std::cout << " " << vars[i]->weight;
+  //   }
+  //   std::cout << std::endl;
 
-//   double real_mean = vars[0]->weight;
-//   for(int i=1; i<numvars; ++i) {
+  //   double real_mean = vars[0]->weight;
+  //   for(int i=1; i<numvars; ++i) {
 
-//     if(vars[i-1]->weight > vars[i]->weight)
-//       std::cout << vars[i-1]->weight << " " << vars[i]->weight << std::endl;
+  //     if(vars[i-1]->weight > vars[i]->weight)
+  //       std::cout << vars[i-1]->weight << " " << vars[i]->weight << std::endl;
 
-//     assert( vars[i-1]->weight <= vars[i]->weight );
-//     real_mean += vars[i]->weight;
-//   }
-  
-//   real_mean /= numvars;
-//   assert( (mean_weight - real_mean) < 0.001 );
-//   assert( (real_mean - mean_weight) < 0.001 );
+  //     assert( vars[i-1]->weight <= vars[i]->weight );
+  //     real_mean += vars[i]->weight;
+  //   }
 
-// #endif
+  //   real_mean /= numvars;
+  //   assert( (mean_weight - real_mean) < 0.001 );
+  //   assert( (real_mean - mean_weight) < 0.001 );
 
-//   Solver *sol = con->scope[0]->solver;
+  // #endif
 
-//   sol->printWeightProfile(std::cout, INT_MAX, 1);
-//   std::cout << std::endl;
+  //   Solver *sol = con->scope[0]->solver;
 
-//   //std::cout << con->weight << std::endl;
+  //   sol->printWeightProfile(std::cout, INT_MAX, 1);
+  //   std::cout << std::endl;
+
+  //   //std::cout << con->weight << std::endl;
 }
 
 WeighterLevelDegree::WeighterLevelDegree( Solver* s )
@@ -566,7 +565,7 @@ WeighterLevelDegree::WeighterLevelDegree( Solver* s )
 
 void WeighterLevelDegree::notifyFailure( Constraint *con )
 {
-  if( lmax < level ) 
+  if( lmax < level )
     lmax = level;
   con->weight += (1 + lmax - level);
   for(int i=0; i<con->arity; ++i)
@@ -589,14 +588,14 @@ void WeighterLevelDegree::notifyFailure( Constraint *con )
 
 void WeighterImpact::print( std::ostream& o ) const
 {
-  for(unsigned int i=0; i<ilength; ++i) 
+  for(unsigned int i=0; i<ilength; ++i)
     {
       std::cout << "c ";
       variables[i]->printshort( std::cout );
       std::cout << ":\t";
       int v=variables[i]->min();
       do {
-	std::cout << " " << std::setprecision(2) << decision_impact[i][v] << ":" << v; 
+	std::cout << " " << std::setprecision(2) << decision_impact[i][v] << ":" << v;
       } while( variables[i]->setNext(v) );
       std::cout << std::endl;
     }
@@ -604,7 +603,7 @@ void WeighterImpact::print( std::ostream& o ) const
 
 WeighterImpact::~WeighterImpact( )
 {
-  for(unsigned int i=0; i<ilength; ++i) 
+  for(unsigned int i=0; i<ilength; ++i)
     {
       decision_impact[i] += varmin[i];
       decision_count [i] += varmin[i];
@@ -621,15 +620,15 @@ WeighterImpact::~WeighterImpact( )
 }
 
 WeighterImpact::WeighterImpact( Solver* s ) 
-  : Weighter(s), 
+  : Weighter(s),
     decision(s->decision.stack_),
-    first(s->future), 
+    first(s->future),
     last(s->empty),
-    //verylast(s->sequence+s->numvars), 
+    //verylast(s->sequence+s->numvars),
     variables(s->variables.stack_)
 {
 
-  //verylast = s->sequence+s->numvars; 
+  //verylast = s->sequence+s->numvars;
 
   unsigned int i, m;
 
@@ -641,31 +640,31 @@ WeighterImpact::WeighterImpact( Solver* s )
   decision_count  = new unsigned int*[ilength];
   X = new VariableInt*[ilength];
   domain_size = new unsigned int[ilength];
-    
-  for(i=0; i<ilength; ++i) 
+
+  for(i=0; i<ilength; ++i)
     {
       isRange[i] = ( s->variables[i]->getType() == VariableInt::RANGE );
-      
-      if( isRange[i] ) 
+
+      if( isRange[i] )
 	{
 	  decision_impact[i] = new double[2];
 	  decision_count [i] = new unsigned int[2];
-	  
+
 	  std::fill( decision_count [i], decision_count [i]+2, 1 );
 	  std::fill( decision_impact[i], decision_impact[i]+2, 1 );
-	  
+
 	  varmin[i] = 0;
 
 
 	  //std::cout << "Range: " << decision_impact[i] << std::endl;
 	}
-      else 
+      else
 	{
 	  m = (s->variables[i]->maxCapacity() - s->variables[i]->minCapacity());
 
 	  decision_impact[i] = new double[m];
 	  decision_count [i] = new unsigned int[m];
-	  
+
 	  std::fill( decision_count [i], decision_count [i]+m, 0 );
 	  std::fill( decision_impact[i], decision_impact[i]+m, 1 );//0.0001 );
 
@@ -735,7 +734,7 @@ WeighterImpact::WeighterImpact( Solver* s )
 	  // impact
 	  // 1           1/0.68    174116 NDS     9196 BTS/s      73627047 CKS  18.928 s
 	  // 0.0001      1/0.68     66433 NDS     8519 BTS/s      31399406 CKS  7.7944 s
-	  // 
+	  //
 
 
 	  // sac + impact
@@ -766,17 +765,17 @@ void WeighterImpact::notifyFailure( Constraint *con )
       int v;
 
       if( isRange[x] ) {
-	
+
 	//std::cout << "failure" << std::endl;
 
 	v = ((VariableRange*)(decision[level]))->whichBound();
 
 	//std::cout << "update " << (v ? "upper" : "lower") << " bound's impact" << std::endl;
 
-      } else { 
+      } else {
 	v = decision[level]->value();
       }
-      decision_impact[x][v] = 
+      decision_impact[x][v] =
 	(decision_impact[x][v] * decision_count[x][v]) / ++decision_count[x][v];
       needUpdate = false;
     }
@@ -805,10 +804,10 @@ void WeighterImpact::notifySuccess( )
     //std::cout << "update " << (v ? "upper" : "lower") << " bound's impact" << std::endl;
 
   }
-  else 
+  else
     v = decision[level-1]->value();
 
-  decision_impact[x][v] = 
+  decision_impact[x][v] =
     (((decision_impact[x][v]) * (decision_count[x][v])) + reduction) / ++(decision_count[x][v]);
 
   needUpdate = false;
@@ -850,7 +849,7 @@ WeighterSAC::WeighterSAC(Solver* s)
   isRange = new bool[ilength];
   sacvals = 0;
   domsize = 0;
-  for(int i=0; i<ilength; ++i) 
+  for(int i=0; i<ilength; ++i)
     {
       isRange[i] = ( s->variables[i]->getType() == VariableInt::RANGE );
 
@@ -859,7 +858,7 @@ WeighterSAC::WeighterSAC(Solver* s)
 	  SACdomain[i].init( 0, 1, BitSet::empt );
 	  domsize += 2;
 	}
-      else 
+      else
 	{
 	  SACdomain[i].init( s->variables[i]->min(),
 			     s->variables[i]->max(),
@@ -879,7 +878,7 @@ void WeighterSAC::notifyChoice()
   if( level == init_level && needPruning )
     {
       domsize = 0;
-      if( complete ) 
+      if( complete )
 	{
 	  j=solver->decision[1]->id;
 	  //sacvals = SACdomain[j].size();
@@ -887,7 +886,7 @@ void WeighterSAC::notifyChoice()
 	  for(i=0; i<ilength; ++i)
 	    {
 	      domsize += solver->variables[i]->domsize();
-	      //if( i != j ) 
+	      //if( i != j )
 	      SACdomain[i].clear();
 	    }
 	}
@@ -904,13 +903,13 @@ void WeighterSAC::notifyChoice()
 void WeighterSAC::notifyFailure( Constraint *con ) 
 {
   int j, k;
-  if( level > init_level ) 
+  if( level > init_level )
     {
       ins =false;
 
       VariableInt **var_iterator = solver->sequence,
 	**last = solver->future;
-      
+
       while( var_iterator < last )
 	{
 	  j = (*var_iterator)->id;
@@ -938,7 +937,7 @@ void WeighterSAC::notifyFailure( Constraint *con )
 
 
 WeighterISAC::WeighterISAC(Solver* s)
- : WeighterSAC(s)
+  : WeighterSAC(s)
 {
 }
 
@@ -948,32 +947,32 @@ WeighterISAC::~WeighterISAC()
 
 void WeighterISAC::notifyFailure( Constraint *con )
 {
- int j, k;
- if( level > init_level )
-   {
-     ins =false;
+  int j, k;
+  if( level > init_level )
+    {
+      ins =false;
 
-     for(int i=1; i<(level + 1); i++ )
-       {
-         j=solver->decision[i]->id;
-         if( isRange[j] )
-           k = ((VariableRange*)(solver->decision[i]))->whichBound();
-         else
-           k = solver->decision[i]->value();
+      for(int i=1; i<(level + 1); i++ )
+	{
+	  j=solver->decision[i]->id;
+	  if( isRange[j] )
+	    k = ((VariableRange*)(solver->decision[i]))->whichBound();
+	  else
+	    k = solver->decision[i]->value();
 
-         if( SACdomain[j].member(k) ) continue;
+	  if( SACdomain[j].member(k) ) continue;
 
-         SACdomain[j].insert(k);
-         ins = true;
-         ++sacvals;
-       }
-     ins = (ins && (domsize > sacvals));
-   }
- else if( level == init_level )
-   {
-     ++solver->FAILLIMIT;
-     needPruning = true;
-   }
+	  SACdomain[j].insert(k);
+	  ins = true;
+	  ++sacvals;
+	}
+      ins = (ins && (domsize > sacvals));
+    }
+  else if( level == init_level )
+    {
+      ++solver->FAILLIMIT;
+      needPruning = true;
+    }
 }
 
 
@@ -990,13 +989,13 @@ inline VariableInt* DVOSingletonAC::select()
   do {
     var = *var_iterator;
     i=var->id;
-  } while( 
+  } while(
 	  ((isRange[i] && SACdomain[i].empty())
 	   ||
 	   (!isRange[i] && var->included( SACdomain[i] )))
-	  && 
+	  &&
 	  ++var_iterator != last );
-  
+
   return var;
 }
 
@@ -1031,55 +1030,55 @@ void WeighterRestartNogood::notifyFailure( Constraint *con )
     path.clear();
   }
 
-//   if( level ) {
-//     VariableInt *failed = decision[level];
-//     while( path.back() != failed ) {
-//       path.pop();
-//       polarity.pop();
-//     }
-//   } else {
-//     path.clear();
-//     polarity.clear();
-//   }
+  //   if( level ) {
+  //     VariableInt *failed = decision[level];
+  //     while( path.back() != failed ) {
+  //       path.pop();
+  //       polarity.pop();
+  //     }
+  //   } else {
+  //     path.clear();
+  //     polarity.clear();
+  //   }
 
-//   if( level ) {
-//     Atom failed = decision[level]->id+1;
-//     while( atom(path.back()) != failed ) 
-//       path.pop();
-//   } else {
-//     path.clear();
-//   }
+  //   if( level ) {
+  //     Atom failed = decision[level]->id+1;
+  //     while( atom(path.back()) != failed )
+  //       path.pop();
+  //   } else {
+  //     path.clear();
+  //   }
 
-// //   if( nBranches[path.size-1]++ ) {
-// //     path.pop();
-// //     ++nBranches[path.size-1];
-// //   }
+  // //   if( nBranches[path.size-1]++ ) {
+  // //     path.pop();
+  // //     ++nBranches[path.size-1];
+  // //   }
 
-//   std::cout <<setw(2)<< level << "\t";
-//   std::cout.flush();
-//   for(int i=1; i<=level; ++i) {
-//     std::cout << " " << setw(2) << (decision[i]->id+1);
-//   }
-//   std::cout << std::endl;
-//   std::cout <<setw(2)<< (path.size) << "\t";
-//   std::cout.flush();
-//   for(int i=0; i<path.size; ++i) {
-//     std::cout << " " << setw(2) << path[i]->id+1;
-//   }
-//   std::cout << std::endl;
-// //   std::cout <<setw(2)<< (path.size) << "\t";
-// //   std::cout.flush();
-// //   for(int i=0; i<path.size; ++i) {
-// //     std::cout << " " << setw(2) << nBranches[i];
-// //   }
-// //   std::cout << std::endl;
+  //   std::cout <<setw(2)<< level << "\t";
+  //   std::cout.flush();
+  //   for(int i=1; i<=level; ++i) {
+  //     std::cout << " " << setw(2) << (decision[i]->id+1);
+  //   }
+  //   std::cout << std::endl;
+  //   std::cout <<setw(2)<< (path.size) << "\t";
+  //   std::cout.flush();
+  //   for(int i=0; i<path.size; ++i) {
+  //     std::cout << " " << setw(2) << path[i]->id+1;
+  //   }
+  //   std::cout << std::endl;
+  // //   std::cout <<setw(2)<< (path.size) << "\t";
+  // //   std::cout.flush();
+  // //   for(int i=0; i<path.size; ++i) {
+  // //     std::cout << " " << setw(2) << nBranches[i];
+  // //   }
+  // //   std::cout << std::endl;
 }
 
 void WeighterRestartNogood::notifyChoice()
 {
-  
+
   //nBranches[path.size] = 0;
-  //path.push( decision[level] );  
+  //path.push( decision[level] );
   //polarity.push( decision[level]->equal(0) ? 1 : -1 );
 
   if(decision[level]) {
@@ -1088,27 +1087,27 @@ void WeighterRestartNogood::notifyChoice()
   } else {
     choices[level] = 0;
   }
-  
+
   path.push( choices[level] );
 
-//   std::cout << std::endl <<setw(2)<< level << "\t";
-//   std::cout.flush();
-//   for(int i=1; i<=level; ++i) {
-//     std::cout << " " << setw(2) << (decision[i]->id+1);
-//   }
-//   std::cout << std::endl;
-//   std::cout <<setw(2)<< (path.size) << "\t";
-//   std::cout.flush();
-//   for(int i=0; i<path.size; ++i) {
-//     std::cout << " " << setw(2) << path[i]->id+1;
-//   }
-//   std::cout << std::endl;
-// //   std::cout <<setw(2)<< (path.size) << "\t";
-// //   std::cout.flush();
-// //   for(int i=0; i<path.size; ++i) {
-// //     std::cout << " " << setw(2) << nBranches[i];
-// //   }
-// //   std::cout << std::endl;
+  //   std::cout << std::endl <<setw(2)<< level << "\t";
+  //   std::cout.flush();
+  //   for(int i=1; i<=level; ++i) {
+  //     std::cout << " " << setw(2) << (decision[i]->id+1);
+  //   }
+  //   std::cout << std::endl;
+  //   std::cout <<setw(2)<< (path.size) << "\t";
+  //   std::cout.flush();
+  //   for(int i=0; i<path.size; ++i) {
+  //     std::cout << " " << setw(2) << path[i]->id+1;
+  //   }
+  //   std::cout << std::endl;
+  // //   std::cout <<setw(2)<< (path.size) << "\t";
+  // //   std::cout.flush();
+  // //   for(int i=0; i<path.size; ++i) {
+  // //     std::cout << " " << setw(2) << nBranches[i];
+  // //   }
+  // //   std::cout << std::endl;
 }
 
 
@@ -1116,18 +1115,18 @@ void WeighterRestartNogood::notifyRestart()
 {
 
 
-//   std::cout << std::endl <<std::setw(3)<< lvl << "   ";
-//   std::cout.flush();
-//   for(int i=1; i<lvl; ++i) {
-//     std::cout << " " << std::setw(2) << choices[i];
-//   }
-//   std::cout << std::endl;
-//   std::cout << std::setw(3)<< (path.size) << "   ";
-//   std::cout.flush();
-//   for(int i=0; i<path.size; ++i) {
-//     std::cout << " " << std::setw(2) << path[i];
-//   }
-//   std::cout << std::endl ;
+  //   std::cout << std::endl <<std::setw(3)<< lvl << "   ";
+  //   std::cout.flush();
+  //   for(int i=1; i<lvl; ++i) {
+  //     std::cout << " " << std::setw(2) << choices[i];
+  //   }
+  //   std::cout << std::endl;
+  //   std::cout << std::setw(3)<< (path.size) << "   ";
+  //   std::cout.flush();
+  //   for(int i=0; i<path.size; ++i) {
+  //     std::cout << " " << std::setw(2) << path[i];
+  //   }
+  //   std::cout << std::endl ;
 
 
 
@@ -1137,20 +1136,20 @@ void WeighterRestartNogood::notifyRestart()
   //decision[n] = NULL;
   choices[n] = 0;
 
-//   // find first disagreemnet between path and decision
-//   while( i<n && decision[i] == path[j] ) {
-//     ++i;
-//     ++j;
-//     // loop through all right 
-//     while( j<m && path[j] != decision[i] ) {
-//       std::cout << "      ";
-//       for(int x=1; x<i; ++x)
-// 	std::cout << " " << setw(2) << polarity[x]decision[x]->id+1;
-//       std::cout << " " << setw(2) << path[j]->id+1 << std::endl;
-//       ++j;
-//     }
-//   }
-//   std::cout << std::endl;
+  //   // find first disagreemnet between path and decision
+  //   while( i<n && decision[i] == path[j] ) {
+  //     ++i;
+  //     ++j;
+  //     // loop through all right
+  //     while( j<m && path[j] != decision[i] ) {
+  //       std::cout << "      ";
+  //       for(int x=1; x<i; ++x)
+  // 	std::cout << " " << setw(2) << polarity[x]decision[x]->id+1;
+  //       std::cout << " " << setw(2) << path[j]->id+1 << std::endl;
+  //       ++j;
+  //     }
+  //   }
+  //   std::cout << std::endl;
 
 
   Vector< Literal > clause;
@@ -1161,7 +1160,7 @@ void WeighterRestartNogood::notifyRestart()
   while( i<n && choices[i] == path[j] ) {
     ++i;
     ++j;
-    // loop through all right 
+    // loop through all right
     while( j<m && path[j] != choices[i] ) {
       clause.clear();
       //std::cout << "      ";
@@ -1179,21 +1178,21 @@ void WeighterRestartNogood::notifyRestart()
   //std::cout << std::endl;
 
 
-//   std::cout << "Assumption: ";
-//   for(i=0; i<sat->assumptions.size; ++i)
-//     std::cout << sat->polarity[sat->assumptions[i]] << " ";
-//   std::cout << std::endl;
+  //   std::cout << "Assumption: ";
+  //   for(i=0; i<sat->assumptions.size; ++i)
+  //     std::cout << sat->polarity[sat->assumptions[i]] << " ";
+  //   std::cout << std::endl;
 
-//   std::cout << "Assumption: ";
-//   for(i=0; i<sat->assumptions.size; ++i) {
-//     sat->X[sat->assumptions[i]]->print( std::cout ) ;
-//     std::cout << " ";
-//   }
-//   std::cout << std::endl;
+  //   std::cout << "Assumption: ";
+  //   for(i=0; i<sat->assumptions.size; ++i) {
+  //     sat->X[sat->assumptions[i]]->print( std::cout ) ;
+  //     std::cout << " ";
+  //   }
+  //   std::cout << std::endl;
 
 
-//   if( path.size )
-//  exit(0);
+  //   if( path.size )
+  //  exit(0);
 
   path.clear();
   lvl = 0;
@@ -1205,7 +1204,7 @@ WeighterRestartGenNogood::WeighterRestartGenNogood( Solver* s )
 {
   bad_choices = new Vector< Decision >[s->numvars+1];
   bad_choices -= s->init_level;
-  
+
   depth = s->init_level;
 }
 
@@ -1238,12 +1237,12 @@ void WeighterRestartGenNogood::notifyChoice()
 
 void WeighterRestartGenNogood::notifyFailure( Constraint *con )
 {
-//      std::cout << " failure " << level << " " ;
+  //      std::cout << " failure " << level << " " ;
 
-//    if(level > init_level+1) {
-//      decision[level].print(std::cout);
-//      std::cout << std::endl;
-//    }
+  //    if(level > init_level+1) {
+  //      decision[level].print(std::cout);
+  //      std::cout << std::endl;
+  //    }
 
   bad_choices[level].push(decision[level]);
   depth = level;
@@ -1254,23 +1253,23 @@ void WeighterRestartGenNogood::notifyFailure( Constraint *con )
 
 void WeighterRestartGenNogood::notifyRestart() 
 {
-  
+
   //  std::cout << level << " " << init_level << " " << depth << " restart!!" << std::endl;
   //exit(1);
 
-//   for(int i=init_level+2; i<=depth; ++i) {
-//     std::cout << "bad (" << (bad_choices[i].size) << ") ";
-//     for(int j=0; j<bad_choices[i].size; ++j) {
-//       bad_choices[i][j].print(std::cout);
-//       std::cout << " ";
-//     }
-//     if(i<depth) {
-//       std::cout << "good: ";
-//       decision[i].print(std::cout);
-//     }
-//     std::cout << std::endl;
-//   }
-  
+  //   for(int i=init_level+2; i<=depth; ++i) {
+  //     std::cout << "bad (" << (bad_choices[i].size) << ") ";
+  //     for(int j=0; j<bad_choices[i].size; ++j) {
+  //       bad_choices[i][j].print(std::cout);
+  //       std::cout << " ";
+  //     }
+  //     if(i<depth) {
+  //       std::cout << "good: ";
+  //       decision[i].print(std::cout);
+  //     }
+  //     std::cout << std::endl;
+  //   }
+
   Vector< Decision > learnt;
   int d = init_level+2;
   while(d <= depth) {
@@ -1278,13 +1277,13 @@ void WeighterRestartGenNogood::notifyRestart()
       learnt.push(bad_choices[d][i]);
       learnt.back().revert();
 
-//       std::cout << "add ";
-//       for(int j=0; j<=(d-init_level-2); ++j) {
-//     	learnt[j].print(std::cout);
-//     	std::cout << " ";
-//       }
-//       std::cout << std::endl;
-      
+      //       std::cout << "add ";
+      //       for(int j=0; j<=(d-init_level-2); ++j) {
+      //     	learnt[j].print(std::cout);
+      //     	std::cout << " ";
+      //       }
+      //       std::cout << std::endl;
+
       base->add(learnt);
 
       learnt.pop();
@@ -1298,38 +1297,38 @@ void WeighterRestartGenNogood::notifyRestart()
 
   depth = init_level+2;
 
-//   //if(base->nogood.size) {
-//     Solver *solver = decision[depth].var->solver;
-//     solver->print(std::cout);
-//     std::cout << std::endl;
-//     //exit(1);
-//     //}
+  //   //if(base->nogood.size) {
+  //     Solver *solver = decision[depth].var->solver;
+  //     solver->print(std::cout);
+  //     std::cout << std::endl;
+  //     //exit(1);
+  //     //}
 
-//   int i=1, j=0, n=lvl, m=path.size;
-//   choices[n] = 0;
-//   Vector< Literal > clause;
+  //   int i=1, j=0, n=lvl, m=path.size;
+  //   choices[n] = 0;
+  //   Vector< Literal > clause;
 
-//   while( j<m && path[j] != choices[i] )
-//     ++j;
+  //   while( j<m && path[j] != choices[i] )
+  //     ++j;
 
-//   // find first disagreemnet between path and decision
-//   while( i<n && choices[i] == path[j] ) {
-//     ++i;
-//     ++j;
-//     // loop through all right 
-//     while( j<m && path[j] != choices[i] ) {
-//       clause.clear();
-//       for(int x=1; x<i; ++x) {
-// 	clause.push(choices[x]);
-//       }
-//       clause.push( path[j] );
-//       ++j;
+  //   // find first disagreemnet between path and decision
+  //   while( i<n && choices[i] == path[j] ) {
+  //     ++i;
+  //     ++j;
+  //     // loop through all right
+  //     while( j<m && path[j] != choices[i] ) {
+  //       clause.clear();
+  //       for(int x=1; x<i; ++x) {
+  // 	clause.push(choices[x]);
+  //       }
+  //       clause.push( path[j] );
+  //       ++j;
 
-//       //base->add( );
-//     }
-//   }
-//   path.clear();
-//   lvl = 0;
+  //       //base->add( );
+  //     }
+  //   }
+  //   path.clear();
+  //   lvl = 0;
 
 }
 
@@ -1363,8 +1362,8 @@ WeighterSAT::WeighterSAT( Solver* s, ConstraintClauseBase *c )
   //branch = LEFT;
   // dec = 0;
   //nright = 0;
-//   s->binds( fail );
-//   fail.setValue( 0 );
+  //   s->binds( fail );
+  //   fail.setValue( 0 );
 }
 
 WeighterSAT::~WeighterSAT() 
@@ -1373,21 +1372,21 @@ WeighterSAT::~WeighterSAT()
 
 void WeighterSAT::notifyFailure( Constraint *con )
 {
-  
+
   sat->analyzeConflict();
 
 }
 
 // //   if( branch == LEFT ) {
 // //     if( con == sat ) {
-      
+
 // // #ifdef _DEBUGNOGOOD
-      
+
 // //       std::cout << "FAIL ON A DECISION" << std::endl;
-      
+
 // //       sat->printDecisions( std::cout, 0 );
 // // #endif
-      
+
 // //       //sat->printDecisions( std::cout, 0 );
 
 // //       //Literal p;
@@ -1395,15 +1394,15 @@ void WeighterSAT::notifyFailure( Constraint *con )
 // //       sat->backjump();
 
 // // 	 //sat->btLevel = sat->analyze( sat->conflict, p );
-      
+
 // // //       //     std::cout << p << " because: ";
 // // //       //     sat->printClause( std::cout, sat->learnt.back() );
 // // //       //     std::cout << std::endl;
-      
+
 // //  //       sat->reason[atom(p)] = sat->learnt.back();
 // // //        //fail = p;
 // // //        //fail.push(p);
-       
+
 // // //        std::cout << "c left  fail " << p  << " because ";
 // // //        sat->printClause( std::cout, sat->learnt.back() );
 // // //        std::cout << std::endl;
@@ -1414,7 +1413,7 @@ void WeighterSAT::notifyFailure( Constraint *con )
 // //     } 
 // //   }
 // // //   else {
-    
+
 // // // //     int q = sat->solver->decision[*(sat->level)+1]->id+1;
 // // // //     std::cout << "c right fail " << q << " ";
 // // // //     std::cout << std::endl;
@@ -1428,19 +1427,19 @@ void WeighterSAT::notifyFailure( Constraint *con )
 void WeighterSAT::notifyChoice()
 {
 
-//   std::cout << "Notify ";
-//   first[0]->print( std::cout );
-//   std::cout << std::endl;
+  //   std::cout << "Notify ";
+  //   first[0]->print( std::cout );
+  //   std::cout << std::endl;
 
-//   int p = first[0]->id;
+  //   int p = first[0]->id;
 
-//   //if( first[0]->equal(0) ) p = -p;
-//   //sat->makeDecision( p );
-//   //sat->save();
+  //   //if( first[0]->equal(0) ) p = -p;
+  //   //sat->makeDecision( p );
+  //   //sat->save();
 
 
-//   std::cout << std::endl << "before the notification: " << std::endl;
-//   sat->printDecisions( std::cout );
+  //   std::cout << std::endl << "before the notification: " << std::endl;
+  //   sat->printDecisions( std::cout );
 
   //sat->notifyChoice();
 
@@ -1451,13 +1450,13 @@ void WeighterSAT::notifyChoice()
   //sat->decayActivity();
 
 
-//   //fail = p;
-//   std::cout << "choice " << p << " " << *(sat->level) << std::endl;
+  //   //fail = p;
+  //   std::cout << "choice " << p << " " << *(sat->level) << std::endl;
 
 
-//   //branch = LEFT;
-//   //nright = 0;
-//   //dec = 0;
+  //   //branch = LEFT;
+  //   //nright = 0;
+  //   //dec = 0;
 }
 
 
@@ -1467,31 +1466,22 @@ void WeighterSAT::notifyChoice()
 
 DVO::DVO(Solver *s, const int l) 
   : variables(s->variables.stack_),
-    first(s->future), 
-    last(s->empty), 
-    decision(s->decision.stack_), 
-    level(s->level),
-    solver(s)
+    first(s->future),
+    last(s->empty),
+    decision(s->decision.stack_),
+    level(s->level)
 {
-//   VariableInt **var_iterator;
-//   for(var_iterator = first; var_iterator != last; ++var_iterator)
-//     {
-//     }
+  //   VariableInt **var_iterator;
+  //   for(var_iterator = first; var_iterator != last; ++var_iterator)
+  //     {
+  //     }
   limit = l;
-  if(limit > s->length) limit = s->length;
   //verbosity = 0;
 }
 
 //Constraint** DVO::get_disjuncts() { return _garbage_disjuncts; }
 PredicateDisjunctive** DVO::get_disjuncts(Solver *s) { return _garbage_disjuncts; }
 PredicateGenDisjunctive** DVO::get_gen_disjuncts(Solver *s) { return _garbage_gen_disjuncts; }
-
-VariableInt** DVO::copy_sequence() {
-  VariableInt **sequence = new VariableInt*[solver->length];
-  std::memcpy(sequence, solver->sequence, (solver->length)*sizeof(VariableInt*));
-  return sequence;
-}
-
 
 inline VariableInt* DVONoOrder::select() 
 {
@@ -1505,33 +1495,33 @@ DVOLexicographic::~DVOLexicographic()
 
 DVOLexicographic::DVOLexicographic(Solver* s) : DVO(s) 
 { 
-  //last.init(s,0); 
+  //last.init(s,0);
   s->binds( lastIdx );
   lastIdx.setValue( 0 );
-  
+
   if(s->length) {
     sequence = new VariableInt*[s->length];
     std::memcpy(sequence, s->sequence, (s->length)*sizeof(VariableInt*));
   }
 
-//   for(int i=0; i<s->length; ++i)
-//     {
-//       sequence[i]->printshort( std::cout );
-//       std::cout << std::endl;
-//     }
+  //   for(int i=0; i<s->length; ++i)
+  //     {
+  //       sequence[i]->printshort( std::cout );
+  //       std::cout << std::endl;
+  //     }
 }
 
 inline VariableInt* DVOLexicographic::select() 
 {
-  int i=lastIdx;  
-//   while( !variables[i]->isLinked() ) ++i;
-//   lastIdx = i;
-//   return variables[i];
+  int i=lastIdx;
+  //   while( !variables[i]->isLinked() ) ++i;
+  //   lastIdx = i;
+  //   return variables[i];
 
   while( !sequence[i]->isLinked() ) {
     ++i;
   }
-   lastIdx = i;
+  lastIdx = i;
   return sequence[i];
 }
 
@@ -1546,7 +1536,7 @@ DVOAntiLex::DVOAntiLex(Solver* s) : DVO(s)
 
   s->binds( lastIdx );
   lastIdx.setValue( 0 );
-  
+
   if(s->length) {
     sequence = new VariableInt*[s->length];
     for(int i=0; i<s->length; ++i)
@@ -1554,19 +1544,19 @@ DVOAntiLex::DVOAntiLex(Solver* s) : DVO(s)
     //std::memcpy(sequence, s->sequence, (s->length)*sizeof(VariableInt*));
   }
 
-//   for(int i=0; i<s->length; ++i)
-//     {
-//       sequence[i]->printshort( std::cout );
-//       std::cout << std::endl;
-//     }
+  //   for(int i=0; i<s->length; ++i)
+  //     {
+  //       sequence[i]->printshort( std::cout );
+  //       std::cout << std::endl;
+  //     }
 }
 
 inline VariableInt* DVOAntiLex::select() 
 {
-  int i=lastIdx;  
-//   while( !variables[i]->isLinked() ) ++i;
-//   lastIdx = i;
-//   return variables[i];
+  int i=lastIdx;
+  //   while( !variables[i]->isLinked() ) ++i;
+  //   lastIdx = i;
+  //   return variables[i];
 
   while( !sequence[i]->isLinked() ) {
     ++i;
@@ -1584,7 +1574,7 @@ JTL0DVO::JTL0DVO(Solver* s, PredicateDisjunctive** disj, const int l) : DVO(s,NO
   best.disjuncts = the_disjuncts;
   best.nb_disjuncts = nb_disjuncts;
   best.current_ = &(current_job.value);
-  
+
   current.disjuncts = the_disjuncts;
   current.nb_disjuncts = nb_disjuncts;
   current.current_ = &(current_job.value);
@@ -1593,7 +1583,7 @@ JTL0DVO::JTL0DVO(Solver* s, PredicateDisjunctive** disj, const int l) : DVO(s,NO
 
 JOB::~JOB() {
 }
-  
+
 DVO* JOB::extract( Solver* s ) {
   int i, k, j, l, h, ti, tj, ji, jj, d = 0, n = model->data->nJobs();
   Vector< PredicateDisjunctive* > ** job_order = new Vector< PredicateDisjunctive* >*[n];
@@ -1603,16 +1593,16 @@ DVO* JOB::extract( Solver* s ) {
 
   VariableInt *x;
   MistralNode<Constraint*> *nd;
-  
-  for(k=0; k<model->data->nMachines(); ++k) 
+
+  for(k=0; k<model->data->nMachines(); ++k)
     for(i=0; i<model->data->nTasksInMachine(k); ++i)
       for(j=i+1; j<model->data->nTasksInMachine(k); ++j) {
 	ti = model->data->getMachineTask(k,i);
 	tj = model->data->getMachineTask(k,j);
 
 
-// 	std::cout << "tasks " << ti << ", " << tj ;//<< std::endl;
-	
+	// 	std::cout << "tasks " << ti << ", " << tj ;//<< std::endl;
+
 	for(l=0; l<model->data->nJobs(ti); ++l) {
 	  ji = model->data->getJob(ti,l);
 	  for(h=0; h<model->data->nJobs(tj); ++h) {
@@ -1620,16 +1610,16 @@ DVO* JOB::extract( Solver* s ) {
 
 	    x = model->disjuncts[d].getVariable();
 	    nd = x->constraintsOnValue();
-	    while( nextNode(nd) ) 
+	    while( nextNode(nd) )
 	      if(nd->elt->arity == 3) {
 
-// 		std::cout << " -> jobs " << ji << ", " << jj << " " ;//<< std::endl;
-		
+		// 		std::cout << " -> jobs " << ji << ", " << jj << " " ;//<< std::endl;
+
 		job_order[ji][jj].push((PredicateDisjunctive*)(nd->elt));
 		job_order[jj][ji].push((PredicateDisjunctive*)(nd->elt));
 
-// 		nd->elt->print(std::cout);
-// 		std::cout << std::endl;
+		// 		nd->elt->print(std::cout);
+		// 		std::cout << std::endl;
 
 		++d;
 	      }
@@ -1655,25 +1645,25 @@ DVO* JOB::extract( Solver* s ) {
     }
   }
 
-  
 
-//   for(i=1; i<n; ++i) {
-//     for(j=0; j<i; ++j) {
-//       std::cout << "jobs " << j << "x" << i << ":";
-//       for(k=0; k<job_order[j][i].size; ++k) {
-// 	std::cout << " ";
-// 	job_order[j][i][k]->scope[2]->printshort(std::cout);
-//       }
-//       std::cout << std::endl;
-//     }
-//   }
+
+  //   for(i=1; i<n; ++i) {
+  //     for(j=0; j<i; ++j) {
+  //       std::cout << "jobs " << j << "x" << i << ":";
+  //       for(k=0; k<job_order[j][i].size; ++k) {
+  // 	std::cout << " ";
+  // 	job_order[j][i][k]->scope[2]->printshort(std::cout);
+  //       }
+  //       std::cout << std::endl;
+  //     }
+  //   }
 
   return new JobByJob(s, job_order, lt, ot, n, model->data, old);
 }
 
 JobByJob::JobByJob(Solver* s, Vector<PredicateDisjunctive*>** jo, 
-		   VariableInt **lt, Vector< VariableInt* >*ot, 
-		   const int n, Instance *d, bool o) 
+		   VariableInt **lt, Vector< VariableInt* >*ot,
+		   const int n, Instance *d, bool o)
   : DVO(s) {
 
 
@@ -1691,16 +1681,16 @@ JobByJob::JobByJob(Solver* s, Vector<PredicateDisjunctive*>** jo,
 
   for(int i=0; i<n; ++i) {
     done.push(i);
-    last_tasks[i]->branch = 
+    last_tasks[i]->branch =
       new ValSelectorJob( last_tasks[i], i, data, other_tasks[i][0] );
   }
-  
+
   nJobs = n;
   nTasks = data->nTasks();
 }
 
 JobByJob::~JobByJob() {
-  for(int i=0; i<nJobs; ++i) { 
+  for(int i=0; i<nJobs; ++i) {
     //delete [] other_tasks[i];
     delete [] jobs[i];
   }
@@ -1723,24 +1713,24 @@ void JobByJob::select_job() {
   int jmin;
   int jsize;
   int best_job = curJob, i, j, k;
-  
-//   std::cout << std::endl;
-//   for(k=0; k<curJob; ++k) {
-//     i = done[k];
 
-//     jlength = 0;
-//     jmin = other_tasks[i][0]->min();
-//     jsize = 0;
-//     for(j=0; j<other_tasks[i].size; ++j) {
-//       jlength += data->getDuration(data->getJobTask(i,j));
-//       jsize += other_tasks[i][j]->domsize();
-//     }
-//     std::cout << "job " << std::setw(2) << i << ": " 
-// 	      << jmin << " - " << jlength << " - "
-// 	      << jsize << " ";
-//     last_tasks[i]->print(std::cout);
-//     std::cout << std::endl;
-//   }
+  //   std::cout << std::endl;
+  //   for(k=0; k<curJob; ++k) {
+  //     i = done[k];
+
+  //     jlength = 0;
+  //     jmin = other_tasks[i][0]->min();
+  //     jsize = 0;
+  //     for(j=0; j<other_tasks[i].size; ++j) {
+  //       jlength += data->getDuration(data->getJobTask(i,j));
+  //       jsize += other_tasks[i][j]->domsize();
+  //     }
+  //     std::cout << "job " << std::setw(2) << i << ": "
+  // 	      << jmin << " - " << jlength << " - "
+  // 	      << jsize << " ";
+  //     last_tasks[i]->print(std::cout);
+  //     std::cout << std::endl;
+  //   }
 
   //  std::cout << "select job:" << std::endl;
   for(k=curJob; k<nJobs; ++k) {
@@ -1753,20 +1743,20 @@ void JobByJob::select_job() {
       jlength += data->getDuration(data->getJobTask(i,j));
       jsize += other_tasks[i][j]->domsize();
     }
-//     std::cout << "job " << std::setw(2) << i << ": " 
-// 	      << jmin << " - " << jlength << " - "
-// 	      << jsize << " ";
-//     last_tasks[i]->print(std::cout);
-//     std::cout << std::endl;
+    //     std::cout << "job " << std::setw(2) << i << ": "
+    // 	      << jmin << " - " << jlength << " - "
+    // 	      << jsize << " ";
+    //     last_tasks[i]->print(std::cout);
+    //     std::cout << std::endl;
 
-//     if(jmin > max_min || (jmin == max_min && jlength > length)) {
-//       max_min = jmin;
-//       length = jlength;
-//       best_job = k;
-//     }
-//     if(jsize < window_size) {
-//       window_size = jsize;
-//     }
+    //     if(jmin > max_min || (jmin == max_min && jlength > length)) {
+    //       max_min = jmin;
+    //       length = jlength;
+    //       best_job = k;
+    //     }
+    //     if(jsize < window_size) {
+    //       window_size = jsize;
+    //     }
     if(jlength > length) {
       length = jlength;
       best_job = k;
@@ -1784,11 +1774,11 @@ VariableInt* JobByJob::select() {
   PredicateDisjunctive *p = NULL;
   VariableInt *x = NULL;
 
-//   if(!done.size) { // first call, select a job (lex for now)
-//     std::cout << "first call, return first job: ";
-//     curJob = 1;
-//     x = last_tasks[done[0]];
-//   }
+  //   if(!done.size) { // first call, select a job (lex for now)
+  //     std::cout << "first call, return first job: ";
+  //     curJob = 1;
+  //     x = last_tasks[done[0]];
+  //   }
 
 
   if(!old && curJob == 0) {
@@ -1796,27 +1786,27 @@ VariableInt* JobByJob::select() {
     //select_job();
   }
 
-//   std::cout << "CURJOB = " << curJob << std::endl;
-  
+  //   std::cout << "CURJOB = " << curJob << std::endl;
+
   int i, j;//, job = done.back();
   while(!x) {
-//     for(i=0; !x && i<curJob; ++i) {
-//       last_tasks[done[i]]->print(std::cout);
-//       std::cout << " ";
-//     }
-//     std::cout << " already set, seek a new common disjunct with ";
-//     last_tasks[done[curJob]]->print(std::cout);
-//     std::cout << ": ";
+    //     for(i=0; !x && i<curJob; ++i) {
+    //       last_tasks[done[i]]->print(std::cout);
+    //       std::cout << " ";
+    //     }
+    //     std::cout << " already set, seek a new common disjunct with ";
+    //     last_tasks[done[curJob]]->print(std::cout);
+    //     std::cout << ": ";
 
     // go to the next job
     for(i=0; !x && i<curJob; ++i) {
-      
-//       std::cout << "disjunct between job" << done[curJob] << " et job"
-// 		<< done[i] << "?" << std::endl;
+
+      //       std::cout << "disjunct between job" << done[curJob] << " et job"
+      // 		<< done[i] << "?" << std::endl;
 
       for(j=0; !x && j<jobs[done[curJob]][done[i]].size; ++j) {
 	p = jobs[done[curJob]][done[i]][j];
-	if(!p->scope[2]->isGround()) { 
+	if(!p->scope[2]->isGround()) {
 	  // there is an undecided disjunct between the current job (done[curJob])
 	  // and the job set at time i (done[i])
 	  x = p->scope[2];
@@ -1825,18 +1815,18 @@ VariableInt* JobByJob::select() {
     }
 
     if(!x) {
-//       std::cout << "no more disjunct, jump to next job: ";
-//       // the current job is inserted, we move to the next job
-//       //select_job();
+      //       std::cout << "no more disjunct, jump to next job: ";
+      //       // the current job is inserted, we move to the next job
+      //       //select_job();
 
-//       std::cout << "select job" << done[curJob] ;
+      //       std::cout << "select job" << done[curJob] ;
 
       x = last_tasks[done[curJob]];
 
-//       x->print(std::cout);
-//       if(curJob<nJobs-1)
-// 	std::cout << std::endl << "and job" ;
-      
+      //       x->print(std::cout);
+      //       if(curJob<nJobs-1)
+      // 	std::cout << std::endl << "and job" ;
+
       ++curJob;
 
       if(!old && curJob<nJobs && randint(100)<50) {
@@ -1855,7 +1845,7 @@ NOW::~NOW() {
 
 PredicateGenDisjunctive** NOW::get_gen_disjuncts(Solver *s) {
   // collect disjuncts
-  
+
   PredicateGenDisjunctive **disjunct = new PredicateGenDisjunctive*[s->variables.size];
   std::fill(disjunct, disjunct+(s->variables.size), (PredicateGenDisjunctive *)NULL);
   _garbage_gen_disjuncts = disjunct;
@@ -1868,15 +1858,15 @@ PredicateGenDisjunctive** NOW::get_gen_disjuncts(Solver *s) {
       x = cons[i]->scope[2];
       j = x->id;
       disjunct[j] = (PredicateGenDisjunctive*)(cons[i]);
-//       if(promise == 1) {
-// 	//std::cout << "PROMISE" << std::endl;
-// 	delete x->branch;
-// 	x->branch = new ValSelectorLNOW( x, disjunct[j] );
-//       } else if(promise == -1) {
-// 	//std::cout << "ANTI" << std::endl;
-// 	delete x->branch;
-// 	x->branch = new ValSelectorMNOW( x, disjunct[j] );
-//       }
+      //       if(promise == 1) {
+      // 	//std::cout << "PROMISE" << std::endl;
+      // 	delete x->branch;
+      // 	x->branch = new ValSelectorLNOW( x, disjunct[j] );
+      //       } else if(promise == -1) {
+      // 	//std::cout << "ANTI" << std::endl;
+      // 	delete x->branch;
+      // 	x->branch = new ValSelectorMNOW( x, disjunct[j] );
+      //       }
     }
   return disjunct;
 }
@@ -1890,7 +1880,7 @@ DVO* NOW::extract( Solver* s )
 
     switch(strategy) {
     case DOM_O_BOOLTASKWEIGHT: {
-      GenericSchedulingRandomDVO<VarSelectorNOW_domotaskpself> *var_heuristic = 
+      GenericSchedulingRandomDVO<VarSelectorNOW_domotaskpself> *var_heuristic =
 	new GenericSchedulingRandomDVO<VarSelectorNOW_domotaskpself>(s, size);
       PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
       for(i=0; i<=size; ++i)
@@ -1899,7 +1889,7 @@ DVO* NOW::extract( Solver* s )
       var_heuristic->the_gen_disjuncts = disjunct;
       return var_heuristic;
     } break;
-      
+
     }
 
 
@@ -1908,7 +1898,7 @@ DVO* NOW::extract( Solver* s )
     switch(strategy) {
 
     case DOM: {
-      GenericSchedulingDVO<VarSelectorNOW_dom> *var_heuristic = 
+      GenericSchedulingDVO<VarSelectorNOW_dom> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorNOW_dom>(s);
       PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -1917,8 +1907,8 @@ DVO* NOW::extract( Solver* s )
       return var_heuristic;
     } break;
 
-   case DOM_O_BOOLWEIGHT: {
-      GenericSchedulingDVO<VarSelectorNOW_domoself> *var_heuristic = 
+    case DOM_O_BOOLWEIGHT: {
+      GenericSchedulingDVO<VarSelectorNOW_domoself> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorNOW_domoself>(s);
       PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -1927,8 +1917,8 @@ DVO* NOW::extract( Solver* s )
       return var_heuristic;
     } break;
 
-   case DOM_O_TASKWEIGHT: {
-      GenericSchedulingDVO<VarSelectorNOW_domotask> *var_heuristic = 
+    case DOM_O_TASKWEIGHT: {
+      GenericSchedulingDVO<VarSelectorNOW_domotask> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorNOW_domotask>(s);
       PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -1938,7 +1928,7 @@ DVO* NOW::extract( Solver* s )
     } break;
 
     case DOM_O_BOOLTASKWEIGHT: {
-      GenericSchedulingDVO<VarSelectorNOW_domotaskpself> *var_heuristic = 
+      GenericSchedulingDVO<VarSelectorNOW_domotaskpself> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorNOW_domotaskpself>(s);
       PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -1947,8 +1937,8 @@ DVO* NOW::extract( Solver* s )
       return var_heuristic;
     } break;
 
-   case DOM_P_BWEIGHT: {
-      GenericSchedulingDVO<VarSelectorNOW_domtself> *var_heuristic = 
+    case DOM_P_BWEIGHT: {
+      GenericSchedulingDVO<VarSelectorNOW_domtself> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorNOW_domtself>(s);
       PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -1957,8 +1947,8 @@ DVO* NOW::extract( Solver* s )
       return var_heuristic;
     } break;
 
-   case DOM_P_TWEIGHT: {
-      GenericSchedulingDVO<VarSelectorNOW_domttask> *var_heuristic = 
+    case DOM_P_TWEIGHT: {
+      GenericSchedulingDVO<VarSelectorNOW_domttask> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorNOW_domttask>(s);
       PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -1968,7 +1958,7 @@ DVO* NOW::extract( Solver* s )
     } break;
 
     case DOM_P_BTWEIGHT: {
-      GenericSchedulingDVO<VarSelectorNOW_domttaskpself> *var_heuristic = 
+      GenericSchedulingDVO<VarSelectorNOW_domttaskpself> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorNOW_domttaskpself>(s);
       PredicateGenDisjunctive** disjunct = get_gen_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -1976,8 +1966,8 @@ DVO* NOW::extract( Solver* s )
       var_heuristic->the_gen_disjuncts = disjunct;
       return var_heuristic;
     } break;
-      
-      
+
+
     }
   }
 
@@ -1991,7 +1981,7 @@ OSP::~OSP() {
 int* OSP::get_first_job() {
   //int *fj = new int[model->disjuncts.size()];
   //for(int i=0; i<model->disjuncts.size(); ++i)
-  //fj[i] = 
+  //fj[i] =
   return model->first_job.stack_;
 }
 
@@ -2001,7 +1991,7 @@ int* OSP::get_second_job() {
 
 PredicateDisjunctive** OSP::get_disjuncts(Solver *s) {
   // collect disjuncts
-  
+
   PredicateDisjunctive **disjunct = new PredicateDisjunctive*[s->variables.size];
   std::fill(disjunct, disjunct+(s->variables.size), (PredicateDisjunctive *)NULL);
   _garbage_disjuncts = disjunct;
@@ -2028,16 +2018,16 @@ PredicateDisjunctive** OSP::get_disjuncts(Solver *s) {
 
 DVO* OSP::extract( Solver* s )
 {
-//   if(strategy == DOM_O_TASKWEIGHTPJOB) {
-//     model->print(std::cout);
-//     std::cout << std::endl;
-//     exit(1);
-//   }
+  //   if(strategy == DOM_O_TASKWEIGHTPJOB) {
+  //     model->print(std::cout);
+  //     std::cout << std::endl;
+  //     exit(1);
+  //   }
 
   s->setLearner( Weighter::WDG );
-  
+
   //if(strategy == DOM_O_TASKWEIGHTPJOB)
-    
+
 
   if( size > 1 ) {
 
@@ -2046,7 +2036,7 @@ DVO* OSP::extract( Solver* s )
     int i;
     switch(strategy) {
     case NOW: {
-      GenericSchedulingRandomDVO<VarSelectorOSP_NOW> *var_heuristic = 
+      GenericSchedulingRandomDVO<VarSelectorOSP_NOW> *var_heuristic =
 	new GenericSchedulingRandomDVO<VarSelectorOSP_NOW>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i) {
@@ -2062,7 +2052,7 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOMAIN_O_NOT: {
-      GenericSchedulingRandomDVO<VarSelectorOSP_Domain> *var_heuristic = 
+      GenericSchedulingRandomDVO<VarSelectorOSP_Domain> *var_heuristic =
 	new GenericSchedulingRandomDVO<VarSelectorOSP_Domain>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i)
@@ -2072,7 +2062,7 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOMAIN_P_TWEIGHT: {
-      GenericSchedulingRandomDVO<VarSelectorOSP_DomainWeight> *var_heuristic = 
+      GenericSchedulingRandomDVO<VarSelectorOSP_DomainWeight> *var_heuristic =
 	new GenericSchedulingRandomDVO<VarSelectorOSP_DomainWeight>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i)
@@ -2082,7 +2072,7 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOM_O_BOOLWEIGHT: {
-      GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolWeight> *var_heuristic = 
+      GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolWeight> *var_heuristic =
 	new GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolWeight>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i)
@@ -2092,7 +2082,7 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOM_O_TASKWEIGHT: {
-      GenericSchedulingRandomDVO<VarSelectorOSP_DoTaskWeight> *var_heuristic = 
+      GenericSchedulingRandomDVO<VarSelectorOSP_DoTaskWeight> *var_heuristic =
 	new GenericSchedulingRandomDVO<VarSelectorOSP_DoTaskWeight>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i)
@@ -2102,7 +2092,7 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOM_O_BOOLTASKWEIGHT: {
-      GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolTaskWeight> *var_heuristic = 
+      GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolTaskWeight> *var_heuristic =
 	new GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolTaskWeight>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i)
@@ -2112,7 +2102,7 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOMAIN_O_NOTTYPE: {
-      GenericSchedulingRandomDVO<VarSelectorOSP_DomainType> *var_heuristic = 
+      GenericSchedulingRandomDVO<VarSelectorOSP_DomainType> *var_heuristic =
 	new GenericSchedulingRandomDVO<VarSelectorOSP_DomainType>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i)
@@ -2122,7 +2112,7 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOM_O_BOOLWEIGHTTYPE: {
-      GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolWeightType> *var_heuristic = 
+      GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolWeightType> *var_heuristic =
 	new GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolWeightType>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i)
@@ -2132,7 +2122,7 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOM_O_TASKWEIGHTTYPE: {
-      GenericSchedulingRandomDVO<VarSelectorOSP_DoTaskWeightType> *var_heuristic = 
+      GenericSchedulingRandomDVO<VarSelectorOSP_DoTaskWeightType> *var_heuristic =
 	new GenericSchedulingRandomDVO<VarSelectorOSP_DoTaskWeightType>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i)
@@ -2142,7 +2132,7 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOM_O_TASKWEIGHTPJOB: {
-      GenericSchedulingRandomDVO<VarSelectorOSP_DoTaskWeightJob> *var_heuristic = 
+      GenericSchedulingRandomDVO<VarSelectorOSP_DoTaskWeightJob> *var_heuristic =
 	new GenericSchedulingRandomDVO<VarSelectorOSP_DoTaskWeightJob>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i) {
@@ -2160,7 +2150,7 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOM_O_BOOLTASKWEIGHTTYPE: {
-      GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolTaskWeightType> *var_heuristic = 
+      GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolTaskWeightType> *var_heuristic =
 	new GenericSchedulingRandomDVO<VarSelectorOSP_DoBoolTaskWeightType>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i)
@@ -2170,7 +2160,7 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     default: {
-      GenericSchedulingRandomDVO<VarSelectorOSP_DoWeakWeight> *var_heuristic = 
+      GenericSchedulingRandomDVO<VarSelectorOSP_DoWeakWeight> *var_heuristic =
 	new GenericSchedulingRandomDVO<VarSelectorOSP_DoWeakWeight>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       for(i=0; i<=size; ++i) {
@@ -2190,7 +2180,7 @@ DVO* OSP::extract( Solver* s )
 
     switch(strategy) {
     case JTL0: {
-      JTL0DVO *var_heuristic = 
+      JTL0DVO *var_heuristic =
 	new JTL0DVO(s,get_disjuncts(s),((No_wait_Model*)model)->SearchVars.size());
       // var_heuristic->nb_disjuncts = ((No_wait_Model*)model)->SearchVars.size();
       // PredicateDisjunctive** disjunct = get_disjuncts(s);
@@ -2206,7 +2196,7 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case NOW: {
-      GenericSchedulingDVO<VarSelectorOSP_NOW> *var_heuristic = 
+      GenericSchedulingDVO<VarSelectorOSP_NOW> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorOSP_NOW>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -2221,7 +2211,7 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOMAIN_O_NOT: {
-      GenericSchedulingDVO<VarSelectorOSP_Domain> *var_heuristic = 
+      GenericSchedulingDVO<VarSelectorOSP_Domain> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorOSP_Domain>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -2230,7 +2220,7 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOMAIN_P_TWEIGHT: {
-      GenericSchedulingDVO<VarSelectorOSP_DomainWeight> *var_heuristic = 
+      GenericSchedulingDVO<VarSelectorOSP_DomainWeight> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorOSP_DomainWeight>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -2242,7 +2232,7 @@ DVO* OSP::extract( Solver* s )
 
       //std::cout << "c bool weight heuristic" << std::endl;
 
-      GenericSchedulingDVO<VarSelectorOSP_DoBoolWeight> *var_heuristic = 
+      GenericSchedulingDVO<VarSelectorOSP_DoBoolWeight> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorOSP_DoBoolWeight>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -2254,7 +2244,7 @@ DVO* OSP::extract( Solver* s )
 
       //std::cout << "c task weight heuristic" << std::endl;
 
-      GenericSchedulingDVO<VarSelectorOSP_DoTaskWeight> *var_heuristic = 
+      GenericSchedulingDVO<VarSelectorOSP_DoTaskWeight> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorOSP_DoTaskWeight>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -2267,7 +2257,7 @@ DVO* OSP::extract( Solver* s )
       WeighterJobDecision *wjd = new WeighterJobDecision(s, model);
       s->learners.push( wjd );
 
-      GenericSchedulingDVO<VarSelectorOSP_DoTaskWeightJob> *var_heuristic = 
+      GenericSchedulingDVO<VarSelectorOSP_DoTaskWeightJob> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorOSP_DoTaskWeightJob>(s, size);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
 
@@ -2292,7 +2282,7 @@ DVO* OSP::extract( Solver* s )
 
       //std::cout << "c bool+task weight heuristic" << std::endl;
 
-      GenericSchedulingDVO<VarSelectorOSP_DoBoolTaskWeight> *var_heuristic = 
+      GenericSchedulingDVO<VarSelectorOSP_DoBoolTaskWeight> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorOSP_DoBoolTaskWeight>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -2301,7 +2291,7 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     case DOMAIN_O_NOTTYPE: {
-      GenericSchedulingDVO<VarSelectorOSP_DomainType> *var_heuristic = 
+      GenericSchedulingDVO<VarSelectorOSP_DomainType> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorOSP_DomainType>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -2313,7 +2303,7 @@ DVO* OSP::extract( Solver* s )
 
       //std::cout << "c bool weight (type) heuristic" << std::endl;
 
-      GenericSchedulingDVO<VarSelectorOSP_DoBoolWeightType> *var_heuristic = 
+      GenericSchedulingDVO<VarSelectorOSP_DoBoolWeightType> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorOSP_DoBoolWeightType>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -2325,7 +2315,7 @@ DVO* OSP::extract( Solver* s )
 
       //std::cout << "c task weight (type) heuristic" << std::endl;
 
-      GenericSchedulingDVO<VarSelectorOSP_DoTaskWeightType> *var_heuristic = 
+      GenericSchedulingDVO<VarSelectorOSP_DoTaskWeightType> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorOSP_DoTaskWeightType>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -2337,7 +2327,7 @@ DVO* OSP::extract( Solver* s )
 
       //std::cout << "c bool+task weight (type) heuristic" << std::endl;
 
-      GenericSchedulingDVO<VarSelectorOSP_DoBoolTaskWeightType> *var_heuristic = 
+      GenericSchedulingDVO<VarSelectorOSP_DoBoolTaskWeightType> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorOSP_DoBoolTaskWeightType>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -2346,7 +2336,7 @@ DVO* OSP::extract( Solver* s )
       return var_heuristic;
     }
     default: {
-      GenericSchedulingDVO<VarSelectorOSP_DoWeakWeight> *var_heuristic = 
+      GenericSchedulingDVO<VarSelectorOSP_DoWeakWeight> *var_heuristic =
 	new GenericSchedulingDVO<VarSelectorOSP_DoWeakWeight>(s);
       PredicateDisjunctive** disjunct = get_disjuncts(s);
       var_heuristic->best.disjuncts = disjunct;
@@ -2382,15 +2372,15 @@ void PFSP::get_disjuncts(Solver* s,
     if(x->getType() == VariableInt::BOOL) {
       nd = x->constraintsOnValue();
       while( nextNode(nd) ) {
-	if(nd->elt->arity == 3) 
+	if(nd->elt->arity == 3)
 	  disjunct[i][sdegree[i]++] = ((PredicateDisjunctive*)(nd->elt));
       }
 
-       if(promise == 1) {
-	 x->branch = new ValSelectorPFSP( x, disjunct[i], sdegree[i] );
-       }
-       // else if(promise == -1)
-// 	x->branch = new ValSelectorMOSP( x, disjunct[j] );
+      if(promise == 1) {
+	x->branch = new ValSelectorPFSP( x, disjunct[i], sdegree[i] );
+      }
+      // else if(promise == -1)
+      // 	x->branch = new ValSelectorMOSP( x, disjunct[j] );
     }
   }
 }
@@ -2400,7 +2390,7 @@ DVO* PFSP::extract( Solver* s )
   s->setLearner( Weighter::WDG );
   if( size > 1 ) {
     int i;
-    GenericRandomDVO<VarSelectorPFSP> *var_heuristic = 
+    GenericRandomDVO<VarSelectorPFSP> *var_heuristic =
       new GenericRandomDVO<VarSelectorPFSP>(s, size);
 
     PredicateDisjunctive*** disjunct;
@@ -2414,10 +2404,10 @@ DVO* PFSP::extract( Solver* s )
     var_heuristic->current.disjuncts = disjunct;
     var_heuristic->current.sdegree = sdegree;
     return var_heuristic;
-    
+
   } else {
 
-    GenericDVO<VarSelectorPFSP> *var_heuristic = 
+    GenericDVO<VarSelectorPFSP> *var_heuristic =
       new GenericDVO<VarSelectorPFSP>(s);
 
     PredicateDisjunctive*** disjunct;
@@ -2429,7 +2419,7 @@ DVO* PFSP::extract( Solver* s )
     var_heuristic->current.disjuncts = disjunct;
     var_heuristic->current.sdegree = sdegree;
     return var_heuristic;
-    
+
   }
   return NULL;
 }
@@ -2440,50 +2430,50 @@ DVO* OSPSAT::extract( Solver* s )
   s->setLearner( Weighter::WDG );
   if( size > 1 ) {
     GenericRandomDVO<VarSelectorOSPSAT> *var_heuristic = new GenericRandomDVO<VarSelectorOSPSAT>(s, size);
-      
-      // collect disjuncts
-      PredicateDisjunct **disjunct = new PredicateDisjunct*[s->variables.size];
-      int i, j, n = s->constraints.size;
-      Constraint **cons = s->constraints.stack_;
-      VariableInt *x;
-      for(i=0; i<n; ++i)
-	if( cons[i]->arity == 3 ) {
-	  x = cons[i]->scope[2];
-	  j = x->id;
-	  disjunct[j] = (PredicateDisjunct*)(cons[i]);
-	  //x->branch = new ValSelectorOSP( x, disjunct[j] );
-	}
-      for(i=0; i<=size; ++i) {
-	var_heuristic->bests[i].disjuncts = disjunct;
-	var_heuristic->bests[i].activity = s->sat->activity;
+
+    // collect disjuncts
+    PredicateDisjunct **disjunct = new PredicateDisjunct*[s->variables.size];
+    int i, j, n = s->constraints.size;
+    Constraint **cons = s->constraints.stack_;
+    VariableInt *x;
+    for(i=0; i<n; ++i)
+      if( cons[i]->arity == 3 ) {
+	x = cons[i]->scope[2];
+	j = x->id;
+	disjunct[j] = (PredicateDisjunct*)(cons[i]);
+	//x->branch = new ValSelectorOSP( x, disjunct[j] );
       }
-      var_heuristic->current.disjuncts = disjunct;
-      var_heuristic->current.activity = s->sat->activity;
-
-      return var_heuristic;
-      // return new GenericRandomDVO<VarSelectorOSP>(s, size);
-  } else {
-      GenericDVO<VarSelectorOSPSAT> *var_heuristic = new GenericDVO<VarSelectorOSPSAT>(s);
-      
-      // collect disjuncts
-      PredicateDisjunct **disjunct = new PredicateDisjunct*[s->variables.size];
-      int i, j, n = s->constraints.size;
-      Constraint **cons = s->constraints.stack_;
-      VariableInt *x;
-      for(i=0; i<n; ++i)
-	if( cons[i]->arity == 3 ) {
-	  x = cons[i]->scope[2];
-	  j = x->id;
-	  disjunct[j] = (PredicateDisjunct*)(cons[i]);
-	  //x->branch = new ValSelectorOSP( x, disjunct[j] );
-	}
-      var_heuristic->best.disjuncts = disjunct;
-      var_heuristic->best.activity = s->sat->activity;
-      var_heuristic->current.disjuncts = disjunct;
-      var_heuristic->current.activity = s->sat->activity;
-
-      return var_heuristic;
+    for(i=0; i<=size; ++i) {
+      var_heuristic->bests[i].disjuncts = disjunct;
+      var_heuristic->bests[i].activity = s->sat->activity;
     }
+    var_heuristic->current.disjuncts = disjunct;
+    var_heuristic->current.activity = s->sat->activity;
+
+    return var_heuristic;
+    // return new GenericRandomDVO<VarSelectorOSP>(s, size);
+  } else {
+    GenericDVO<VarSelectorOSPSAT> *var_heuristic = new GenericDVO<VarSelectorOSPSAT>(s);
+
+    // collect disjuncts
+    PredicateDisjunct **disjunct = new PredicateDisjunct*[s->variables.size];
+    int i, j, n = s->constraints.size;
+    Constraint **cons = s->constraints.stack_;
+    VariableInt *x;
+    for(i=0; i<n; ++i)
+      if( cons[i]->arity == 3 ) {
+	x = cons[i]->scope[2];
+	j = x->id;
+	disjunct[j] = (PredicateDisjunct*)(cons[i]);
+	//x->branch = new ValSelectorOSP( x, disjunct[j] );
+      }
+    var_heuristic->best.disjuncts = disjunct;
+    var_heuristic->best.activity = s->sat->activity;
+    var_heuristic->current.disjuncts = disjunct;
+    var_heuristic->current.activity = s->sat->activity;
+
+    return var_heuristic;
+  }
 }
 
 
@@ -2492,7 +2482,7 @@ DVO* FPP::extract( Solver* s )
   s->setLearner( Weighter::WDG );
   if( size > 1 ) {
     GenericRandomDVO<VarSelectorFPP> *var_heuristic = new GenericRandomDVO<VarSelectorFPP>(s, size);
-      
+
     // collect disjuncts
     PredicateLess **prec = new PredicateLess*[s->variables.size];
     PredicateUpperBound **inter = new PredicateUpperBound*[s->variables.size];
@@ -2520,12 +2510,12 @@ DVO* FPP::extract( Solver* s )
     var_heuristic->current.precs = prec;
     var_heuristic->current.inters = inter;
     var_heuristic->current.isInterval = isInterval;
-    
+
     return var_heuristic;
     // return new GenericRandomDVO<VarSelectorFPP>(s, size);
   } else {
     GenericDVO<VarSelectorFPP> *var_heuristic = new GenericDVO<VarSelectorFPP>(s);
-    
+
     // collect disjuncts
     PredicateLess **prec = new PredicateLess*[s->variables.size];
     PredicateUpperBound **inter = new PredicateUpperBound*[s->variables.size];
@@ -2550,8 +2540,8 @@ DVO* FPP::extract( Solver* s )
     var_heuristic->current.inters = inter;
     var_heuristic->best.isInterval = isInterval;
     var_heuristic->current.isInterval = isInterval;
-    
-    
+
+
     return var_heuristic;
   }
 }
@@ -2562,7 +2552,7 @@ DVO* DomOverWLDeg::extract( Solver* s )
   s->setLearner( Weighter::WLD );
   if( size > 1 )
     return new GenericRandomDVO<VarSelectorDomainOverWeight>(s, size);
-  else 
+  else
     return new GenericDVO<VarSelectorDomainOverWeight>(s);
 }
 
@@ -2572,14 +2562,8 @@ DVO* DomOverWDeg::extract( Solver* s )
   s->setLearner( Weighter::WDG );
   if( size > 1 )
     return new GenericRandomDVO<VarSelectorDomainOverWeight>(s, size);
-  else 
+  else
     return new GenericDVO<VarSelectorDomainOverWeight>(s);
-}
-
-DVO* DetDomOverWDeg::extract( Solver* s )
-{
-  s->setLearner( Weighter::WDG );
-  return new GenericDeterministicDVO<VarSelectorDomainOverWeight>(s);
 }
 
 
@@ -2589,14 +2573,14 @@ void linkImpact( Solver* s, double**** bdi, double*** cdi, const int size )
   WeighterImpact *w = ((WeighterImpact*)(s->setLearner( Weighter::IPT )));
   for(int i=0; i<s->length; ++i)
     {
-      if( !s->sequence[i]->branch && 
+      if( !s->sequence[i]->branch &&
 	  s->sequence[i]->getType() != VariableInt::RANGE )
 	//s->sequence[i]->branch = new ValSelectorWeight( s->sequence[i], w->decision_impact[i] );
 	s->sequence[i]->branch = new ValSelectorRand
-( s->sequence[i] );
+	  ( s->sequence[i] );
       //s->sequence[i]->branch = new ValSelectorMin( s->sequence[i] );
     }
-  for(int i=0; i<size; ++i) 
+  for(int i=0; i<size; ++i)
     *(bdi[i]) = w->decision_impact;
   *cdi = w->decision_impact;
   //  std::cout << "o impact " << (w->decision_impact) << std::endl;
@@ -2610,14 +2594,14 @@ DVO* Impact::extract( Solver* s )
   double ***cdi;
   //GenericRandomDVO<VarSelectorImpact> *hr;
   if( size > 1 ) {
-    GenericRandomDVO<VarSelectorImpact> *hr = 
+    GenericRandomDVO<VarSelectorImpact> *hr =
       new GenericRandomDVO<VarSelectorImpact>(s, size);
     for(int i=0; i<size; ++i)
       bdi[i] = &(hr->bests[i].decision_impact);
     cdi = &(hr->current.decision_impact);
     h = hr;
   } else {
-    GenericDVO<VarSelectorImpact> *hn = 
+    GenericDVO<VarSelectorImpact> *hn =
       new GenericDVO<VarSelectorImpact>(s);
     bdi[0] = &(hn->best.decision_impact);
     cdi = &(hn->current.decision_impact);
@@ -2625,8 +2609,8 @@ DVO* Impact::extract( Solver* s )
   }
   linkImpact( s, bdi, cdi, size );
 
-//   std::cout << "r impact " << (((GenericDVO<VarSelectorImpact> *)h)->best.decision_impact) << std::endl;
-//   std::cout << "r impact " << (((GenericDVO<VarSelectorImpact> *)h)->current.decision_impact) << std::endl;
+  //   std::cout << "r impact " << (((GenericDVO<VarSelectorImpact> *)h)->best.decision_impact) << std::endl;
+  //   std::cout << "r impact " << (((GenericDVO<VarSelectorImpact> *)h)->current.decision_impact) << std::endl;
 
   return h;
 }
@@ -2638,14 +2622,14 @@ DVO* ImpactOverDeg::extract( Solver* s )
   double ***bdi[size];
   double ***cdi;
   if( size > 1 ) {
-    GenericRandomDVO<VarSelectorImpactOverDegree> *hr = 
+    GenericRandomDVO<VarSelectorImpactOverDegree> *hr =
       new GenericRandomDVO<VarSelectorImpactOverDegree>(s, size);
     for(int i=0; i<size; ++i)
       bdi[i] = &(hr->bests[i].decision_impact);
     cdi = &(hr->current.decision_impact);
     h = hr;
   } else {
-    GenericDVO<VarSelectorImpactOverDegree> *hn = 
+    GenericDVO<VarSelectorImpactOverDegree> *hn =
       new GenericDVO<VarSelectorImpactOverDegree>(s);
     bdi[0] = &(hn->best.decision_impact);
     cdi = &(hn->current.decision_impact);
@@ -2662,14 +2646,14 @@ DVO* ImpactOverWLDeg::extract( Solver* s )
   double ***bdi[size];
   double ***cdi;
   if( size > 1 ) {
-    GenericRandomDVO<VarSelectorImpactOverWeight> *hr = 
+    GenericRandomDVO<VarSelectorImpactOverWeight> *hr =
       new GenericRandomDVO<VarSelectorImpactOverWeight>(s, size);
     for(int i=0; i<size; ++i)
       bdi[i] = &(hr->bests[i].decision_impact);
     cdi = &(hr->current.decision_impact);
     h = hr;
   } else {
-    GenericDVO<VarSelectorImpactOverWeight> *hn = 
+    GenericDVO<VarSelectorImpactOverWeight> *hn =
       new GenericDVO<VarSelectorImpactOverWeight>(s);
     bdi[0] = &(hn->best.decision_impact);
     cdi = &(hn->current.decision_impact);
@@ -2686,15 +2670,15 @@ DVO* ImpactOverWDeg::extract( Solver* s )
   double ***bdi[size];
   double ***cdi;
   if( size > 1 ) {
-    GenericRandomDVO<VarSelectorImpactOverWeight> *hr = 
+    GenericRandomDVO<VarSelectorImpactOverWeight> *hr =
       new GenericRandomDVO<VarSelectorImpactOverWeight>(s, size);
     for(int i=0; i<size; ++i)
       bdi[i] = &(hr->bests[i].decision_impact);
     cdi = &(hr->current.decision_impact);
     h = hr;
   } else {
-    GenericDeterministicDVO<VarSelectorImpactOverWeight> *hn = 
-      new GenericDeterministicDVO<VarSelectorImpactOverWeight>(s);
+    GenericDVO<VarSelectorImpactOverWeight> *hn =
+      new GenericDVO<VarSelectorImpactOverWeight>(s);
     bdi[0] = &(hn->best.decision_impact);
     cdi = &(hn->current.decision_impact);
     h = hn;
@@ -2765,15 +2749,15 @@ int ObjectiveFunction::update()
   if(upper_bound == 0) {
     return OPT;
   }
-  return UNKNOWN; 
+  return UNKNOWN;
 }
 
 MaximiseVar::MaximiseVar(Solver *s, VariableInt *x) 
 {
   umore = new UnaryConstraintMore(s, x, x->min());
   init();
-//   maxX = x->max();
-//   upper_bound = (maxX - x->min());
+  //   maxX = x->max();
+  //   upper_bound = (maxX - x->min());
 }
 
 void MaximiseVar::init() 
@@ -2806,15 +2790,15 @@ int MaximiseVar::update()
     umore->activate();
   }
 
-  return res; 
+  return res;
 }
 
 MinimiseVar::MinimiseVar(Solver *s, VariableInt *x) 
 {
   uless = new UnaryConstraintLess(s, x, x->max());
   init();
-//   minX = x->min();
-//   upper_bound = x->max();
+  //   minX = x->min();
+  //   upper_bound = x->max();
 }
 
 void MinimiseVar::init() 
@@ -2844,15 +2828,15 @@ int MinimiseVar::update()
   int res = ObjectiveFunction::update();
 
   //if( res == UNKNOWN ) {
-    uless->bound = (upper_bound - 1);
-    uless->activate();
-    //}
-  return res; 
+  uless->bound = (upper_bound - 1);
+  uless->activate();
+  //}
+  return res;
 }
 
 
 ValSelectorJob::ValSelectorJob( VariableInt *x, const int i, 
-				Instance *d, VariableInt *f ) 
+				Instance *d, VariableInt *f )
   : ValSelector(x) {
   val = -1;
   id  = i;
@@ -2863,9 +2847,9 @@ ValSelectorJob::ValSelectorJob( VariableInt *x, const int i,
 
 void ValSelectorJob::make(int& t, int& v) { 
   v = getBest();
-//   std::cout << "select upper bound in ";
-//   _X->print(std::cout);
-//   std::cout << ": " << v << std::endl;    
+  //   std::cout << "select upper bound in ";
+  //   _X->print(std::cout);
+  //   std::cout << ": " << v << std::endl;
   t=Decision::UPPERBOUND;
 }
 int ValSelectorJob::getBest() { 
@@ -2880,20 +2864,20 @@ int ValSelectorJob::getBest() {
 }
 
 void ValSelectorJob::left() { 
-  getBest(); 
-  _X->setMax( val ); 
+  getBest();
+  _X->setMax( val );
 }
 void ValSelectorJob::right() { 
-  getBest(); 
-  _X->setMin( val+1 ); 
+  getBest();
+  _X->setMin( val+1 );
 }
 void ValSelectorJob::reverse_left() {
-  getBest(); 
-  _X->setMin( val+1 ); 
+  getBest();
+  _X->setMin( val+1 );
 }
 void ValSelectorJob::reverse_right() {
-  getBest(); 
-  _X->setMax( val ); 
+  getBest();
+  _X->setMax( val );
 }
 void ValSelectorJob::postCut( const int p ) { }
 void ValSelectorJob::printLeft(std::ostream& o) const { 
@@ -2905,18 +2889,90 @@ void ValSelectorJob::printRight(std::ostream& o) const {
 
 int VarSelectorOSP_DoTaskWeightJob::get_job_score() {
 
-//   if(solver->branching_decision.size && solver->branching_decision.back().var) {
-//     int xid = solver->branching_decision.back().var->id;
-//     std::cout << first_job[xid] << "." << second_job[xid] << " => " << j1 << "." << j2 << std::endl;
-//   }
+  //   if(solver->branching_decision.size && solver->branching_decision.back().var) {
+  //     int xid = solver->branching_decision.back().var->id;
+  //     std::cout << first_job[xid] << "." << second_job[xid] << " => " << j1 << "." << j2 << std::endl;
+  //   }
 
-//   std::cout << job_recorder->done_jobs.member(j1) << " " 
-// 	    << job_recorder->done_jobs.member(j2) << std::endl; 
+  //   std::cout << job_recorder->done_jobs.member(j1) << " "
+  // 	    << job_recorder->done_jobs.member(j2) << std::endl;
 
 
-  return (job_recorder->done_jobs.member(j1) + job_recorder->done_jobs.member(j2)); 
+  return (job_recorder->done_jobs.member(j1) + job_recorder->done_jobs.member(j2));
 
 
   //return 0;
 }
+
+
+
+void ValSelectorDynamicTest::make(int& t, int& v) {
+
+  std::cout << "make  with  dynamic_test  "<< std::endl;
+
+  Solver * s =_X->solver;
+  //  std::cout << "solver level :  "<< s->level << std::endl;
+  // std::cout << "solver init_level :  "<< _X->solver->init_level << std::endl;
+
+  int size = s->decision.size;
+  std::cout << "s->decision.size " <<  size << std::endl;
+
+  for (int i =2; i< size  ; i++){
+    s->decision[i]->print(std::cout);
+    std::cout << "s->decision [ "<< i << " ] == "<<  s->decision[i]->value() << std::endl;
+  }
+
+
+  /*
+    std::cout << "s->variables.size " <<  s->variables.size << std::endl;
+
+    for (int i =0; i< s->variables.size   ; i++){
+    std::cout << "s->variables.  [ "<< i << " ] == "<<  s->variables[i]->value() << std::endl;
+    }
+  */
+
+  //        _X->print(std::cout);
+  //        std::cout << std::endl;
+
+  _X->print(std::cout);
+  std::cout<< std::endl;
+  //_X->printDomain(std::cout);
+  //_X->printshort(std::cout);
+
+  int i = 0;
+  bool done = false;
+  while (done == false){
+    if (_X->contain(order[i]))
+      {
+	//std::cout<<"order[" << i << "] == " << order[i] <<std::endl;
+	v= order[i];
+	done = true;
+      }
+    i++;
+  }
+
+  t=Decision::ASSIGNMENT;
+  //std::cout << " Done with ValSelectorMaxOpt" << t << v  <<std::endl ;
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

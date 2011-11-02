@@ -44,12 +44,45 @@ ruler = (0,1,3,6,11,17,25,34,44,55,72,85,106,127)
 solvers = ['Mistral', 'MiniSat', 'SCIP']
 default = {'solver':'Mistral', 'marks':6, 'heuristic':'Impact', 'verbose':1, 'tcutoff':3}
 
+"""
 if __name__ == '__main__':
     param = input(default) 
     print solve(param)
+"""
+
+marks,model = get_model(input(default))
+
+import SCIP
+lp = SCIP.Solver(model)
+lp.setVerbosity(2)
+lp.solve()
+print marks
+print '\n'
+
+import Mistral
+cp = Mistral.Solver(model)
+cp.setVerbosity(2)
+cp.solve()
+print marks
+print '\n'
+
+
+import MiniSat
+ms = MiniSat.Solver(model)
+ms.setVerbosity(2)
+ms.solve()
+print marks
+print '\n'
 
 
 
+
+import Walksat
+ws = Walksat.Solver(model)
+ws.setVerbosity(2)
+ws.solve()
+print marks
+print '\n'
 
 
 

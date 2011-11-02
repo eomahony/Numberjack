@@ -35,7 +35,7 @@ SOPLEXDIR = $(shell find $(ZIBPATH) -name "soplex-?.?.?")
 PYTHON = ./python
 
 ifeq ($(PYVERSION),python2.6)
-PYLIB = `python2.6-config --cflags` $(HACK) 
+PYLIB = -I/System/Library/Frameworks/Python.framework/Versions/2.6/include/python2.6 -I/System/Library/Frameworks/Python.framework/Versions/2.6/include/python2.6 -fno-strict-aliasing -fno-common -dynamic -DNDEBUG -g -fwrapv -Os -Wall  -DENABLE_DTRACE  -arch x86_64 
 PYOBJ = `python2.6-config --prefix`
 SWIG = swig
 else 
@@ -45,7 +45,7 @@ PYOBJ = `python2.5-config --prefix`
 SWIG = swig
 else 
 ifeq ($(PYVERSION),python2.4)
-PYLIB = `/usr/bin/python2.4-config --cflags` $(HACK) 
+PYLIB = `/usr/bin/python2.4-config --cflags` 
 PYOBJ = `/usr/bin/python2.4-config --prefix`
 SWIG = swig -classic
 else 
@@ -125,7 +125,7 @@ $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 		@echo "-> compiling $@"
-		$(CXX) $(MIPFLAGS) $(FLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) -I$(PYLIB) -fPIC -c $< $(CXX_o)$@
+		$(CXX) $(MIPFLAGS) $(NFLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) -I$(PYLIB) -fPIC -c $< $(CXX_o)$@
 
 #$(PYTHON)/%.py: $(PYTHON)/%.i
 #	python tools/finalize.py $(<:.i=.py)

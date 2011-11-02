@@ -2093,6 +2093,13 @@ int Solver::checkSolution()
       if( constraints[i]->check(sol) )
 	inconsistencies.push( i );
     } else {
+
+      // std::cout << "check " ;
+      // constraints[i]->print(std::cout);
+      // std::cout << std::endl;
+
+      if( constraints[i]->check(sol) )
+	inconsistencies.push( i );
       //       aux = constraints[i]->supp;
       //       constraints[i]->supp = sol;
 
@@ -2111,8 +2118,8 @@ int Solver::checkSolution()
       cout << endl << "c\t" << (constraints[j]->scope[i]->getType()) << " ";
       constraints[j]->scope[i]->print( cout );
     }
-    cout << endl << "s NOT SUPPORTED" << endl << endl;
-    exit( 0 );
+    //cout << endl << "s NOT SUPPORTED" << endl << endl;
+    if(inconsistencies.empty()) exit( 0 );
   }
 
   return 1;

@@ -12,7 +12,7 @@ OBJDIR = ./obj
 SRCDIR = ./src
 PYTHON = ./python
 SWIG = swig
-PYLIB = `python-config --cflags` $(HACK) 
+PYLIB = `python-config --cflags` 
 
 #-----------------------------------------------------------------------------
 # Main Program
@@ -39,7 +39,7 @@ SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 
 #MCORE     = minisat_src/core
 #MTL       = minisat_src/mtl
-CFLAGS    = $(HACK) -Wall -ffloat-store -O3 -D NDEBUG #-D_DEBUGWRAP
+CFLAGS    = -Wall -ffloat-store -O3 -D NDEBUG #-D_DEBUGWRAP
 
 #-----------------------------------------------------------------------------
 # Rules

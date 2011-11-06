@@ -239,7 +239,7 @@ class Expression(object):
         if self.has_children():
             for child in self.children:
                 tc = type(child)
-                if tc is not int and tc is not str and tc is not bool:
+                if tc not in [int, float, str, bool]:
                     child.close()
 
     def get_domain(self, solver=None):
@@ -527,7 +527,7 @@ class Model(object):
         ## \internal - add the Expression tree to the model and assign identifiers to the nodes
         # this expression is new, choose an identifiant for it
         te = type(exp)
-        if te is not int and te is not str and te is not bool:
+        if te not in [int, float, str, bool]:
             ## THIS IS BUGGY, WE CANNOT ADD THE SAME VARIABLE TO SEVERAL MODELS
             if exp.ident == -1:            
             #if exp.mod != self:
@@ -673,10 +673,12 @@ class Variable(Expression):
                 lb = domain[0]
                 ub = domain[-1]            
 
-        if type(lb) is not int and type(lb) is not float and type(lb) is not str:
+        tlb = type(lb)
+        tub = type(ub)
+        if tlb not in [int, float, str]:
             print "Warning lower bound of %s is not an int or a float or a string" % name
             exit(1)
-        elif type(ub) is not int and type(ub) is not float and type(lb) is not str:
+        elif tub not in [int, float, str]:
             print "Warning upper bound of %s is not an int or a float or a string" % name
             exit(1)
         elif type(name) is not str:

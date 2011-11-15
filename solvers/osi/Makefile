@@ -52,10 +52,14 @@ endif
 endif
 endif
 
-OPTFLAGS = -O3 #-m32
-COMPILFLAGS = -Wall -D_UNIX -fPIC #-D_DEBUGSEARCH #-D_DEBUGPROPAG 
+OPTFLAGS = #-m32
+COMPILFLAGS = -Wall -D_UNIX -fPIC -g #-D_DEBUGSEARCH #-D_DEBUGPROPAG 
 
 CCC = g++ $(OPTFLAGS) $(COMPILFLAGS)
+
+COINLIBS= -lCoinUtils -llapack -lOsi -lz -lbz2
+CLPLIBS = -lClp -lOsiClp
+CBCLIBS = $(CLPLIBS) -lCbc -lCgl -lOsiCbc
 
 BIN=./bin
 SRC=./lib/src
@@ -69,7 +73,7 @@ PYTHONDIR = ./python
 
 XMLLIBS= `xml2-config --libs`
 
-CFLAGS = -I$(INC)
+CFLAGS = -I$(INC) $(COINLIBS) $(CLPLIBS)
 
 LFLAGS = -L$(OBJ)
 
@@ -114,7 +118,7 @@ wrapper: $(IFILE) $(WXXFILE) $(SOFILE)
 clean_swig: 
 	rm -rf $(OBJDIR)/* $(PYTHONDIR)/* *~ $(SRCDIR)/*~
 
-clean : 
+clean: 
 	rm -rf $(OBJ)/*.o $(OBJ)/*.a $(SRC)/*~ $(MOD)/obj/*.o $(MOD)/src/*~ $(MOD)/src/*/*~ $(INC)/*~ *~ $(BIN)/* 
 
 install_python: wrapper

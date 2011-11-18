@@ -223,6 +223,50 @@ Mistral_binop::~Mistral_binop(){
 }
 
 
+Mistral_Neg::Mistral_Neg( Mistral_Expression *var ) 
+  : Mistral_Expression() 
+{
+  _vars.add(var);
+
+#ifdef _DEBUGWRAP
+  std::cout << "creating a negation constraint" << std::endl;
+#endif
+
+}
+
+Mistral_Neg::~Mistral_Neg()
+{
+
+#ifdef _DEBUGWRAP
+  std::cout << "delete neg" << std::endl;
+#endif
+
+}
+
+Mistral_Expression* Mistral_Neg::add(MistralSolver *solver, bool top_level) {
+
+  if(!has_been_added()) {
+
+#ifdef _DEBUGWRAP
+    std::cout << "add an alldiff constraint" << std::endl;
+#endif
+
+    _solver = solver;
+    
+    int i, n=_vars.size();  
+    for(i=0; i<n; ++i) 
+      _vars.get_item(i)->add(_solver,false);
+
+    _self = CSP::_Negation(_vars.get_item(0)->_self);
+
+    if( top_level )
+      _solver->model->add( _self );    
+  }
+
+  return this;
+}
+
+
 Mistral_Min::Mistral_Min( MistralExpArray& vars ) 
   : Mistral_Expression() 
 {

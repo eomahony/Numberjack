@@ -127,6 +127,18 @@ public:
 
 typedef MistralArray< Mistral_Expression* > MistralExpArray;
 
+class Mistral_Neg : public Mistral_Expression
+{
+private:
+  MistralExpArray _vars;
+
+public:
+  Mistral_Neg(Mistral_Expression *var);
+  virtual ~Mistral_Neg();
+
+  virtual Mistral_Expression* add(MistralSolver *solver, bool top_level);
+};
+
 class Mistral_Min : public Mistral_Expression
 {
 private:

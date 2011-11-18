@@ -2,7 +2,7 @@ from Numberjack import *
 
 
 def get_model(N,clues):
-    grid = Matrix(N*N,N*N,1,N*N,'cell_')
+    grid = Matrix(N*N,N*N,1,N*N,'')
 
     sudoku = Model( [AllDiff(row) for row in grid.row],
                     [AllDiff(col) for col in grid.col],
@@ -23,12 +23,23 @@ def solve(param):
     solver.setVerbosity(param['verbose'])
     solver.setTimeLimit(param['tcutoff'])
 
-    solver.solve()
+    #solver.solve()
+    
+    #solver.propagate()
+    #print str(grid)
+    #out = ""
 
-    out = ''
-    if solver.is_sat():
-        out = str(grid)
-    out += ('\nNodes: ' + str(solver.getNodes()))
+
+    solver.startNewSearch();
+    
+    while solver.getNextSolution(): 
+        out = ''
+        if solver.is_sat():
+            out = str(grid)
+        out += ('\nNodes: ' + str(solver.getNodes()))
+        out += '\n'
+
+
     return out  
 
 

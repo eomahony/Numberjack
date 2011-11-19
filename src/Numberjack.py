@@ -1534,7 +1534,30 @@ class Neg(Predicate):
 
     def __str__(self):
         return '-'+str(self.children[0])
-        
+
+
+## Absolute expression
+#
+#    An expression which represents the absolute value of a variable.
+# 
+# \code
+#	var = Variable(-5, 5)
+#
+#	model.add(Abs(var) < 3)
+# \endcode
+#
+class Abs(Predicate):
+
+    def __init__(self, vars):
+        Predicate.__init__(self, [vars], "Abs")
+
+    def __str__(self):
+        return "Abs(" + str(self.children[0]) + ")"
+
+    def decompose(self):
+        return [Max([self.children[0], self.children[0] * -1])]
+
+
 ## Table constraint
 #
 # \note
@@ -2609,6 +2632,11 @@ class NBJ_STD_Solver(object):
     ## Search for the next solution
     def getNextSolution(self):
         return self.solver.getNextSolution()
+
+    ## A generator which will yield true until no other solution exists
+    def solutions(self):
+        while self.getNextSolution():
+            yield True	# Could return something more useful??
 
     ## @}
 

@@ -53,13 +53,16 @@ endif
 endif
 
 OPTFLAGS = #-m32
-COMPILFLAGS = -Wall -D_UNIX -fPIC -g #-D_DEBUGSEARCH #-D_DEBUGPROPAG 
+COMPILFLAGS = -Wall -D_UNIX -fPIC -g #-D_DEBUG #-D_DEBUGSEARCH #-D_DEBUGPROPAG 
 
 CCC = g++ $(OPTFLAGS) $(COMPILFLAGS)
 
 COINLIBS= -lCoinUtils -llapack -lOsi -lz -lbz2
 CLPLIBS = -lClp -lOsiClp
 CBCLIBS = $(CLPLIBS) -lCbc -lCgl -lOsiCbc
+
+MIPDIR = $(MAINDIR)/solvers/mip
+MIPFLAGS = -I$(MIPDIR)/src/
 
 BIN=./bin
 SRC=./lib/src
@@ -73,7 +76,7 @@ PYTHONDIR = ./python
 
 XMLLIBS= `xml2-config --libs`
 
-CFLAGS = -I$(INC) $(COINLIBS) $(CLPLIBS)
+CFLAGS = -I$(INC) $(MIPFLAGS) $(COINLIBS) $(CLPLIBS) 
 
 LFLAGS = -L$(OBJ)
 
@@ -135,15 +138,14 @@ $(PYTHONDIR)/%_wrap.o: $(PYTHONDIR)/%_wrap.cxx
 $(PYTHONDIR)/%_wrap.cxx: $(PYTHONDIR)/%.i
 	@echo "-> compiling $@"	
 	$(SWIG) -c++ -python $<
-	$(python) $(MAINDIR)/tools/finalize.py $(<:.i=.py)
+	$(python) $(MAINDIR)/tools/finalize.py $(<:.i=.py) MipWrapper
 
 $(PYTHONDIR)/%.i: $(SRCDIR)/%.hpp
-	$(PYTHON) $(MAINDIR)/tools/mk_interface.py $<
+	$(PYTHON) $(MAINDIR)/tools/mk_subinterface.py mip MipWrapper $<
 
 $(PYTHONDIR)/_%.so: $(OBJDIR)/%.o $(PYTHONDIR)/%_wrap.o $(PLIBOBJ)
 	@echo "-> linking $@"
-	$(CCC) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(LFLAGS) $(AUXOBJFILES) $(MAINOBJFILES) $(PLIBOBJ) python/$(MAINNAME)_wrap.o -o $@
-
+	$(CCC) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(LFLAGS) $(AUXOBJFILES) $(MAINOBJFILES) $(PLIBOBJ) $(MIPDIR)/obj/MipWrapper.o  python/$(MAINNAME)_wrap.o -o $@
 
 # The library
 lib: $(PLIBOBJ)

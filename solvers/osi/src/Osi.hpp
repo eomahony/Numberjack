@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 
-#include <coin/OsiClpSolverInterface.hpp>
+#include <coin/OsiCbcSolverInterface.hpp>
 #include <coin/CoinPackedVector.hpp>
 #include <coin/CoinShallowPackedVector.hpp>
 #include <coin/OsiSolverInterface.hpp>
@@ -31,13 +31,10 @@ private:
 
 	std::map<int, int> varIndices;
 
-	int _var_counter;
 	int _verbosity;
 	void add_in_constraint(LinearConstraint *con, double coef = 0);
 
 public:
-	int var_counter;
-
 	OsiSolver();
 	virtual ~OsiSolver();
 
@@ -47,6 +44,9 @@ public:
 
 	// solving methods
 	int solve();
+	int getNextSolution();
+
+
 	void printModel();
 
 	// parameter tuning methods

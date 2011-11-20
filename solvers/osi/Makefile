@@ -76,7 +76,7 @@ PYTHONDIR = ./python
 
 XMLLIBS= `xml2-config --libs`
 
-CFLAGS = -I$(INC) $(MIPFLAGS) $(COINLIBS) $(CLPLIBS) 
+CFLAGS = -I$(INC) $(MIPFLAGS) $(COINLIBS) $(CBCLIBS) 
 
 LFLAGS = -L$(OBJ)
 

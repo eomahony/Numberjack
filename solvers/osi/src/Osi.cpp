@@ -7,7 +7,7 @@
 OsiSolver::OsiSolver() {
 	n_cols = 0;
 	n_rows = 0;
-	si = new OsiClpSolverInterface;
+	si = new OsiCbcSolverInterface;
 	matrix = new CoinPackedMatrix(false, 0, 0);
 }
 
@@ -20,11 +20,10 @@ void OsiSolver::initialise(MipWrapperExpArray& arg) {
 
 void OsiSolver::initialise() {
 	MipWrapperSolver::initialise();
+	objective = new double[var_counter];
 
-	objective = new double[_var_counter];
-
-	col_lb = new double[_var_counter];
-	col_ub = new double[_var_counter];
+	col_lb = new double[var_counter];
+	col_ub = new double[var_counter];
 	row_lb = new double[_constraints.size()];
 	row_ub = new double[_constraints.size()];
 
@@ -43,28 +42,21 @@ void OsiSolver::add_in_constraint(LinearConstraint *con, double coef) {
 		int *index = new int;
 		MipWrapper_Expression *var = con->_variables[i];
 		if (var->_var == NULL) {
-			printf("Creating new variable:\n");
 			*index = n_cols++;
-			printf("\tVariable index: %d\n", *index);
 			var->_var = index;
 			if (!var->_continuous) {
-				printf("\tInteger Var;\n");
 				integer_vars.push_back(*index);
 			}
 		} else {
-			printf("Found old variable:\n");
 			index = (int*) var->_var;
-			printf("\tVariable index: %d\n", *index);
 		}
 		col_lb[*index] = var->_lower;
 		col_ub[*index] = var->_upper;
-		printf("\tCoefficient: %.2lf\n", con->_coefficients[i]);
 		row.insert(*index, con->_coefficients[i]);
 	}
 	int row_index = n_rows++;
 	row_lb[row_index] = con->_lhs;
 	row_ub[row_index] = con->_rhs;
-	printf("n_rows: %d\n", n_rows);
 	matrix->appendRow(row);
 }
 
@@ -108,6 +100,10 @@ int OsiSolver::solve() {
 		return UNSAT;
 	else
 		return UNKNOWN;
+}
+
+int OsiSolver::getNextSolution(){
+	return UNSAT;
 }
 
 void OsiSolver::setTimeLimit(const int cutoff) {

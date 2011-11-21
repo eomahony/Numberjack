@@ -2538,14 +2538,18 @@ class NBJ_STD_Solver(object):
                 if expr.has_parameters(): # != None: # assumes an array of integers
                     for param in expr.parameters:
                         if hasattr(param, '__iter__'):
-                            if expr.get_operator() is "Table":
+                            w_array = None
+                            if any((type(w) == float for w in params)):
+                                w_array = self.DoubleArray()
+                            else:
                                 w_array = self.IntArray()
+
+                            if expr.get_operator() is "Table":
                                 for w in param:
                                     for v in w:
                                         w_array.add(v)
                                 arguments.append(w_array)    
                             else:
-                                w_array = self.IntArray()
                                 for w in param:
                                     w_array.add(w)
                                 arguments.append(w_array)

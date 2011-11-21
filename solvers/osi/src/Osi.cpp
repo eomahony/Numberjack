@@ -7,8 +7,8 @@
 OsiSolver::OsiSolver() {
 	n_cols = 0;
 	n_rows = 0;
-	si = new OsiCbcSolverInterface;
 	matrix = new CoinPackedMatrix(false, 0, 0);
+	si = new OsiGlpkSolverInterface;
 }
 
 OsiSolver::~OsiSolver() {
@@ -24,10 +24,10 @@ void OsiSolver::initialise() {
 
 	col_lb = new double[var_counter];
 	col_ub = new double[var_counter];
-	row_lb = new double[_constraints.size()];
-	row_ub = new double[_constraints.size()];
+	row_lb = new double[_constraints.size()];row_ub
+	= new double[_constraints.size()];
 
-	if(	_obj != NULL) {
+if(	_obj != NULL) {
 		for (unsigned int i = 0; i < _obj->_coefficients.size(); i++) {
 			objective[i] = - _obj->_coefficients[i];
 		}
@@ -67,7 +67,7 @@ void OsiSolver::printModel() {
 		printf(", V%d(%.2lf,%.2lf)", i, col_lb[i], col_ub[i]);
 	}
 
-	printf("\n\nObjective : Minimise: ");
+	printf("\n\nObjective : Maximise: ");
 	printf("%.2lf * V%d", objective[0], 0);
 	for (int i = 1; i < n_cols; i++) {
 		printf(" + %.2lf * V%d", objective[i], i);
@@ -77,7 +77,8 @@ void OsiSolver::printModel() {
 	for (int i = 0; i < matrix->getNumRows(); i++) {
 		CoinShallowPackedVector row = matrix->getVector(i);
 		printf("%.2lf <= ", row_lb[i]);
-		for (int j = 0; j < row.getNumElements(); j++)
+		printf("%.2lf * V%d", row.getElements()[0], row.getIndices()[0]);
+		for (int j = 1; j < row.getNumElements(); j++)
 			printf(" + %.2lf * V%d", row.getElements()[j], row.getIndices()[j]);
 		printf(" <= %.2lf\n", row_ub[i]);
 	}
@@ -102,12 +103,11 @@ int OsiSolver::solve() {
 		return UNKNOWN;
 }
 
-int OsiSolver::getNextSolution(){
+int OsiSolver::getNextSolution() {
 	return UNSAT;
 }
 
 void OsiSolver::setTimeLimit(const int cutoff) {
-
 }
 
 void OsiSolver::setVerbosity(const int degree) {

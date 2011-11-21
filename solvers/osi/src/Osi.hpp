@@ -3,7 +3,11 @@
 #include <iostream>
 #include <vector>
 
+// solver interfaces
 #include <coin/OsiCbcSolverInterface.hpp>
+#include <coin/OsiClpSolverInterface.hpp>
+#include <coin/OsiGlpkSolverInterface.hpp>
+
 #include <coin/CoinPackedVector.hpp>
 #include <coin/CoinShallowPackedVector.hpp>
 #include <coin/OsiSolverInterface.hpp>
@@ -29,8 +33,6 @@ private:
 
 	CoinPackedMatrix* matrix;
 
-	std::map<int, int> varIndices;
-
 	int _verbosity;
 	void add_in_constraint(LinearConstraint *con, double coef = 0);
 
@@ -45,7 +47,6 @@ public:
 	// solving methods
 	int solve();
 	int getNextSolution();
-
 
 	void printModel();
 

@@ -60,6 +60,7 @@ CCC = g++ $(OPTFLAGS) $(COMPILFLAGS)
 COINLIBS= -lCoinUtils -llapack -lOsi -lz -lbz2
 CLPLIBS = -lClp -lOsiClp
 CBCLIBS = $(CLPLIBS) -lCbc -lCgl -lOsiCbc
+GLPKLIBS = -lglpk -lOsiGlpk
 
 MIPDIR = $(MAINDIR)/solvers/mip
 MIPFLAGS = -I$(MIPDIR)/src/
@@ -76,7 +77,7 @@ PYTHONDIR = ./python
 
 XMLLIBS= `xml2-config --libs`
 
-CFLAGS = -I$(INC) $(MIPFLAGS) $(COINLIBS) $(CBCLIBS) 
+CFLAGS = -I$(INC) $(MIPFLAGS) $(COINLIBS) $(GLPKLIBS) 
 
 LFLAGS = -L$(OBJ)
 

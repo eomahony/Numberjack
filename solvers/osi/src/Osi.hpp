@@ -4,9 +4,18 @@
 #include <vector>
 
 // solver interfaces
+#ifdef _NJ_CBC
 #include <coin/OsiCbcSolverInterface.hpp>
 #include <coin/OsiClpSolverInterface.hpp>
+#endif
+
+#ifdef _NJ_CLP
+#include <coin/OsiClpSolverInterface.hpp>
+#endif
+
+#ifdef _NJ_GLPK
 #include <coin/OsiGlpkSolverInterface.hpp>
+#endif
 
 #include <coin/CoinPackedVector.hpp>
 #include <coin/CoinShallowPackedVector.hpp>
@@ -18,6 +27,7 @@
 class OsiSolver: public MipWrapperSolver {
 private:
 
+	std::string solver;
 	OsiSolverInterface *si;
 
 	int n_cols;

@@ -1,14 +1,22 @@
 #include "Osi.hpp"
-
+#ifdef _NJ_CBC
+#define DEFAULT_SOLVER "cbc"
+#elif _NJ_GLPK
+#define DEFAULT_SOLVER "glpk"
+#else
+#define DEFAULT_SOLVER "clp"
+#endif
 /**************************************************************
  ********************     Solver        ***********************
  **************************************************************/
 
 OsiSolver::OsiSolver() {
+	_verbosity = 0;
 	n_cols = 0;
 	n_rows = 0;
 	matrix = new CoinPackedMatrix(false, 0, 0);
-	si = new OsiGlpkSolverInterface;
+	//solver = DEFAULT_SOLVER;
+	solver = "glpk";
 }
 
 OsiSolver::~OsiSolver() {
@@ -91,8 +99,23 @@ int OsiSolver::solve() {
 
 	printModel();
 
+	if(strcmp(solver.c_str(), "cbc") == 0) {
+		si = new OsiCbcSolverInterface;
+	} else if(strcmp(solver.c_str(), "glpk") == 0) {
+		si = new OsiGlpkSolverInterface;
+	} else {
+		si = new OsiClpSolverInterface;
+	}
+
+	if (_verbosity == 0) {
+		si->setHintParam(OsiDoReducePrint);
+	}
+	si->messageHandler()->setLogLevel(_verbosity);
+
 	si->loadProblem(*matrix, col_lb, col_ub, objective, row_lb, row_ub);
 	si->setInteger(integer_vars.data(), integer_vars.size());
+
+	si->initialSolve();
 	si->branchAndBound();
 
 	if (si->isProvenOptimal())
@@ -111,7 +134,7 @@ void OsiSolver::setTimeLimit(const int cutoff) {
 }
 
 void OsiSolver::setVerbosity(const int degree) {
-//_verbosity = degree;
+	_verbosity = degree;
 }
 
 bool OsiSolver::is_sat() {
@@ -132,7 +155,7 @@ int OsiSolver::getNodes() {
 }
 
 double OsiSolver::getTime() {
-	return 0.;
+	return si->getIterationCount();
 }
 
 double OsiSolver::get_value(void *ptr) {

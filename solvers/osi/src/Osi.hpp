@@ -45,6 +45,7 @@ private:
 
 	int _verbosity;
 	void add_in_constraint(LinearConstraint *con, double coef = 0);
+	inline double manageInfinity(double value);
 
 public:
 	OsiSolver();

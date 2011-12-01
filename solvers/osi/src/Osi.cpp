@@ -6,16 +6,15 @@
 #else
 #define DEFAULT_SOLVER "clp"
 #endif
+
 /**************************************************************
  ********************     Solver        ***********************
  **************************************************************/
-
 OsiSolver::OsiSolver() {
-	_verbosity = 0;
+	_verbosity = 1;
 	n_cols = 0;
 	n_rows = 0;
 	matrix = new CoinPackedMatrix(false, 0, 0);
-	//solver = DEFAULT_SOLVER;
 	solver = "glpk";
 }
 
@@ -35,13 +34,25 @@ void OsiSolver::initialise() {
 	row_lb = new double[_constraints.size()];row_ub
 	= new double[_constraints.size()];
 
-if(	_obj != NULL) {
+if(	strcmp(solver.c_str(), "cbc") == 0) {
+		si = new OsiCbcSolverInterface;
+	} else if (strcmp(solver.c_str(), "glpk") == 0) {
+		si = new OsiGlpkSolverInterface;
+	} else {
+		si = new OsiClpSolverInterface;
+	}
+
+	if (_obj != NULL) {
 		for (unsigned int i = 0; i < _obj->_coefficients.size(); i++) {
-			objective[i] = - _obj->_coefficients[i];
+			objective[i] = -1.0 * _obj_coef * _obj->_coefficients[i];
 		}
 	}
 	for (unsigned int i = 0; i < _constraints.size(); ++i)
 		add_in_constraint(_constraints[i]);
+}
+
+inline double OsiSolver::manageInfinity(double value) {
+	return (isinf(value) ? ((value > 0 ? 1. : -1.) * si->getInfinity()) : value);
 }
 
 void OsiSolver::add_in_constraint(LinearConstraint *con, double coef) {
@@ -58,24 +69,25 @@ void OsiSolver::add_in_constraint(LinearConstraint *con, double coef) {
 		} else {
 			index = (int*) var->_var;
 		}
-		col_lb[*index] = var->_lower;
-		col_ub[*index] = var->_upper;
+		col_lb[*index] = manageInfinity(var->_lower);
+		col_ub[*index] = manageInfinity(var->_upper);
 		row.insert(*index, con->_coefficients[i]);
 	}
-	int row_index = n_rows++;
-	row_lb[row_index] = con->_lhs;
-	row_ub[row_index] = con->_rhs;
+	row_lb[n_rows] = manageInfinity(con->_lhs);
+	row_ub[n_rows] = manageInfinity(con->_rhs);
+	n_rows++;
 	matrix->appendRow(row);
 }
 
 void OsiSolver::printModel() {
-	printf("\n########\nMODEL:\nVARS :\n");
+	printf("########\nMODEL:\nVARS :\n");
 	printf("V%d(%.2lf, %.2lf)", 0, col_lb[0], col_ub[0]);
 	for (int i = 1; i < n_cols; i++) {
 		printf(", V%d(%.2lf,%.2lf)", i, col_lb[i], col_ub[i]);
 	}
 
-	printf("\n\nObjective : Maximise: ");
+	printf("\n\nObjective : Maximise(%s): ",
+			(_obj_coef == -1 ? "Minimise" : "Maximise"));
 	printf("%.2lf * V%d", objective[0], 0);
 	for (int i = 1; i < n_cols; i++) {
 		printf(" + %.2lf * V%d", objective[i], i);
@@ -84,11 +96,17 @@ void OsiSolver::printModel() {
 	printf("\n\nMatrix:\n");
 	for (int i = 0; i < matrix->getNumRows(); i++) {
 		CoinShallowPackedVector row = matrix->getVector(i);
-		printf("%.2lf <= ", row_lb[i]);
+		if (row_lb[i] == -1 * si->getInfinity())
+			printf("-infinity <= ");
+		else
+			printf("%.2lf <= ", row_lb[i]);
 		printf("%.2lf * V%d", row.getElements()[0], row.getIndices()[0]);
 		for (int j = 1; j < row.getNumElements(); j++)
 			printf(" + %.2lf * V%d", row.getElements()[j], row.getIndices()[j]);
-		printf(" <= %.2lf\n", row_ub[i]);
+		if (row_ub[i] == si->getInfinity())
+			printf(" <= infinity\n");
+		else
+			printf(" <= %.2lf\n", row_ub[i]);
 	}
 	printf("########\n");
 }
@@ -97,18 +115,10 @@ int OsiSolver::solve() {
 	if (n_cols == 0)
 		initialise();
 
-	printModel();
-
-	if(strcmp(solver.c_str(), "cbc") == 0) {
-		si = new OsiCbcSolverInterface;
-	} else if(strcmp(solver.c_str(), "glpk") == 0) {
-		si = new OsiGlpkSolverInterface;
-	} else {
-		si = new OsiClpSolverInterface;
-	}
-
 	if (_verbosity == 0) {
 		si->setHintParam(OsiDoReducePrint);
+	} else {
+		printModel();
 	}
 	si->messageHandler()->setLogLevel(_verbosity);
 

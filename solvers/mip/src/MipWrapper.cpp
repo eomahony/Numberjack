@@ -431,7 +431,6 @@ MipWrapper_Expression* MipWrapper_Flow::add(MipWrapperSolver *solver,
 						con->add_coef(_vars.get_item(j)->_expr_encoding[i], 1);
 				solver->_constraints.push_back(con);
 			}
-
 		} else {
 			std::cout << "Warning Flow constraint supported only on top level"
 					<< std::endl;

@@ -6,7 +6,6 @@ using namespace std;
  ********************     Solver        ***********************
  **************************************************************/
 OsiSolver::OsiSolver() {
-	printf("OsiSolver: Being Created\n");
 	_verbosity = 1;
 	n_cols = 0;
 	n_rows = 0;
@@ -15,7 +14,6 @@ OsiSolver::OsiSolver() {
 }
 
 void OsiSolver::setSolver(OsiSolverInterface* s) {
-	printf("OsiSolver: setSolver called\n");
 	si=s;
 	hasSolver = true;
 }

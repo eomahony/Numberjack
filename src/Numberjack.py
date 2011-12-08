@@ -2539,7 +2539,7 @@ class NBJ_STD_Solver(object):
                     for param in expr.parameters:
                         if hasattr(param, '__iter__'):
                             w_array = None
-                            if any((type(w) == float for w in params)):
+                            if any((type(w) == float for w in param)):
                                 w_array = self.DoubleArray()
                             else:
                                 w_array = self.IntArray()

@@ -1,4 +1,5 @@
 src/build
+/solvers/*/python/*
 *.o
 *~
 .project

@@ -18,28 +18,31 @@ PYLIB = `python-config --cflags`
 # Main Program
 #-----------------------------------------------------------------------------
 
-MAINNAME	=	MipWrapper
+MAINNAME	=	OsiGlpk
 MAINOBJ		=	$(MAINNAME).o
 MAINSRC		=	$(addprefix $(SRCDIR)/,$(MAINOBJ:.o=.cpp))
 MAINOBJFILES	=	$(addprefix $(OBJDIR)/,$(MAINOBJ))
+
+MIPDIR = $(MAINDIR)/solvers/mip
+MIPFLAGS = -I$(MIPDIR)/src/
+
+OSIDIR = $(MAINDIR)/solvers/osi
+OSISRC = $(OSIDIR)/src
+OSIFLAGS = -I$(OSISRC)
 
 #-----------------------------------------------------------------------------
 # Interface
 #-----------------------------------------------------------------------------
 
-IFILE		=	$(PYTHON)/$(MAINNAME).i
-PYFILE		=	$(PYTHON)/$(MAINNAME).py
-WXXFILE		= 	$(PYTHON)/$(MAINNAME)_wrap.cxx
-WOBFILE		= 	$(PYTHON)/$(MAINNAME)_wrap.o
-SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
+IFILE	= $(PYTHON)/$(MAINNAME).i
+PYFILE	= $(PYTHON)/$(MAINNAME).py
+WXXFILE	= $(PYTHON)/$(MAINNAME)_wrap.cxx
+WOBFILE	= $(PYTHON)/$(MAINNAME)_wrap.o
+SOFILE	= $(PYTHON)/_$(MAINNAME).so
 
-
-
-
-
-#MCORE     = minisat_src/core
-#MTL       = minisat_src/mtl
-CFLAGS    = -Wall -ffloat-store -O3 
+COINLIBS = -lCoinUtils -llapack -lOsi -lz -lbz2
+GLPKLIBS = -lglpk -lOsiGlpk
+CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS) $(GLPKLIBS) $(OSIFLAGS)
 
 #-----------------------------------------------------------------------------
 # Rules
@@ -47,8 +50,7 @@ CFLAGS    = -Wall -ffloat-store -O3
 
 CXX = g++ 
 
-
-wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/MipWrapper.o 
+wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/OsiGlpk.o 
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
@@ -73,14 +75,13 @@ $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	
 	$(SWIG) -c++ -python $<
-	python $(MAINDIR)/tools/finalize.py $(<:.i=.py)
+	python $(MAINDIR)/tools/finalize.py $(<:.i=.py) MipWrapper
 
-$(PYTHON)/%.i: $(SRCDIR)/%.hpp
-	python $(MAINDIR)/tools/mk_interface.py $<
+$(PYTHON)/%.i: $(SRCDIR)/%.hpp ../osi/src/Osi.hpp ../mip/src/MipWrapper.hpp
+	-python $(MAINDIR)/tools/mk_subinterface.py osi Osi $< mip MipWrapper
 
-
-$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o 
+$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o ../osi/obj/Osi.o ../mip/obj/MipWrapper.o
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(PYTHON)/MipWrapper_wrap.o -o $@
+	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(MAINOBJFILES) ../mip/obj/MipWrapper.o ../osi/obj/Osi.o $(PYTHON)/OsiGlpk_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

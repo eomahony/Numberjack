@@ -1,21 +1,23 @@
 #include "Osi.hpp"
-#ifdef _NJ_CBC
-#define DEFAULT_SOLVER "cbc"
-#elif _NJ_GLPK
-#define DEFAULT_SOLVER "glpk"
-#else
-#define DEFAULT_SOLVER "clp"
-#endif
+
+using namespace std;
 
 /**************************************************************
  ********************     Solver        ***********************
  **************************************************************/
 OsiSolver::OsiSolver() {
+	printf("OsiSolver: Being Created\n");
 	_verbosity = 1;
 	n_cols = 0;
 	n_rows = 0;
 	matrix = new CoinPackedMatrix(false, 0, 0);
-	solver = "glpk";
+	hasSolver = false;
+}
+
+void OsiSolver::setSolver(OsiSolverInterface* s) {
+	printf("OsiSolver: setSolver called\n");
+	si=s;
+	hasSolver = true;
 }
 
 OsiSolver::~OsiSolver() {
@@ -31,16 +33,8 @@ void OsiSolver::initialise() {
 
 	col_lb = new double[var_counter];
 	col_ub = new double[var_counter];
-	row_lb = new double[_constraints.size()];row_ub
-	= new double[_constraints.size()];
-
-if(	strcmp(solver.c_str(), "cbc") == 0) {
-		si = new OsiCbcSolverInterface;
-	} else if (strcmp(solver.c_str(), "glpk") == 0) {
-		si = new OsiGlpkSolverInterface;
-	} else {
-		si = new OsiClpSolverInterface;
-	}
+	row_lb = new double[_constraints.size()];
+	row_ub = new double[_constraints.size()];
 
 	if (_obj != NULL) {
 		for (unsigned int i = 0; i < _obj->_coefficients.size(); i++) {
@@ -52,7 +46,15 @@ if(	strcmp(solver.c_str(), "cbc") == 0) {
 }
 
 inline double OsiSolver::manageInfinity(double value) {
-	return (isinf(value) ? ((value > 0 ? 1. : -1.) * si->getInfinity()) : value);
+	if(hasSolver)
+	return (isinf(value) ?
+			((value > 0 ?
+					1. : -1.) * si->getInfinity()) :
+			value);
+	else {
+		printf("No OSI set\n");
+		return value;
+	}
 }
 
 void OsiSolver::add_in_constraint(LinearConstraint *con, double coef) {
@@ -115,6 +117,11 @@ int OsiSolver::solve() {
 	if (n_cols == 0)
 		initialise();
 
+	if (!hasSolver) {
+		printf("No OSI set\n");
+		return UNKNOWN;
+	}
+
 	if (_verbosity == 0) {
 		si->setHintParam(OsiDoReducePrint);
 	} else {
@@ -169,5 +176,10 @@ double OsiSolver::getTime() {
 }
 
 double OsiSolver::get_value(void *ptr) {
-	return si->getColSolution()[*(int*) ptr];
+	if(hasSolver)
+		return si->getColSolution()[*(int*) ptr];
+	else {
+		printf("No OSI set\n");
+		return -1;
+	}
 }

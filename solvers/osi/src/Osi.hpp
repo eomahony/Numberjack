@@ -2,32 +2,22 @@
 
 #include <iostream>
 #include <vector>
+#include <math.h>
 
 // solver interfaces
-#ifdef _NJ_CBC
-#include <coin/OsiCbcSolverInterface.hpp>
-#include <coin/OsiClpSolverInterface.hpp>
-#endif
-
-#ifdef _NJ_CLP
-#include <coin/OsiClpSolverInterface.hpp>
-#endif
-
-#ifdef _NJ_GLPK
-#include <coin/OsiGlpkSolverInterface.hpp>
-#endif
-
 #include <coin/CoinPackedVector.hpp>
+#include <coin/CoinPackedMatrix.hpp>
 #include <coin/CoinShallowPackedVector.hpp>
 #include <coin/OsiSolverInterface.hpp>
 
 /**
  The solver itself
  */
-class OsiSolver: public MipWrapperSolver {
+class OsiSolver : public MipWrapperSolver{
 private:
 
 	std::string solver;
+	bool hasSolver;
 	OsiSolverInterface *si;
 
 	int n_cols;
@@ -48,6 +38,7 @@ private:
 	inline double manageInfinity(double value);
 
 public:
+	void setSolver(OsiSolverInterface* s);
 	OsiSolver();
 	virtual ~OsiSolver();
 

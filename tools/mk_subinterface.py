@@ -9,8 +9,6 @@ sub_path  = sys.argv[3]
 inter_wrap_type = None 
 inter_wrap_name = None
 if len(sys.argv) > 4:
-    print "it says it's len is: ", len(sys.argv)
-    print "it contains:", sys.argv
     inter_wrap_type = sys.argv[4]
     inter_wrap_name = sys.argv[5]
 

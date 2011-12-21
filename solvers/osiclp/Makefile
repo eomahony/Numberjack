@@ -6,8 +6,6 @@ MAINDIR = $(CURDIR)/../..
 # paths
 #-----------------------------------------------------------------------------
 
-MINDIR         =       .
-
 OBJDIR = ./obj
 SRCDIR = ./src
 PYTHON = ./python
@@ -18,7 +16,7 @@ PYLIB = `python-config --cflags`
 # Main Program
 #-----------------------------------------------------------------------------
 
-MAINNAME	=	OsiGlpk
+MAINNAME	=	OsiClp
 MAINOBJ		=	$(MAINNAME).o
 MAINSRC		=	$(addprefix $(SRCDIR)/,$(MAINOBJ:.o=.cpp))
 MAINOBJFILES	=	$(addprefix $(OBJDIR)/,$(MAINOBJ))
@@ -41,12 +39,10 @@ WOBFILE	= $(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE	= $(PYTHON)/_$(MAINNAME).so
 
 COINLIBS = -llapack -lz -lbz2
-OSIVER = 0.105.2
-GLPKVER = 4.47
-GLPKDIR = $(MAINDIR)/solvers/osiglpk/glpk-$(GLPKVER)
-GLPKINCS = -I$(GLPKDIR)/src/ -I$(OSIDIR)/Osi-$(OSIVER)/Osi/src/Osi -I$(OSIDIR)/Osi-$(OSIVER)/Osi/src/OsiGlpk -I$(OSIDIR)/Osi-$(OSIVER)/CoinUtils/src/
-GLPKLIBS = $(GLPKDIR)/src/.libs/*.o $(OSIDIR)/Osi-$(OSIVER)/Osi/src/Osi/.libs/*.o $(OSIDIR)/Osi-$(OSIVER)/Osi/src/OsiGlpk/.libs/*.o $(OSIDIR)/Osi-$(OSIVER)/CoinUtils/src/.libs/*.o
-CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS) $(GLPKINCS) $(OSIFLAGS)
+CLPVER = 1.14.5
+CLPDIR = Clp-$(CLPVER)
+CLPLIBS = -I$(CLPDIR)/Clp/src/ -I$(CLPDIR)/Clp/src/OsiClp/ -I$(CLPDIR)/CoinUtils/src/ -I$(CLPDIR)/Osi/src/Osi
+CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS) $(CLPLIBS) $(OSIFLAGS)
 
 #-----------------------------------------------------------------------------
 # Rules
@@ -54,13 +50,12 @@ CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS) $(GLPKINCS) $(OS
 
 CXX = g++ 
 
-wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/OsiGlpk.o $(GLPKDIR)/src/.libs/libglpk.so $(OSIDIR)/Osi-$(OSIVER)/Osi/src/OsiGlpk/.libs/libOsiGlpk.so
+wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/OsiClp.o $(CLPDIR)/Clp/src/.libs/libClp.so
 
-$(OSIDIR)/Osi-$(OSIVER)/Osi/src/OsiGlpk/.libs/libOsiGlpk.so:
-	cd $(OSIDIR)/Osi-$(OSIVER) && (./configure --with-glpk-lib=$(GLPKDIR)/src/.libs --with-glpk-incdir=$(GLPKDIR)/src/ && make $(MAKEFLAGS))
+MAKEFLAGS = -j 8
 
-$(GLPKDIR)/src/.libs/libglpk.so:
-	cd $(GLPKDIR) && make $(MAKEFLAGS) || (./configure && make $(MAKEFLAGS))
+$(CLPDIR)/Clp/src/.libs/libClp.so:
+	cd $(CLPDIR) && make $(MAKEFLAGS) || (./configure && make $(MAKEFLAGS))
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
@@ -90,8 +85,8 @@ $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 $(PYTHON)/%.i: $(SRCDIR)/%.hpp ../osi/src/Osi.hpp ../mip/src/MipWrapper.hpp
 	-python $(MAINDIR)/tools/mk_subinterface.py osi Osi $< mip MipWrapper
 
-$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o ../osi/obj/Osi.o ../mip/obj/MipWrapper.o $(OSIDIR)/Osi-$(OSIVER)/Osi/src/OsiGlpk/.libs/libOsiGlpk.so $(GLPKDIR)/src/.libs/libglpk.so
+$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o ../osi/obj/Osi.o ../mip/obj/MipWrapper.o
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(MAINOBJFILES) ../mip/obj/MipWrapper.o ../osi/obj/Osi.o $(GLPKLIBS) $(PYTHON)/OsiGlpk_wrap.o -o $@
+	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(MAINOBJFILES) ../mip/obj/MipWrapper.o ../osi/obj/Osi.o $(CLPDIR)/CoinUtils/src/.libs/*.o $(CLPDIR)/Osi/src/Osi/.libs/*.o $(CLPDIR)/Clp/src/OsiClp/.libs/*.o  $(CLPDIR)/Clp/src/.libs/*.o $(PYTHON)/OsiClp_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

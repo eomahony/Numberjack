@@ -1,5 +1,5 @@
 #include "Osi.hpp"
-#include <coin/OsiGlpkSolverInterface.hpp>
+#include <OsiGlpkSolverInterface.hpp>
 
 class OsiGlpkSolver: public OsiSolver {
 private:

@@ -1,9 +1,10 @@
 #include "Osi.hpp"
-#include <coin/OsiCbcSolverInterface.hpp>
+#include <OsiCbcSolverInterface.hpp>
 
 class OsiCbcSolver: public OsiSolver {
 private:
 public:
+	int getNodes();
 	OsiCbcSolver();
 	virtual ~OsiCbcSolver();
 };

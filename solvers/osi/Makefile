@@ -36,16 +36,26 @@ WXXFILE	= $(PYTHON)/$(MAINNAME)_wrap.cxx
 WOBFILE	= $(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE	= $(PYTHON)/_$(MAINNAME).so
 
-COINLIBS = -lCoinUtils -llapack -lOsi -lz -lbz2
-CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS)
+COINDEPS = -llapack -lz -lbz2
+OSIVER = 0.105.2
+OSIDIR = Osi-$(OSIVER)
+OSIINCS = -I$(OSIDIR)/Osi/src/Osi
+OSILIBS = $(OSIDIR)/Osi/src/Osi/.libs/*.o
+COINDIR = $(OSIDIR)/CoinUtils
+COININCS = -I$(COINDIR)/src
+COINLIBS = $(COINDIR)/src/.libs/*.o
+CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COININCS) $(OSIINCS) $(MIPFLAGS) $(COINDEPS)
 
+MAKEFLAGS = -j 8
 #-----------------------------------------------------------------------------
 # Rules
 #-----------------------------------------------------------------------------
 
 CXX = g++ 
 
-wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/Osi.o 
+wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/Osi.o $(OSIDIR)/Osi/src/Osi/.libs/libOsi.so
+$(OSIDIR)/Osi/src/Osi/.libs/libOsi.so:
+	cd $(OSIDIR) && make $(MAKEFLAGS) || (./configure && make $(MAKEFLAGS))
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
@@ -77,6 +87,6 @@ $(PYTHON)/%.i: $(SRCDIR)/%.hpp $(MIPDIR)/src/MipWrapper.hpp
 
 $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(MIPDIR)/obj/MipWrapper.o
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(MIPDIR)/obj/MipWrapper.o $(PYTHON)/Osi_wrap.o -o $@
+	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(MIPDIR)/obj/MipWrapper.o $(OSILIBS) $(COINLIBS) $(PYTHON)/Osi_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

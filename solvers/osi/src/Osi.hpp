@@ -5,10 +5,10 @@
 #include <math.h>
 
 // solver interfaces
-#include <coin/CoinPackedVector.hpp>
-#include <coin/CoinPackedMatrix.hpp>
-#include <coin/CoinShallowPackedVector.hpp>
-#include <coin/OsiSolverInterface.hpp>
+#include <CoinPackedVector.hpp>
+#include <CoinPackedMatrix.hpp>
+#include <CoinShallowPackedVector.hpp>
+#include <OsiSolverInterface.hpp>
 
 /**
  The solver itself
@@ -39,8 +39,11 @@ private:
 
 public:
 	void setSolver(OsiSolverInterface* s);
+	OsiSolverInterface* getSolver();
 	OsiSolver();
 	virtual ~OsiSolver();
+
+	int load_gmpl(char *filename, char *dataname=NULL);
 
 	// initialise the solver before solving (no more calls to add after this)
 	void initialise(MipWrapperExpArray& arg);

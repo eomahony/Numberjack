@@ -6,7 +6,7 @@ using namespace std;
  ********************     Solver        ***********************
  **************************************************************/
 OsiSolver::OsiSolver() {
-	_verbosity = 1;
+	_verbosity = 0;
 	n_cols = 0;
 	n_rows = 0;
 	matrix = new CoinPackedMatrix(false, 0, 0);
@@ -14,8 +14,17 @@ OsiSolver::OsiSolver() {
 }
 
 void OsiSolver::setSolver(OsiSolverInterface* s) {
-	si=s;
+	si = s;
 	hasSolver = true;
+}
+
+OsiSolverInterface* OsiSolver::getSolver() {
+	return si;
+}
+
+int OsiSolver::load_gmpl(char *filename, char *dataname) {
+	return dataname == NULL ?
+			si->readGMPL(filename) : si->readGMPL(filename, dataname);
 }
 
 OsiSolver::~OsiSolver() {
@@ -31,10 +40,10 @@ void OsiSolver::initialise() {
 
 	col_lb = new double[var_counter];
 	col_ub = new double[var_counter];
-	row_lb = new double[_constraints.size()];
-	row_ub = new double[_constraints.size()];
+	row_lb = new double[_constraints.size()];row_ub
+	= new double[_constraints.size()];
 
-	if (_obj != NULL) {
+if(	_obj != NULL) {
 		for (unsigned int i = 0; i < _obj->_coefficients.size(); i++) {
 			objective[i] = -1.0 * _obj_coef * _obj->_coefficients[i];
 		}
@@ -44,11 +53,10 @@ void OsiSolver::initialise() {
 }
 
 inline double OsiSolver::manageInfinity(double value) {
-	if(hasSolver)
-	return (isinf(value) ?
-			((value > 0 ?
-					1. : -1.) * si->getInfinity()) :
-			value);
+	if (hasSolver)
+		return (isinf(value) ? ((value > 0 ? 1. : -1.) * si->getInfinity()) :
+		value)
+		;
 	else {
 		printf("No OSI set\n");
 		return value;
@@ -130,8 +138,19 @@ int OsiSolver::solve() {
 	si->loadProblem(*matrix, col_lb, col_ub, objective, row_lb, row_ub);
 	si->setInteger(integer_vars.data(), integer_vars.size());
 
-	si->initialSolve();
-	si->branchAndBound();
+	try {
+		si->initialSolve();
+	} catch (...) {
+		printf("Failed initial solve");
+		return UNSAT;
+	}
+	try {
+		si->branchAndBound();
+	} catch (...) {
+		if(_verbosity != 0) {
+			printf("Solved without branch and bound");
+		}
+	}
 
 	if (si->isProvenOptimal())
 		return SAT;
@@ -174,7 +193,7 @@ double OsiSolver::getTime() {
 }
 
 double OsiSolver::get_value(void *ptr) {
-	if(hasSolver)
+	if (hasSolver)
 		return si->getColSolution()[*(int*) ptr];
 	else {
 		printf("No OSI set\n");

@@ -2,6 +2,7 @@ src/build
 /solvers/*/python/*
 *.o
 *~
+*.swp
 .project
 .pydevproject
 .project

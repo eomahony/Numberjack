@@ -6,8 +6,6 @@ MAINDIR = $(CURDIR)/../..
 # paths
 #-----------------------------------------------------------------------------
 
-MINDIR         =       .
-
 OBJDIR = ./obj
 SRCDIR = ./src
 PYTHON = ./python
@@ -40,10 +38,12 @@ WXXFILE	= $(PYTHON)/$(MAINNAME)_wrap.cxx
 WOBFILE	= $(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE	= $(PYTHON)/_$(MAINNAME).so
 
-COINLIBS = -lCoinUtils -llapack -lOsi -lz -lbz2
-CLPLIBS = -lClp -lOsiClp
-CBCLIBS = -lCbc -lOsiCbc -lCgl $(CLPLIBS)
-CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS) $(CBCLIBS) $(OSIFLAGS)
+COINLIBS = -llapack -lz -lbz2
+CBCVER = 2.7.5
+CBCDIR = Cbc-$(CBCVER)
+CBCINCS = -I$(CBCDIR)/Clp/src/ -I$(CBCDIR)/Cbc/src/ -I$(CBCDIR)/Cbc/src/OsiCbc/ -I$(CBCDIR)/CoinUtils/src/ -I$(CBCDIR)/Osi/src/Osi
+CBCLIBS = $(CBCDIR)/Clp/src/.libs/*.so $(CBCDIR)/CoinUtils/src/.libs/*.o $(CBCDIR)/Osi/src/Osi/.libs/*.o $(CBCDIR)/Cbc/src/OsiCbc/.libs/*.o  $(CBCDIR)/Cbc/src/.libs/*.o
+CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS) $(CBCINCS) $(OSIFLAGS)
 
 #-----------------------------------------------------------------------------
 # Rules
@@ -51,7 +51,12 @@ CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS) $(CBCLIBS) $(OSI
 
 CXX = g++ 
 
-wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/OsiCbc.o 
+wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/OsiCbc.o $(CBCDIR)/Cbc/src/.libs/libCbc.so
+
+MAKEFLAGS = -j 8
+
+$(CBCDIR)/Cbc/src/.libs/libCbc.so:
+	cd $(CBCDIR) && make $(MAKEFLAGS) || (./configure && make $(MAKEFLAGS))
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
@@ -83,6 +88,6 @@ $(PYTHON)/%.i: $(SRCDIR)/%.hpp ../osi/src/Osi.hpp ../mip/src/MipWrapper.hpp
 
 $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o ../osi/obj/Osi.o ../mip/obj/MipWrapper.o
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(MAINOBJFILES) ../mip/obj/MipWrapper.o ../osi/obj/Osi.o $(PYTHON)/OsiCbc_wrap.o -o $@
+	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(MAINOBJFILES) ../mip/obj/MipWrapper.o ../osi/obj/Osi.o $(CBCLIBS) $(PYTHON)/OsiCbc_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

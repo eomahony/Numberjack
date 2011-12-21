@@ -1,5 +1,4 @@
 src/build
-/solvers/*/python/*
 *.o
 *~
 *.swp

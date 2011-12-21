@@ -36,22 +36,27 @@ The SCIP source code is available under an Academic Licence for free from:
 [http://zibopt.zib.de/download.shtml][zibopt]
 
 Compiling SCIP is a bit tricky, here's how it used to be compiled...
+
 1. Download the Zib Opt Suite from here, unarchive it, however, do not install nor compile it.
 2. Set an environment variable ZIBPATH with the path to the folder containing scip and soplex (for instance ZIBPATH=/home/lib/ziboptsuite-1.2.0; export ZIBPATH) 
 
 ### Osi Solvers
 Some of the solvers cannot be included in the source tree. I've left out all of them to be safe.
 Before you get started with the compiling Osi solvers for Numberjack you must first get the Osi module working.
+
 Download Osi from: [http://www.coin-or.org/download/source/Osi/][osi]
+
 To do this you need to download Osi-???.tgz and extract it in the solvers/osi/ folder.
 The version that the Makefile presumes is Osi-0.105.2. If you download a different version the line `OSIVER = 0.105.2` will have to be changed.
 
 #### OsiClp
 Download Clp from: [http://www.coin-or.org/download/source/Clp/][osiclp]
+
 The version that the Makefile presumes is Clp-1.14.5. If you download a different version the line `CLPVER = 1.14.5` will have to be changed.
 
 #### OsiCbc
 Download Cbc from: [http://www.coin-or.org/download/source/Cbc/][osicbc]
+
 The version that the Makefile presumes is Cbc-2.7.5. If you download a different version the line `CBCVER = 2.7.5` will have to be changed.
 
 CBC Supports several different lp solver backends(_e.g. glpk_) but currently dynamically links Clp.
@@ -59,18 +64,22 @@ There will be some work done on this, but as it stands you need to have Clp inst
 
 #### OsiVol
 Download Vol from: [http://www.coin-or.org/download/source/Vol/][osivol]
+
 The version that the Makefile presumes is Vol-1.3.2. If you download a different version the line `VOLVER = 1.14.5` will have to be changed.
 
 #### OsiDylp
 Download Dylp from: [http://www.coin-or.org/download/source/Dylp/][osidylp]
+
 The version that the Makefile presumes is DyLP-1.8.2. If you download a different version the line `DYLPVER = 1.8.2` will have to be changed.
 
 #### OsiSpx (soplex)
 Download soplex from: [http://soplex.zib.de/download.shtml][soplex]
+
 The version that the Makefile presumes is soplex-1.6.0. If you download a different version the line `SPXVER = 1.6.0` will have to be changed.
 
 #### OsiGlpk
 Download Glpk from: [http://ftp.gnu.org/gnu/glpk/][glpk]
+
 The version that the Makefile presumes is glpk-4.47. If you download a different version the line `CLPVER = 4.47` will have to be changed.
 
 [njhome]: http://numberjack.ucc.ie

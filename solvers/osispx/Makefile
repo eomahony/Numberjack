@@ -6,6 +6,8 @@ MAINDIR = $(CURDIR)/../..
 # paths
 #-----------------------------------------------------------------------------
 
+MINDIR         =       .
+
 OBJDIR = ./obj
 SRCDIR = ./src
 PYTHON = ./python
@@ -38,9 +40,14 @@ WXXFILE	= $(PYTHON)/$(MAINNAME)_wrap.cxx
 WOBFILE	= $(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE	= $(PYTHON)/_$(MAINNAME).so
 
-COINLIBS = -lCoinUtils -llapack -lOsi -lz -lbz2 -lglpk
-SPXLIBS = -Lsoplex-1.6.0/lib/ -lsoplex -lblas -lOsiSpx 
-CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS) $(SPXLIBS) $(OSIFLAGS)
+COINLIBS = -llapack -lz -lbz2
+OSIVER = 0.105.2
+SPXVER = 1.6.0
+SPXHOST = O.linux.x86_64.gnu.opt
+SPXDIR = $(MAINDIR)/solvers/osispx/soplex-$(SPXVER)
+SPXINCS = -I$(SPXDIR)/src/ -I$(OSIDIR)/Osi-$(OSIVER)/Osi/src/Osi -I$(OSIDIR)/Osi-$(OSIVER)/Osi/src/OsiSpx -I$(OSIDIR)/Osi-$(OSIVER)/CoinUtils/src/
+SPXLIBS = $(SPXDIR)/obj/$(SPXHOST)/lib/*.o $(OSIDIR)/Osi-$(OSIVER)/Osi/src/Osi/.libs/*.o $(OSIDIR)/Osi-$(OSIVER)/Osi/src/OsiSpx/.libs/*.o $(OSIDIR)/Osi-$(OSIVER)/CoinUtils/src/.libs/*.o
+CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS) $(SPXINCS) $(OSIFLAGS)
 
 #-----------------------------------------------------------------------------
 # Rules
@@ -48,10 +55,15 @@ CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS) $(SPXLIBS) $(OSI
 
 CXX = g++ 
 
-wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/OsiSpx.o soplex-1.6.0/lib/libsoplex.a
+wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/OsiSpx.o $(SPXDIR)/lib/libsoplex.a $(OSIDIR)/Osi-$(OSIVER)/Osi/src/OsiSpx/.libs/libOsiSpx.so
 
-soplex-1.6.0/lib/libsoplex.a:
-	cd soplex-1.6.0/ && make -j 8
+MAKEFLAGS = -j8
+
+$(OSIDIR)/Osi-$(OSIVER)/Osi/src/OsiSpx/.libs/libOsiSpx.so:
+	cd $(OSIDIR)/Osi-$(OSIVER) && (./configure --with-soplex-lib=$(SPXDIR)/src/.libs --with-soplex-incdir=$(SPXDIR)/src/ && make $(MAKEFLAGS))
+
+$(SPXDIR)/lib/libsoplex.a:
+	cd $(SPXDIR) && sed -iold 's/^SHARED.*false/SHARED = true/g' Makefile && make $(MAKEFLAGS) 
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
@@ -81,8 +93,8 @@ $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 $(PYTHON)/%.i: $(SRCDIR)/%.hpp ../osi/src/Osi.hpp ../mip/src/MipWrapper.hpp
 	-python $(MAINDIR)/tools/mk_subinterface.py osi Osi $< mip MipWrapper
 
-$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o ../osi/obj/Osi.o ../mip/obj/MipWrapper.o soplex-1.6.0/lib/libsoplex.a
+$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o ../osi/obj/Osi.o ../mip/obj/MipWrapper.o $(OSIDIR)/Osi-$(OSIVER)/Osi/src/OsiSpx/.libs/libOsiSpx.so $(SPXDIR)/lib/libsoplex.a
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(MAINOBJFILES) ../mip/obj/MipWrapper.o ../osi/obj/Osi.o $(PYTHON)/OsiSpx_wrap.o -o $@
+	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(MAINOBJFILES) ../mip/obj/MipWrapper.o ../osi/obj/Osi.o $(SPXLIBS) $(PYTHON)/OsiSpx_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

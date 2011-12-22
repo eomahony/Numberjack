@@ -4,6 +4,7 @@
 class OsiDylpSolver: public OsiSolver {
 private:
 public:
+	int solve();
 	OsiDylpSolver();
 	virtual ~OsiDylpSolver();
 };

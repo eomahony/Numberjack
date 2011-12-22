@@ -44,7 +44,7 @@ OSILIBS = $(OSIDIR)/Osi/src/Osi/.libs/*.o
 COINDIR = $(OSIDIR)/CoinUtils
 COININCS = -I$(COINDIR)/src
 COINLIBS = $(COINDIR)/src/.libs/*.o
-CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COININCS) $(OSIINCS) $(MIPFLAGS) $(COINDEPS)
+CFLAGS = -g -Wall -ffloat-store -lm $(COININCS) $(OSIINCS) $(MIPFLAGS) $(COINDEPS)
 
 MAKEFLAGS = -j 8
 #-----------------------------------------------------------------------------

@@ -13,7 +13,7 @@
 /**
  The solver itself
  */
-class OsiSolver : public MipWrapperSolver{
+class OsiSolver: public MipWrapperSolver {
 private:
 
 	std::string solver;
@@ -36,14 +36,14 @@ private:
 	int _verbosity;
 	void add_in_constraint(LinearConstraint *con, double coef = 0);
 	inline double manageInfinity(double value);
-
 public:
+	bool prepareSolve();
 	void setSolver(OsiSolverInterface* s);
 	OsiSolverInterface* getSolver();
 	OsiSolver();
 	virtual ~OsiSolver();
 
-	int load_gmpl(char *filename, char *dataname=NULL);
+	int load_gmpl(char *filename, char *dataname = NULL);
 
 	// initialise the solver before solving (no more calls to add after this)
 	void initialise(MipWrapperExpArray& arg);

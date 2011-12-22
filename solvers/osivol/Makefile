@@ -45,7 +45,7 @@ VOLVER = 1.3.2
 VOLDIR = Vol-$(VOLVER)
 VOLINCS = -I$(VOLDIR)/Vol/src/ -I$(VOLDIR)/CoinUtils/src/ -I$(VOLDIR)/Osi/src/Osi/ -I$(VOLDIR)/Vol/src/OsiVol/
 VOLLIBS = $(VOLDIR)/Vol/src/.libs/*.o $(VOLDIR)/CoinUtils/src/.libs/*.o $(VOLDIR)/Osi/src/Osi/.libs/*.o $(VOLDIR)/Vol/src/OsiVol/.libs/*.o
-CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS) $(VOLINCS) $(OSIFLAGS)
+CFLAGS = -g -Wall -ffloat-store -lm $(COINLIBS) $(MIPFLAGS) $(VOLINCS) $(OSIFLAGS)
 
 #-----------------------------------------------------------------------------
 # Rules

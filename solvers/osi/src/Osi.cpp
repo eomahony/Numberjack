@@ -119,13 +119,17 @@ void OsiSolver::printModel() {
 	printf("########\n");
 }
 
-int OsiSolver::solve() {
+/*
+ * Loads the model and prepares the solver
+ * returns true for success and false when there is no solver set.
+ */
+bool OsiSolver::prepareSolve() {
 	if (n_cols == 0)
 		initialise();
 
 	if (!hasSolver) {
-		printf("No OSI set\n");
-		return UNKNOWN;
+		printf("No OsiSolverInterface set\n");
+		return false;
 	}
 
 	if (_verbosity == 0) {
@@ -137,19 +141,24 @@ int OsiSolver::solve() {
 
 	si->loadProblem(*matrix, col_lb, col_ub, objective, row_lb, row_ub);
 	si->setInteger(integer_vars.data(), integer_vars.size());
+	return true;
+}
+
+int OsiSolver::solve() {
+	if (!prepareSolve()) {
+		return UNKNOWN;
+	}
 
 	try {
 		si->initialSolve();
-	} catch (...) {
-		printf("Failed initial solve");
-		return UNSAT;
+	} catch (CoinError err) {
+		err.print(true);
 	}
+
 	try {
 		si->branchAndBound();
-	} catch (...) {
-		if(_verbosity != 0) {
-			printf("Solved without branch and bound");
-		}
+	} catch (CoinError err) {
+		err.print(true);
 	}
 
 	if (si->isProvenOptimal())

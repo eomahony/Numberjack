@@ -4,7 +4,8 @@
  ********************     Solver        ***********************
  **************************************************************/
 OsiClpSolver::OsiClpSolver() : OsiSolver() {
-	OsiSolver::setSolver(new OsiClpSolverInterface);
+	clpSi = new OsiClpSolverInterface;
+	OsiSolver::setSolver(clpSi);
 }
 
 OsiClpSolver::~OsiClpSolver() {

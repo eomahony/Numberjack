@@ -1,6 +1,8 @@
 
 include ../../make.project
 MAINDIR = $(CURDIR)/../..
+# CBC is not working at the moment so we stop it from being compiled :
+all:
 
 #-----------------------------------------------------------------------------
 # paths

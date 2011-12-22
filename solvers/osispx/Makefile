@@ -57,13 +57,11 @@ CXX = g++
 
 wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/OsiSpx.o $(SPXDIR)/lib/libsoplex.a $(OSIDIR)/Osi-$(OSIVER)/Osi/src/OsiSpx/.libs/libOsiSpx.so
 
-MAKEFLAGS = -j8
-
 $(OSIDIR)/Osi-$(OSIVER)/Osi/src/OsiSpx/.libs/libOsiSpx.so:
-	cd $(OSIDIR)/Osi-$(OSIVER) && (./configure --with-soplex-lib=$(SPXDIR)/src/.libs --with-soplex-incdir=$(SPXDIR)/src/ && make $(MAKEFLAGS))
+	cd $(OSIDIR)/Osi-$(OSIVER) && (./configure --with-soplex-lib=$(SPXDIR)/src/.libs --with-soplex-incdir=$(SPXDIR)/src/ && make)
 
 $(SPXDIR)/lib/libsoplex.a:
-	cd $(SPXDIR) && sed -iold 's/^SHARED.*false/SHARED = true/g' Makefile && make $(MAKEFLAGS) 
+	cd $(SPXDIR) && sed -iold 's/^SHARED.*false/SHARED = true/g' Makefile && make 
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	

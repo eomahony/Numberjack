@@ -3,6 +3,7 @@
 
 class OsiClpSolver: public OsiSolver {
 private:
+	OsiClpSolverInterface* clpSi;
 public:
 	OsiClpSolver();
 	virtual ~OsiClpSolver();

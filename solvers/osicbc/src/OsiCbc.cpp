@@ -12,6 +12,5 @@ OsiCbcSolver::~OsiCbcSolver() {
 
 int OsiCbcSolver::getNodes() {
 	OsiCbcSolverInterface s = (OsiCbcSolverInterface)OsiSolver::getSolver();
-	printf("OSICBC GETNODES");
 	return s.getNodeCount();
 }

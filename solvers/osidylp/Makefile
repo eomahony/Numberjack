@@ -51,10 +51,9 @@ CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS) $(DYLPINCS) $(OS
 CXX = g++ 
 
 wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/OsiDylp.o $(DYLPDIR)/DyLP/src/Dylp/.libs/libDylp.so
-MAKEFLAGS = -j 8
 
 $(DYLPDIR)/DyLP/src/Dylp/.libs/libDylp.so:
-	cd $(DYLPDIR) && make $(MAKEFLAGS) || (./configure && make $(MAKEFLAGS))
+	cd $(DYLPDIR) && make || (./configure && make)
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	

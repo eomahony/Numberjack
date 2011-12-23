@@ -55,10 +55,8 @@ CXX = g++
 
 wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/OsiCbc.o $(CBCDIR)/Cbc/src/.libs/libCbc.so
 
-MAKEFLAGS = -j 8
-
 $(CBCDIR)/Cbc/src/.libs/libCbc.so:
-	cd $(CBCDIR) && make $(MAKEFLAGS) || (./configure && make $(MAKEFLAGS))
+	cd $(CBCDIR) && make || (./configure && make)
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	

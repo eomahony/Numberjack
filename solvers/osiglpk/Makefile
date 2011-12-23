@@ -57,10 +57,10 @@ CXX = g++
 wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/OsiGlpk.o $(GLPKDIR)/src/.libs/libglpk.so $(OSIDIR)/Osi-$(OSIVER)/Osi/src/OsiGlpk/.libs/libOsiGlpk.so
 
 $(OSIDIR)/Osi-$(OSIVER)/Osi/src/OsiGlpk/.libs/libOsiGlpk.so:
-	cd $(OSIDIR)/Osi-$(OSIVER) && (./configure --with-glpk-lib=$(GLPKDIR)/src/.libs --with-glpk-incdir=$(GLPKDIR)/src/ && make $(MAKEFLAGS))
+	cd $(OSIDIR)/Osi-$(OSIVER) && (./configure --with-glpk-lib=$(GLPKDIR)/src/.libs --with-glpk-incdir=$(GLPKDIR)/src/ && make)
 
 $(GLPKDIR)/src/.libs/libglpk.so:
-	cd $(GLPKDIR) && make $(MAKEFLAGS) || (./configure && make $(MAKEFLAGS))
+	cd $(GLPKDIR) && make || (./configure && make)
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	

@@ -46,7 +46,6 @@ COININCS = -I$(COINDIR)/src
 COINLIBS = $(COINDIR)/src/.libs/*.o
 CFLAGS = -g -Wall -ffloat-store -lm $(COININCS) $(OSIINCS) $(MIPFLAGS) $(COINDEPS)
 
-MAKEFLAGS = -j 8
 #-----------------------------------------------------------------------------
 # Rules
 #-----------------------------------------------------------------------------
@@ -55,7 +54,7 @@ CXX = g++
 
 wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/Osi.o $(OSIDIR)/Osi/src/Osi/.libs/libOsi.so
 $(OSIDIR)/Osi/src/Osi/.libs/libOsi.so:
-	cd $(OSIDIR) && make $(MAKEFLAGS) || (./configure && make $(MAKEFLAGS))
+	cd $(OSIDIR) && make || (./configure && make)
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	

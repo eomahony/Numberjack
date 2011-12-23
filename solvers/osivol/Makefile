@@ -55,10 +55,8 @@ CXX = g++
 
 wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/OsiVol.o $(VOLDIR)/Vol/src/.libs/libVol.so
 
-MAKEFLAGS = -j 8
-
 $(VOLDIR)/Vol/src/.libs/libVol.so:
-	cd $(VOLDIR) && make $(MAKEFLAGS) || (./configure && make $(MAKEFLAGS))
+	cd $(VOLDIR) && make || (./configure && make)
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	

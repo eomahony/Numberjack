@@ -2,6 +2,6 @@ src/build
 *.o
 *~
 *.swp
+.cproject
 .project
 .pydevproject
-.project

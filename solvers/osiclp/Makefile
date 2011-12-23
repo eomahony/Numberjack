@@ -52,10 +52,8 @@ CXX = g++
 
 wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/OsiClp.o $(CLPDIR)/Clp/src/.libs/libClp.so
 
-MAKEFLAGS = -j 8
-
 $(CLPDIR)/Clp/src/.libs/libClp.so:
-	cd $(CLPDIR) && make $(MAKEFLAGS) || (./configure && make $(MAKEFLAGS))
+	cd $(CLPDIR) && make || (./configure && make)
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	

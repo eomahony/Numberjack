@@ -50,13 +50,21 @@ CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS) $(DYLPINCS) $(OS
 
 CXX = g++ 
 
-wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/OsiDylp.o $(DYLPDIR)/DyLP/src/Dylp/.libs/libDylp.so
+wrapper: $(IFILE) $(WXXFILE) $(DYLPDIR)/DyLP/src/Dylp/.libs/libDylp.so $(OSIDIR)/obj/Osi.o $(MIPDIR)/obj/MipWrapper.o $(OBJDIR)/OsiDylp.o $(SOFILE) 
 
 $(DYLPDIR)/DyLP/src/Dylp/.libs/libDylp.so:
 	cd $(DYLPDIR) && make || (./configure && make)
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
+
+$(MIPDIR)/obj/%.o: $(MIPDIR)/src/MipWrapper.cpp
+	@echo "-> compiling $@"
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+
+$(OSIDIR)/obj/%.o: $(OSIDIR)/src/Osi.cpp
+	@echo "-> compiling $@"
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
 
 clean_swig:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
@@ -83,7 +91,7 @@ $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 $(PYTHON)/%.i: $(SRCDIR)/%.hpp ../osi/src/Osi.hpp ../mip/src/MipWrapper.hpp
 	-python $(MAINDIR)/tools/mk_subinterface.py osi Osi $< mip MipWrapper
 
-$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o ../osi/obj/Osi.o ../mip/obj/MipWrapper.o $(DYLPDIR)/DyLP/src/Dylp/.libs/libDylp.so
+$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(OSIDIR)/obj/Osi.o $(MIPDIR)/obj/MipWrapper.o $(DYLPDIR)/DyLP/src/Dylp/.libs/libDylp.so
 	@echo "-> linking $@"
 	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(MAINOBJFILES) ../mip/obj/MipWrapper.o ../osi/obj/Osi.o $(DYLPDIR)/DyLP/src/Dylp/.libs/*.o $(DYLPDIR)/DyLP/src/DylpStdLib/.libs/*.o $(DYLPDIR)/DyLP/src/OsiDylp/.libs/*.o $(DYLPDIR)/Osi/src/Osi/.libs/*.o $(DYLPDIR)/CoinUtils/src/.libs/*.o $(PYTHON)/OsiDylp_wrap.o -o $@
 

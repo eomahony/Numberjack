@@ -50,10 +50,18 @@ CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS) $(CLPLIBS) $(OSI
 
 CXX = g++ 
 
-wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/OsiClp.o $(CLPDIR)/Clp/src/.libs/libClp.so
+wrapper: $(IFILE) $(WXXFILE) $(OSIDIR)/obj/Osi.o $(MIPDIR)/obj/MipWrapper.o $(OBJDIR)/OsiClp.o $(CLPDIR)/Clp/src/.libs/libClp.so $(SOFILE) 
 
 $(CLPDIR)/Clp/src/.libs/libClp.so:
 	cd $(CLPDIR) && make || (./configure && make)
+
+$(MIPDIR)/obj/%.o: $(MIPDIR)/src/MipWrapper.cpp
+	@echo "-> compiling $@"
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+
+$(OSIDIR)/obj/%.o: $(OSIDIR)/src/Osi.cpp
+	@echo "-> compiling $@"
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
@@ -80,11 +88,11 @@ $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	$(SWIG) -c++ -python $<
 	python $(MAINDIR)/tools/finalize.py $(<:.i=.py) MipWrapper
 
-$(PYTHON)/%.i: $(SRCDIR)/%.hpp ../osi/src/Osi.hpp ../mip/src/MipWrapper.hpp
+$(PYTHON)/%.i: $(SRCDIR)/%.hpp $(OSIDIR)/src/Osi.hpp $(MIPDIR)/src/MipWrapper.hpp
 	-python $(MAINDIR)/tools/mk_subinterface.py osi Osi $< mip MipWrapper
 
-$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o ../osi/obj/Osi.o ../mip/obj/MipWrapper.o
+$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(OSIDIR)/obj/Osi.o $(MIPDIR)/obj/MipWrapper.o
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(MAINOBJFILES) ../mip/obj/MipWrapper.o ../osi/obj/Osi.o $(CLPDIR)/CoinUtils/src/.libs/*.o $(CLPDIR)/Osi/src/Osi/.libs/*.o $(CLPDIR)/Clp/src/OsiClp/.libs/*.o  $(CLPDIR)/Clp/src/.libs/*.o $(PYTHON)/OsiClp_wrap.o -o $@
+	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(MIPDIR)/obj/MipWrapper.o $(OSIDIR)/obj/Osi.o $(CLPDIR)/CoinUtils/src/.libs/*.o $(CLPDIR)/Osi/src/Osi/.libs/*.o $(CLPDIR)/Clp/src/OsiClp/.libs/*.o  $(CLPDIR)/Clp/src/.libs/*.o $(PYTHON)/OsiClp_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

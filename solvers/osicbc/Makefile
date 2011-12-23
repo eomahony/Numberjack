@@ -53,13 +53,23 @@ CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS) $(CBCINCS) $(OSI
 
 CXX = g++ 
 
-wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/OsiCbc.o $(CBCDIR)/Cbc/src/.libs/libCbc.so
+wrapper: $(IFILE) $(WXXFILE) $(OSIDIR)/obj/Osi.o $(MIPDIR)/obj/MipWrapper.o $(OBJDIR)/OsiCbc.o $(CBCDIR)/Cbc/src/.libs/libCbc.so $(SOFILE)
 
 $(CBCDIR)/Cbc/src/.libs/libCbc.so:
 	cd $(CBCDIR) && make || (./configure && make)
 
-install_python: wrapper
-	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
+$(MIPDIR)/obj/%.o: $(MIPDIR)/src/MipWrapper.cpp
+	@echo "-> compiling $@"
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+
+$(OSIDIR)/obj/%.o: $(OSIDIR)/src/Osi.cpp
+	@echo "-> compiling $@"
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+
+install_python:
+
+#install_python: wrapper
+#	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
 
 clean_swig:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
@@ -83,11 +93,11 @@ $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	$(SWIG) -c++ -python $<
 	python $(MAINDIR)/tools/finalize.py $(<:.i=.py) MipWrapper
 
-$(PYTHON)/%.i: $(SRCDIR)/%.hpp ../osi/src/Osi.hpp ../mip/src/MipWrapper.hpp
+$(PYTHON)/%.i: $(SRCDIR)/%.hpp $(OSIDIR)/src/Osi.hpp $(MIPDIR)/src/MipWrapper.hpp
 	-python $(MAINDIR)/tools/mk_subinterface.py osi Osi $< mip MipWrapper
 
-$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o ../osi/obj/Osi.o ../mip/obj/MipWrapper.o
+$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(OSIDIR)/obj/Osi.o $(MIPDIR)/obj/MipWrapper.o
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(MAINOBJFILES) ../mip/obj/MipWrapper.o ../osi/obj/Osi.o $(CBCLIBS) $(PYTHON)/OsiCbc_wrap.o -o $@
+	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(MIPDIR)/obj/MipWrapper.o $(OSIDIR)/obj/Osi.o $(CBCLIBS) $(PYTHON)/OsiCbc_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

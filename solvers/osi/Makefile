@@ -52,7 +52,8 @@ CFLAGS = -g -Wall -ffloat-store -lm $(COININCS) $(OSIINCS) $(MIPFLAGS) $(COINDEP
 
 CXX = g++ 
 
-wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/Osi.o $(OSIDIR)/Osi/src/Osi/.libs/libOsi.so
+wrapper: $(IFILE) $(WXXFILE) $(OSIDIR)/Osi/src/Osi/.libs/libOsi.so $(MIPDIR)/obj/MipWrapper.o $(SOFILE) $(OBJDIR)/Osi.o 
+
 $(OSIDIR)/Osi/src/Osi/.libs/libOsi.so:
 	cd $(OSIDIR) && make || (./configure && make)
 
@@ -68,13 +69,17 @@ clean_all: clean clean_swig
 clean:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/*o $(PYTHON)/*~ $(PYTHON)/build *~ $(SRCDIR)/*~
 
+$(MIPDIR)/obj/%.o: $(MIPDIR)/src/MipWrapper.cpp
+	@echo "-> compiling $@"
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
-		@echo "-> compiling $@"
-		$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+	@echo "-> compiling $@"
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
-		@echo "-> compiling $@"
-		$(CXX) $(CFLAGS) -I$(SRCDIR) -I$(PYLIB) -fPIC -c $< -o $@
+	@echo "-> compiling $@"
+	$(CXX) $(CFLAGS) -I$(SRCDIR) -I$(PYLIB) -fPIC -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	

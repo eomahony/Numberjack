@@ -1,60 +1,65 @@
-
 include ../../make.project
 MAINDIR = $(CURDIR)/../..
 
 #-----------------------------------------------------------------------------
 # paths
 #-----------------------------------------------------------------------------
-
-MINDIR         =       .
-
-OBJDIR = ./obj
-SRCDIR = ./src
-PYTHON = ./python
-SWIG = swig
-PYLIB = `python-config --cflags` 
+OBJDIR = $(CURDIR)/obj
+SRCDIR = $(CURDIR)/src
+PYTHON = $(CURDIR)/python
+SWIG   = swig
+PYLIB  = `python-config --cflags` 
 
 #-----------------------------------------------------------------------------
 # Main Program
 #-----------------------------------------------------------------------------
+MAINNAME     = Osi
+MAINOBJ	     = $(MAINNAME).o
+MAINSRC	     = $(addprefix $(SRCDIR)/,$(MAINOBJ:.o=.cpp))
+MAINOBJFILES = $(addprefix $(OBJDIR)/,$(MAINOBJ))
 
-MAINNAME	=	Osi
-MAINOBJ		=	$(MAINNAME).o
-MAINSRC		=	$(addprefix $(SRCDIR)/,$(MAINOBJ:.o=.cpp))
-MAINOBJFILES	=	$(addprefix $(OBJDIR)/,$(MAINOBJ))
-
-MIPDIR = $(MAINDIR)/solvers/mip
+MIPDIR   = $(MAINDIR)/solvers/mip
 MIPFLAGS = -I$(MIPDIR)/src/
+MIPLIBS  = $(MIPDIR)/obj/MipWrapper.o
+
+# OSI
+OSIVER  = 0.105.2
+OSIDIR  = $(CURDIR)/Osi-$(OSIVER)
+OSIINCS = -I$(OSIDIR)/Osi/src/Osi
+OSILIBS = $(OSIDIR)/Osi/src/Osi/.libs/*.o
+# Using libOsi.so as proof that OSI/CoinUtils have been compiled
+# Can probably do better than this.
+OSICOMPILED = $(OSIDIR)/Osi/src/Osi/.libs/libOsi.so
+
+# COIN
+COINDIR  = $(OSIDIR)/CoinUtils
+COININCS = -I$(COINDIR)/src
+COINLIBS = $(COINDIR)/src/.libs/*.o
+DYNLINKS = -llapack -lz -lbz2
+
+INCLUDES  = $(OSIINCS) $(COININCS) $(MIPFLAGS)
+LIBRARIES = $(OSILIBS) $(COINLIBS) $(MIPLIBS)
 
 #-----------------------------------------------------------------------------
 # Interface
 #-----------------------------------------------------------------------------
-
 IFILE	= $(PYTHON)/$(MAINNAME).i
 PYFILE	= $(PYTHON)/$(MAINNAME).py
 WXXFILE	= $(PYTHON)/$(MAINNAME)_wrap.cxx
 WOBFILE	= $(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE	= $(PYTHON)/_$(MAINNAME).so
 
-COINDEPS = -llapack -lz -lbz2
-OSIVER = 0.105.2
-OSIDIR = Osi-$(OSIVER)
-OSIINCS = -I$(OSIDIR)/Osi/src/Osi
-OSILIBS = $(OSIDIR)/Osi/src/Osi/.libs/*.o
-COINDIR = $(OSIDIR)/CoinUtils
-COININCS = -I$(COINDIR)/src
-COINLIBS = $(COINDIR)/src/.libs/*.o
-CFLAGS = -g -Wall -ffloat-store -lm $(COININCS) $(OSIINCS) $(MIPFLAGS) $(COINDEPS)
-
+CFLAGS = -O3 -Wall -ffloat-store -lm $(INCLUDES) $(DYNLINKS)
+LFLAGS = $(LIBRARIES)
 #-----------------------------------------------------------------------------
 # Rules
 #-----------------------------------------------------------------------------
 
 CXX = g++ 
 
-wrapper: $(IFILE) $(WXXFILE) $(OSIDIR)/Osi/src/Osi/.libs/libOsi.so $(MIPDIR)/obj/MipWrapper.o $(SOFILE) $(OBJDIR)/Osi.o 
+wrapper: $(IFILE) $(WXXFILE) $(OSICOMPILED) $(MIPLIBS) $(SOFILE) $(MAINOBJFILES)
 
-$(OSIDIR)/Osi/src/Osi/.libs/libOsi.so:
+$(OSICOMPILED):
 	cd $(OSIDIR) && make || (./configure && make)
 
 install_python: wrapper
@@ -89,8 +94,8 @@ $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 $(PYTHON)/%.i: $(SRCDIR)/%.hpp $(MIPDIR)/src/MipWrapper.hpp
 	-python $(MAINDIR)/tools/mk_subinterface.py mip MipWrapper $<
 
-$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(MIPDIR)/obj/MipWrapper.o
+$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(MIPLIBS) $(OSICOMPILED)
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(MIPDIR)/obj/MipWrapper.o $(OSILIBS) $(COINLIBS) $(PYTHON)/Osi_wrap.o -o $@
+	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(PYTHON)/Osi_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

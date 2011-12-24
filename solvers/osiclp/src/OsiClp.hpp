@@ -7,4 +7,6 @@ private:
 public:
 	OsiClpSolver();
 	virtual ~OsiClpSolver();
+
+	void setTimeLimit(int cutoff);
 };

@@ -4,8 +4,13 @@
  ********************     Solver        ***********************
  **************************************************************/
 OsiSpxSolver::OsiSpxSolver() : OsiSolver() {
-	OsiSolver::setSolver(new OsiSpxSolverInterface);
+	spxS = new OsiSpxSolverInterface;
+	OsiSolver::setSolver(spxS);
 }
 
 OsiSpxSolver::~OsiSpxSolver() {
+}
+
+void OsiSpxSolver::setTimeLimit(const int cutoff) {
+	spxS->setTimeLimit(cutoff);
 }

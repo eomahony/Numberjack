@@ -174,6 +174,7 @@ int OsiSolver::getNextSolution() {
 }
 
 void OsiSolver::setTimeLimit(const int cutoff) {
+	std::cout << "Solver does not support time limit" << std::endl;
 }
 
 void OsiSolver::setVerbosity(const int degree) {

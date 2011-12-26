@@ -19,7 +19,7 @@ At the moment there is no mechanism to select which solvers get compiled so dele
 
 ### Prerequisites
 
-* python 2 (`python` should link to python2, arch linux uses python3 by default which makes things interesting, a python 2 virtualenv helps, node python-config must point to python2-config)
+* python 2 (`python` should link to python2, arch linux uses python3 by default which makes things interesting, a python 2 virtualenv helps, note python-config must point to python2-config)
 * swig
 * libxml2-dev
 * zlib1g-dev

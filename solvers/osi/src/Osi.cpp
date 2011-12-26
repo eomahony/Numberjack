@@ -13,6 +13,9 @@ OsiSolver::OsiSolver() {
 	hasSolver = false;
 }
 
+OsiSolver::~OsiSolver() {
+}
+
 void OsiSolver::setSolver(OsiSolverInterface* s) {
 	si = s;
 	hasSolver = true;
@@ -22,12 +25,17 @@ OsiSolverInterface* OsiSolver::getSolver() {
 	return si;
 }
 
-int OsiSolver::load_gmpl(char *filename, char *dataname) {
+int OsiSolver::load_gmpl(const char *filename, const char *dataname) {
 	return dataname == NULL ?
 			si->readGMPL(filename) : si->readGMPL(filename, dataname);
 }
 
-OsiSolver::~OsiSolver() {
+int OsiSolver::load_mps(const char * filename, const char * extension) {
+	return si->readMps(filename, extension);
+}
+
+int OsiSolver::load_lp(const char *filename, const double epsilon) {
+	return si->readLp(filename, epsilon);
 }
 
 void OsiSolver::initialise(MipWrapperExpArray& arg) {
@@ -53,11 +61,11 @@ if(	_obj != NULL) {
 }
 
 inline double OsiSolver::manageInfinity(double value) {
-	if (hasSolver)
+	if (hasSolver) {
 		return (isinf(value) ? ((value > 0 ? 1. : -1.) * si->getInfinity()) :
 		value)
 		;
-	else {
+	} else {
 		printf("No OSI set\n");
 		return value;
 	}
@@ -104,13 +112,17 @@ void OsiSolver::printModel() {
 	printf("\n\nMatrix:\n");
 	for (int i = 0; i < matrix->getNumRows(); i++) {
 		CoinShallowPackedVector row = matrix->getVector(i);
+		const double* elements = row.getElements();
+		const int* indices = row.getIndices();
+		int n = row.getNumElements();
+
 		if (row_lb[i] == -1 * si->getInfinity())
 			printf("-infinity <= ");
 		else
 			printf("%.2lf <= ", row_lb[i]);
-		printf("%.2lf * V%d", row.getElements()[0], row.getIndices()[0]);
-		for (int j = 1; j < row.getNumElements(); j++)
-			printf(" + %.2lf * V%d", row.getElements()[j], row.getIndices()[j]);
+		printf("%.2lf * V%d", elements[0], indices[0]);
+		for (int j = 1; j < n; j++)
+			printf(" + %.2lf * V%d", elements[j], indices[j]);
 		if (row_ub[i] == si->getInfinity())
 			printf(" <= infinity\n");
 		else

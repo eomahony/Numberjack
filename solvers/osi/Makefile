@@ -31,6 +31,10 @@ OSILIBS = $(OSIDIR)/Osi/src/Osi/.libs/*.o
 # Can probably do better than this.
 OSICOMPILED = $(OSIDIR)/Osi/src/Osi/.libs/libOsi.so
 
+# Include glpk stuff so load_gmpl will work...
+# must be compiled after osiglpk...
+GLPK = ../osiglpk/glpk-4.47/src/.libs/*.o
+
 # COIN
 COINDIR  = $(OSIDIR)/CoinUtils
 COININCS = -I$(COINDIR)/src
@@ -38,7 +42,7 @@ COINLIBS = $(COINDIR)/src/.libs/*.o
 DYNLINKS = -llapack -lz -lbz2
 
 INCLUDES  = $(OSIINCS) $(COININCS) $(MIPFLAGS)
-LIBRARIES = $(OSILIBS) $(COINLIBS) $(MIPLIBS)
+LIBRARIES = $(OSILIBS) $(COINLIBS) $(MIPLIBS) $(GLPK)
 
 #-----------------------------------------------------------------------------
 # Interface

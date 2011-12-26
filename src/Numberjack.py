@@ -2887,6 +2887,18 @@ class NBJ_STD_Solver(object):
 
     def load_xml(self,file,type=4):
         self.solver.load_xml(file,type)
+
+    def load_mps(self, filename, extension):
+        self.solver.load_mps(filename, extension)
+
+    def load_gmpl(self, filename, data=None):
+        if data==None:
+            self.solver.load_gmpl(filename)
+        else:
+            self.solver.load_gmpl(filename, data)
+            
+    def load_lp(self, filename, epsilon):
+        self.solver.load_lp(filename, epsilon);
     
     def num_vars(self):
         return self.solver.num_vars()

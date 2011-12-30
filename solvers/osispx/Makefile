@@ -29,7 +29,7 @@ OSIFLAGS = -I$(OSIDIR)/src
 
 # Be careful with spaces here.
 OSIVER     = 0.105.2
-OSISRC     = $(OSIDIR)/Osi-$(OSIVER)
+OSISRC     = $(CURDIR)/Osi-$(OSIVER)
 OSIINCS    = -I$(OSISRC)/Osi/src/Osi
 OSISPXINCS = -I$(OSISRC)/Osi/src/OsiSpx
 COININCS   = -I$(OSISRC)/CoinUtils/src/

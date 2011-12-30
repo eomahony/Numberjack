@@ -35,6 +35,9 @@ OSICOMPILED = $(OSIDIR)/Osi/src/Osi/.libs/libOsi.so
 # must be compiled after osiglpk...
 GLPK = ../osiglpk/glpk-4.47/src/.libs/*.o
 
+GLPKVER = 4.47
+GLPKDIR = $(MAINDIR)/solvers/osiglpk/glpk-$(GLPKVER)
+
 # COIN
 COINDIR  = $(OSIDIR)/CoinUtils
 COININCS = -I$(COINDIR)/src
@@ -64,7 +67,8 @@ CXX = g++
 wrapper: $(IFILE) $(WXXFILE) $(OSICOMPILED) $(MIPLIBS) $(SOFILE) $(MAINOBJFILES)
 
 $(OSICOMPILED):
-	cd $(OSIDIR) && make || (./configure && make)
+	#cd $(OSIDIR) && make || (./configure && make)
+	cd $(OSIDIR) && make || (./configure --with-glpk-incdir=$(GLPKDIR)/src/  && make)
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	

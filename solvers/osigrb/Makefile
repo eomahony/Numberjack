@@ -16,7 +16,7 @@ PYLIB = `python-config --cflags`
 # Main Program
 #-----------------------------------------------------------------------------
 
-MAINNAME	=	OsiSpx
+MAINNAME	=	OsiGrb
 MAINOBJ		=	$(MAINNAME).o
 MAINSRC		=	$(addprefix $(SRCDIR)/,$(MAINOBJ:.o=.cpp))
 MAINOBJFILES	=	$(addprefix $(OBJDIR)/,$(MAINOBJ))
@@ -31,25 +31,26 @@ OSIFLAGS = -I$(OSIDIR)/src
 OSIVER     = 0.105.2
 OSISRC     = $(CURDIR)/Osi-$(OSIVER)
 OSIINCS    = -I$(OSISRC)/Osi/src/Osi
-OSISPXINCS = -I$(OSISRC)/Osi/src/OsiSpx
+OSIGRBINCS = -I$(OSISRC)/Osi/src/OsiGrb
 COININCS   = -I$(OSISRC)/CoinUtils/src/
 
 OSILIBS     = $(OSISRC)/Osi/src/Osi/.libs/*.o
-OSISPXLIBS  = $(OSISRC)/Osi/src/OsiSpx/.libs/*.o
-OSICOMPILED = $(OSISRC)/Osi/src/OsiSpx/.libs/libOsiSpx.so
+OSIGRBLIBS  = $(OSISRC)/Osi/src/OsiGrb/.libs/*.o
+OSICOMPILED = $(OSISRC)/Osi/src/OsiGrb/.libs/libOsiGrb.so
 COINLIBS    = $(OSISRC)/CoinUtils/src/.libs/*.o
 
 DYNLINKS = -llapack -lz -lbz2
 
-SPXVER = 1.6.0
-SPXHOST = O.linux.x86_64.gnu.opt
-SPXDIR = $(MAINDIR)/solvers/osispx/soplex-$(SPXVER)
-SPXINCS = -I$(SPXDIR)/src/
-SPXLIBS = $(SPXDIR)/obj/$(SPXHOST)/lib/*.o
+GRBMAJVER = 46
+GRBMINVER = 1
+GRBHOST = linux64
+GRBDIR = $(MAINDIR)/solvers/osigrb/gurobi$(GRBMAJVER)$(GRBMINVER)/$(GRBHOST)/
+GRBINCS = -I$(GRBDIR)/include/
+GRBLIBS = -L$(GRBDIR)/lib/ -lgurobi$(GRBMAJVER) -lm -pthread
 
 DEPSCOMPILED = $(OSIDIR)/obj/Osi.o $(MIPDIR)/obj/MipWrapper.o
-INCLUDES     = $(OSIFLAGS) $(MIPFLAGS) $(OSIINCS) $(OSISPXINCS) $(COININCS) $(SPXINCS) 
-LIBRARIES    = $(OSILIBS) $(OSISPXLIBS) $(COINLIBS) $(SPXLIBS) $(DEPSCOMPILED)
+INCLUDES     = $(OSIFLAGS) $(MIPFLAGS) $(OSIINCS) $(OSIGRBINCS) $(COININCS) $(GRBINCS) 
+LIBRARIES    = $(OSILIBS) $(OSIGRBLIBS) $(COINLIBS) $(DEPSCOMPILED)
 #-----------------------------------------------------------------------------
 # Interface
 #-----------------------------------------------------------------------------
@@ -61,7 +62,7 @@ WOBFILE	= $(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE	= $(PYTHON)/_$(MAINNAME).so
 
 CFLAGS = -g -Wall -ffloat-store -O3 -lm $(DYNLINKS) $(INCLUDES)
-LFLAGS = $(LIBRARIES)
+LFLAGS = $(LIBRARIES) $(GRBLIBS)
 
 #-----------------------------------------------------------------------------
 # Rules
@@ -69,14 +70,10 @@ LFLAGS = $(LIBRARIES)
 
 CXX = g++ 
 
-wrapper: $(IFILE) $(WXXFILE) $(DEPSCOMPILED) $(OBJDIR)/OsiSpx.o $(SPXDIR)/lib/libsoplex.so $(OSICOMPILED) $(SOFILE)
+wrapper: $(IFILE) $(WXXFILE) $(DEPSCOMPILED) $(OBJDIR)/OsiGrb.o $(OSICOMPILED) $(SOFILE)
 
 $(OSICOMPILED):
-	cd $(OSISRC) && (./configure --with-soplex-lib=$(SPXDIR)/src/.libs --with-soplex-incdir=$(SPXDIR)/src/ && make)
-
-# Compile soplex with -fPIC.
-$(SPXDIR)/lib/libsoplex.so:
-	cd $(SPXDIR) && sed -iold 's/^SHARED.*false/SHARED = true/g' Makefile && make 
+	cd $(OSISRC) && (./configure --with-gurobi-incdir=$(GRBDIR)/include --with-gurobi-lib=$(GRBLIBS) && make)
 
 $(MIPDIR)/obj/%.o: $(MIPDIR)/src/MipWrapper.cpp
 	@echo "-> compiling $@"
@@ -114,8 +111,8 @@ $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 $(PYTHON)/%.i: $(SRCDIR)/%.hpp $(OSIDIR)/src/Osi.hpp $(MIPDIR)/src/MipWrapper.hpp
 	-python $(MAINDIR)/tools/mk_subinterface.py osi Osi $< mip MipWrapper
 
-$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(DEPSCOMPILED) $(OSICOMPILED) $(SPXDIR)/lib/libsoplex.so
+$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(DEPSCOMPILED) $(OSICOMPILED)
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(LFLAGS) $(PYTHON)/OsiSpx_wrap.o -o $@
+	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(LFLAGS) $(PYTHON)/OsiGrb_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

@@ -58,7 +58,7 @@ SOFILE	= $(PYTHON)/_$(MAINNAME).so
 
 DYNLINKS = -llapack -lz -lbz2
 
-CFLAGS = -g -Wall -ffloat-store -O3 -lm $(INCLUDES) $(DYNLINKS)
+CFLAGS = -g -Wall -ffloat-store -lm $(INCLUDES) $(DYNLINKS) #-O3
 LFLAGS = $(LIBRARIES)
 DEPSCOMPILED = $(OSIDIR)/obj/Osi.o $(MIPDIR)/obj/MipWrapper.o
 

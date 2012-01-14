@@ -60,7 +60,7 @@ WXXFILE	= $(PYTHON)/$(MAINNAME)_wrap.cxx
 WOBFILE	= $(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE	= $(PYTHON)/_$(MAINNAME).so
 
-CFLAGS = -g -Wall -ffloat-store -O3 -lm $(DYNLINKS) $(INCLUDES)
+CFLAGS = -g -Wall -ffloat-store -lm $(DYNLINKS) $(INCLUDES) #-O3
 LFLAGS = $(LIBRARIES)
 
 #-----------------------------------------------------------------------------

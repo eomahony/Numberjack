@@ -42,7 +42,7 @@ COINLIBS = -llapack -lz -lbz2
 DYLPVER = 1.8.2
 DYLPDIR = DyLP-$(DYLPVER)
 DYLPINCS = -I$(DYLPDIR)/DyLP/src/Dylp/ -I$(DYLPDIR)/DyLP/src/OsiDylp/ -I$(DYLPDIR)/Osi/src/Osi -I$(DYLPDIR)/CoinUtils/src -I$(DYLPDIR)/DyLP/src/DylpStdLib/
-CFLAGS = -g -Wall -ffloat-store -O3 -lm $(COINLIBS) $(MIPFLAGS) $(DYLPINCS) $(OSIFLAGS)
+CFLAGS = -g -Wall -ffloat-store -lm $(COINLIBS) $(MIPFLAGS) $(DYLPINCS) $(OSIFLAGS) #-O3
 
 #-----------------------------------------------------------------------------
 # Rules

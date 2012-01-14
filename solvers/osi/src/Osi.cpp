@@ -2,6 +2,48 @@
 
 using namespace std;
 
+Osi_Expression::Osi_Expression() {}
+Osi_Expression::Osi_Expression(const double lb, const double ub) {
+	this->lb = lb;
+	this->ub = ub;
+	type = "Expression";
+}
+Osi_Expression::~Osi_Expression() {}
+
+Osi_binop::Osi_binop(Osi_Expression *var, double constant) {
+	_var = var;
+	_constant = constant;
+}
+Osi_binop::~Osi_binop() {}
+
+Osi_le::Osi_le(Osi_Expression *var, double constant) :
+		Osi_binop(var, constant) {
+	this->type = "le";
+}
+Osi_le::~Osi_le() {}
+
+Osi_ge::Osi_ge(Osi_Expression *var, double constant) :
+		Osi_binop(var, constant) {
+	this->type = "ge";
+}
+Osi_ge::~Osi_ge() {}
+
+Osi_Sum::Osi_Sum(OsiExpArray& vars, OsiDoubleArray& weights, const int offset) {
+	this->type = "sum";
+	_vars = vars;
+	_weights = weights;
+	_weights.add(offset);
+}
+
+Osi_Sum::~Osi_Sum() {
+}
+
+Osi_Minimise::Osi_Minimise(Osi_Expression *var) {
+	this->type = "minimise";
+	_exp = var;
+}
+Osi_Minimise::~Osi_Minimise() {}
+
 /**************************************************************
  ********************     Solver        ***********************
  **************************************************************/
@@ -38,6 +80,60 @@ int OsiSolver::load_lp(const char *filename, const double epsilon) {
 	return si->readLp(filename, epsilon);
 }
 
+void OsiSolver::build_expressions() {
+	// build expressions*, first element is Sum() for the objective
+	// every pair after that ((1,2),(3,4)) is a le and ge over a
+	// common Sum
+	const double*objCoef = si->getObjCoefficients();
+	const int nvars = si->getNumCols();
+	const double* var_ubs = si->getColUpper();
+	const double* var_lbs = si->getColLower();
+	OsiExpArray vars;
+	OsiDoubleArray coefs;
+	for (int i = 0; i < nvars; i++) {
+		vars.add(new Osi_DoubleVar(var_lbs[i], var_ubs[i], i));
+		coefs.add(objCoef[i]);
+	}
+	expressions.push_back(new Osi_Minimise(new Osi_Sum(vars, coefs, 0)));
+
+	const int nrows = si->getNumRows();
+	const double* row_lowers = si->getRowLower();
+	const double* row_uppers = si->getRowUpper();
+	const CoinPackedMatrix* mtx = si->getMatrixByRow();
+	for (int i = 0; i < nrows; i++) {
+		CoinShallowPackedVector row;
+		try {
+			row = mtx->getVector(i);
+			const double* elements = row.getElements();
+			const int* indices = row.getIndices();
+			OsiExpArray sumvars;
+			OsiDoubleArray coefs;
+			for (int j = 0; j < row.getNumElements(); j++) {
+				sumvars.add(vars.get_item(indices[j]));
+				coefs.add(elements[j]);
+			}
+			Osi_Sum* expr = new Osi_Sum(sumvars, coefs, 0);
+			expressions.push_back(new Osi_le(expr, row_uppers[i]));
+			expressions.push_back(new Osi_ge(expr, row_lowers[i]));
+		} catch (CoinError err) {
+			err.print(true);
+			exit(1);
+		}
+	}
+}
+
+int OsiSolver::num_expression() {
+	if (expressions.empty())
+		build_expressions();
+	return expressions.size();
+}
+Osi_Expression* OsiSolver::get_expression(const int index) {
+	if (expressions.empty()) {
+		build_expressions();
+	}
+	return expressions[index];
+}
+
 void OsiSolver::initialise(MipWrapperExpArray& arg) {
 	initialise();
 }
@@ -62,8 +158,9 @@ if(	_obj != NULL) {
 
 inline double OsiSolver::manageInfinity(double value) {
 	if (hasSolver) {
-		return (isinf(value) ? ((value > 0 ? 1. : -1.) * si->getInfinity()) :
-		value)
+		return (isinf(value)
+		? ((value > 0 ? 1. : -1.) * si->getInfinity())
+		: value)
 		;
 	} else {
 		printf("No OSI set\n");

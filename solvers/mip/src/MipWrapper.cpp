@@ -110,8 +110,8 @@ void MipWrapper_Expression::encode(MipWrapperSolver *solver) {
 	if (!_expr_encoding) {
 		DBG("Creating an encoding %s\n", "");
 
-		_expr_encoding = new MipWrapper_Expression*[get_size()];_expr_encoding
-		-= (int) _lower;
+		_expr_encoding = new MipWrapper_Expression*[get_size()];
+		_expr_encoding -= (int) _lower;
 		LinearConstraint *con = new LinearConstraint(1, 1);
 		for (int i = _lower; i <= _upper; ++i) {
 			_expr_encoding[i] = new MipWrapper_IntVar(0, 1);

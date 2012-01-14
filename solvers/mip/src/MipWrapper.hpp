@@ -475,7 +475,6 @@ public:
 
 	// Value pass back stuff
 	virtual double get_value(void *ptr);
-
 };
 
 #endif

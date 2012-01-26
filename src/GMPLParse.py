@@ -1,6 +1,6 @@
 from Numberjack import *
 import OsiGlpk as Osi, os, sys
-import OsiGlpk
+from OsiCbc import Solver
 
 vars = {}
 
@@ -33,10 +33,10 @@ def getNJPred(mexp):
         print "Error: Failed to parse expression:", type
         exit(1)
         
-def parseModel(gmplfile):
+def parseModel(gmplfile, datafile=None):
     vars = {}
     parser = Osi.Solver(Model())
-    parser.load_gmpl(gmplfile)
+    parser.load_gmpl(gmplfile, datafile)
     prse = parser.solver
 
     model = Model()
@@ -56,16 +56,17 @@ def getNJVar(mexp, ident):
     return vars[ident]
 
 if __name__ == "__main__":
-    gmplfile = sys.argv[-1]
-    if gmplfile[-3:] != 'mod':
-        print "argument's probably wrong, mate"
-    else:
-        #print "Parseing Model", gmplfile
-        model = parseModel(gmplfile)
+    gmplfile = None
+    datafile = None
+    if len(sys.argv) >= 2:
+        gmplfile = sys.argv[1]
+        if len(sys.argv) == 3:
+            datafile = sys.argv[-1]
+        model = parseModel(gmplfile, datafile)
+
         print model
-        s = Osi.Solver(model)
+        s = Solver(model)
         print s.solve()
         print model.variables
-        
         if len(model.get_exprs()) == 0:
             print "ERROR!!!!!!!!!!!!!!!!"

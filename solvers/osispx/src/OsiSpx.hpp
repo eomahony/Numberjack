@@ -7,5 +7,6 @@ private:
 public:
 	OsiSpxSolver();
 	virtual ~OsiSpxSolver();
+	int solve();
 	void setTimeLimit(const int cutoff);
 };

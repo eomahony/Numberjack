@@ -2,47 +2,33 @@
 
 using namespace std;
 
-Osi_Expression::Osi_Expression() {}
 Osi_Expression::Osi_Expression(const double lb, const double ub) {
 	this->lb = lb;
 	this->ub = ub;
 	type = "Expression";
 }
-Osi_Expression::~Osi_Expression() {}
-
 Osi_binop::Osi_binop(Osi_Expression *var, double constant) {
 	_var = var;
 	_constant = constant;
 }
-Osi_binop::~Osi_binop() {}
-
 Osi_le::Osi_le(Osi_Expression *var, double constant) :
 		Osi_binop(var, constant) {
 	this->type = "le";
 }
-Osi_le::~Osi_le() {}
-
 Osi_ge::Osi_ge(Osi_Expression *var, double constant) :
 		Osi_binop(var, constant) {
 	this->type = "ge";
 }
-Osi_ge::~Osi_ge() {}
-
 Osi_Sum::Osi_Sum(OsiExpArray& vars, OsiDoubleArray& weights, const int offset) {
 	this->type = "sum";
 	_vars = vars;
 	_weights = weights;
 	_weights.add(offset);
 }
-
-Osi_Sum::~Osi_Sum() {
-}
-
 Osi_Minimise::Osi_Minimise(Osi_Expression *var) {
 	this->type = "minimise";
 	_exp = var;
 }
-Osi_Minimise::~Osi_Minimise() {}
 
 /**************************************************************
  ********************     Solver        ***********************
@@ -55,9 +41,6 @@ OsiSolver::OsiSolver() {
 	hasSolver = false;
 }
 
-OsiSolver::~OsiSolver() {
-}
-
 void OsiSolver::setSolver(OsiSolverInterface* s) {
 	si = s;
 	hasSolver = true;
@@ -67,72 +50,6 @@ OsiSolverInterface* OsiSolver::getSolver() {
 	return si;
 }
 
-int OsiSolver::load_gmpl(const char *filename, const char *dataname) {
-	return dataname == NULL ?
-			si->readGMPL(filename) : si->readGMPL(filename, dataname);
-}
-
-int OsiSolver::load_mps(const char * filename, const char * extension) {
-	return si->readMps(filename, extension);
-}
-
-int OsiSolver::load_lp(const char *filename, const double epsilon) {
-	return si->readLp(filename, epsilon);
-}
-
-void OsiSolver::build_expressions() {
-	// build expressions*, first element is Sum() for the objective
-	// every pair after that ((1,2),(3,4)) is a le and ge over a
-	// common Sum
-	const double*objCoef = si->getObjCoefficients();
-	const int nvars = si->getNumCols();
-	const double* var_ubs = si->getColUpper();
-	const double* var_lbs = si->getColLower();
-	OsiExpArray vars;
-	OsiDoubleArray coefs;
-	for (int i = 0; i < nvars; i++) {
-		vars.add(new Osi_DoubleVar(var_lbs[i], var_ubs[i], i));
-		coefs.add(objCoef[i]);
-	}
-	expressions.push_back(new Osi_Minimise(new Osi_Sum(vars, coefs, 0)));
-
-	const int nrows = si->getNumRows();
-	const double* row_lowers = si->getRowLower();
-	const double* row_uppers = si->getRowUpper();
-	const CoinPackedMatrix* mtx = si->getMatrixByRow();
-	for (int i = 0; i < nrows; i++) {
-		CoinShallowPackedVector row;
-		try {
-			row = mtx->getVector(i);
-			const double* elements = row.getElements();
-			const int* indices = row.getIndices();
-			OsiExpArray sumvars;
-			OsiDoubleArray coefs;
-			for (int j = 0; j < row.getNumElements(); j++) {
-				sumvars.add(vars.get_item(indices[j]));
-				coefs.add(elements[j]);
-			}
-			Osi_Sum* expr = new Osi_Sum(sumvars, coefs, 0);
-			expressions.push_back(new Osi_le(expr, row_uppers[i]));
-			expressions.push_back(new Osi_ge(expr, row_lowers[i]));
-		} catch (CoinError err) {
-			err.print(true);
-			exit(1);
-		}
-	}
-}
-
-int OsiSolver::num_expression() {
-	if (expressions.empty())
-		build_expressions();
-	return expressions.size();
-}
-Osi_Expression* OsiSolver::get_expression(const int index) {
-	if (expressions.empty()) {
-		build_expressions();
-	}
-	return expressions[index];
-}
 
 void OsiSolver::initialise(MipWrapperExpArray& arg) {
 	initialise();
@@ -144,10 +61,10 @@ void OsiSolver::initialise() {
 
 	col_lb = new double[var_counter];
 	col_ub = new double[var_counter];
-	row_lb = new double[_constraints.size()];row_ub
-	= new double[_constraints.size()];
+	row_lb = new double[_constraints.size()];
+	row_ub = new double[_constraints.size()];
 
-if(	_obj != NULL) {
+	if(_obj != NULL) {
 		for (unsigned int i = 0; i < _obj->_coefficients.size(); i++) {
 			objective[i] = -1.0 * _obj_coef * _obj->_coefficients[i];
 		}
@@ -318,4 +235,67 @@ double OsiSolver::get_value(void *ptr) {
 		printf("No OSI set\n");
 		return -1;
 	}
+}
+
+int OsiSolver::load_gmpl(const char *filename, const char *dataname) {
+	return dataname == NULL ?
+			si->readGMPL(filename) : si->readGMPL(filename, dataname);
+}
+
+int OsiSolver::load_mps(const char * filename, const char * extension) {
+	return si->readMps(filename, extension);
+}
+
+int OsiSolver::load_lp(const char *filename, const double epsilon) {
+	return si->readLp(filename, epsilon);
+}
+
+void OsiSolver::build_expressions() {
+	// build expressions*, first element is Sum() for the objective
+	// every pair after that ((1,2),(3,4)) is a le and ge over a
+	// common Sum
+	const double*objCoef = si->getObjCoefficients();
+	const int ncols = si->getNumCols();
+	const int nrows = si->getNumRows();
+	const double* col_ubs = si->getColUpper();
+	const double* col_lbs = si->getColLower();
+	const double* row_ubs = si->getRowUpper();
+	const double* row_lbs = si->getRowLower();
+	const CoinPackedMatrix* mtx = si->getMatrixByRow();
+
+	// Build objective expression.
+	OsiExpArray vars;
+	OsiDoubleArray coefs;
+	for (int i = 0; i < ncols; i++) {
+		vars.add(new Osi_DoubleVar(col_lbs[i], col_ubs[i], i));
+		coefs.add(objCoef[i]);
+	}
+	expressions.push_back(new Osi_Minimise(new Osi_Sum(vars, coefs, 0)));
+
+	// Build remaining expressions, expr <= upper, expr >= lower
+	for (int i = 0; i < nrows; i++) {
+		CoinShallowPackedVector row = mtx->getVector(i);
+		const double* elements = row.getElements();
+		const int* indices = row.getIndices();
+		OsiExpArray sumvars;
+		OsiDoubleArray coefs;
+		for (int j = 0; j < row.getNumElements(); j++) {
+			sumvars.add(vars.get_item(indices[j]));
+			coefs.add(elements[j]);
+		}
+		Osi_Sum* expr = new Osi_Sum(sumvars, coefs, 0);
+		expressions.push_back(new Osi_le(expr, row_ubs[i]));
+		expressions.push_back(new Osi_ge(expr, row_lbs[i]));
+	}
+}
+int OsiSolver::num_expression() {
+	if (expressions.empty())
+		build_expressions();
+	return expressions.size();
+}
+Osi_Expression* OsiSolver::get_expression(const int index) {
+	if (expressions.empty()) {
+		build_expressions();
+	}
+	return expressions[index];
 }

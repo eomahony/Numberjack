@@ -1,6 +1,5 @@
 from Numberjack import *
 import OsiGlpk as Osi, os, sys
-from OsiCbc import Solver
 
 vars = {}
 
@@ -10,14 +9,14 @@ def getNJExp(mexp, ident):
         return getNJVar(mexp, ident)
     else:
         return getNJPred(mexp)
-            
+
 def getNJPred(mexp):
     exp_type = mexp.get_type()
-    
+
     children = []
     for i in range(mexp.get_arity()):
         children.append(getNJExp(mexp.get_child(i), 0))
-    
+
     if exp_type == "le":
         return children[0] <= mexp.get_parameter(0)
     elif exp_type == "ge":
@@ -32,7 +31,7 @@ def getNJPred(mexp):
     else:
         print "Error: Failed to parse expression:", type
         exit(1)
-        
+
 def parseModel(gmplfile, datafile=None):
     vars = {}
     parser = Osi.Solver(Model())
@@ -45,17 +44,21 @@ def parseModel(gmplfile, datafile=None):
     for i in range(n):
         expr = getNJExp(prse.get_expression(i), 0)
         model.add(expr)
-        
     return model
-    
+
 def getNJVar(mexp, ident):
     ident = mexp.getVariableId();
     if not vars.has_key(ident):
-        vars[ident] = Variable(mexp.get_min(),
-                               mexp.get_max())
+        if mexp.is_continuous():
+            vars[ident] = Variable(mexp.get_min(),
+                                   mexp.get_max())
+        else:
+            vars[ident] = Variable(int(mexp.get_min()),
+                                   int(mexp.get_max()))
     return vars[ident]
 
 if __name__ == "__main__":
+    from OsiClp import Solver
     gmplfile = None
     datafile = None
     if len(sys.argv) >= 2:

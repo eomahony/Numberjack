@@ -5,6 +5,7 @@ using namespace std;
 Osi_Expression::Osi_Expression(const double lb, const double ub) {
 	this->lb = lb;
 	this->ub = ub;
+	this->isReal = true;
 	type = "Expression";
 }
 Osi_binop::Osi_binop(Osi_Expression *var, double constant) {
@@ -267,7 +268,10 @@ void OsiSolver::build_expressions() {
 	OsiExpArray vars;
 	OsiDoubleArray coefs;
 	for (int i = 0; i < ncols; i++) {
-		vars.add(new Osi_DoubleVar(col_lbs[i], col_ubs[i], i));
+		if(si->isContinuous(i))
+			vars.add(new Osi_DoubleVar(col_lbs[i], col_ubs[i], i));
+		else
+			vars.add(new Osi_IntVar(col_lbs[i], col_ubs[i], i));
 		coefs.add(objCoef[i]);
 	}
 	expressions.push_back(new Osi_Minimise(new Osi_Sum(vars, coefs, 0)));

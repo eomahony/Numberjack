@@ -30,11 +30,13 @@ private:
 	double ub;
 public:
 	std::string type;
+	bool isReal;
 	int nbj_ident;
 
 	Osi_Expression() {}
 	virtual ~Osi_Expression() {}
 	Osi_Expression(const double lb, const double ub);
+	bool is_continuous() {return isReal;}
 	const char* get_type() {return type.c_str();}
 	virtual int get_arity() {return 0.;}
 	virtual Osi_Expression* get_child(const int i){return NULL;}
@@ -49,6 +51,13 @@ typedef OsiArray<Osi_Expression*> OsiExpArray;
 class Osi_DoubleVar: public Osi_Expression {
 public:
 	Osi_DoubleVar(const double lb, const double ub, const int ident) : Osi_Expression(lb, ub) {nbj_ident = ident; type="var";}
+	int get_arity() {return 0;}
+	Osi_Expression* get_child(const int i) {return NULL;}
+};
+
+class Osi_IntVar: public Osi_Expression {
+public:
+	Osi_IntVar(const double lb, const double ub, const int ident) : Osi_Expression(lb, ub) {nbj_ident = ident; type="var"; isReal=false;}
 	int get_arity() {return 0;}
 	Osi_Expression* get_child(const int i) {return NULL;}
 };

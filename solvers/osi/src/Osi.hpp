@@ -29,6 +29,7 @@ private:
 	double lb;
 	double ub;
 public:
+	std::string varname;
 	std::string type;
 	bool isReal;
 	int nbj_ident;
@@ -38,6 +39,7 @@ public:
 	Osi_Expression(const double lb, const double ub);
 	bool is_continuous() {return isReal;}
 	const char* get_type() {return type.c_str();}
+	const char* name(){return varname.c_str();}
 	virtual int get_arity() {return 0.;}
 	virtual Osi_Expression* get_child(const int i){return NULL;}
 	virtual double get_parameter(const int i){return 0.;}

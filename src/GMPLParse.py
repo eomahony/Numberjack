@@ -51,10 +51,12 @@ def getNJVar(mexp, ident):
     if not vars.has_key(ident):
         if mexp.is_continuous():
             vars[ident] = Variable(mexp.get_min(),
-                                   mexp.get_max())
+                                   mexp.get_max(),
+                                   mexp.name())
         else:
             vars[ident] = Variable(int(mexp.get_min()),
-                                   int(mexp.get_max()))
+                                   int(mexp.get_max()),
+                                   mexp.name())
     return vars[ident]
 
 if __name__ == "__main__":
@@ -70,6 +72,6 @@ if __name__ == "__main__":
         print model
         s = Solver(model)
         print s.solve()
-        print model.variables
+        print {v.name():v.get_value() for v in model.variables}
         if len(model.get_exprs()) == 0:
             print "ERROR!!!!!!!!!!!!!!!!"

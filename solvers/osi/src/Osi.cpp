@@ -268,10 +268,13 @@ void OsiSolver::build_expressions() {
 	OsiExpArray vars;
 	OsiDoubleArray coefs;
 	for (int i = 0; i < ncols; i++) {
+		Osi_Expression* var;
 		if(si->isContinuous(i))
-			vars.add(new Osi_DoubleVar(col_lbs[i], col_ubs[i], i));
+			var = new Osi_DoubleVar(col_lbs[i], col_ubs[i], i);
 		else
-			vars.add(new Osi_IntVar(col_lbs[i], col_ubs[i], i));
+			var = new Osi_IntVar(col_lbs[i], col_ubs[i], i);
+		var->varname = si->getColName(i, 255);
+		vars.add(var);
 		coefs.add(objCoef[i]);
 	}
 	expressions.push_back(new Osi_Minimise(new Osi_Sum(vars, coefs, 0)));

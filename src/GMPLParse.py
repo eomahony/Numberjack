@@ -32,10 +32,19 @@ def getNJPred(mexp):
         print "Error: Failed to parse expression:", type
         exit(1)
 
-def parseModel(gmplfile, datafile=None):
+def parseModel(filename, filetype='mod', datafile=None):
+    print (filename, filetype, datafile)
     vars = {}
     parser = Osi.Solver(Model())
-    parser.load_gmpl(gmplfile, datafile)
+    if filetype == 'mod':
+        parser.load_gmpl(filename, datafile)
+    elif filetype == 'mps':
+        parser.load_mps(filename, 'mps')
+    elif filetype == 'lp':
+        parser.load_lp(filename, 0)
+    else:
+        print "Unknown filetype, exiting"
+        exit()
     prse = parser.solver
 
     model = Model()
@@ -61,17 +70,25 @@ def getNJVar(mexp, ident):
 
 if __name__ == "__main__":
     from OsiClp import Solver
-    gmplfile = None
-    datafile = None
     if len(sys.argv) >= 2:
-        gmplfile = sys.argv[1]
+        datafile = None
+        filename = sys.argv[1]
+        parts = filename.split('.')
+        extensions = parts[-2:len(parts)]
+        # if file is compressed ignore
+        if extensions[1] == 'gz':
+            filetype = extensions[0]
+        else:
+            filetype = extensions[1]
+
         if len(sys.argv) == 3:
             datafile = sys.argv[-1]
-        model = parseModel(gmplfile, datafile)
+        model = parseModel(filename, filetype, datafile)
+        if len(model.get_exprs()) == 0:
+            print "ERROR!!!!!!!!!!!!!!!!"
+            exit()
 
         print model
         s = Solver(model)
         print s.solve()
         print {v.name():v.get_value() for v in model.variables}
-        if len(model.get_exprs()) == 0:
-            print "ERROR!!!!!!!!!!!!!!!!"

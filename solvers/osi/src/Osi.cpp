@@ -267,6 +267,7 @@ void OsiSolver::build_expressions() {
 	// Build objective expression.
 	OsiExpArray vars;
 	OsiDoubleArray coefs;
+	double sum = 0;
 	for (int i = 0; i < ncols; i++) {
 		Osi_Expression* var;
 		if(si->isContinuous(i))
@@ -276,8 +277,11 @@ void OsiSolver::build_expressions() {
 		var->varname = si->getColName(i, 255);
 		vars.add(var);
 		coefs.add(objCoef[i]);
+		sum += objCoef[i];
 	}
-	expressions.push_back(new Osi_Minimise(new Osi_Sum(vars, coefs, 0)));
+	if(sum != 0) {
+		expressions.push_back(new Osi_Minimise(new Osi_Sum(vars, coefs, 0)));
+	}
 
 	// Build remaining expressions, expr <= upper, expr >= lower
 	for (int i = 0; i < nrows; i++) {

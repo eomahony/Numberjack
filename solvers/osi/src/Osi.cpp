@@ -296,7 +296,7 @@ void OsiSolver::build_expressions() {
 	// Build objective expression.
 	OsiExpArray vars;
 	OsiDoubleArray coefs;
-    double sum = 0;
+	double sum = 0;
 	for (int i = 0; i < ncols; i++) {
 		Osi_Expression* var;
 

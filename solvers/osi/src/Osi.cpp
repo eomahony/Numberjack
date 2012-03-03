@@ -40,6 +40,7 @@ OsiSolver::OsiSolver() {
 	n_rows = 0;
 	matrix = new CoinPackedMatrix(false, 0, 0);
 	hasSolver = false;
+	hasIntegers = false;
 }
 
 void OsiSolver::setSolver(OsiSolverInterface* s) {
@@ -95,6 +96,7 @@ void OsiSolver::add_in_constraint(LinearConstraint *con, double coef) {
 			*index = n_cols++;
 			var->_var = index;
 			if (!var->_continuous) {
+				hasIntegers = true;
 				integer_vars.push_back(*index);
 			}
 		} else {
@@ -160,7 +162,7 @@ bool OsiSolver::prepareSolve() {
 	}
 
 	if (_verbosity == 0) {
-		si->setHintParam(OsiDoReducePrint);
+	//	si->setHintParam(OsiDoReducePrint);
 	} else {
 		printModel();
 	}
@@ -176,17 +178,21 @@ int OsiSolver::solve() {
 		return UNKNOWN;
 	}
 
+	timer.reset();
 	try {
 		si->initialSolve();
 	} catch (CoinError err) {
 		err.print(true);
 	}
 
-	try {
-		si->branchAndBound();
-	} catch (CoinError err) {
-		err.print(true);
+	if(hasIntegers) {
+		try {
+			si->branchAndBound();
+		} catch (CoinError err) {
+			err.print(true);
+		}
 	}
+	time = timer.timeElapsed();
 
 	if (si->isProvenOptimal())
 		return SAT;
@@ -197,7 +203,20 @@ int OsiSolver::solve() {
 }
 
 int OsiSolver::getNextSolution() {
-	return UNSAT;
+	timer.reset();
+	try {
+		si->resolve();
+	} catch (CoinError err) {
+		err.print(true);
+	}
+	time = timer.timeElapsed();
+
+	if (si->isProvenOptimal())
+		return SAT;
+	else if (si->isProvenPrimalInfeasible())
+		return UNSAT;
+	else
+		return UNKNOWN;
 }
 
 void OsiSolver::setTimeLimit(const int cutoff) {
@@ -217,16 +236,19 @@ bool OsiSolver::is_unsat() {
 }
 
 void OsiSolver::printStatistics() {
-	std::cout << "\td Time: " << getTime() << "\tNodes:" << getNodes()
+	std::cout << "\td Time: " << getTime()
+			  << "\tNodes:" << getNodes()
+			  << "\tIterations:" << si->getIterationCount()
 			<< std::endl;
 }
 
 int OsiSolver::getNodes() {
+	std::cout << "Solver does not support reporting of node count" << std::endl;
 	return 0;
 }
 
 double OsiSolver::getTime() {
-	return si->getIterationCount();
+	return time;
 }
 
 double OsiSolver::get_value(void *ptr) {
@@ -237,6 +259,13 @@ double OsiSolver::get_value(void *ptr) {
 		return -1;
 	}
 }
+
+/**
+ * File loading and model building functions.
+ *
+ * These must be used in conjunction with GMPLParse.py as get_value does not
+ * have any variables to reference.
+ */
 
 int OsiSolver::load_gmpl(const char *filename, const char *dataname) {
 	return dataname == NULL ?
@@ -267,8 +296,10 @@ void OsiSolver::build_expressions() {
 	// Build objective expression.
 	OsiExpArray vars;
 	OsiDoubleArray coefs;
+    double sum = 0;
 	for (int i = 0; i < ncols; i++) {
 		Osi_Expression* var;
+
 		if(si->isContinuous(i))
 			var = new Osi_DoubleVar(col_lbs[i], col_ubs[i], i);
 		else
@@ -276,8 +307,14 @@ void OsiSolver::build_expressions() {
 		var->varname = si->getColName(i, 255);
 		vars.add(var);
 		coefs.add(objCoef[i]);
+        sum += objCoef[i];
 	}
-	expressions.push_back(new Osi_Minimise(new Osi_Sum(vars, coefs, 0)));
+	/* Only return an objective if there is one! (Empty objectives were not
+	 * working with some solvers
+	 */
+    if(sum != 0) {
+    	expressions.push_back(new Osi_Minimise(new Osi_Sum(vars, coefs, 0)));
+    }
 
 	// Build remaining expressions, expr <= upper, expr >= lower
 	for (int i = 0; i < nrows; i++) {

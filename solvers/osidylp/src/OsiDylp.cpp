@@ -18,11 +18,13 @@ int OsiDylpSolver::solve() {
 		return UNKNOWN;
 	}
 
+	timer.reset();
 	try {
 		si->initialSolve();
 	} catch (CoinError err) {
 		err.print(true);
 	}
+	time = timer.timeElapsed();
 
 	if (si->isProvenOptimal())
 		return SAT;

@@ -8,6 +8,7 @@
 #include <CoinPackedVector.hpp>
 #include <CoinPackedMatrix.hpp>
 #include <CoinShallowPackedVector.hpp>
+#include <CoinTime.hpp>
 #include <OsiSolverInterface.hpp>
 
 template<class T>
@@ -135,7 +136,10 @@ private:
 	inline double manageInfinity(double value);
 
 public:
+	CoinTimer timer;
+	double time;
 	bool prepareSolve();
+	bool hasIntegers;
 	void setSolver(OsiSolverInterface* s);
 	OsiSolverInterface* getSolver();
 	OsiSolver();

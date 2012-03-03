@@ -19,12 +19,14 @@ int OsiVolSolver::solve() {
 		return UNSAT;
 	}
 
+	timer.reset();
 	try {
 		si->initialSolve();
 	} catch (CoinError err) {
 		err.print(true);
 		return UNSAT;
 	}
+	time = timer.timeElapsed();
 
 	if (si->isProvenOptimal())
 		return SAT;

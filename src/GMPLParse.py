@@ -1,7 +1,10 @@
 from Numberjack import *
-import OsiGlpk as Osi, os, sys
+import os
+import sys
+import OsiGlpk as Osi
 
 vars = {}
+
 
 def getNJExp(mexp, ident):
     exp_type = mexp.get_type()
@@ -9,6 +12,7 @@ def getNJExp(mexp, ident):
         return getNJVar(mexp, ident)
     else:
         return getNJPred(mexp)
+
 
 def getNJPred(mexp):
     exp_type = mexp.get_type()
@@ -32,6 +36,7 @@ def getNJPred(mexp):
         print "Error: Failed to parse expression:", type
         exit(1)
 
+
 def parseModel(filename, filetype='mod', datafile=None):
     print (filename, filetype, datafile)
     vars = {}
@@ -44,7 +49,7 @@ def parseModel(filename, filetype='mod', datafile=None):
         parser.load_lp(filename, 0)
     else:
         print "Unknown filetype, exiting"
-        exit()
+        return None
     prse = parser.solver
 
     model = Model()
@@ -55,9 +60,10 @@ def parseModel(filename, filetype='mod', datafile=None):
         model.add(expr)
     return model
 
+
 def getNJVar(mexp, ident):
-    ident = mexp.getVariableId();
-    if not vars.has_key(ident):
+    ident = mexp.getVariableId()
+    if ident not in vars:
         if mexp.is_continuous():
             vars[ident] = Variable(mexp.get_min(),
                                    mexp.get_max(),
@@ -68,8 +74,9 @@ def getNJVar(mexp, ident):
                                    mexp.name())
     return vars[ident]
 
+
 if __name__ == "__main__":
-    from OsiClp import Solver
+    from SCIP import Solver
     if len(sys.argv) >= 2:
         datafile = None
         filename = sys.argv[1]
@@ -91,4 +98,4 @@ if __name__ == "__main__":
         print model
         s = Solver(model)
         print s.solve()
-        print {v.name():v.get_value() for v in model.variables}
+        print {v.name(): v.get_value() for v in model.variables}

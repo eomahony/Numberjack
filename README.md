@@ -65,7 +65,7 @@ There will be some work done on this, but as it stands you need to have Clp inst
 #### OsiVol
 Download Vol from: [http://www.coin-or.org/download/source/Vol/][osivol]
 
-The version that the Makefile presumes is Vol-1.3.2. If you download a different version the line `VOLVER = 1.14.5` will have to be changed.
+The version that the Makefile presumes is Vol-1.3.2. If you download a different version the line `VOLVER = 1.3.2` will have to be changed.
 
 #### OsiDylp
 Download Dylp from: [http://www.coin-or.org/download/source/Dylp/][osidylp]
@@ -80,7 +80,7 @@ The version that the Makefile presumes is soplex-1.6.0. If you download a differ
 #### OsiGlpk
 Download Glpk from: [http://ftp.gnu.org/gnu/glpk/][glpk]
 
-The version that the Makefile presumes is glpk-4.47. If you download a different version the line `CLPVER = 4.47` will have to be changed.
+The version that the Makefile presumes is glpk-4.47. If you download a different version the line `GLPKVER = 4.47` will have to be changed.
 
 [njhome]: http://numberjack.ucc.ie
 [zibopt]: http://zibopt.zib.de/download.shtml
@@ -88,6 +88,6 @@ The version that the Makefile presumes is glpk-4.47. If you download a different
 [osiclp]: http://www.coin-or.org/download/source/Clp/
 [osicbc]: http://www.coin-or.org/download/source/Cbc/
 [osivol]: http://www.coin-or.org/download/source/Vol/
-[osidylp]: http://www.coin-or.org/download/source/Dylp/
+[osidylp]: http://www.coin-or.org/download/source/DyLP/
 [soplex]: http://soplex.zib.de/download.shtml
 [glpk]: http://ftp.gnu.org/gnu/glpk/

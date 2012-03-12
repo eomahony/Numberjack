@@ -238,13 +238,11 @@ bool OsiSolver::is_unsat() {
 void OsiSolver::printStatistics() {
 	std::cout << "\td Time: " << getTime()
 			  << "\tNodes:" << getNodes()
-			  << "\tIterations:" << si->getIterationCount()
 			<< std::endl;
 }
 
 int OsiSolver::getNodes() {
-	std::cout << "Solver does not support reporting of node count" << std::endl;
-	return 0;
+	return si->getIterationCount();
 }
 
 double OsiSolver::getTime() {

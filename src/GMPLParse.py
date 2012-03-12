@@ -13,6 +13,8 @@ def getNJExp(mexp, ident):
     else:
         return getNJPred(mexp)
 
+def ifwhole(val):
+    return val if val % 1 != 0 else int(val)
 
 def getNJPred(mexp):
     exp_type = mexp.get_type()
@@ -22,13 +24,13 @@ def getNJPred(mexp):
         children.append(getNJExp(mexp.get_child(i), 0))
 
     if exp_type == "le":
-        return children[0] <= mexp.get_parameter(0)
+        return children[0] <= ifwhole(mexp.get_parameter(0))
     elif exp_type == "ge":
-        return children[0] >= mexp.get_parameter(0)
+        return children[0] >= ifwhole(mexp.get_parameter(0))
     elif exp_type == "sum":
         weights = []
         for i in range(mexp.get_arity()):
-            weights.append(mexp.get_parameter(i))
+            weights.append(ifwhole(mexp.get_parameter(i)))
         return Sum(children, weights)
     elif exp_type == "minimise":
         return Minimise(children[0])
@@ -76,7 +78,7 @@ def getNJVar(mexp, ident):
 
 
 if __name__ == "__main__":
-    from SCIP import Solver
+    from Mistral import Solver
     if len(sys.argv) >= 2:
         datafile = None
         filename = sys.argv[1]
@@ -95,7 +97,7 @@ if __name__ == "__main__":
             print "ERROR!!!!!!!!!!!!!!!!"
             exit()
 
-        print model
+        #print model
         s = Solver(model)
         print s.solve()
         print {v.name(): v.get_value() for v in model.variables}

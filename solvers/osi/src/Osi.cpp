@@ -67,9 +67,24 @@ void OsiSolver::initialise() {
 	row_ub = new double[_constraints.size()];
 
 	if(_obj != NULL) {
-		for (unsigned int i = 0; i < _obj->_coefficients.size(); i++) {
+		for (unsigned int i = 0; i < _obj->_variables.size(); ++i) {
+			int *index = new int;
+			MipWrapper_Expression *var = _obj->_variables[i];
+			if (var->_var == NULL) {
+				*index = n_cols++;
+				var->_var = index;
+				if (!var->_continuous) {
+					hasIntegers = true;
+					integer_vars.push_back(*index);
+				}
+			} else {
+				index = (int*) var->_var;
+			}
+			col_lb[*index] = manageInfinity(var->_lower);
+			col_ub[*index] = manageInfinity(var->_upper);
 			objective[i] = -1.0 * _obj_coef * _obj->_coefficients[i];
 		}
+
 	}
 	for (unsigned int i = 0; i < _constraints.size(); ++i)
 		add_in_constraint(_constraints[i]);

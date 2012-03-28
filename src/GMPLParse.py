@@ -2,9 +2,9 @@ from Numberjack import *
 import os
 import sys
 import OsiGlpk as Osi
+from collections import OrderedDict
 
-vars = {}
-
+vars = OrderedDict()
 
 def getNJExp(mexp, ident):
     exp_type = mexp.get_type()
@@ -14,7 +14,10 @@ def getNJExp(mexp, ident):
         return getNJPred(mexp)
 
 def ifwhole(val):
-    return val if val % 1 != 0 else int(val)
+    if val % 1 != 0 or type(int(val)) == long:
+        return val
+    else:
+        return int(val)
 
 def getNJPred(mexp):
     exp_type = mexp.get_type()
@@ -78,7 +81,7 @@ def getNJVar(mexp, ident):
 
 
 if __name__ == "__main__":
-    from Mistral import Solver
+    from OsiClp import Solver
     if len(sys.argv) >= 2:
         datafile = None
         filename = sys.argv[1]
@@ -97,7 +100,6 @@ if __name__ == "__main__":
             print "ERROR!!!!!!!!!!!!!!!!"
             exit()
 
-        #print model
         s = Solver(model)
         print s.solve()
-        print {v.name(): v.get_value() for v in model.variables}
+        print [(v.name(), v.get_value()) for v in model.variables]

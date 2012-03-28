@@ -317,17 +317,19 @@ void OsiSolver::build_expressions() {
 	// Build remaining expressions, expr <= upper, expr >= lower
 	for (int i = 0; i < nrows; i++) {
 		CoinShallowPackedVector row = mtx->getVector(i);
-		const double* elements = row.getElements();
-		const int* indices = row.getIndices();
-		OsiExpArray sumvars;
-		OsiDoubleArray coefs;
-		for (int j = 0; j < row.getNumElements(); j++) {
-			sumvars.add(vars.get_item(indices[j]));
-			coefs.add(elements[j]);
+		if(row.getNumElements() > 0) {
+			const double* elements = row.getElements();
+			const int* indices = row.getIndices();
+			OsiExpArray sumvars;
+			OsiDoubleArray coefs;
+			for (int j = 0; j < row.getNumElements(); j++) {
+				sumvars.add(vars.get_item(indices[j]));
+				coefs.add(elements[j]);
+			}
+			Osi_Sum* expr = new Osi_Sum(sumvars, coefs, 0);
+			expressions.push_back(new Osi_le(expr, row_ubs[i]));
+			expressions.push_back(new Osi_ge(expr, row_lbs[i]));
 		}
-		Osi_Sum* expr = new Osi_Sum(sumvars, coefs, 0);
-		expressions.push_back(new Osi_le(expr, row_ubs[i]));
-		expressions.push_back(new Osi_ge(expr, row_lbs[i]));
 	}
 }
 int OsiSolver::num_expression() {

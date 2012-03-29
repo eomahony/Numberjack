@@ -78,8 +78,8 @@ class MIPParser(object):
     def getNJVar(self, mexp, ident):
         ident = mexp.getVariableId()
         if ident not in self.vars:
-            lb = mexp.get_min() if mexp.is_continuous() else int(mexp.get_min)
-            ub = mexp.get_max() if mexp.is_continuous() else int(mexp.get_max)
+            lb = mexp.get_min() if mexp.is_continuous() else int(mexp.get_min())
+            ub = mexp.get_max() if mexp.is_continuous() else int(mexp.get_max())
             self.vars[ident] = Variable(lb, ub, mexp.name())
         return self.vars[ident]
 
@@ -87,13 +87,25 @@ class MIPParser(object):
 if __name__ == "__main__":
     import os
     import sys
-    if len(sys.argv) >= 2:
-        filename = sys.argv[1]
-        datafile = sys.argv[2] if len(sys.argv) == 3 else None
+    from optparse import OptionParser
 
-        parser = MIPParser(filename, datafile, 'OsiCbc')
-        (solved, model) = parser.solve()
-        if solved:
-            print [(v.name(), v.get_value()) for v in model.variables]
-        else:
-            print "UNSAT"
+    opts = OptionParser()
+    opts.add_option("--data", "-d", help="data file for gmpl")
+    opts.add_option("--solver", "-s", type="choice", choices=["Mistral",
+        "MiniSat", "Walksat", "SCIP", "OsiClp", "OsiCbc", "OsiGlpk",
+        "OsiVol", "OsiDylp", "OsiSpx", "OsiGrb", "OsiSym"],
+        help="Mistral|MiniSat|Walksat|SCIP|OsiClp|OsiCbc|OsiGlpk|OsiVol|OsiDylp|OsiSpx|OsiGrb|OsiSym")
+    
+    options, arguments = opts.parse_args()
+
+    datafile = options.data if options.data else None
+    solver_name = options.solver if options.solver else "OsiCbc"
+
+    filename = sys.argv[1]
+
+    parser = MIPParser(filename, datafile, solver_name)
+    (solved, model) = parser.solve()
+    if solved:
+        print [v.get_value() for v in model.variables]
+    else:
+        print "UNSAT"

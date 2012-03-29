@@ -239,7 +239,7 @@ class Expression(object):
         if self.has_children():
             for child in self.children:
                 tc = type(child)
-                if tc not in [int, float, str, bool]:
+                if tc not in [int, long, float, str, bool]:
                     child.close()
 
     def get_domain(self, solver=None):
@@ -527,7 +527,7 @@ class Model(object):
         ## \internal - add the Expression tree to the model and assign identifiers to the nodes
         # this expression is new, choose an identifiant for it
         te = type(exp)
-        if te not in [int, float, str, bool]:
+        if te not in [int, long, float, str, bool]:
             ## THIS IS BUGGY, WE CANNOT ADD THE SAME VARIABLE TO SEVERAL MODELS
             if exp.ident == -1:            
             #if exp.mod != self:
@@ -675,10 +675,10 @@ class Variable(Expression):
 
         tlb = type(lb)
         tub = type(ub)
-        if tlb not in [int, float, str]:
+        if tlb not in [int, long, float, str]:
             print "Warning lower bound of %s is not an int or a float or a string" % name
             exit(1)
-        elif tub not in [int, float, str]:
+        elif tub not in [int, long, float, str]:
             print "Warning upper bound of %s is not an int or a float or a string" % name
             exit(1)
         elif type(name) is not str:
@@ -2479,7 +2479,7 @@ class NBJ_STD_Solver(object):
             return self.model.string_map[expr]
         if type(expr) is bool:
             return int(expr)
-        if type(expr) is int or type(expr) is float:
+        if type(expr) in [int, long, float]:
             # It is a constant, handle appropriatly
             return expr
         #if not expr.has_children():

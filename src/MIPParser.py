@@ -41,7 +41,8 @@ class MIPParser(object):
         if self.model == None:
             self.parse_model()
         solver = self.model.load(self.solver_name)
-        return (solver.solve(), self.model)
+        solver.solve()
+        return (solver, self.model)
 
     def getNJExp(self, mexp, ident):
         exp_type = mexp.get_type()
@@ -90,6 +91,7 @@ if __name__ == "__main__":
     from optparse import OptionParser
 
     opts = OptionParser()
+    opts.set_usage('Usage: FILE... [OPTION]...\n')
     opts.add_option("--data", "-d", help="data file for gmpl")
     opts.add_option("--solver", "-s", type="choice", choices=["Mistral",
         "MiniSat", "Walksat", "SCIP", "OsiClp", "OsiCbc", "OsiGlpk",
@@ -100,12 +102,23 @@ if __name__ == "__main__":
 
     datafile = options.data if options.data else None
     solver_name = options.solver if options.solver else "OsiCbc"
-
-    filename = sys.argv[1]
-
-    parser = MIPParser(filename, datafile, solver_name)
-    (solved, model) = parser.solve()
-    if solved:
-        print [v.get_value() for v in model.variables]
+    
+    if len(sys.argv) > 1:
+        filename = sys.argv[1]
+    
+        parser = MIPParser(filename, datafile, solver_name)
+        (solver, model) = parser.solve()
+        if solver.is_sat():
+            nodes = solver.getNodes()
+            time = solver.getTime()
+            nodesps = nodes/time if time > 0 else nodes
+            
+            print("c Result                      :         %11s" % 'SAT')
+            print("c #Nodes                      :         %11s" % nodes)
+            print("c Solving time (in sec.)      :         %11s" % time)
+            print("c Nodes/second                :         %11s" % nodesps)
+            print 'v', ' '.join(str(v.get_value()) for v in model.variables)
+        else:
+            print "UNSAT"
     else:
-        print "UNSAT"
+        opts.print_help()

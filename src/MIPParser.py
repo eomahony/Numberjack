@@ -2,11 +2,13 @@ from Numberjack import *
 
 
 class MIPParser(object):
-    def __init__(self, model_path, data_path=None, solver_name=None):
+    def __init__(self, model_path, data_path=None,
+                       solver_name=None, verbose=0):
         self.model_path = model_path
         self.data_path = data_path
         self.solver_name = solver_name
         self.model = None
+        self.verbose = verbose
         self.vars = {}
 
     def parse_model(self):
@@ -41,6 +43,7 @@ class MIPParser(object):
         if self.model == None:
             self.parse_model()
         solver = self.model.load(self.solver_name)
+        solver.setVerbosity(self.verbose)
         solver.solve()
         return (solver, self.model)
 
@@ -97,16 +100,18 @@ if __name__ == "__main__":
         "MiniSat", "Walksat", "SCIP", "OsiClp", "OsiCbc", "OsiGlpk",
         "OsiVol", "OsiDylp", "OsiSpx", "OsiGrb", "OsiSym"],
         help="Mistral|MiniSat|Walksat|SCIP|OsiClp|OsiCbc|OsiGlpk|OsiVol|OsiDylp|OsiSpx|OsiGrb|OsiSym")
+    opts.add_option("--verbosity", "-v", help="verbosity level for solve")
     
     options, arguments = opts.parse_args()
 
     datafile = options.data if options.data else None
     solver_name = options.solver if options.solver else "OsiCbc"
+    verbose = int(options.verbosity) if options.verbosity else 0
     
     if len(sys.argv) > 1:
         filename = sys.argv[1]
     
-        parser = MIPParser(filename, datafile, solver_name)
+        parser = MIPParser(filename, datafile, solver_name, verbose)
         (solver, model) = parser.solve()
         if solver.is_sat():
             nodes = solver.getNodes()

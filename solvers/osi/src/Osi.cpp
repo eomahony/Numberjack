@@ -319,6 +319,7 @@ void OsiSolver::build_expressions() {
 			var = new Osi_IntVar(col_lbs[i], col_ubs[i], i);
 		var->varname = si->getColName(i, 255);
 		vars.add(var);
+		expressions.push_back(var);
 		coefs.add(objCoef[i]);
         sum += objCoef[i];
 	}
@@ -342,8 +343,10 @@ void OsiSolver::build_expressions() {
 				coefs.add(elements[j]);
 			}
 			Osi_Sum* expr = new Osi_Sum(sumvars, coefs, 0);
-			expressions.push_back(new Osi_le(expr, row_ubs[i]));
-			expressions.push_back(new Osi_ge(expr, row_lbs[i]));
+            if(!(row_ubs[i] == si->getInfinity()))
+    			expressions.push_back(new Osi_le(expr, row_ubs[i]));
+            if(!(row_lbs[i] == -1.0 * si->getInfinity()))
+                expressions.push_back(new Osi_ge(expr, row_lbs[i]));
 		}
 	}
 }

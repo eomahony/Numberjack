@@ -3,12 +3,13 @@ from Numberjack import *
 
 class MIPParser(object):
     def __init__(self, model_path, data_path=None,
-                       solver_name=None, verbose=0):
+                       solver_name=None, verbose=0, subsolver=None):
         self.model_path = model_path
         self.data_path = data_path
-        self.solver_name = solver_name
+        self.solver_name = solver_name if subsolver == None else 'OsiCbc'
         self.model = None
         self.verbose = verbose
+        self.subsolver = subsolver
         self.vars = {}
 
     def parse_model(self):
@@ -44,6 +45,10 @@ class MIPParser(object):
             self.parse_model()
         solver = self.model.load(self.solver_name)
         solver.setVerbosity(self.verbose)
+        if self.subsolver != None:
+            subsolver_module = __import__(self.subsolver)
+            empty_solver = subsolver_module.Solver(Model())
+            solver.solver.setLPRelaxationSolver(empty_solver.solver)
         solver.solve()
         return (solver, self.model)
 
@@ -100,24 +105,28 @@ if __name__ == "__main__":
         "MiniSat", "Walksat", "SCIP", "OsiClp", "OsiCbc", "OsiGlpk",
         "OsiVol", "OsiDylp", "OsiSpx", "OsiGrb", "OsiSym"],
         help="Mistral|MiniSat|Walksat|SCIP|OsiClp|OsiCbc|OsiGlpk|OsiVol|OsiDylp|OsiSpx|OsiGrb|OsiSym")
+    opts.add_option("--lpsolver", "-l", type="choice", choices=["OsiClp", "OsiGlpk", "OsiVol",
+        "OsiDylp", "OsiSpx"],
+        help="select LP solver for Cbc(Note: ignores -s option): OsiClp|OsiGlpk|OsiVol|OsiDylp|OsiSpx")
     opts.add_option("--verbosity", "-v", help="verbosity level for solve")
-    
+
     options, arguments = opts.parse_args()
 
     datafile = options.data if options.data else None
     solver_name = options.solver if options.solver else "OsiCbc"
     verbose = int(options.verbosity) if options.verbosity else 0
-    
+    subsolver = options.lpsolver if options.lpsolver else None
+
     if len(sys.argv) > 1:
         filename = sys.argv[1]
-    
-        parser = MIPParser(filename, datafile, solver_name, verbose)
+
+        parser = MIPParser(filename, datafile, solver_name, verbose, subsolver)
         (solver, model) = parser.solve()
         if solver.is_sat():
             nodes = solver.getNodes()
             time = solver.getTime()
             nodesps = nodes/time if time > 0 else nodes
-            
+
             print("c Result                      :         %11s" % 'SAT')
             print("c #Nodes                      :         %11s" % nodes)
             print("c Solving time (in sec.)      :         %11s" % time)

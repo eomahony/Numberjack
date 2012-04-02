@@ -37,6 +37,8 @@ class MIPParser(object):
         n = prse.num_expression()
         for i in range(n):
             expr = self.getNJExp(prse.get_expression(i), 0)
+            if self.verbose > 0:
+                print expr
             self.model.add(expr)
         return self.model
 
@@ -99,7 +101,7 @@ if __name__ == "__main__":
     from optparse import OptionParser
 
     opts = OptionParser()
-    opts.set_usage('Usage: FILE... [OPTION]...\n')
+    opts.set_usage('Usage: FILE... [OPTION]...')
     opts.add_option("--data", "-d", help="data file for gmpl")
     opts.add_option("--solver", "-s", type="choice", choices=["Mistral",
         "MiniSat", "Walksat", "SCIP", "OsiClp", "OsiCbc", "OsiGlpk",

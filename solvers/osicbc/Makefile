@@ -8,7 +8,7 @@ OBJDIR = ./obj
 SRCDIR = ./src
 PYTHON = ./python
 SWIG = swig
-PYLIB = `python-config --cflags` 
+PYLIB = `python-config --cflags`
 
 #-----------------------------------------------------------------------------
 # Main Program
@@ -44,8 +44,8 @@ OSISRCLIBS    = $(CBCDIR)/Osi/src/Osi/.libs/*.o
 CBCLIBS    = $(CBCDIR)/Cbc/src/.libs/*.o
 OSICBCLIBS = $(CBCDIR)/Cbc/src/OsiCbc/.libs/*.o
 
-INCLUDES  = $(CLPINC) $(CBCINC) $(OSICBCINC) $(COININC) $(OSIINC) $(OSIFLAGS) $(MIPFLAGS) 
-LIBRARIES = $(CLPLIBS) $(OSICLPLIBS) $(CGLLIBS) $(COINLIBS) $(CBCLIBS) $(OSISRCLIBS) $(OSICBCLIBS) 
+INCLUDES  = $(CLPINC) $(CBCINC) $(OSICBCINC) $(COININC) $(OSIINC) $(OSIFLAGS) $(MIPFLAGS)
+LIBRARIES = $(CLPLIBS) $(OSICLPLIBS) $(CGLLIBS) $(COINLIBS) $(CBCLIBS) $(OSISRCLIBS) $(OSICBCLIBS)
 
 #-----------------------------------------------------------------------------
 # Interface
@@ -58,14 +58,14 @@ SOFILE	= $(PYTHON)/_$(MAINNAME).so
 
 DYNLINKS = -llapack -lz -lbz2
 
-CFLAGS = -g -Wall -ffloat-store -lm $(INCLUDES) $(DYNLINKS) #-O3
+CFLAGS = -Wall -ffloat-store -lm $(INCLUDES) $(DYNLINKS) -O3 #-g
 LFLAGS = $(LIBRARIES)
 DEPSCOMPILED = $(OSIDIR)/obj/Osi.o $(MIPDIR)/obj/MipWrapper.o
 
 #-----------------------------------------------------------------------------
 # Rules
 #-----------------------------------------------------------------------------
-CXX = g++ 
+CXX = g++
 
 wrapper: $(IFILE) $(WXXFILE) $(DEPSCOMPILED) $(OBJDIR)/OsiCbc.o $(CBCDIR)/Cbc/src/.libs/libCbc.so $(SOFILE)
 
@@ -74,16 +74,16 @@ $(CBCDIR)/Cbc/src/.libs/libCbc.so:
 
 $(MIPDIR)/obj/%.o: $(MIPDIR)/src/MipWrapper.cpp
 	@echo "-> compiling $@"
-	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
 
 $(OSIDIR)/obj/%.o: $(OSIDIR)/src/Osi.cpp
 	@echo "-> compiling $@"
-	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
 
 install_python:
 
 install_python: wrapper
-	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
+	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install
 
 clean_swig:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
@@ -96,14 +96,14 @@ clean:
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp $(OBJDIR)/OsiCbc.o $(CBCDIR)/Cbc/src/.libs/libCbc.so
 		@echo "-> compiling $@"
-		$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+		$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 		@echo "-> compiling $@"
 		$(CXX) $(CFLAGS) -I$(SRCDIR) -I$(PYLIB) -fPIC -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i $(OBJDIR)/OsiCbc.o $(CBCDIR)/Cbc/src/.libs/libCbc.so
-	@echo "-> compiling $@"	
+	@echo "-> compiling $@"
 	$(SWIG) -c++ -python $<
 	python $(MAINDIR)/tools/finalize.py $(<:.i=.py) MipWrapper
 

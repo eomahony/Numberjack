@@ -10,7 +10,7 @@ OBJDIR = ./obj
 SRCDIR = ./src
 PYTHON = ./python
 SWIG = swig
-PYLIB = `python-config --cflags` 
+PYLIB = `python-config --cflags`
 
 #-----------------------------------------------------------------------------
 # Main Program
@@ -42,29 +42,29 @@ COINLIBS = -llapack -lz -lbz2
 DYLPVER = 1.8.2
 DYLPDIR = DyLP-$(DYLPVER)
 DYLPINCS = -I$(DYLPDIR)/DyLP/src/Dylp/ -I$(DYLPDIR)/DyLP/src/OsiDylp/ -I$(DYLPDIR)/Osi/src/Osi -I$(DYLPDIR)/CoinUtils/src -I$(DYLPDIR)/DyLP/src/DylpStdLib/
-CFLAGS = -g -Wall -ffloat-store -lm $(COINLIBS) $(MIPFLAGS) $(DYLPINCS) $(OSIFLAGS) #-O3
+CFLAGS = -Wall -ffloat-store -lm $(COINLIBS) $(MIPFLAGS) $(DYLPINCS) $(OSIFLAGS) -O3 #-g
 
 #-----------------------------------------------------------------------------
 # Rules
 #-----------------------------------------------------------------------------
 
-CXX = g++ 
+CXX = g++
 
-wrapper: $(IFILE) $(WXXFILE) $(DYLPDIR)/DyLP/src/Dylp/.libs/libDylp.so $(OSIDIR)/obj/Osi.o $(MIPDIR)/obj/MipWrapper.o $(OBJDIR)/OsiDylp.o $(SOFILE) 
+wrapper: $(IFILE) $(WXXFILE) $(DYLPDIR)/DyLP/src/Dylp/.libs/libDylp.so $(OSIDIR)/obj/Osi.o $(MIPDIR)/obj/MipWrapper.o $(OBJDIR)/OsiDylp.o $(SOFILE)
 
 $(DYLPDIR)/DyLP/src/Dylp/.libs/libDylp.so:
 	cd $(DYLPDIR) && make || (./configure && make)
 
 install_python: wrapper
-	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
+	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install
 
 $(MIPDIR)/obj/%.o: $(MIPDIR)/src/MipWrapper.cpp
 	@echo "-> compiling $@"
-	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
 
 $(OSIDIR)/obj/%.o: $(OSIDIR)/src/Osi.cpp
 	@echo "-> compiling $@"
-	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
 
 clean_swig:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
@@ -77,14 +77,14 @@ clean:
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 		@echo "-> compiling $@"
-		$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+		$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 		@echo "-> compiling $@"
 		$(CXX) $(CFLAGS) -I$(SRCDIR) -I$(PYLIB) -fPIC -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
-	@echo "-> compiling $@"	
+	@echo "-> compiling $@"
 	$(SWIG) -c++ -python $<
 	python $(MAINDIR)/tools/finalize.py $(<:.i=.py) MipWrapper
 

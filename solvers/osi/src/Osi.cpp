@@ -148,7 +148,7 @@ void OsiSolver::printModel() {
 		const int* indices = row.getIndices();
 		int n = row.getNumElements();
 
-		if (row_lb[i] == -1 * si->getInfinity())
+		if (row_lb[i] == -1.0 * si->getInfinity())
 			printf("-infinity <= ");
 		else
 			printf("%.2lf <= ", row_lb[i]);
@@ -177,7 +177,7 @@ bool OsiSolver::prepareSolve() {
 	}
 
 	if (_verbosity == 0) {
-	//	si->setHintParam(OsiDoReducePrint);
+		si->setHintParam(OsiDoReducePrint);
 	} else {
 		printModel();
 	}

@@ -1587,8 +1587,8 @@ class Table(Predicate):
     def printTable(self):
         print self.parameters[1]
         for var in self.children:
-            var.print_me(),
-        print '\n', self.parameters[0]
+            print var,
+        print '\n ('+self.parameters[1]+')', self.parameters[0]
 
 
 

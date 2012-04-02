@@ -1586,7 +1586,7 @@ class Table(Predicate):
         print self.parameters[1]
         for var in self.children:
             print var,
-        print '\n ('+self.parameter[1]+')', self.parameters[0]
+        print '\n ('+self.parameters[1]+')', self.parameters[0]
 
 
 

@@ -27,6 +27,10 @@ class MIPParser(object):
             parser.load_mps(self.model_path, 'mps')
         elif filetype == 'lp':
             parser.load_lp(self.model_path, 0)
+        elif filetype == 'njm':
+            import pickle
+            self.model = pickle.load(open(self.model_path))
+            return self.model
         else:
             print "Unknown filetype, Supported formats are [gmpl, mps, mps.gz, lp], exiting"
             return None
@@ -53,6 +57,19 @@ class MIPParser(object):
             solver.solver.setLPRelaxationSolver(empty_solver.solver)
         solver.solve()
         return (solver, self.model)
+
+    def save(self):
+        import pickle
+        pickle.dump(self.model, open(self.model_path + '.njm', 'w'))
+        print "Model saved to", self.model_path + '.njm'
+
+    def getNJVar(self, mexp, ident):
+        ident = mexp.getVariableId()
+        if ident not in self.vars:
+            lb = mexp.get_min() if mexp.is_continuous() else int(mexp.get_min())
+            ub = mexp.get_max() if mexp.is_continuous() else int(mexp.get_max())
+            self.vars[ident] = Variable(lb, ub, mexp.name())
+        return self.vars[ident]
 
     def getNJExp(self, mexp, ident):
         exp_type = mexp.get_type()
@@ -86,15 +103,6 @@ class MIPParser(object):
             print "Error: Failed to parse expression:", type
             exit(1)
 
-    def getNJVar(self, mexp, ident):
-        ident = mexp.getVariableId()
-        if ident not in self.vars:
-            lb = mexp.get_min() if mexp.is_continuous() else int(mexp.get_min())
-            ub = mexp.get_max() if mexp.is_continuous() else int(mexp.get_max())
-            self.vars[ident] = Variable(lb, ub, mexp.name())
-        return self.vars[ident]
-
-
 if __name__ == "__main__":
     import os
     import sys
@@ -110,31 +118,43 @@ if __name__ == "__main__":
     opts.add_option("--lpsolver", "-l", type="choice", choices=["OsiClp", "OsiGlpk", "OsiVol",
         "OsiDylp", "OsiSpx"],
         help="select LP solver for Cbc(Note: ignores -s option): OsiClp|OsiGlpk|OsiVol|OsiDylp|OsiSpx")
+    opts.add_option("--save", "-p", action="store_true", help="save the Numberjack Model")
     opts.add_option("--verbosity", "-v", help="verbosity level for solve")
 
     options, arguments = opts.parse_args()
 
     datafile = options.data if options.data else None
-    solver_name = options.solver if options.solver else "OsiCbc"
+    solver_name = None
+    subsolver = None
+    if options.lpsolver:
+        solver_name = 'OsiCbc'
+        subsolver = options.lpsolver
+    else:
+        if options.solver:
+            solver_name = options.solver
     verbose = int(options.verbosity) if options.verbosity else 0
-    subsolver = options.lpsolver if options.lpsolver else None
+    save = options.save if options.save else False
 
     if len(sys.argv) > 1:
         filename = sys.argv[1]
 
         parser = MIPParser(filename, datafile, solver_name, verbose, subsolver)
-        (solver, model) = parser.solve()
-        if solver.is_sat():
-            nodes = solver.getNodes()
-            time = solver.getTime()
-            nodesps = nodes/time if time > 0 else nodes
+        parser.parse_model()
+        if save:
+            parser.save()
+        if solver_name != None:
+            (solver, model) = parser.solve()
+            if solver.is_sat():
+                nodes = solver.getNodes()
+                time = solver.getTime()
+                nodesps = nodes/time if time > 0 else nodes
 
-            print("c Result                      :         %11s" % 'SAT')
-            print("c #Nodes                      :         %11s" % nodes)
-            print("c Solving time (in sec.)      :         %11s" % time)
-            print("c Nodes/second                :         %11s" % nodesps)
-            print 'v', ' '.join(str(v.get_value()) for v in model.variables)
-        else:
-            print "UNSAT"
+                print("c Result                      :         %11s" % 'SAT')
+                print("c #Nodes                      :         %11s" % nodes)
+                print("c Solving time (in sec.)      :         %11s" % time)
+                print("c Nodes/second                :         %11s" % nodesps)
+                print 'v', ' '.join(str(v.get_value()) for v in model.variables)
+            else:
+                print "UNSAT"
     else:
         opts.print_help()

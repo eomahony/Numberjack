@@ -28,8 +28,8 @@ class MIPParser(object):
         elif filetype == 'lp':
             parser.load_lp(self.model_path, 0)
         elif filetype == 'njm':
-            import pickle
-            self.model = pickle.load(open(self.model_path))
+            import cPickle
+            self.model = cPickle.load(open(self.model_path))
             return self.model
         else:
             print "Unknown filetype, Supported formats are [gmpl, mps, mps.gz, lp], exiting"
@@ -59,8 +59,8 @@ class MIPParser(object):
         return (solver, self.model)
 
     def save(self):
-        import pickle
-        pickle.dump(self.model, open(self.model_path + '.njm', 'w'))
+        import cPickle
+        cPickle.dump(self.model, open(self.model_path + '.njm', 'w'))
         print "Model saved to", self.model_path + '.njm'
 
     def getNJVar(self, mexp, ident):

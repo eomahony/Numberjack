@@ -129,7 +129,7 @@ $(PYTHON)/%.i: $(SRCDIR)/%.hpp
 
 $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(PLIBOBJ)
 	@echo "-> linking $@"
-	$(CCC) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(LFLAGS) $(AUXOBJFILES) $(MAINOBJFILES) $(PLIBOBJ) python/$(MAINNAME)_wrap.o -o $@
+	$(CCC) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LFLAGS) $(AUXOBJFILES) $(MAINOBJFILES) $(PLIBOBJ) python/$(MAINNAME)_wrap.o -o $@
 
 
 # The library

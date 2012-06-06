@@ -81,6 +81,6 @@ $(PYTHON)/%.i: $(SRCDIR)/%.hpp
 
 $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o 
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(PYTHON)/MipWrapper_wrap.o -o $@
+	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(PYTHON)/MipWrapper_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

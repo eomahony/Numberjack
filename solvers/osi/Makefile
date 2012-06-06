@@ -104,6 +104,6 @@ $(PYTHON)/%.i: $(SRCDIR)/%.hpp $(MIPDIR)/src/MipWrapper.hpp
 
 $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(MIPLIBS) $(OSICOMPILED)
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(PYTHON)/Osi_wrap.o -o $@
+	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(PYTHON)/Osi_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

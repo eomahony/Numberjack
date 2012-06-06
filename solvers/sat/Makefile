@@ -39,7 +39,7 @@ SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 
 MCORE     = minisat_src/core
 MTL       = minisat_src/mtl
-CFLAGS    = -I$(MCORE) -I$(MTL) $(HACK) -Wall -ffloat-store -O3 -D NDEBUG #-D_DEBUGWRAP
+CFLAGS    = -I$(MCORE) -I$(MTL) $(HACK) -Wall -ffloat-store -O3 # -DNDEBUG -D_DEBUGWRAP
 
 #-----------------------------------------------------------------------------
 # Rules
@@ -81,6 +81,6 @@ $(PYTHON)/%.i: $(SRCDIR)/%.hpp
 
 $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o 
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(PYTHON)/SatWrapper_wrap.o -o $@
+	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(PYTHON)/SatWrapper_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

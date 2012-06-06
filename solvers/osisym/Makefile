@@ -112,6 +112,6 @@ $(PYTHON)/%.i: $(SRCDIR)/%.hpp $(OSIDIR)/src/Osi.hpp $(MIPDIR)/src/MipWrapper.hp
 
 $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(DEPSCOMPILED) $(OBJDIR)/OsiSym.o $(SYMDIR)/SYMPHONY/src/.libs/libSym.so
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(DEPSCOMPILED) $(PYTHON)/OsiSym_wrap.o -o $@
+	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(DEPSCOMPILED) $(PYTHON)/OsiSym_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

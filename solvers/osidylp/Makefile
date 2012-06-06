@@ -93,6 +93,6 @@ $(PYTHON)/%.i: $(SRCDIR)/%.hpp ../osi/src/Osi.hpp ../mip/src/MipWrapper.hpp
 
 $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(OSIDIR)/obj/Osi.o $(MIPDIR)/obj/MipWrapper.o $(DYLPDIR)/DyLP/src/Dylp/.libs/libDylp.so
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(MAINOBJFILES) ../mip/obj/MipWrapper.o ../osi/obj/Osi.o $(DYLPDIR)/DyLP/src/Dylp/.libs/*.o $(DYLPDIR)/DyLP/src/DylpStdLib/.libs/*.o $(DYLPDIR)/DyLP/src/OsiDylp/.libs/*.o $(DYLPDIR)/Osi/src/Osi/.libs/*.o $(DYLPDIR)/CoinUtils/src/.libs/*.o $(PYTHON)/OsiDylp_wrap.o -o $@
+	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(MAINOBJFILES) ../mip/obj/MipWrapper.o ../osi/obj/Osi.o $(DYLPDIR)/DyLP/src/Dylp/.libs/*.o $(DYLPDIR)/DyLP/src/DylpStdLib/.libs/*.o $(DYLPDIR)/DyLP/src/OsiDylp/.libs/*.o $(DYLPDIR)/Osi/src/Osi/.libs/*.o $(DYLPDIR)/CoinUtils/src/.libs/*.o $(PYTHON)/OsiDylp_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

@@ -1,67 +1,80 @@
-
 include ../../make.project
 MAINDIR = $(CURDIR)/../..
 
 #-----------------------------------------------------------------------------
 # paths
 #-----------------------------------------------------------------------------
-
-OBJDIR = ./obj
-SRCDIR = ./src
-PYTHON = ./python
+OBJDIR = $(CURDIR)/obj
+SRCDIR = $(CURDIR)/src
+PYTHON = $(CURDIR)/python
 SWIG = swig
-PYLIB = `python-config --cflags` 
+PYLIB = `python-config --cflags`
 
 #-----------------------------------------------------------------------------
 # Main Program
 #-----------------------------------------------------------------------------
 
-MAINNAME	=	OsiDylp
+MAINNAME	=	OsiVol
 MAINOBJ		=	$(MAINNAME).o
 MAINSRC		=	$(addprefix $(SRCDIR)/,$(MAINOBJ:.o=.cpp))
 MAINOBJFILES	=	$(addprefix $(OBJDIR)/,$(MAINOBJ))
 
 MIPDIR = $(MAINDIR)/solvers/mip
 MIPFLAGS = -I$(MIPDIR)/src/
-MIPLIB = $(MIPDIR)/obj/MipWrapper.o
 
 OSIDIR = $(MAINDIR)/solvers/osi
-OSIFLAGS = -I$(OSIDIR)/src
-OSILIB = $(OSIDIR)/obj/Osi.o
+OSISRC = $(OSIDIR)/src
+OSIFLAGS = -I$(OSISRC)
 
-INCLUDES = $(OSIFLAGS) $(MIPFLAGS) `pkg-config osi-dylp --cflags`
-LIBRARIES = $(MIPLIB) $(OSILIB)
+VOLVER = 1.3.2
+VOLDIR = $(CURDIR)/Vol-$(VOLVER)
+VOLINCS    = -I$(VOLDIR)/Vol/src/
+COININCS   = -I$(VOLDIR)/CoinUtils/src/
+OSISRCINCS = -I$(VOLDIR)/Osi/src/Osi/
+OSIVOLINCS = -I$(VOLDIR)/Vol/src/OsiVol/
+VOLLIBS    = $(VOLDIR)/Vol/src/.libs/*.o
+COINLIBS   = $(VOLDIR)/CoinUtils/src/.libs/*.o
+OSISRCLIBS = $(VOLDIR)/Osi/src/Osi/.libs/*.o
+OSIVOLLIBS = $(VOLDIR)/Vol/src/OsiVol/.libs/*.o
+VOLCOMPILED = $(VOLDIR)/Vol/src/.libs/libVol.so
+DYNLINKS = -llapack -lz -lbz2
+
+INCLUDES  = $(VOLINCS) $(COININCS) $(OSISRCINCS) $(OSIVOLINCS) $(OSIFLAGS) $(MIPFLAGS)
+LIBRARIES = $(VOLLIBS) $(COINLIBS) $(OSISRCLIBS) $(OSIVOLLIBS)
+DEPSCOMPILED = $(OSIDIR)/obj/Osi.o $(MIPDIR)/obj/MipWrapper.o
 
 #-----------------------------------------------------------------------------
 # Interface
 #-----------------------------------------------------------------------------
-
 IFILE	= $(PYTHON)/$(MAINNAME).i
 PYFILE	= $(PYTHON)/$(MAINNAME).py
 WXXFILE	= $(PYTHON)/$(MAINNAME)_wrap.cxx
 WOBFILE	= $(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE	= $(PYTHON)/_$(MAINNAME).so
 
-CFLAGS = -O3 -Wall -ffloat-store -lm $(INCLUDES) $(MIPFLAGS) $(OSIFLAGS) $(DYNLINKS) `pkg-config osi-dylp --libs` #-g
-
+CFLAGS = -Wall -ffloat-store -lm $(INCLUDES) $(DYNLINKS) -O3 #-g
+LFLAGS = $(LIBRARIES) $(DEPSCOMPILED)
 #-----------------------------------------------------------------------------
 # Rules
 #-----------------------------------------------------------------------------
 
-CXX = g++ 
+CXX = g++
 
-wrapper: $(IFILE) $(WXXFILE) $(LIBRARIES) $(OBJDIR)/OsiDylp.o $(SOFILE) 
+wrapper: $(IFILE) $(WXXFILE) $(DEPSCOMPILED) $(OBJDIR)/OsiVol.o $(VOLCOMPILED) $(SOFILE)
 
-install_python: wrapper
-	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
+$(VOLCOMPILED):
+	cd $(VOLDIR) && make || (./configure && make)
 
 $(MIPDIR)/obj/%.o: $(MIPDIR)/src/MipWrapper.cpp
 	@echo "-> compiling $@"
-	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
 
 $(OSIDIR)/obj/%.o: $(OSIDIR)/src/Osi.cpp
 	@echo "-> compiling $@"
-	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
+
+install_python: wrapper
+	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install
 
 clean_swig:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
@@ -74,22 +87,22 @@ clean:
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 		@echo "-> compiling $@"
-		$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+		$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 		@echo "-> compiling $@"
 		$(CXX) $(CFLAGS) -I$(SRCDIR) -I$(PYLIB) -fPIC -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
-	@echo "-> compiling $@"	
+	@echo "-> compiling $@"
 	$(SWIG) -c++ -python $<
 	python $(MAINDIR)/tools/finalize.py $(<:.i=.py) MipWrapper
 
-$(PYTHON)/%.i: $(SRCDIR)/%.hpp ../osi/src/Osi.hpp ../mip/src/MipWrapper.hpp
+$(PYTHON)/%.i: $(SRCDIR)/%.hpp $(OSIDIR)/src/Osi.hpp $(MIPDIR)/src/MipWrapper.hpp
 	-python $(MAINDIR)/tools/mk_subinterface.py osi Osi $< mip MipWrapper
 
-$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(LIBRARIES)
+$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(DEPSCOMPILED) $(VOLCOMPILED)
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(LIBRARIES)  $(PYTHON)/OsiDylp_wrap.o -o $@
+	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(LFLAGS) $(PYTHON)/OsiVol_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

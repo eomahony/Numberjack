@@ -8,7 +8,7 @@ OBJDIR = $(CURDIR)/obj
 SRCDIR = $(CURDIR)/src
 PYTHON = $(CURDIR)/python
 SWIG = swig
-PYLIB = `python-config --cflags`
+PYLIB = `python-config --cflags` 
 
 #-----------------------------------------------------------------------------
 # Main Program
@@ -20,31 +20,14 @@ MAINOBJFILES	=	$(addprefix $(OBJDIR)/,$(MAINOBJ))
 
 MIPDIR = $(MAINDIR)/solvers/mip
 MIPFLAGS = -I$(MIPDIR)/src/
+MIPLIB = $(MIPDIR)/obj/MipWrapper.o
 
 OSIDIR = $(MAINDIR)/solvers/osi
-OSISRC = $(OSIDIR)/src
-OSIFLAGS = -I$(OSISRC)
+OSIFLAGS = -I$(OSIDIR)/src
+OSILIB = $(OSIDIR)/obj/Osi.o
 
-OSIVER = 0.105.2
-OSISRCDIR = $(CURDIR)/Osi-$(OSIVER)
-GLPKVER = 4.47
-GLPKDIR = $(MAINDIR)/solvers/osiglpk/glpk-$(GLPKVER)
-GLPKINCS    = -I$(GLPKDIR)/src/
-OSISRCINCS  = -I$(OSISRCDIR)/Osi/src/Osi
-OSIGLPKINCS = -I$(OSISRCDIR)/Osi/src/OsiGlpk
-COININCS    = -I$(OSISRCDIR)/CoinUtils/src/
-GLPKLIBS    = $(GLPKDIR)/src/.libs/*.o
-OSISRCLIBS  = $(OSISRCDIR)/Osi/src/Osi/.libs/*.o
-OSIGLPKLIBS = $(OSISRCDIR)/Osi/src/OsiGlpk/.libs/*.o
-COINLIBS    = $(OSISRCDIR)/CoinUtils/src/.libs/*.o
-DYNLINKS    = -llapack -lz -lbz2
-
-DEPSCOMPILED = $(OSIDIR)/obj/Osi.o $(MIPDIR)/obj/MipWrapper.o
-INCLUDES = $(GLPKINCS) $(OSISRCINCS) $(OSIGLPKINCS) $(COININCS) $(OSIFLAGS) $(MIPFLAGS)
-LIBRARIES = $(GLPKLIBS) $(OSISRCLIBS) $(OSIGLPKLIBS) $(COINLIBS) $(DEPSCOMPILED)
-
-OSIGLPKCOMPILED = $(OSISRCDIR)/Osi/src/OsiGlpk/.libs/libOsiGlpk.so
-GLPKCOMPILED    = $(GLPKDIR)/src/.libs/libglpk.so
+INCLUDES = $(OSIFLAGS) $(MIPFLAGS) `pkg-config osi-glpk --cflags`
+LIBRARIES = $(OSILIB) $(MIPLIB)
 
 #-----------------------------------------------------------------------------
 # Interface
@@ -56,33 +39,26 @@ WXXFILE	= $(PYTHON)/$(MAINNAME)_wrap.cxx
 WOBFILE	= $(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE	= $(PYTHON)/_$(MAINNAME).so
 
-CFLAGS = -Wall -ffloat-store -lm $(INCLUDES) $(DYNLINKS) -O3 #-g
-LFLAGS = $(LIBRARIES)
+CFLAGS = -O3 -Wall -ffloat-store $(INCLUDES) `pkg-config osi-glpk --libs` # -g
 
 #-----------------------------------------------------------------------------
 # Rules
 #-----------------------------------------------------------------------------
 
-CXX = g++
+CXX = g++ 
 
-wrapper: $(IFILE) $(WXXFILE) $(OBJDIR)/OsiGlpk.o $(GLPKCOMPILED) $(OSIGLPKCOMPILED) $(SOFILE)
-
-$(OSIGLPKCOMPILED):
-	cd $(OSISRCDIR) && (./configure --with-glpk-lib=$(GLPKDIR)/src/.libs --with-glpk-incdir=$(GLPKDIR)/src/ && make)
-
-$(GLPKCOMPILED):
-	cd $(GLPKDIR) && make || (./configure && make)
+wrapper: $(IFILE) $(WXXFILE) $(OBJDIR)/OsiGlpk.o $(SOFILE)
 
 $(MIPDIR)/obj/%.o: $(MIPDIR)/src/MipWrapper.cpp
 	@echo "-> compiling $@"
-	$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
 
 $(OSIDIR)/obj/%.o: $(OSIDIR)/src/Osi.cpp
 	@echo "-> compiling $@"
-	$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
 
 install_python: wrapper
-	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install
+	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
 
 clean_swig:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
@@ -95,22 +71,22 @@ clean:
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 		@echo "-> compiling $@"
-		$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
+		$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 		@echo "-> compiling $@"
 		$(CXX) $(CFLAGS) -I$(SRCDIR) -I$(PYLIB) -fPIC -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
-	@echo "-> compiling $@"
+	@echo "-> compiling $@"	
 	$(SWIG) -c++ -python $<
 	python $(MAINDIR)/tools/finalize.py $(<:.i=.py) MipWrapper
 
 $(PYTHON)/%.i: $(SRCDIR)/%.hpp $(OSIDIR)/src/Osi.hpp $(MIPDIR)/src/MipWrapper.hpp
 	-python $(MAINDIR)/tools/mk_subinterface.py osi Osi $< mip MipWrapper
 
-$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(DEPSCOMPILED) $(OSIGLPKCOMPILED) $(GLPKCOMPILED)
+$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(PYTHON)/OsiGlpk_wrap.o -o $@
+	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LIBRARIES) $(MAINOBJFILES) $(PYTHON)/OsiGlpk_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

@@ -10,7 +10,7 @@ OBJDIR = $(CURDIR)/obj
 SRCDIR = $(CURDIR)/src
 PYTHON = $(CURDIR)/python
 SWIG = swig
-PYLIB = `python-config --cflags`
+PYLIB = `python-config --cflags` 
 
 #-----------------------------------------------------------------------------
 # Main Program
@@ -23,33 +23,14 @@ MAINOBJFILES	=	$(addprefix $(OBJDIR)/,$(MAINOBJ))
 
 MIPDIR = $(MAINDIR)/solvers/mip
 MIPFLAGS = -I$(MIPDIR)/src/
+MIPLIB = $(MIPDIR)/obj/MipWrapper.o
 
 OSIDIR = $(MAINDIR)/solvers/osi
 OSIFLAGS = -I$(OSIDIR)/src
+OSILIB = $(OSIDIR)/obj/Osi.o
 
-# Be careful with spaces here.
-OSIVER     = 0.105.2
-OSISRC     = $(CURDIR)/Osi-$(OSIVER)
-OSIINCS    = -I$(OSISRC)/Osi/src/Osi
-OSISPXINCS = -I$(OSISRC)/Osi/src/OsiSpx
-COININCS   = -I$(OSISRC)/CoinUtils/src/
-
-OSILIBS     = $(OSISRC)/Osi/src/Osi/.libs/*.o
-OSISPXLIBS  = $(OSISRC)/Osi/src/OsiSpx/.libs/*.o
-OSICOMPILED = $(OSISRC)/Osi/src/OsiSpx/.libs/libOsiSpx.so
-COINLIBS    = $(OSISRC)/CoinUtils/src/.libs/*.o
-
-DYNLINKS = -llapack -lz -lbz2
-
-SPXVER = 1.6.0
-SPXHOST = O.linux.x86_64.gnu.opt
-SPXDIR = $(MAINDIR)/solvers/osispx/soplex-$(SPXVER)
-SPXINCS = -I$(SPXDIR)/src/
-SPXLIBS = $(SPXDIR)/obj/$(SPXHOST)/lib/*.o
-
-DEPSCOMPILED = $(OSIDIR)/obj/Osi.o $(MIPDIR)/obj/MipWrapper.o
-INCLUDES     = $(OSIFLAGS) $(MIPFLAGS) $(OSIINCS) $(OSISPXINCS) $(COININCS) $(SPXINCS)
-LIBRARIES    = $(OSILIBS) $(OSISPXLIBS) $(COINLIBS) $(SPXLIBS) $(DEPSCOMPILED)
+INCLUDES     = $(OSIFLAGS) $(MIPFLAGS) `pkg-config osi-soplex --cflags`
+LIBRARIES    = $(OSILIB) $(MIPLIB)
 #-----------------------------------------------------------------------------
 # Interface
 #-----------------------------------------------------------------------------
@@ -60,34 +41,26 @@ WXXFILE	= $(PYTHON)/$(MAINNAME)_wrap.cxx
 WOBFILE	= $(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE	= $(PYTHON)/_$(MAINNAME).so
 
-CFLAGS = -Wall -ffloat-store -lm $(DYNLINKS) $(INCLUDES) -O3 #-g
-LFLAGS = $(LIBRARIES)
+CFLAGS = -O3 -Wall -ffloat-store -lm `pkg-config osi-soplex --libs` $(INCLUDES) # -g
 
 #-----------------------------------------------------------------------------
 # Rules
 #-----------------------------------------------------------------------------
 
-CXX = g++
+CXX = g++ 
 
-wrapper: $(IFILE) $(WXXFILE) $(DEPSCOMPILED) $(OBJDIR)/OsiSpx.o $(SPXDIR)/lib/libsoplex.so $(OSICOMPILED) $(SOFILE)
-
-$(OSICOMPILED):
-	cd $(OSISRC) && (./configure --with-soplex-lib=$(SPXDIR)/src/.libs --with-soplex-incdir=$(SPXDIR)/src/ && make)
-
-# Compile soplex with -fPIC.
-$(SPXDIR)/lib/libsoplex.so:
-	cd $(SPXDIR) && sed -iold 's/^SHARED.*false/SHARED = true/g' Makefile && make
+wrapper: $(IFILE) $(WXXFILE) $(LIBRARIES) $(OBJDIR)/OsiSpx.o $(SOFILE)
 
 $(MIPDIR)/obj/%.o: $(MIPDIR)/src/MipWrapper.cpp
 	@echo "-> compiling $@"
-	$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
 
 $(OSIDIR)/obj/%.o: $(OSIDIR)/src/Osi.cpp
 	@echo "-> compiling $@"
-	$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
 
 install_python: wrapper
-	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install
+	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
 
 clean_swig:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
@@ -100,22 +73,22 @@ clean:
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 		@echo "-> compiling $@"
-		$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
+		$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 		@echo "-> compiling $@"
 		$(CXX) $(CFLAGS) -I$(SRCDIR) -I$(PYLIB) -fPIC -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
-	@echo "-> compiling $@"
+	@echo "-> compiling $@"	
 	$(SWIG) -c++ -python $<
 	python $(MAINDIR)/tools/finalize.py $(<:.i=.py) MipWrapper
 
 $(PYTHON)/%.i: $(SRCDIR)/%.hpp $(OSIDIR)/src/Osi.hpp $(MIPDIR)/src/MipWrapper.hpp
 	-python $(MAINDIR)/tools/mk_subinterface.py osi Osi $< mip MipWrapper
 
-$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(DEPSCOMPILED) $(OSICOMPILED) $(SPXDIR)/lib/libsoplex.so
+$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(LIBRARIES)
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(LFLAGS) $(PYTHON)/OsiSpx_wrap.o -o $@
+	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(LIBRARIES) $(PYTHON)/OsiSpx_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

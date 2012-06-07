@@ -8,7 +8,7 @@ OBJDIR = ./obj
 SRCDIR = ./src
 PYTHON = ./python
 SWIG = swig
-PYLIB = `python-config --cflags`
+PYLIB = `python-config --cflags` 
 
 #-----------------------------------------------------------------------------
 # Main Program
@@ -23,29 +23,11 @@ MIPFLAGS = -I$(MIPDIR)/src/
 MIPLIB   = $(MIPDIR)/obj/MipWrapper.o
 
 OSIDIR   = $(MAINDIR)/solvers/osi
-OSISRC   = $(OSIDIR)/src
-OSIFLAGS = -I$(OSISRC)
+OSIFLAGS = -I$(OSIDIR)/src
 OSILIBS   = $(OSIDIR)/obj/Osi.o
 
-CBCVER   = 2.7.5
-CBCDIR   = $(CURDIR)/Cbc-$(CBCVER)
-
-CLPINC    = -I$(CBCDIR)/Clp/src
-CBCINC    = -I$(CBCDIR)/Cbc/src/
-OSICBCINC = -I$(CBCDIR)/Cbc/src/OsiCbc/
-COININC   = -I$(CBCDIR)/CoinUtils/src/
-OSIINC    = -I$(CBCDIR)/Osi/src/Osi
-
-CLPLIBS    = $(CBCDIR)/Clp/src/.libs/*.o
-OSICLPLIBS = $(CBCDIR)/Clp/src/OsiClp/.libs/*.o
-CGLLIBS    = $(CBCDIR)/Cgl/src/.libs/*.o $(CBCDIR)/Cgl/src/*/.libs/*.o
-COINLIBS   = $(CBCDIR)/CoinUtils/src/.libs/*.o
-OSISRCLIBS    = $(CBCDIR)/Osi/src/Osi/.libs/*.o
-CBCLIBS    = $(CBCDIR)/Cbc/src/.libs/*.o
-OSICBCLIBS = $(CBCDIR)/Cbc/src/OsiCbc/.libs/*.o
-
-INCLUDES  = $(CLPINC) $(CBCINC) $(OSICBCINC) $(COININC) $(OSIINC) $(OSIFLAGS) $(MIPFLAGS)
-LIBRARIES = $(CLPLIBS) $(OSICLPLIBS) $(CGLLIBS) $(COINLIBS) $(CBCLIBS) $(OSISRCLIBS) $(OSICBCLIBS)
+INCLUDES  = $(OSIFLAGS) $(MIPFLAGS) `pkg-config osi-cbc --cflags`
+LIBRARIES = $(OSILIB) $(MIPLIBS) 
 
 #-----------------------------------------------------------------------------
 # Interface
@@ -56,34 +38,25 @@ WXXFILE	= $(PYTHON)/$(MAINNAME)_wrap.cxx
 WOBFILE	= $(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE	= $(PYTHON)/_$(MAINNAME).so
 
-DYNLINKS = -llapack -lz -lbz2
-
-CFLAGS = -Wall -ffloat-store -lm $(INCLUDES) $(DYNLINKS) -O3 #-g
-LFLAGS = $(LIBRARIES)
-DEPSCOMPILED = $(OSIDIR)/obj/Osi.o $(MIPDIR)/obj/MipWrapper.o
+CFLAGS = -O3 -Wall -ffloat-store -lm $(INCLUDES) `pkg-config osi-cbc --libs` #-g
 
 #-----------------------------------------------------------------------------
 # Rules
 #-----------------------------------------------------------------------------
-CXX = g++
+CXX = g++ 
 
-wrapper: $(IFILE) $(WXXFILE) $(DEPSCOMPILED) $(OBJDIR)/OsiCbc.o $(CBCDIR)/Cbc/src/.libs/libCbc.so $(SOFILE)
-
-$(CBCDIR)/Cbc/src/.libs/libCbc.so:
-	cd $(CBCDIR) && make || (./configure --enable-static && make)
+wrapper: $(IFILE) $(WXXFILE) $(LIBRARIES) $(OBJDIR)/OsiCbc.o $(SOFILE)
 
 $(MIPDIR)/obj/%.o: $(MIPDIR)/src/MipWrapper.cpp
 	@echo "-> compiling $@"
-	$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
 
 $(OSIDIR)/obj/%.o: $(OSIDIR)/src/Osi.cpp
 	@echo "-> compiling $@"
-	$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
-
-install_python:
+	$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
 
 install_python: wrapper
-	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install
+	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
 
 clean_swig:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
@@ -94,24 +67,24 @@ clean_all: clean clean_swig
 clean:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/*o $(PYTHON)/*~ $(PYTHON)/build *~ $(SRCDIR)/*~
 
-$(OBJDIR)/%.o:	$(SRCDIR)/%.cpp $(OBJDIR)/OsiCbc.o $(CBCDIR)/Cbc/src/.libs/libCbc.so
+$(OBJDIR)/%.o:	$(SRCDIR)/%.cpp 
 		@echo "-> compiling $@"
-		$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
+		$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 		@echo "-> compiling $@"
 		$(CXX) $(CFLAGS) -I$(SRCDIR) -I$(PYLIB) -fPIC -c $< -o $@
 
-$(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i $(OBJDIR)/OsiCbc.o $(CBCDIR)/Cbc/src/.libs/libCbc.so
-	@echo "-> compiling $@"
+$(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i $(OBJDIR)/OsiCbc.o 
+	@echo "-> compiling $@"	
 	$(SWIG) -c++ -python $<
 	python $(MAINDIR)/tools/finalize.py $(<:.i=.py) MipWrapper
 
 $(PYTHON)/%.i: $(SRCDIR)/%.hpp $(OSIDIR)/src/Osi.hpp $(MIPDIR)/src/MipWrapper.hpp
 	-python $(MAINDIR)/tools/mk_subinterface.py osi Osi $< mip MipWrapper
 
-$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(DEPSCOMPILED) $(OBJDIR)/OsiCbc.o $(CBCDIR)/Cbc/src/.libs/libCbc.so
+$(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(LIBRARIES) $(OBJDIR)/OsiCbc.o
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(DEPSCOMPILED) $(PYTHON)/OsiCbc_wrap.o -o $@
+	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(LIBRARIES) $(PYTHON)/OsiCbc_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

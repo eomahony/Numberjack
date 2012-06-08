@@ -108,16 +108,17 @@ if __name__ == "__main__":
     import sys
     from optparse import OptionParser
 
+    solvers = available_solvers()
+    lpsolvers = [s for s in solvers if s in ["OsiClp", "OsiGlpk", "OsiVol", "OsiDylp", "OsiSpx"]]
+
     opts = OptionParser()
     opts.set_usage('Usage: FILE... [OPTION]...')
     opts.add_option("--data", "-d", help="data file for gmpl")
-    opts.add_option("--solver", "-s", type="choice", choices=["Mistral",
-        "MiniSat", "Walksat", "SCIP", "OsiClp", "OsiCbc", "OsiGlpk",
-        "OsiVol", "OsiDylp", "OsiSpx", "OsiGrb", "OsiSym"],
-        help="Mistral|MiniSat|Walksat|SCIP|OsiClp|OsiCbc|OsiGlpk|OsiVol|OsiDylp|OsiSpx|OsiGrb|OsiSym")
-    opts.add_option("--lpsolver", "-l", type="choice", choices=["OsiClp", "OsiGlpk", "OsiVol",
-        "OsiDylp", "OsiSpx"],
-        help="select LP solver for Cbc(Note: ignores -s option): OsiClp|OsiGlpk|OsiVol|OsiDylp|OsiSpx")
+    opts.add_option("--solver", "-s", type="choice", choices=solvers,
+        help="|".join(solvers))
+    if 'OsiCbc' in solvers:
+        opts.add_option("--lpsolver", "-l", type="choice", choices=lpsolvers,
+            help="select LP solver for Cbc(Note: ignores -s option): " + "|".join(lpsolvers))
     opts.add_option("--save", "-p", action="store_true", help="save the Numberjack Model")
     opts.add_option("--verbosity", "-v", help="verbosity level for solve")
 
@@ -126,7 +127,8 @@ if __name__ == "__main__":
     datafile = options.data if options.data else None
     solver_name = None
     subsolver = None
-    if options.lpsolver:
+    
+    if 'OsiCbc' in solvers and options.lpsolver:
         solver_name = 'OsiCbc'
         subsolver = options.lpsolver
     else:

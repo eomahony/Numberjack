@@ -157,6 +157,7 @@ public:
 	int getNextSolution();
 
 	void printModel();
+	void splitRangedRows();
 
 // parameter tuning methods
 	void setTimeLimit(const int cutoff);

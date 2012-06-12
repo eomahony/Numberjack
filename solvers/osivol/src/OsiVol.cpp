@@ -15,6 +15,7 @@ OsiVolSolver::~OsiVolSolver() {
 // method and is picky about the type of problem
 int OsiVolSolver::solve() {
 	OsiSolverInterface* si = OsiSolver::getSolver();
+	OsiSolver::splitRangedRows();
 	if(!OsiSolver::prepareSolve()) {
 		return UNSAT;
 	}

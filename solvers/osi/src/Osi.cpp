@@ -293,6 +293,58 @@ int OsiSolver::load_lp(const char *filename, const double epsilon) {
 	return si->readLp(filename, epsilon);
 }
 
+/*
+ * split_ranged_rows finds rows that are bounded on both sides and creates
+ * two separate rows for each. This is added since OsiVol doesn't like
+ * ranged rows.
+ */
+void OsiSolver::splitRangedRows() {
+	std::vector<double> row_ubs_new;
+	std::vector<double> row_lbs_new;
+	CoinPackedMatrix* matrix_new = new CoinPackedMatrix(false, 0, 0);
+
+	for (int i = 0; i < n_rows; i++) {
+		CoinShallowPackedVector row = matrix->getVector(i);
+		if (row_lb[i] > -1.0e20 && row_ub[i] < 1.0e20
+				&& row_lb[i] != row_ub[i]) {
+			CoinPackedVector row_rhs;
+			CoinPackedVector row_lhs;
+			const double* elements = row.getElements();
+			const int* indices = row.getIndices();
+
+			row_ubs_new.push_back(si->getInfinity());
+			row_ubs_new.push_back(row_ub[i]);
+			row_lbs_new.push_back(row_lb[i]);
+			row_lbs_new.push_back(-1.0 * si->getInfinity());
+
+			for (int j = 0; j < row.getNumElements(); j++) {
+				row_lhs.insert(indices[j], elements[j]);
+				row_rhs.insert(indices[j], elements[j]);
+			}
+			matrix_new->appendRow(row_lhs);
+			matrix_new->appendRow(row_rhs);
+		} else {
+			row_ubs_new.push_back(row_ub[i]);
+			row_lbs_new.push_back(row_lb[i]);
+			matrix_new->appendRow(row);
+		}
+	}
+	n_rows = row_ubs_new.size();
+
+	delete matrix;
+	delete[] row_lb;
+	delete[] row_ub;
+
+	row_lb = new double[n_rows];
+	row_ub = new double[n_rows];
+	for (int i = 0; i < n_rows; i++) {
+		row_lb[i] = row_lbs_new.at(i);
+		row_ub[i] = row_ubs_new.at(i);
+	}
+
+	matrix = matrix_new;
+}
+
 void OsiSolver::build_expressions() {
 	// build expressions*, first element is Sum() for the objective
 	// every pair after that ((1,2),(3,4)) is a le and ge over a
@@ -313,7 +365,7 @@ void OsiSolver::build_expressions() {
 	for (int i = 0; i < ncols; i++) {
 		Osi_Expression* var;
 
-		if(si->isContinuous(i))
+		if (si->isContinuous(i))
 			var = new Osi_DoubleVar(col_lbs[i], col_ubs[i], i);
 		else
 			var = new Osi_IntVar(col_lbs[i], col_ubs[i], i);
@@ -321,19 +373,19 @@ void OsiSolver::build_expressions() {
 		vars.add(var);
 		expressions.push_back(var);
 		coefs.add(objCoef[i]);
-        sum += objCoef[i];
+		sum += objCoef[i];
 	}
 	/* Only return an objective if there is one! (Empty objectives were not
 	 * working with some solvers
 	 */
-    if(sum != 0) {
-    	expressions.push_back(new Osi_Minimise(new Osi_Sum(vars, coefs, 0)));
-    }
+	if (sum != 0) {
+		expressions.push_back(new Osi_Minimise(new Osi_Sum(vars, coefs, 0)));
+	}
 
 	// Build remaining expressions, expr <= upper, expr >= lower
 	for (int i = 0; i < nrows; i++) {
 		CoinShallowPackedVector row = mtx->getVector(i);
-		if(row.getNumElements() > 0) {
+		if (row.getNumElements() > 0) {
 			const double* elements = row.getElements();
 			const int* indices = row.getIndices();
 			OsiExpArray sumvars;
@@ -343,10 +395,10 @@ void OsiSolver::build_expressions() {
 				coefs.add(elements[j]);
 			}
 			Osi_Sum* expr = new Osi_Sum(sumvars, coefs, 0);
-            if(!(row_ubs[i] == si->getInfinity()))
-    			expressions.push_back(new Osi_le(expr, row_ubs[i]));
-            if(!(row_lbs[i] == -1.0 * si->getInfinity()))
-                expressions.push_back(new Osi_ge(expr, row_lbs[i]));
+			if (!(row_ubs[i] == si->getInfinity()))
+				expressions.push_back(new Osi_le(expr, row_ubs[i]));
+			if (!(row_lbs[i] == -1.0 * si->getInfinity()))
+				expressions.push_back(new Osi_ge(expr, row_lbs[i]));
 		}
 	}
 }

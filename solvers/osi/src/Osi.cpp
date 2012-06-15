@@ -82,9 +82,12 @@ void OsiSolver::initialise() {
 			}
 			col_lb[*index] = manageInfinity(var->_lower);
 			col_ub[*index] = manageInfinity(var->_upper);
-			objective[i] = -1.0 * _obj_coef * _obj->_coefficients[i];
+			objective[i] = -1.0 * _obj_coef * _obj->_coefficients.at(i);
 		}
-
+	} else {
+		for (unsigned int i = 0; i < var_counter; i++) {
+			objective[i] = 0.0;
+		}
 	}
 	for (unsigned int i = 0; i < _constraints.size(); ++i)
 		add_in_constraint(_constraints[i]);
@@ -304,29 +307,40 @@ void OsiSolver::splitRangedRows() {
 	CoinPackedMatrix* matrix_new = new CoinPackedMatrix(false, 0, 0);
 
 	for (int i = 0; i < n_rows; i++) {
-		CoinShallowPackedVector row = matrix->getVector(i);
+		double ub_coef = row_ub[i] < 0.0 ? -1.0 : 1.0;
+		double lb_coef = row_lb[i] < -1.0e20 ? 1.0 : (row_lb[i] < 0.0 ? -1.0 : 1.0);
+		const CoinShallowPackedVector row = matrix->getVector(i);
+		const double* elements = row.getElements();
+		const int* indices = row.getIndices();
+
 		if (row_lb[i] > -1.0e20 && row_ub[i] < 1.0e20
 				&& row_lb[i] != row_ub[i]) {
-			CoinPackedVector row_rhs;
-			CoinPackedVector row_lhs;
-			const double* elements = row.getElements();
-			const int* indices = row.getIndices();
+			CoinPackedVector row_with_ub;
+			CoinPackedVector row_with_lb;
 
 			row_ubs_new.push_back(si->getInfinity());
-			row_ubs_new.push_back(row_ub[i]);
-			row_lbs_new.push_back(row_lb[i]);
+			row_ubs_new.push_back(ub_coef * row_ub[i]);
+			row_lbs_new.push_back(lb_coef * row_lb[i]);
 			row_lbs_new.push_back(-1.0 * si->getInfinity());
 
 			for (int j = 0; j < row.getNumElements(); j++) {
-				row_lhs.insert(indices[j], elements[j]);
-				row_rhs.insert(indices[j], elements[j]);
+				row_with_ub.insert(indices[j], ub_coef * elements[j]);
+				row_with_lb.insert(indices[j], lb_coef * elements[j]);
 			}
-			matrix_new->appendRow(row_lhs);
-			matrix_new->appendRow(row_rhs);
+			matrix_new->appendRow(row_with_ub);
+			matrix_new->appendRow(row_with_lb);
 		} else {
-			row_ubs_new.push_back(row_ub[i]);
-			row_lbs_new.push_back(row_lb[i]);
-			matrix_new->appendRow(row);
+			CoinPackedVector new_row;
+			row_ubs_new.push_back(ub_coef * row_ub[i]);
+			row_lbs_new.push_back(lb_coef * row_lb[i]);
+
+			double row_coef = row_ub[i] < 1.0e20 ? (row_ub[i] < 0.0 ? -1.0 : 1.0) : (row_lb[i] < 0.0 ? -1.0 : 1.0);
+
+			for (int j = 0; j < row.getNumElements(); j++) {
+				new_row.insert(indices[j], row_coef * elements[j]);
+			}
+
+			matrix_new->appendRow(new_row);
 		}
 	}
 	n_rows = row_ubs_new.size();

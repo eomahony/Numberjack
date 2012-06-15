@@ -24,10 +24,10 @@ MIPLIB   = $(MIPDIR)/obj/MipWrapper.o
 
 OSIDIR   = $(MAINDIR)/solvers/osi
 OSIFLAGS = -I$(OSIDIR)/src
-OSILIBS   = $(OSIDIR)/obj/Osi.o
+OSILIB   = $(OSIDIR)/obj/Osi.o
 
 INCLUDES  = $(OSIFLAGS) $(MIPFLAGS) `pkg-config osi-cbc --cflags`
-LIBRARIES = $(OSILIB) $(MIPLIBS) 
+LIBRARIES = $(OSILIB) $(MIPLIB) 
 
 #-----------------------------------------------------------------------------
 # Interface

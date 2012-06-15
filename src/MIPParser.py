@@ -52,6 +52,7 @@ class MIPParser(object):
         solver = self.model.load(self.solver_name)
         solver.setVerbosity(self.verbose)
         if self.subsolver != None:
+            solver.solver.splitRangedRows()
             subsolver_module = __import__(self.subsolver)
             empty_solver = subsolver_module.Solver(Model())
             solver.solver.setLPRelaxationSolver(empty_solver.solver)

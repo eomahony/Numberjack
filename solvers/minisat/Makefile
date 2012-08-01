@@ -51,7 +51,7 @@ SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 SATDIR    = $(MAINDIR)/solvers/sat
 MTL       = $(SATDIR)/minisat_src/mtl
 CORE      = $(SATDIR)/minisat_src/core
-CFLAGS    = -I$(SATDIR)/src/ -I$(MTL) $(HACK) -I$(CORE) -Wall -ffloat-store -O3 -D NDEBUG #-D_DEBUGWRAP
+CFLAGS    = -I$(SATDIR)/src/ -I$(MTL) $(HACK) -I$(CORE) -Wall -ffloat-store -O3 # -DNDEBUG -D_DEBUGWRAP
 #LFLAGS    = -lz
 
 
@@ -106,7 +106,7 @@ $(PYTHON)/%.i: $(SRCDIR)/%.hpp
 
 $(PYTHON)/_%.so: $(AUXOBJFILES) $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(CORE)/Solver.o $(SATDIR)/obj/SatWrapper.o
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -flat_namespace -Wno-long-double $(CFLAGS) $(AUXOBJFILES) $(MAINOBJFILES) $(CORE)/Solver.o $(SATDIR)/obj/SatWrapper.o python/MiniSat_wrap.o -o $@
+	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(AUXOBJFILES) $(MAINOBJFILES) $(CORE)/Solver.o $(SATDIR)/obj/SatWrapper.o python/MiniSat_wrap.o -o $@
 
 
 

@@ -25,7 +25,7 @@
 from distutils.core import setup
 setup(name='Numberjack',
       version='1.0',
-      py_modules=['Numberjack'],
+      py_modules=['Numberjack', 'MIPParser'],
       )
 setup(name='Decomp',
       version='1.0',

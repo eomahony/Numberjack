@@ -1,0 +1,8 @@
+src/build
+*.o
+*~
+*.pyc
+*.swp
+.cproject
+.project
+.pydevproject

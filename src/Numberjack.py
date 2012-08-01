@@ -46,8 +46,20 @@ import types, sys
 val_heuristics = ['Lex', 'AntiLex', 'Random', 'RandomMinMax', 'DomainSplit', 'RandomSplit', 'Promise', 'Impact', 'No']
 var_heuristics = ['No', 'MinDomain', 'Lex', 'AntiLex', 'MaxDegree', 'MinDomainMinVal', 'Random', 'MinDomainMaxDegree', 'DomainOverDegree', 'DomainOverWDegree', 'DomainOverWLDegree', 'Neighbour', 'Impact', 'ImpactOverDegree', 'ImpactOverWDegree', 'ImpactOverWLDegree', 'Scheduling']
 
+solver_names = ['Mistral', 'SCIP', 'MiniSat', 'Walksat', 'OsiClp', 'OsiCbc',
+                'OsiGlpk', 'OsiVol', 'OsiDylp', 'OsiSpx', 'OsiSym',
+                'OsiGrb'] #, 'OsiCpx', 'OsiMsk', 'OsiXpr'] 
+available = []
 
-
+def available_solvers():
+    if len(available) == 0:
+        for solver in solver_names:
+            try:
+                __import__(solver)
+                available.append(solver)
+            except:
+                continue
+    return available
 
 def flatten(x):
     result = []
@@ -239,7 +251,7 @@ class Expression(object):
         if self.has_children():
             for child in self.children:
                 tc = type(child)
-                if tc is not int and tc is not str and tc is not bool:
+                if tc not in [int, long, float, str, bool]:
                     child.close()
 
     def get_domain(self, solver=None):
@@ -527,7 +539,7 @@ class Model(object):
         ## \internal - add the Expression tree to the model and assign identifiers to the nodes
         # this expression is new, choose an identifiant for it
         te = type(exp)
-        if te is not int and te is not str and te is not bool:
+        if te not in [int, long, float, str, bool]:
             ## THIS IS BUGGY, WE CANNOT ADD THE SAME VARIABLE TO SEVERAL MODELS
             if exp.ident == -1:            
             #if exp.mod != self:
@@ -673,10 +685,12 @@ class Variable(Expression):
                 lb = domain[0]
                 ub = domain[-1]            
 
-        if type(lb) is not int and type(lb) is not float and type(lb) is not str:
+        tlb = type(lb)
+        tub = type(ub)
+        if tlb not in [int, long, float, str]:
             print "Warning lower bound of %s is not an int or a float or a string" % name
             exit(1)
-        elif type(ub) is not int and type(ub) is not float and type(lb) is not str:
+        elif tub not in [int, long, float, str]:
             print "Warning upper bound of %s is not an int or a float or a string" % name
             exit(1)
         elif type(name) is not str:
@@ -1608,8 +1622,8 @@ class Table(Predicate):
     def printTable(self):
         print self.parameters[1]
         for var in self.children:
-            var.print_me(),
-        print '\n', self.parameters[0]
+            print var,
+        print '\n ('+self.parameters[1]+')', self.parameters[0]
 
 
 
@@ -2500,7 +2514,7 @@ class NBJ_STD_Solver(object):
             return self.model.string_map[expr]
         if type(expr) is bool:
             return int(expr)
-        if type(expr) is int or type(expr) is float:
+        if type(expr) in [int, long, float]:
             # It is a constant, handle appropriatly
             return expr
         #if not expr.has_children():
@@ -2559,14 +2573,18 @@ class NBJ_STD_Solver(object):
                 if expr.has_parameters(): # != None: # assumes an array of integers
                     for param in expr.parameters:
                         if hasattr(param, '__iter__'):
-                            if expr.get_operator() is "Table":
+                            w_array = None
+                            if any((type(w) == float for w in param)):
+                                w_array = self.DoubleArray()
+                            else:
                                 w_array = self.IntArray()
+
+                            if expr.get_operator() is "Table":
                                 for w in param:
                                     for v in w:
                                         w_array.add(v)
                                 arguments.append(w_array)    
                             else:
-                                w_array = self.IntArray()
                                 for w in param:
                                     w_array.add(w)
                                 arguments.append(w_array)
@@ -2909,6 +2927,18 @@ class NBJ_STD_Solver(object):
 
     def load_xml(self,file,type=4):
         self.solver.load_xml(file,type)
+
+    def load_mps(self, filename, extension):
+        self.solver.load_mps(filename, extension)
+
+    def load_gmpl(self, filename, data=None):
+        if data==None:
+            self.solver.load_gmpl(filename)
+        else:
+            self.solver.load_gmpl(filename, data)
+            
+    def load_lp(self, filename, epsilon):
+        self.solver.load_lp(filename, epsilon);
     
     def num_vars(self):
         return self.solver.num_vars()

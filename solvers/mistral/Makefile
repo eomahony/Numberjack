@@ -1,3 +1,4 @@
+include ../../make.project
 
 MAINDIR = $(shell pwd)/../..
 MISTRALDIR ?= .
@@ -101,7 +102,7 @@ SRCDIR = $(MISTRALDIR)/src
 PYTHON = $(MISTRALDIR)/python
 
 
-CFLAGS = -I$(INC) -I$(SRCDIR)\
+CFLAGS += -I$(INC) -I$(SRCDIR)\
 `xml2-config --cflags`
 
 LFLAGS = -L$(OBJ) \

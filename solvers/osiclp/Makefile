@@ -38,7 +38,7 @@ WXXFILE	= $(PYTHON)/$(MAINNAME)_wrap.cxx
 WOBFILE	= $(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE	= $(PYTHON)/_$(MAINNAME).so
 
-CFLAGS = -O3 -Wall -ffloat-store -lm $(INCLUDES) `pkg-config osi-clp --libs` #-g
+CFLAGS += -O3 -Wall -ffloat-store -lm $(INCLUDES) `pkg-config osi-clp --libs` #-g
 
 #-----------------------------------------------------------------------------
 # Rules

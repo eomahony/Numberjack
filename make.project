@@ -26,7 +26,8 @@ PYVERSION	:=	$(shell python -V 2>&1 | \
 
 
 ifeq ($(OSTYPE),darwin)
-BUNDLE = -bundle -undefined suppress 
+BUNDLE = -bundle -undefined suppress
+CFLAGS += -flat_namespace
 else
 BUNDLE = -shared 
 endif

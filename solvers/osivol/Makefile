@@ -39,7 +39,7 @@ WXXFILE	= $(PYTHON)/$(MAINNAME)_wrap.cxx
 WOBFILE	= $(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE	= $(PYTHON)/_$(MAINNAME).so
 
-CFLAGS = -Wall -ffloat-store -lm $(INCLUDES) `pkg-config osi-vol --libs` -O3 # -g
+CFLAGS += -Wall -ffloat-store -lm $(INCLUDES) `pkg-config osi-vol --libs` -O3 # -g
 
 #-----------------------------------------------------------------------------
 # Rules

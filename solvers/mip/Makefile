@@ -39,7 +39,7 @@ SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 
 #MCORE     = minisat_src/core
 #MTL       = minisat_src/mtl
-CFLAGS    = -g -Wall -ffloat-store #-O3 
+CFLAGS    += -g -Wall -ffloat-store #-O3 
 
 #-----------------------------------------------------------------------------
 # Rules

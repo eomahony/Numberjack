@@ -60,7 +60,7 @@ PYTHON = ./python
 
 XMLLIBS= `xml2-config --libs`
 
-CFLAGS = -I$(INC)
+CFLAGS += -I$(INC)
 
 LFLAGS = -L$(OBJ)
 

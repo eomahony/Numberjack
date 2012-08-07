@@ -42,7 +42,7 @@ ifeq ($(OSTYPE),darwin)
 endif
 
 ifeq ($(PYVERSION),python2.6)
-PYLIB = -I/System/Library/Frameworks/Python.framework/Versions/2.6/include/python2.6 -I/System/Library/Frameworks/Python.framework/Versions/2.6/include/python2.6 -fno-strict-aliasing -fno-common -dynamic -DNDEBUG -g -fwrapv -Os -Wall  -DENABLE_DTRACE  -arch x86_64 
+PYLIB = `python2.6-config --cflags`
 PYOBJ = `python2.6-config --prefix`
 SWIG = swig
 else 

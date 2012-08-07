@@ -1,3 +1,4 @@
+include ../../make.project
 
 MAINDIR = $(shell pwd)/../..
 

@@ -34,11 +34,16 @@ Running make should suffice
 Due to licencing issues Numberjack cannot have the sources for SCIP included in the source tree.
 The SCIP source code is available under an Academic Licence for free from:
 [http://zibopt.zib.de/download.shtml][zibopt]
+Currently, only version 1.2.0 is supported, but support for newer versions will be added soon.
 
-Compiling SCIP is a bit tricky, here's how it used to be compiled...
-
-1. Download the Zib Opt Suite from here, unarchive it, however, do not install nor compile it.
-2. Set an environment variable ZIBPATH with the path to the folder containing scip and soplex (for instance ZIBPATH=/home/lib/ziboptsuite-1.2.0; export ZIBPATH) 
+1. Download the source code of Zib Opt Suite v1.2.0, unarchive it, however, do not install nor compile it.
+    tar zxf ziboptsuite-1.2.0.tgz
+2. In the ziboptsuite directory, unarchive the SCIP and SoPlex archives.
+    cd ziboptsuite-1.2.0/
+    tar zxf scip-1.2.0.tgz
+    tar zxf soplex-1.4.2.tgz
+3. Set an environment variable ZIBPATH to the ziboptsuite directory, for example:
+    export ZIBPATH=path_to/ziboptsuite-1.2.0
 
 ### Osi Solvers
 Some of the solvers cannot be included in the source tree. I've left out all of them to be safe.

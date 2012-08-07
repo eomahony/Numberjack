@@ -34,6 +34,13 @@ SOPLEXDIR = $(shell find $(ZIBPATH) -name "soplex-?.?.?")
 
 PYTHON = ./python
 
+ifeq ($(OSTYPE),darwin)
+	ifeq ($(ARCH),x86_64)
+		# Fixes an issue with gcc4.2 creating two 64bit binarys and trying to link them with `lipo`, even though it is given -arch i386 -arch x86_64 by python-config.
+		export ARCHFLAGS = -arch x86_64
+	endif
+endif
+
 ifeq ($(PYVERSION),python2.6)
 PYLIB = -I/System/Library/Frameworks/Python.framework/Versions/2.6/include/python2.6 -I/System/Library/Frameworks/Python.framework/Versions/2.6/include/python2.6 -fno-strict-aliasing -fno-common -dynamic -DNDEBUG -g -fwrapv -Os -Wall  -DENABLE_DTRACE  -arch x86_64 
 PYOBJ = `python2.6-config --prefix`
@@ -63,6 +70,7 @@ ZIMPL=false
 # include default project Makefile from SCIP
 #-----------------------------------------------------------------------------
 include $(SCIPDIR)/make/make.project
+include ../../make.project  # We need to include this again because SCIP's make.project clears CFLAGS and we need to re-add -flat_namespace for compiling on Mac.
 ZIMPL=false 
 ZLIB=false 
 READLINE=false
@@ -148,7 +156,7 @@ $(PYTHON)/%.i: $(SRCDIR)/%.hpp
 
 $(PYTHON)/_%.so: $(OBJDIR) $(SCIPLIBFILE) $(LPILIBFILE) $(MAINOBJFILES) $(OBJDIR)/%.o  $(MIPDIR)/obj/MipWrapper.o $(PYTHON)/%_wrap.o
 	@echo "-> linking $@"
-	$(LINKCXX) $(BUNDLE) -Wno-long-double $(MAINOBJFILES) $(LINKCXX_L)$(SCIPDIR)/lib $(LINKCXX_l)$(SCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(OBJSCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(LPILIB)$(LINKLIBSUFFIX)  $(OFLAGS) $(LPSLDFLAGS) $(MIPDIR)/obj/MipWrapper.o python/SCIP_wrap.o $(LINKCXX_o)$@
+	$(LINKCXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(LINKCXX_L)$(SCIPDIR)/lib $(LINKCXX_l)$(SCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(OBJSCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(LPILIB)$(LINKLIBSUFFIX)  $(OFLAGS) $(LPSLDFLAGS) $(MIPDIR)/obj/MipWrapper.o python/SCIP_wrap.o $(LINKCXX_o)$@
 
 #scip_lib: $(SCIPDIR)/Makefile.backup 
 #	cp  $(SCIPDIR)/Makefile $(SCIPDIR)/Makefile.backup

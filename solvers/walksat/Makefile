@@ -46,7 +46,7 @@ SATDIR    = $(MAINDIR)/solvers/sat
 MCORE     = $(MAINDIR)/solvers/sat/minisat_src/core
 MTL       = $(MAINDIR)/solvers/sat/minisat_src/mtl
 WALKSRC   = $(MAINDIR)/solvers/sat/walksat_src
-CFLAGS    = -I$(MCORE) -I$(MTL) -I$(SATDIR)/src/ -I$(WALKSRC) $(HACK) -Wall -ffloat-store -O3 #-DNDEBUG -D_DEBUGWRAP
+CFLAGS    += -I$(MCORE) -I$(MTL) -I$(SATDIR)/src/ -I$(WALKSRC) $(HACK) -Wall -ffloat-store -O3 #-DNDEBUG -D_DEBUGWRAP
 
 
 #-----------------------------------------------------------------------------

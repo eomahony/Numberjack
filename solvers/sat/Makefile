@@ -39,7 +39,7 @@ SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 
 MCORE     = minisat_src/core
 MTL       = minisat_src/mtl
-CFLAGS    = -I$(MCORE) -I$(MTL) $(HACK) -Wall -ffloat-store -O3 # -DNDEBUG -D_DEBUGWRAP
+CFLAGS    += -I$(MCORE) -I$(MTL) $(HACK) -Wall -ffloat-store -O3 # -DNDEBUG -D_DEBUGWRAP
 
 #-----------------------------------------------------------------------------
 # Rules

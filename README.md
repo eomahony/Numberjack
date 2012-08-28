@@ -37,13 +37,24 @@ The SCIP source code is available under an Academic Licence for free from:
 Currently, only version 1.2.0 is supported, but support for newer versions will be added soon.
 
 1. Download the source code of Zib Opt Suite v1.2.0, unarchive it, however, do not install nor compile it.
+
+```bash
     tar zxf ziboptsuite-1.2.0.tgz
+```
+
 2. In the ziboptsuite directory, unarchive the SCIP and SoPlex archives.
+
+```bash
     cd ziboptsuite-1.2.0/
     tar zxf scip-1.2.0.tgz
     tar zxf soplex-1.4.2.tgz
+```
+
 3. Set an environment variable ZIBPATH to the ziboptsuite directory, for example:
+
+```bash
     export ZIBPATH=path_to/ziboptsuite-1.2.0
+```
 
 ### Osi Solvers
 Some of the solvers cannot be included in the source tree. I've left out all of them to be safe.

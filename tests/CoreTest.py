@@ -190,4 +190,25 @@ class CoreTest(unittest.TestCase):
                 self.assertEqual(v.ub, ub)
                 self.assertEqual(v.name(), "%s%d.%d" % (name_prefix, i, j))
 
+    def testMatrixSliceRows(self):
+        n, m = 5, 5
+        matrix = Matrix(n, m)
+        m_slice = matrix[1:3]
+        self.assertEqual(len(m_slice), 2)
+        for row in m_slice:
+            self.assertEqual(len(row), m)
+
+    def testMatrixSliceRowsCols(self):
+        n, m = 5, 5
+        matrix = Matrix(n, m)
+        m_slice = matrix[1:3,1:4]
+        self.assertEqual(len(m_slice), 2)
+        for row in m_slice:
+            self.assertEqual(len(row), 3)
+
+    def testMatrixRowColIndex(self):
+        n, m = 5, 5
+        matrix = Matrix(n, m)
+        v = matrix[2,2]
+        self.assertEqual(v.name(), "x2.2")
 

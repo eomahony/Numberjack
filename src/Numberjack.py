@@ -611,8 +611,7 @@ class Model(object):
             lib =  __import__(library)
             solver = lib.Solver(self,X)
         except ImportError:
-            print "ERROR: Failed during import, wrong module name? ("+library+")"
-            sys.exit(1)
+            raise ImportError("ERROR: Failed during import, wrong module name? ("+library+")")
         return solver
 
     ## Solve and returns a solution 
@@ -688,17 +687,13 @@ class Variable(Expression):
         tlb = type(lb)
         tub = type(ub)
         if tlb not in [int, long, float, str]:
-            print "Warning lower bound of %s is not an int or a float or a string" % name
-            exit(1)
+            raise TypeError("Warning lower bound of %s is not an int or a float or a string" % name)
         elif tub not in [int, long, float, str]:
-            print "Warning upper bound of %s is not an int or a float or a string" % name
-            exit(1)
+            raise TypeError("Warning upper bound of %s is not an int or a float or a string" % name)
         elif type(name) is not str:
-            print "Warning name variable is not a string"
-            exit(1)
+            raise TypeError("Warning name variable is not a string")
         elif lb > ub:
-            print "Warning lower bound of %s greater than upper bound " % name
-            exit(1)
+            raise ValueError("Warning lower bound of %s greater than upper bound " % name)
 
         Expression.__init__(self, name)
         self.domain_ = domain
@@ -2495,8 +2490,7 @@ class NBJ_STD_Solver(object):
             else:
                 var = self.IntVar(arg1,arg2,argopt1)
         except:
-            print "ERROR while creating variable"
-            sys.exit(1)
+            raise Exception("ERROR while creating variable")
         return var
 
     def getFloatVar(self, lb, ub, ident):
@@ -2504,8 +2498,7 @@ class NBJ_STD_Solver(object):
         try:
             var = self.FloatVar(lb,ub,ident)
         except:
-            print "ERROR: Solver does not support real variables"
-            sys.exit(1)
+            raise ValueError("ERROR: Solver does not support real variables")
         return var
 
     def load_expr(self, expr):
@@ -2615,8 +2608,6 @@ class NBJ_STD_Solver(object):
             decomp = self.load_expr(expr_list[0])
             return decomp
         else:
-            print "ERROR: Solver does not support \"%s\" and no decomposition is available" % (expr.get_operator())
-            exit(1)
             raise ConstraintNotSupportedError(expr.get_operator(), self.Library)
 
         
@@ -2997,5 +2988,4 @@ class ConstraintNotSupportedError(exceptions.Exception):
         self.solver = solver
         
     def __str__(self):
-        return "ERROR: Constraint %s not supported by solver %s" % (self.value, self.solver)
-
+        return "ERROR: Constraint %s not supported by solver %s and no decomposition is available." % (self.value, self.solver)

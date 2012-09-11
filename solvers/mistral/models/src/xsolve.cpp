@@ -25,6 +25,8 @@
 #include "xcsp/MistralCallback.hh"
 #include "xcsp/CSPParserCallback.hh"
 
+#include <unistd.h>
+
 using namespace CSPXMLParser;
 using namespace Mistral;
 

@@ -125,47 +125,47 @@ class MiscTest(unittest.TestCase):
         solver = MiscTest.solver(model)
         self.assertTrue(solver.solve())
     
-    def testOpticalModelling(self):
-        
-        alarm_matrix = [
-            [1, 2, 3,                   10],
-            [                  7          ],
-            [               6, 7,         ],
-            [            5, 6, 7,         ],
-            [   2, 3, 4,          8,    10],
-            [      3, 4,          8, 9, 10],
-        ]
-        
-        Monitors, Nodes, alarm_matrix = [10, 6, alarm_matrix]
-        
-        class VectorPairAllDiff(Expression):
-            def __init__(self, row1, row2):
-                Expression.__init__(self, "VectorAllDiff")
-                self.set_children(row1)
-                self.rows = [row1, row2]
-                
-            def decompose(self):
-                return [ Sum([var1 != var2 for var1, var2 in zip(self.rows[0], self.rows[1])]) > 0 ]
-        
-        monitors_on = VarArray(Monitors)
-        being_monitored = Matrix(Nodes, Monitors)
-        
-        model = Model()
-        
-        model.add(Minimise(Sum(monitors_on)))
-        # Link the monotirs on to being alarmed 
-        model.add( [ monitor == ( Sum(col) >= 1 ) for col, monitor in zip(being_monitored.col, monitors_on) ]) 
-        # Link alarm_matrix to variable matrix    
-        for monitored_row, possible_monitor_row in zip(being_monitored, alarm_matrix):
-            model.add([monitored_row[idx - 1] == 0 for idx in
-                       [x for x in range(Monitors) if x not in possible_monitor_row]])
-        # Monotor everything    
-        model.add( [ Sum(row) > 0 for row in being_monitored] )
-        # Make sure to have different alarms
-        model.add([VectorPairAllDiff(x1, x2) for x1, x2 in pair_of(being_monitored)])
-            
-        solver = MiscTest.solver(model)
-        self.assertTrue(solver.solve())
+    #def testOpticalModelling(self):
+    #    
+    #    alarm_matrix = [
+    #        [1, 2, 3,                   10],
+    #        [                  7          ],
+    #        [               6, 7,         ],
+    #        [            5, 6, 7,         ],
+    #        [   2, 3, 4,          8,    10],
+    #        [      3, 4,          8, 9, 10],
+    #    ]
+    #    
+    #    Monitors, Nodes, alarm_matrix = [10, 6, alarm_matrix]
+    #    
+    #    class VectorPairAllDiff(Expression):
+    #        def __init__(self, row1, row2):
+    #            Expression.__init__(self, "VectorAllDiff")
+    #            self.children = row1
+    #            self.rows = [row1, row2]
+    #            
+    #        def decompose(self):
+    #            return [ Sum([var1 != var2 for var1, var2 in zip(self.rows[0], self.rows[1])]) > 0 ]
+    #    
+    #    monitors_on = VarArray(Monitors)
+    #    being_monitored = Matrix(Nodes, Monitors)
+    #    
+    #    model = Model()
+    #    
+    #    model.add(Minimise(Sum(monitors_on)))
+    #    # Link the monotirs on to being alarmed 
+    #    model.add( [ monitor == ( Sum(col) >= 1 ) for col, monitor in zip(being_monitored.col, monitors_on) ]) 
+    #    # Link alarm_matrix to variable matrix    
+    #    for monitored_row, possible_monitor_row in zip(being_monitored, alarm_matrix):
+    #        model.add([monitored_row[idx - 1] == 0 for idx in
+    #                   [x for x in range(Monitors) if x not in possible_monitor_row]])
+    #    # Monotor everything    
+    #    model.add( [ Sum(row) > 0 for row in being_monitored] )
+    #    # Make sure to have different alarms
+    #    model.add([VectorPairAllDiff(x1, x2) for x1, x2 in pair_of(being_monitored)])
+    #        
+    #    solver = MiscTest.solver(model)
+    #    self.assertTrue(solver.solve())
         
     def testSensorNetwork(self):
         

@@ -38,23 +38,21 @@ class GlobalsATest(unittest.TestCase):
         self.assertTrue(s.solve())
         self.assertTrue([var1.get_value(),var2.get_value()].count(1) == 1)
 
-    '''
-    def testAllDiffSingleSucc(self):
-        m = Model()
-        var = Variable(0,10)
-        m.add(AllDiff([var]))
-        s = GlobalsATest.solver(m)
-        self.assertTrue(s.solve())
-        self.assertTrue(var.get_value() == 0)
-    
-    def testAllDiffSingleBooleanSucc(self):
-        m = Model()
-        var = Variable()
-        m.add(AllDiff([var]))
-        s = GlobalsATest.solver(m)
-        self.assertTrue(s.solve())
-        self.assertTrue(var.get_value() == 0)
-    '''
+    #def testAllDiffSingleSucc(self):
+    #    m = Model()
+    #    var = Variable(0,10)
+    #    m.add(AllDiff([var]))
+    #    s = GlobalsATest.solver(m)
+    #    self.assertTrue(s.solve())
+    #    self.assertTrue(var.get_value() == 0)
+    #
+    #def testAllDiffSingleBooleanSucc(self):
+    #    m = Model()
+    #    var = Variable()
+    #    m.add(AllDiff([var]))
+    #    s = GlobalsATest.solver(m)
+    #    self.assertTrue(s.solve())
+    #    self.assertTrue(var.get_value() == 0)
 
     def testAllDiffMulipleBooleanFail(self):
         m = Model()
@@ -245,9 +243,5 @@ class GlobalsATest(unittest.TestCase):
     
 if __name__ == "__main__":
     import Mistral
-    import MiniSat
-    import SCIP
-    #GlobalsATest.solver = Mistral.Solver
-    #GlobalsATest.solver = MiniSat.Solver
-    GlobalsATest.solver = SCIP.Solver
+    GlobalsATest.solver = Mistral.Solver
     unittest.main()

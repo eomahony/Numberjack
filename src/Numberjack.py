@@ -937,7 +937,7 @@ class Matrix(list):
 
         if optarg2 == None:
             if optarg1 != None:
-                list.__init__(self, [VarArray(row) for row in optarg1])
+                list.__init__(self, [VarArray(row, "%s%d." % (name, i)) for i, row in enumerate(optarg1)])
             else:
                 list.__init__(self)
                 return

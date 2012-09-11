@@ -924,22 +924,16 @@ class VarArray(list):
 #    Matrices support Element constraints on row, column or flatten views.
 class Matrix(list):
 
-    ## accessor to the list of rows
-    row = None
-
-    ## accessor to the list of columns
-    col = None
-
-    ## accessor to the list of cells
-    flat = None
-
-
     def __init__(self, optarg1=None, optarg2=None, optarg3=None, optarg4=None, optarg5=None):
         n = 1
         m = 1
         lb = 0
         ub = 1
         name = 'x'
+
+        self.row = None   # accessor to the list of rows
+        self.col = None   # accessor to the list of columns
+        self.flat = None  # accessor to the list of cells
 
         if optarg2 == None:
             if optarg1 != None:

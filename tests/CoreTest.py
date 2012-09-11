@@ -79,6 +79,7 @@ class CoreTest(unittest.TestCase):
         
     def testVariableListName(self):
         # Variable(list, 'x') :- Variable with domain specified as a list called 'x'
+        list_domain = [2,8,6,4]
         v = Variable(list_domain, 'y')
         self.assertEqual(v.name(), 'y')
         self.assertEqual(v.lb, 2)
@@ -120,3 +121,15 @@ class CoreTest(unittest.TestCase):
         model = Model(v)
         solver = CoreTest.solver(model)
         self.assertEqual(v.get_size(), 10)
+
+    def testModelLoad(self):
+        "Tests that we can load a solver from a model by name. We assume that Mistral will be available at a minimum."
+        import Mistral
+        m = Model()
+        solver = m.load('Mistral')
+        self.assertIsInstance(solver, Mistral.Solver)
+
+    def testModelLoadNonExistantSolver(self):
+        m = Model()
+        self.assertRaises(ImportError, m.load, 'solverdoesnotexist')
+

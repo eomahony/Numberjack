@@ -790,8 +790,8 @@ class VarArray(list):
             ub = 1
             name = 'x'
             if optarg1 is not None:
-                #if type(optarg1) is str:
-                if hasattr(optarg1, '__iter__'):
+                #if hasattr(optarg1, '__iter__'):
+                if type(optarg1) is str:
                     name = optarg1
                 elif type(optarg2) is int or type(optarg2) is float:
                     lb = optarg1

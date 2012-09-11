@@ -133,3 +133,61 @@ class CoreTest(unittest.TestCase):
         m = Model()
         self.assertRaises(ImportError, m.load, 'solverdoesnotexist')
 
+    # Tests for Matrix constructor
+
+    def testMatrixList(self):
+        # M = Matrix(l) creates a Matrix from a list l
+        l = [1, 2, 3]
+        m = Matrix(l)
+        self.assertEqual(len(m), len(l))
+        for i in range(len(l)):
+            self.assertEqual(len(m[i]), l[i])
+            for j in range(l[i]):
+                v = m[i][j]
+                self.assertIsInstance(v, Variable)
+                self.assertEqual(v.lb, 0)
+                self.assertEqual(v.ub, 1)
+                self.assertEqual(v.name(), "x%d.%d" % (i, j))
+
+    def testMatrixBoolean(self):
+        # - M = Matrix(n, m) creates a n x m Matrix of Boolean variables
+        n, m = 3, 3
+        self.verifyMatrixOfVariables(Matrix(n, m), n, m, 0, 1)
+
+    def testMatrixBooleanName(self):
+        # - M = Matrix(n, m, 'x') creates a n x m Matrix of Boolean variables with names 'x0.0..xn-1.m-1'
+        n, m, name = 3, 3, 'y'
+        self.verifyMatrixOfVariables(Matrix(n, m, name), n, m, 0, 1, name_prefix=name)
+
+    def testMatrixUb(self):
+        # - M = Matrix(n, m, u) creates a n x m Matrix of variables with domains [0..u-1]
+        n, m, ub = 3, 3, 10
+        self.verifyMatrixOfVariables(Matrix(n, m, ub), n, m, 0, ub - 1)
+
+    def testMatrixUbName(self):
+        # - M = Matrix(n, m, u, 'x') creates a n x m Matrix of variables with domains [0..u-1] and names 'x0.0..xn-1.m-1'
+        n, m, ub, name = 3, 3, 10, 'y'
+        self.verifyMatrixOfVariables(Matrix(n, m, ub, name), n, m, 0, ub - 1, name_prefix=name)
+
+    def testMatrixLbUb(self):
+        # - M = Matrix(n, m, l, u) creates a n x m Matrix of variables with domains [l..u]
+        n, m, lb, ub = 3, 3, 5, 10
+        self.verifyMatrixOfVariables(Matrix(n, m, lb, ub), n, m, lb, ub)
+
+    def testMatrixLbUbName(self):
+        # - M = Matrix(n, m, l, u, 'x') creates a n x m Matrix of variables with domains [l..u] and names 'x0.0..xn-1.m-1'
+        n, m, lb, ub, name = 3, 3, 5, 10, 'y'
+        self.verifyMatrixOfVariables(Matrix(n, m, lb, ub, name), n, m, lb, ub, name_prefix=name)
+
+    def verifyMatrixOfVariables(self, matrix, n, m, lb, ub, name_prefix='x'):
+        self.assertEqual(len(matrix), n)
+        for i in range(n):
+            self.assertEqual(len(matrix[i]), m)
+            for j in range(m):
+                v = matrix[i][j]
+                self.assertIsInstance(v, Variable)
+                self.assertEqual(v.lb, lb)
+                self.assertEqual(v.ub, ub)
+                self.assertEqual(v.name(), "%s%d.%d" % (name_prefix, i, j))
+
+

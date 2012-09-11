@@ -888,11 +888,11 @@ class VarArray(list):
 #
 #    - \code M = Matrix(l) \endcode creates a Matrix from a list l
 #    - M = Matrix(n, m) creates a n x m Matrix of Boolean variables
-#    - M = Matrix(n, m, 'x') creates a n x m Matrix of Boolean variables with names 'x0_0..xn-1_m-1'
+#    - M = Matrix(n, m, 'x') creates a n x m Matrix of Boolean variables with names 'x0.0..xn-1.m-1'
 #    - M = Matrix(n, m, u) creates a n x m Matrix of variables with domains [0..u-1] 
-#    - M = Matrix(n, m, u, 'x') creates a n x m Matrix of variables with domains [0..u-1] and names 'x0_0..xn-1_m-1'
+#    - M = Matrix(n, m, u, 'x') creates a n x m Matrix of variables with domains [0..u-1] and names 'x0.0..xn-1.m-1'
 #    - M = Matrix(n, m, l, u) creates a n x m Matrix of variables with domains [l..u]
-#    - M = Matrix(n, m, l, u, 'x') creates a n x m Matrix of variables with domains [l..u] and names 'x0_0..xn-1_m-1'
+#    - M = Matrix(n, m, l, u, 'x') creates a n x m Matrix of variables with domains [l..u] and names 'x0.0..xn-1.m-1'
 #
 #    Matrices feature specific handlers to access (subsets of) rows and columns. 
 #    The fields 'row', 'col' and 'flat' respectively refer to the list of rows, 

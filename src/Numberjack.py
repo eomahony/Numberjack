@@ -937,6 +937,8 @@ class Matrix(list):
 
         if optarg2 == None:
             if optarg1 != None:
+                # BH: This could create rows with varying numbers of columns if given a list with different values.
+                #     Should this be allowed? If so, then we need to verify any assumptions being made in this code.
                 list.__init__(self, [VarArray(row, "%s%d." % (name, i)) for i, row in enumerate(optarg1)])
             else:
                 list.__init__(self)

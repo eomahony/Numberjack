@@ -33,27 +33,27 @@ Running make should suffice
 ### SCIP
 Due to licencing issues Numberjack cannot have the sources for SCIP included in the source tree.
 The SCIP source code is available under an Academic Licence for free from:
-[http://zibopt.zib.de/download.shtml][zibopt]
-Currently, only version 1.2.0 is supported, but support for newer versions will be added soon.
+[http://scip.zib.de/download.shtml][scipopt]
+Please download version 3.0.0.
 
-1. Download the source code of Zib Opt Suite v1.2.0, unarchive it, however, do not install nor compile it.
+1. Download the source code of SCIP Optimization Suite v3.0.0, unarchive it, however, do not install nor compile it.
 
 ```bash
-    tar zxf ziboptsuite-1.2.0.tgz
+    tar zxf scipoptsuite-3.0.0.tgz
 ```
 
-2. In the ziboptsuite directory, unarchive the SCIP and SoPlex archives.
+2. In the scipoptsuite directory, unarchive the SCIP and SoPlex archives.
 
 ```bash
-    cd ziboptsuite-1.2.0/
-    tar zxf scip-1.2.0.tgz
-    tar zxf soplex-1.4.2.tgz
+    cd scipoptsuite-3.0.0/
+    tar zxf scip-3.0.0.tgz
+    tar zxf soplex-1.7.0.tgz
 ```
 
-3. Set an environment variable ZIBPATH to the ziboptsuite directory, for example:
+3. Set an environment variable ZIBPATH to the scipoptsuite directory, for example:
 
 ```bash
-    export ZIBPATH=path_to/ziboptsuite-1.2.0
+    export ZIBPATH=path_to/scipoptsuite-3.0.0
 ```
 
 ### Osi Solvers
@@ -99,7 +99,7 @@ Download Glpk from: [http://ftp.gnu.org/gnu/glpk/][glpk]
 The version that the Makefile presumes is glpk-4.47. If you download a different version the line `GLPKVER = 4.47` will have to be changed.
 
 [njhome]: http://numberjack.ucc.ie
-[zibopt]: http://zibopt.zib.de/download.shtml
+[scipopt]: http://scip.zib.de/download.shtml
 [osi]: http://www.coin-or.org/download/source/Osi/
 [osiclp]: http://www.coin-or.org/download/source/Clp/
 [osicbc]: http://www.coin-or.org/download/source/Cbc/

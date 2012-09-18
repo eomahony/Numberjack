@@ -21,6 +21,7 @@ private:
   int _verbosity;
   SCIP* get_scip();
   void add_in_constraint(LinearConstraint *con, double coef=0);
+  bool has_been_added;
 
 public:
   int var_counter;

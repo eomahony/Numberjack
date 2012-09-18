@@ -15,6 +15,8 @@ SCIPSolver::SCIPSolver(){
   DBG("create a scip solver\n%s", "");
 
   var_counter = 0;
+  _verbosity = 0;
+  has_been_added = false;
 
   // Load up SCIP
   SCIP_CALL_EXC( SCIPcreate(& _scip) );
@@ -22,7 +24,7 @@ SCIPSolver::SCIPSolver(){
   SCIP_CALL_EXC( SCIPincludeDefaultPlugins(_scip) );
   // create an empty problem
   SCIP_CALL_EXC( SCIPcreateProb(_scip, "Numberjack Model",
-				NULL, NULL, NULL, NULL, NULL, NULL) );
+				NULL, NULL, NULL, NULL, NULL, NULL, NULL) );
   // set the objective sense to maximize, default is minimize
   SCIP_CALL_EXC( SCIPsetObjsense(_scip, SCIP_OBJSENSE_MAXIMIZE) );
 }
@@ -43,6 +45,7 @@ void SCIPSolver::initialise(){
   if(_obj != NULL) add_in_constraint(_obj, _obj_coef);
   for(unsigned int i = 0; i < _constraints.size(); ++i)
     add_in_constraint(_constraints[i]);
+  has_been_added = true;
 }
 
 void SCIPSolver::add_in_constraint(LinearConstraint *con, double coef){
@@ -69,7 +72,7 @@ void SCIPSolver::add_in_constraint(LinearConstraint *con, double coef){
 				  con->_variables[i]->_upper, // UB
 				  coef, // ective
 				  type,
-				  TRUE, FALSE, NULL, NULL, NULL, NULL) );
+				  TRUE, FALSE, NULL, NULL, NULL, NULL, NULL) );
       SCIP_CALL_EXC( SCIPaddVar(_scip, var_ptr) );
     
       con->_variables[i]->_var = (void*) var_ptr;
@@ -96,7 +99,7 @@ void SCIPSolver::add_in_constraint(LinearConstraint *con, double coef){
 int SCIPSolver::solve(){
   DBG("solve!%s\n", "");
   
-  initialise();
+  if(!has_been_added) initialise();
 
   if(_verbosity > 0 && _verbosity < 3){
     // Do nothing extra
@@ -105,7 +108,7 @@ int SCIPSolver::solve(){
     SCIP_CALL_EXC(SCIPprintOrigProblem(_scip, NULL, NULL, FALSE));
   } else {
       // disable scip output to stdout
-    SCIP_CALL_EXC( SCIPsetMessagehdlr(NULL) );
+    SCIP_CALL_EXC( SCIPsetMessagehdlr(_scip, NULL) );
   }
 
   SCIP_CALL_EXC( SCIPsolve(_scip) );

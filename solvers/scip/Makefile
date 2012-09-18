@@ -154,9 +154,9 @@ $(PYTHON)/%.i: $(SRCDIR)/%.hpp
 	python $(MAINDIR)/tools/mk_subinterface.py mip MipWrapper $<
 
 
-$(PYTHON)/_%.so: $(OBJDIR) $(SCIPLIBFILE) $(LPILIBFILE) $(MAINOBJFILES) $(OBJDIR)/%.o  $(MIPDIR)/obj/MipWrapper.o $(PYTHON)/%_wrap.o
+$(PYTHON)/_%.so: $(OBJDIR) $(SCIPLIBFILE) $(NLPILIBFILE) $(LPILIBFILE) $(MAINOBJFILES) $(OBJDIR)/%.o  $(MIPDIR)/obj/MipWrapper.o $(PYTHON)/%_wrap.o
 	@echo "-> linking $@"
-	$(LINKCXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(LINKCXX_L)$(SCIPDIR)/lib $(LINKCXX_l)$(SCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(OBJSCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(LPILIB)$(LINKLIBSUFFIX)  $(OFLAGS) $(LPSLDFLAGS) $(MIPDIR)/obj/MipWrapper.o python/SCIP_wrap.o $(LINKCXX_o)$@
+	$(LINKCXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(LINKCXX_L)$(SCIPDIR)/lib $(LINKCXX_l)$(SCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(NLPILIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(OBJSCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(LPILIB)$(LINKLIBSUFFIX)  $(OFLAGS) $(LPSLDFLAGS) $(MIPDIR)/obj/MipWrapper.o python/SCIP_wrap.o $(LINKCXX_o)$@
 
 #scip_lib: $(SCIPDIR)/Makefile.backup 
 #	cp  $(SCIPDIR)/Makefile $(SCIPDIR)/Makefile.backup

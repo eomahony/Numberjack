@@ -147,7 +147,7 @@ $(UGDIRECTORIES): $(UGDIR)
 $(SOPLEXLIB):   $(SOPLEXDIR)
 		@echo ""
 		@echo "** Building SoPlex library \"$@\"."
-		@$(MAKE) -C $(SOPLEXDIR) OPT=$(LPSOPT) ZLIB=$(ZLIB)
+		@$(MAKE) -f Makefile.soplex.Numberjack -C $(SOPLEXDIR) OPT=$(LPSOPT) ZLIB=$(ZLIB)
 
 
 # declare lib to be phony to force building it - dependencies are not available here
@@ -204,7 +204,7 @@ sciplibs:	$(DIRECTORIES) $(LIBS) $(SOFTLINKS)
 scipbinary:	$(DIRECTORIES) $(LIBS) $(SOFTLINKS)
 		@echo ""
 		@echo "** Building SCIP libraries and executable."
-		@$(MAKE) -C $(SCIPDIR) READLINE=$(READLINE) LPS=$(LPS) LPSOPT=$(LPSOPT) ZIMPL=$(ZIMPL) ZIMPLOPT=$(ZIMPLOPT) ZLIB=$(ZLIB) MAKESOFTLINKS=$(MAKESOFTLINKS)
+		@$(MAKE) -f Makefile.scip.Numberjack -C $(SCIPDIR) READLINE=$(READLINE) LPS=$(LPS) LPSOPT=$(LPSOPT) ZIMPL=$(ZIMPL) ZIMPLOPT=$(ZIMPLOPT) ZLIB=$(ZLIB) MAKESOFTLINKS=$(MAKESOFTLINKS)
 		@echo ""
 		@echo "** Build complete."
 		@echo "** Find your SCIP binary in \"$(SCIPDIR)/bin\"."

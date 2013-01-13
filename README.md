@@ -34,26 +34,26 @@ Running make should suffice
 Due to licencing issues Numberjack cannot have the sources for SCIP included in the source tree.
 The SCIP source code is available under an Academic Licence for free from:
 [http://scip.zib.de/download.shtml][scipopt]
-Please download version 3.0.0.
+Please download version 3.0.1.
 
-1. Download the source code of SCIP Optimization Suite v3.0.0, unarchive it, however, do not install nor compile it.
+1. Download the source code of SCIP Optimization Suite v3.0.1, unarchive it, however, do not install nor compile it.
 
 ```bash
-    tar zxf scipoptsuite-3.0.0.tgz
+    tar zxf scipoptsuite-3.0.1.tgz
 ```
 
 2. In the scipoptsuite directory, unarchive the SCIP and SoPlex archives.
 
 ```bash
-    cd scipoptsuite-3.0.0/
-    tar zxf scip-3.0.0.tgz
-    tar zxf soplex-1.7.0.tgz
+    cd scipoptsuite-3.0.1/
+    tar zxf scip-3.0.1.tgz
+    tar zxf soplex-1.7.1.tgz
 ```
 
 3. Set an environment variable ZIBPATH to the scipoptsuite directory, for example:
 
 ```bash
-    export ZIBPATH=path_to/scipoptsuite-3.0.0
+    export ZIBPATH=path_to/scipoptsuite-3.0.1
 ```
 
 ### Osi Solvers

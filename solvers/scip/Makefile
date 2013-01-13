@@ -124,7 +124,7 @@ clean_swig:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~ 
 
 clean_all: clean clean_swig
-	cd ./ziboptsuite/; make clean
+	cd $(SCIPDIR); make clean
 
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp

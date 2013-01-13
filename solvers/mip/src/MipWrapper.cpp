@@ -36,7 +36,7 @@ int MipWrapper_Expression::get_min() {
 
 void MipWrapper_Expression::leq(double value, MipWrapperSolver* solver) {
     if (_expr_encoding != NULL) {
-        for (int i = _upper; i >= value && i >= _lower; ++i)
+        for (int i = _upper; i > value && i >= _lower; --i)
             if (_expr_encoding[i] != NULL) {
                 LinearConstraint *con = new LinearConstraint(0, 0);
                 con->add_coef(_expr_encoding[i], 1);
@@ -55,7 +55,7 @@ void MipWrapper_Expression::lt(double value, MipWrapperSolver* solver) {
 
 void MipWrapper_Expression::geq(double value, MipWrapperSolver* solver) {
     if (_expr_encoding != NULL) {
-        for (int i = _lower; i <= value && i <= _upper; ++i)
+        for (int i = _lower; i < value && i <= _upper; ++i)
             if (_expr_encoding[i] != NULL) {
                 LinearConstraint *con = new LinearConstraint(0, 0);
                 con->add_coef(_expr_encoding[i], 1);
@@ -79,6 +79,9 @@ void MipWrapper_Expression::eq(double value, MipWrapperSolver* solver) {
                 && _expr_encoding[(int) value] != NULL) {
             LinearConstraint *con = new LinearConstraint(1, 1);
             con->add_coef(_expr_encoding[(int) value], 1);
+            solver->_constraints.push_back(con);
+        } else {
+            LinearConstraint *con = new LinearConstraint(1,1);
             solver->_constraints.push_back(con);
         }
     } else {
@@ -209,16 +212,14 @@ void MipWrapper_IntVar::encode(MipWrapperSolver* solver) {
             DBG("Making an encoding for a variable with holes %s\n", "");
 
             _expr_encoding = new MipWrapper_Expression*[get_size()];
-            for
-            (			int i = 0; i < get_size(); ++i) _expr_encoding[i] = NULL;
+            for(int i = 0; i < get_size(); ++i) _expr_encoding[i] = NULL;
             _expr_encoding -= (int) _lower;
 
             LinearConstraint *con = new LinearConstraint(1, 1);
             for (int i = 0; i < _values.size(); ++i) {
-                _expr_encoding[_values.get_item(i)] = new MipWrapper_IntVar(0,
-                        1);
+                _expr_encoding[_values.get_item(i)] = new MipWrapper_IntVar(0, 1);
                 _expr_encoding[_values.get_item(i)]->add(solver, false);
-                con->add_coef(_expr_encoding[i], 1);
+                con->add_coef(_expr_encoding[_values.get_item(i)], 1);
             }
             _solver->_constraints.push_back(con);
 
@@ -250,14 +251,14 @@ MipWrapper_FloatVar::MipWrapper_FloatVar() {
     initialise(true);
     _upper = 0;
     _lower = 0;
-    DBG("Crearing continuous variable (%f .. %f)\n", _upper, _lower);
+    DBG("Creating continuous variable (%f .. %f)\n", _upper, _lower);
 }
 
 MipWrapper_FloatVar::MipWrapper_FloatVar(const double lb, const double ub) {
     initialise(true);
     _upper = ub;
     _lower = lb;
-    DBG("Crearing continuous variable (%f .. %f)\n", _upper, _lower);
+    DBG("Creating continuous variable (%f .. %f)\n", _upper, _lower);
 }
 
 MipWrapper_FloatVar::MipWrapper_FloatVar(const double lb, const double ub,
@@ -266,7 +267,7 @@ MipWrapper_FloatVar::MipWrapper_FloatVar(const double lb, const double ub,
     _upper = ub;
     _lower = lb;
     nbj_ident = ident;
-    DBG("Crearing continuous variable (%f .. %f)\n", _upper, _lower);
+    DBG("Creating continuous variable (%f .. %f)\n", _upper, _lower);
 }
 
 double MipWrapper_FloatVar::get_value() {
@@ -628,7 +629,7 @@ MipWrapper_binop::MipWrapper_binop(MipWrapper_Expression *var1,
     _is_proper_coef = false;
     _upper = 1.0;
     _lower = 0.0;
-    DBG("Crearing binary operator %s\n", "");
+    DBG("Creating binary operator %s\n", "");
 }
 
 MipWrapper_binop::MipWrapper_binop(MipWrapper_Expression *var1, double rhs) :
@@ -639,7 +640,7 @@ MipWrapper_binop::MipWrapper_binop(MipWrapper_Expression *var1, double rhs) :
     _is_proper_coef = true;
     _upper = 1.0;
     _lower = 0.0;
-    DBG("Crearing binary operator %s\n", "");
+    DBG("Creating binary operator %s\n", "");
 }
 
 MipWrapper_binop::~MipWrapper_binop() {
@@ -869,12 +870,19 @@ MipWrapper_Expression* MipWrapper_ne::add(MipWrapperSolver *solver,
             DBG("Reifing not equal constraint %s\n", "");
 
             if (_is_proper_coef) {
+                if (_vars[0]->_expr_encoding[(int) _rhs] != NULL) {
+                    MipWrapper_Expression *bvar = new MipWrapper_IntVar(0, 1);
+                    bvar = bvar->add(solver, false);
 
-                //TODO:
-
+                    LinearConstraint *con = new LinearConstraint(1, 1);
+                    con->add_coef(_vars[0]->_expr_encoding[(int) _rhs], 1);
+                    con->add_coef(bvar, 1);
+                    solver->_constraints.push_back(con);
+                    return bvar;
+                } else
+                    return new MipWrapper_IntVar(1, 1);
             } else {
                 _vars[1] = _vars[1]->add(solver, false);
-                _vars[0]->encode(solver);
                 _vars[1]->encode(solver);
 
                 MipWrapper_Expression *c = new MipWrapper_IntVar(0, 1);
@@ -897,12 +905,12 @@ MipWrapper_Expression* MipWrapper_ne::add(MipWrapperSolver *solver,
 MipWrapper_le::MipWrapper_le(MipWrapper_Expression *var1,
                              MipWrapper_Expression *var2) :
     MipWrapper_binop(var1, var2) {
-    DBG("Crearing le constraint  %s\n", "");
+    DBG("Creating le constraint  %s\n", "");
 }
 
 MipWrapper_le::MipWrapper_le(MipWrapper_Expression *var1, double rhs) :
     MipWrapper_binop(var1, rhs) {
-    DBG("Crearing le constraint  %s\n", "");
+    DBG("Creating le constraint  %s\n", "");
 }
 
 MipWrapper_le::~MipWrapper_le() {
@@ -975,12 +983,12 @@ MipWrapper_Expression* MipWrapper_le::add(MipWrapperSolver *solver,
 MipWrapper_ge::MipWrapper_ge(MipWrapper_Expression *var1,
                              MipWrapper_Expression *var2) :
     MipWrapper_binop(var1, var2) {
-    DBG("Crearing ge constraint  %s\n", "");
+    DBG("Creating ge constraint  %s\n", "");
 }
 
 MipWrapper_ge::MipWrapper_ge(MipWrapper_Expression *var1, double rhs) :
     MipWrapper_binop(var1, rhs) {
-    DBG("Crearing ge constraint  %s\n", "");
+    DBG("Creating ge constraint  %s\n", "");
 }
 
 MipWrapper_ge::~MipWrapper_ge() {
@@ -1054,12 +1062,12 @@ MipWrapper_Expression* MipWrapper_ge::add(MipWrapperSolver *solver,
 MipWrapper_lt::MipWrapper_lt(MipWrapper_Expression *var1,
                              MipWrapper_Expression *var2) :
     MipWrapper_binop(var1, var2) {
-    DBG("Crearing lt constraint %s\n", "");
+    DBG("Creating lt constraint %s\n", "");
 }
 
 MipWrapper_lt::MipWrapper_lt(MipWrapper_Expression *var1, double rhs) :
     MipWrapper_binop(var1, rhs) {
-    DBG("Crearing lt constraint %s\n", "");
+    DBG("Creating lt constraint %s\n", "");
 }
 
 MipWrapper_lt::~MipWrapper_lt() {
@@ -1132,12 +1140,12 @@ MipWrapper_Expression* MipWrapper_lt::add(MipWrapperSolver *solver,
 MipWrapper_gt::MipWrapper_gt(MipWrapper_Expression *var1,
                              MipWrapper_Expression *var2) :
     MipWrapper_binop(var1, var2) {
-    DBG("Crearing gt constraint %s\n", "");
+    DBG("Creating gt constraint %s\n", "");
 }
 
 MipWrapper_gt::MipWrapper_gt(MipWrapper_Expression *var1, double rhs) :
     MipWrapper_binop(var1, rhs) {
-    DBG("Crearing gt constraint %s\n", "");
+    DBG("Creating gt constraint %s\n", "");
 }
 
 MipWrapper_gt::~MipWrapper_gt() {

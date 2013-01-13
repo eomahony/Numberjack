@@ -39,7 +39,7 @@ SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 
 #MCORE     = minisat_src/core
 #MTL       = minisat_src/mtl
-CFLAGS    += -g -Wall -ffloat-store #-O3 
+CFLAGS    += -Wall -ffloat-store -O3 #-g -D_DEBUGWRAP
 
 #-----------------------------------------------------------------------------
 # Rules
@@ -57,7 +57,6 @@ clean_swig:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
 
 clean_all: clean clean_swig
-	cd $(CORE)/; make clean
 
 clean:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/*o $(PYTHON)/*~ $(PYTHON)/build *~ $(SRCDIR)/*~

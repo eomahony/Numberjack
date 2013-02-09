@@ -32,21 +32,24 @@ Please download version 3.0.1.
 
 1. Download the source code of SCIP Optimization Suite v3.0.1, unarchive it, however, do not install nor compile it.
 
-```bash
+    ```bash
     tar zxf scipoptsuite-3.0.1.tgz
-```
+    ```
+
 2. In the scipoptsuite directory, unarchive the SCIP and SoPlex archives.
 
-```bash
+    ```bash
     cd scipoptsuite-3.0.1/
     tar zxf scip-3.0.1.tgz
     tar zxf soplex-1.7.1.tgz
-```
+    ```
+
 3. Set an environment variable ZIBPATH to the scipoptsuite directory, for example:
 
-```bash
+    ```bash
     export ZIBPATH=path_to/scipoptsuite-3.0.1
-```
+    ```
+
 4. Move the folder `available_interfaces/scip` to `solvers/scip`.
 
 ### Osi Solvers

@@ -3,8 +3,6 @@
 
 ## What is Numberjack?
 
-From the Numberjack [homepage][njhome]
-
 Numberjack is a modelling package written in Python for constraint programming. Python benefits from a large and active programming community, Numberjack is therefore a perfect tool to embed CP technology into larger applications. It is designed to support a number of underlying C/C++ solvers as egg files, that is, seamlessly and efficiently. Currently, there are four available back-ends: a MIP solver (SCIP), two SAT solvers (MiniSat) and (Walksat) and CP solver (Mistral).
 
 * Numberjack offers a high level constraint programming language
@@ -12,10 +10,6 @@ Numberjack is a modelling package written in Python for constraint programming. 
 * Numberjack uses efficient underlying C/C++ solvers, without the compilation hassle!
 
 ## Building the solvers
-
-### Selecting solvers
-
-At the moment there is no mechanism to select which solvers get compiled so deleting the solvers you dont want or moving them out of the solvers folder is needed.
 
 ### Prerequisites
 
@@ -56,8 +50,10 @@ Please download version 3.0.1.
     export ZIBPATH=path_to/scipoptsuite-3.0.1
 ```
 
+4. Move the folder `available_interfaces/scip` to `solvers/scip`.
+
 ### Osi Solvers
-Some of the solvers cannot be included in the source tree. I've left out all of them to be safe.
+Some of the solvers cannot be included in the source tree.
 Before you get started with the compiling Osi solvers for Numberjack you must first get the Osi module working.
 
 Download Osi from: [http://www.coin-or.org/download/source/Osi/][osi]

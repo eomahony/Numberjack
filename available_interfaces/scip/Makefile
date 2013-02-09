@@ -1,25 +1,3 @@
-#* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-#*                                                                           *
-#*                  This file is part of the program and library             *
-#*         SCIP --- Solving Constraint Integer Programs                      *
-#*                                                                           *
-#*    Copyright (C) 2002-2008 Konrad-Zuse-Zentrum                            *
-#*                            fuer Informationstechnik Berlin                *
-#*                                                                           *
-#*  SCIP is distributed under the terms of the ZIB Academic Licence.         *
-#*                                                                           *
-#*  You should have received a copy of the ZIB Academic License              *
-#*  along with SCIP; see the file COPYING. If not email to scip@zib.de.      *
-#*                                                                           *
-#* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-# $Id: Makefile,v 1.4 2008/09/29 20:33:54 bzfviger Exp $
-
-#@file    Makefile
-#@brief   Makefile for the SCIP tutorial example by Cornelius Schwarz
-#@author  Marc Pfetsch
-
-
-#MAINDIR = ../..
 include ../../make.project
 MAINDIR = $(CURDIR)/../..
 
@@ -62,9 +40,6 @@ SWIG = swig
 endif
 endif
 endif
-#SWIG = swig
-#PYLIB = `python-config --cflags` $(HACK)
-ZIMPL=false
 
 #-----------------------------------------------------------------------------
 # include default project Makefile from SCIP
@@ -74,8 +49,6 @@ include ../../make.project  # We need to include this again because SCIP's make.
 ZIMPL=false 
 ZLIB=false 
 READLINE=false
-
-#include $(SCIPDIR)/Makefile
 
 #-----------------------------------------------------------------------------
 # Main Program
@@ -87,6 +60,7 @@ MAINSRC		=	$(addprefix $(SRCDIR)/,$(MAINOBJ:.o=.cpp))
 
 MAINOBJFILES	=	$(addprefix $(OBJDIR)/,$(MAINOBJ))
 
+OBJDIR		=   ./obj
 
 #-----------------------------------------------------------------------------
 # Interface
@@ -108,14 +82,22 @@ MIPFLAGS        =       -I$(MIPDIR)/src/
 
 NFLAGS = $(FLAGS) #-D_DEBUGWRAP
 
-wrapper: $(SCIPDIR)/done.txt $(IFILE) $(WXXFILE) $(SOFILE)
+wrapper: check-env $(OBJDIR) $(PYTHON) $(SCIPDIR)/done.txt $(IFILE) $(WXXFILE) $(SOFILE)
 
+check-env:
+	@if test "$(ZIBPATH)" = ""; then \
+		echo ZIBPATH is undefined. Please set the path to scipoptsuite.; \
+		exit 1; \
+	fi
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
 
 $(OBJDIR):
 	@-mkdir -p $(OBJDIR)
+
+$(PYTHON):
+	@mkdir -p $(PYTHON)
 
 clean:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/*o $(PYTHON)/*~ $(PYTHON)/build *~ $(SRCDIR)/*~ $(SCIPDIR)/done.txt
@@ -135,16 +117,6 @@ $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 		@echo "-> compiling $@"
 		$(CXX) $(MIPFLAGS) $(NFLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) -I$(PYLIB) -fPIC -c $< $(CXX_o)$@
 
-#$(PYTHON)/%.py: $(PYTHON)/%.i
-#	python tools/finalize.py $(<:.i=.py)
-
-#$(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
-#	$(SWIG) -c++ -python $<
-#	python $(MAINDIR)/tools/finalize.py $(<:.i=.py)
-
-#$(PYTHON)/%.i: $(SRCDIR)/%.hpp
-#	python $(MAINDIR)/tools/mk_interface.py $<
-
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	
 	$(SWIG) -c++ -python $<
@@ -154,7 +126,7 @@ $(PYTHON)/%.i: $(SRCDIR)/%.hpp
 	python $(MAINDIR)/tools/mk_subinterface.py mip MipWrapper $<
 
 
-$(PYTHON)/_%.so: $(OBJDIR) $(SCIPLIBFILE) $(NLPILIBFILE) $(LPILIBFILE) $(MAINOBJFILES) $(OBJDIR)/%.o  $(MIPDIR)/obj/MipWrapper.o $(PYTHON)/%_wrap.o
+$(PYTHON)/_%.so: $(SCIPLIBFILE) $(NLPILIBFILE) $(LPILIBFILE) $(MAINOBJFILES) $(OBJDIR)/%.o  $(MIPDIR)/obj/MipWrapper.o $(PYTHON)/%_wrap.o
 	@echo "-> linking $@"
 	$(LINKCXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(LINKCXX_L)$(SCIPDIR)/lib $(LINKCXX_l)$(SCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(NLPILIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(OBJSCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(LPILIB)$(LINKLIBSUFFIX)  $(OFLAGS) $(LPSLDFLAGS) $(MIPDIR)/obj/MipWrapper.o python/SCIP_wrap.o $(LINKCXX_o)$@
 

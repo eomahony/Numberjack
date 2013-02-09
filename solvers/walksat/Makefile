@@ -56,7 +56,13 @@ CFLAGS    += -I$(MCORE) -I$(MTL) -I$(SATDIR)/src/ -I$(WALKSRC) $(HACK) -Wall -ff
 CXX = g++ #-g -D_DEBUGWRAP
 
 
-wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/Walksat.o 
+wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/Walksat.o 
+
+$(OBJDIR):
+	@mkdir -p $(OBJDIR)
+
+$(PYTHON):
+	@mkdir -p $(PYTHON)
 
 $(WALKSRC)/%.o: $(WALKSRC)/%.cpp
 	@echo Compiling: "$@ ( $< )"

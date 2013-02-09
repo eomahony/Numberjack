@@ -62,7 +62,16 @@ CFLAGS    += -I$(SATDIR)/src/ -I$(MTL) $(HACK) -I$(CORE) -Wall -ffloat-store -O3
 CXX = g++ #-g -D_DEBUGWRAP
 
 
-wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/MiniSat.o 
+wrapper: $(OBJDIR) $(PYTHON) $(SATDIR)/$(OBJDIR) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/MiniSat.o 
+
+$(OBJDIR):
+	@mkdir -p $(OBJDIR)
+
+$(PYTHON):
+	@mkdir -p $(PYTHON)
+
+$(SATDIR)/$(OBJDIR):
+	@mkdir -p $(SATDIR)/$(OBJDIR)
 
 $(CORE)/%.o: $(CORE)/%.C 
 	@echo Compiling: "$@ ( $< )"

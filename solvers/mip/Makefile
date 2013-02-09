@@ -48,7 +48,13 @@ CFLAGS    += -Wall -ffloat-store -O3 #-g -D_DEBUGWRAP
 CXX = g++ 
 
 
-wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/MipWrapper.o 
+wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/MipWrapper.o 
+
+$(OBJDIR):
+	@mkdir -p $(OBJDIR)
+
+$(PYTHON):
+	@mkdir -p $(PYTHON)
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	

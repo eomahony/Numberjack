@@ -48,7 +48,13 @@ CFLAGS    += -I$(MCORE) -I$(MTL) $(HACK) -Wall -ffloat-store -O3 # -DNDEBUG -D_D
 CXX = g++ 
 
 
-wrapper: $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/SatWrapper.o 
+wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/SatWrapper.o 
+
+$(OBJDIR):
+	@mkdir -p $(OBJDIR)
+
+$(PYTHON):
+	@mkdir -p $(PYTHON)
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	

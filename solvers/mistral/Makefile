@@ -144,7 +144,16 @@ PLIBAUX = $(PLIBSRC:.cpp=.o)
 PLIBOBJ = $(patsubst $(SRC)/%, $(OBJ)/%, $(PLIBAUX))
 
 
-wrapper: $(IFILE) $(WXXFILE) $(SOFILE) 
+wrapper: $(OBJDIR) $(PYTHON) $(OBJ) $(IFILE) $(WXXFILE) $(SOFILE) 
+
+$(OBJDIR):
+	@mkdir -p $(OBJDIR)
+
+$(PYTHON):
+	@mkdir -p $(PYTHON)
+
+$(OBJ):
+	@mkdir -p $(OBJ)
 
 # ------------------------------------------------------------
 clean_swig: 

@@ -666,6 +666,7 @@ class Variable(Expression):
             if type(argopt2) is str:
                 if numeric(argopt1):
                     ub = argopt1-1
+                    lb = type(ub)(lb)  # Ensure lb has the same datatype as ub
                 else: 
                     domain = sorted(argopt1)
                     lb = domain[0]
@@ -679,6 +680,7 @@ class Variable(Expression):
                 name = argopt1
             elif numeric(argopt1): 
                 ub = argopt1-1
+                lb = type(ub)(lb)  # Ensure lb has the same datatype as ub
             else: 
                 domain = sorted(argopt1)
                 lb = domain[0]

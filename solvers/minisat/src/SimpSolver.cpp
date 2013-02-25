@@ -458,7 +458,7 @@ void SimpSolver::verifyModel()
             }
 
     assert(!failed);
-    reportf("Verified %d eliminated clauses.\n", cnt);
+    if (verbosity >= 1) reportf("Verified %d eliminated clauses.\n", cnt);
 }
 
 

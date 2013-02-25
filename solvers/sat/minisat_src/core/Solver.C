@@ -803,7 +803,7 @@ void Solver::verifyModel()
 
     assert(!failed);
 
-    reportf("Verified %d original clauses.\n", clauses.size());
+    if (verbosity >= 1) reportf("Verified %d original clauses.\n", clauses.size());
 }
 
 

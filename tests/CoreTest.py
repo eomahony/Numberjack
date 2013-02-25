@@ -6,12 +6,13 @@ This module is responsible for testing core/internal elements of Numberjack.
 from Numberjack import *
 import unittest
 
+
 class CoreTest(unittest.TestCase):
     solver = None
 
     # Tests checking that the overloaded Variable constructor conforms
     # to its definition in the documentation.
-        
+
     def testVariableBinary(self):
         # Variable() :- Binary variable
         v = Variable()
@@ -30,56 +31,56 @@ class CoreTest(unittest.TestCase):
         self.assertEqual(type(v.ub), float)
         self.assertAlmostEqual(v.lb, 0.0)
         self.assertAlmostEqual(v.ub, 9.0)
-        
+
     def testVariableName(self):
         # Variable('x') :- Binary variable called 'x'
         v = Variable('y')
         self.assertEqual(v.name(), 'y')
-        
-    def testVariableRangeName(self):
+
+    def testVariableUbName(self):
         # Variable(N, 'x') :- Variable in the domain of {0, N-1} called 'x'
         v = Variable(10, 'y')
         self.assertEqual(v.name(), 'y')
         self.assertEqual(v.lb, 0)
         self.assertEqual(v.ub, 9)
-        
+
     def testVariableLowerUpper(self):
         # Variable(l,u) :- Variable in the domain of {l, u}
         v = Variable(0, 1)
         self.assertEqual(v.lb, 0)
         self.assertEqual(v.ub, 1)
-        
+
         v = Variable(10, 25)
         self.assertEqual(v.lb, 10)
         self.assertEqual(v.ub, 25)
-        
+
         v = Variable(15, 15)
         self.assertEqual(v.lb, 15)
         self.assertEqual(v.ub, 15)
-        
+
     def testVariableLowerUpperFloat(self):
         v = Variable(0.0, 2.0)
         self.assertAlmostEqual(v.lb, 0.0)
         self.assertAlmostEqual(v.ub, 2.0)
-        
+
     def testVariableRangeName(self):
         # Variable(l,u, 'x') :- Variable in the domain of {l, u} called 'x'
         v = Variable(15, 20, 'y')
         self.assertEqual(v.lb, 15)
         self.assertEqual(v.ub, 20)
         self.assertEqual(v.name(), 'y')
-        
+
     def testVariableList(self):
         # Variable(list) :- Variable with domain specified as a list
-        list_domain = [2,8,6,4]
+        list_domain = [2, 8, 6, 4]
         v = Variable(list_domain)
         self.assertEqual(v.lb, 2)
         self.assertEqual(v.ub, 8)
         self.assertItemsEqual(list_domain, v.get_domain())
-        
+
     def testVariableListName(self):
         # Variable(list, 'x') :- Variable with domain specified as a list called 'x'
-        list_domain = [2,8,6,4]
+        list_domain = [2, 8, 6, 4]
         v = Variable(list_domain, 'y')
         self.assertEqual(v.name(), 'y')
         self.assertEqual(v.lb, 2)
@@ -95,7 +96,7 @@ class CoreTest(unittest.TestCase):
 
     def testDomainBoundedIterator(self):
         "Test the iterator code on Domain returns the correct values when given the domain as bounds."
-        x = Variable(5,10)
+        x = Variable(5, 10)
         list_from_iterator = [v for v in x]
         self.assertItemsEqual(range(5, 11), list_from_iterator)
 
@@ -201,7 +202,7 @@ class CoreTest(unittest.TestCase):
     def testMatrixSliceRowsCols(self):
         n, m = 5, 5
         matrix = Matrix(n, m)
-        m_slice = matrix[1:3,1:4]
+        m_slice = matrix[1:3, 1:4]
         self.assertEqual(len(m_slice), 2)
         for row in m_slice:
             self.assertEqual(len(row), 3)
@@ -209,6 +210,5 @@ class CoreTest(unittest.TestCase):
     def testMatrixRowColIndex(self):
         n, m = 5, 5
         matrix = Matrix(n, m)
-        v = matrix[2,2]
+        v = matrix[2, 2]
         self.assertEqual(v.name(), "x2.2")
-

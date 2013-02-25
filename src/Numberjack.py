@@ -40,8 +40,9 @@ LIMITOUT  =  3;
 LUBY      =  0; 
 GEOMETRIC =  1;
 
-#from sets import Set
-import types, sys
+import exceptions
+import types
+import sys
 
 val_heuristics = ['Lex', 'AntiLex', 'Random', 'RandomMinMax', 'DomainSplit', 'RandomSplit', 'Promise', 'Impact', 'No']
 var_heuristics = ['No', 'MinDomain', 'Lex', 'AntiLex', 'MaxDegree', 'MinDomainMinVal', 'Random', 'MinDomainMaxDegree', 'DomainOverDegree', 'DomainOverWDegree', 'DomainOverWLDegree', 'Neighbour', 'Impact', 'ImpactOverDegree', 'ImpactOverWDegree', 'ImpactOverWLDegree', 'Scheduling']
@@ -2929,6 +2930,11 @@ class NBJ_STD_Solver(object):
     def load_lp(self, filename, epsilon):
         self.solver.load_lp(filename, epsilon);
     
+    def output_cnf(self, filename):
+        if str(type(self)) not in ["MiniSat.Solver"]:
+            raise UnsupportedSolverFunction(str(type(self)), "output_cnf", "Please load the model using the MiniSat solver to use this functionality.")
+        self.solver.output_cnf(filename)
+
     def num_vars(self):
         return self.solver.num_vars()
 
@@ -2978,7 +2984,7 @@ class NBJ_STD_Solver(object):
 Numberjack exceptions:
 
 """
-import exceptions
+
 
 class ConstraintNotSupportedError(exceptions.Exception):
     def __init__(self, value, solver):
@@ -2987,3 +2993,14 @@ class ConstraintNotSupportedError(exceptions.Exception):
         
     def __str__(self):
         return "ERROR: Constraint %s not supported by solver %s and no decomposition is available." % (self.value, self.solver)
+
+
+class UnsupportedSolverFunction(exceptions.Exception):
+
+    def __init__(self, solver, func_name, msg=""):
+        self.solver = solver
+        self.func_name = func_name
+        self.msg = msg
+
+    def __str__(self):
+        return "ERROR: The solver %s does not support the function '%s'. %s" % (self.solver, self.func_name, self.msg)

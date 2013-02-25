@@ -1,6 +1,6 @@
 
 #include <iostream>
-
+#include <fstream>
 #include "SatWrapper.hpp"
 
 
@@ -2137,6 +2137,24 @@ void SatWrapperSolver::displayLiteral(Lit p) {
     if(x>=0) {
         _atom_to_domain[x]->print_lit(p,_atom_to_type[x]);
     } else std::cout << "false" ;
+}
+
+void SatWrapperSolver::output_cnf(const char *filename){
+    std::ofstream f(filename);
+
+    f << "p cnf " << _atom_to_domain.size() << " " << clause_base.size() << std::endl;
+    for(unsigned int i=0;i<clause_base.size();i++){
+        std::vector<Lit> clause = clause_base[i];
+        if(clause.size() > 0){
+            for(unsigned int j=0;j<clause.size();j++){
+                if(j>0) f << " ";
+                if(sign(clause[j])) f << "-";
+                f << var(clause[j]);
+            }
+            f << std::endl;
+        }
+    }
+    f.close();
 }
 
 void SatWrapperSolver::setClauseLimit(int limit) {

@@ -644,6 +644,7 @@ public:
     virtual void validate();
     virtual void displayClause(std::vector<Lit>& cl);
     virtual void displayLiteral(Lit p);
+    virtual void output_cnf(const char *filename);
 
     virtual lbool truth_value(Lit x);
 

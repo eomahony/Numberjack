@@ -1,4 +1,4 @@
-##@mainpage Numberjack  @authors Eoin O'Mahony, Emmanuel Hebrard & Barry O'Sullivan 
+##@mainpage Numberjack  @authors Eoin O'Mahony, Emmanuel Hebrard & Barry O'Sullivan
 #
 # \section intro_sec What is numberjack?
 #
@@ -15,12 +15,12 @@
 #
 #  Numberjack is a constraint satisfaction and optimisation library
 #  Copyright (C) 2009 Cork Constraint Computation Center, UCC
-#  
+#
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU Lesser General Public License as published by
 #  the Free Software Foundation; either version 2 of the License, or
 #  (at your option) any later version.
-#  
+#
 #  This program is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -29,16 +29,16 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
-#  The authors can be contacted electronically at 
+#  The authors can be contacted electronically at
 #  numberjack.support@gmail.com
 
 
-UNSAT     =  0;
-SAT       =  1;
-UNKNOWN   =  2;
-LIMITOUT  =  3;
-LUBY      =  0; 
-GEOMETRIC =  1;
+UNSAT     = 0
+SAT       = 1
+UNKNOWN   = 2
+LIMITOUT  = 3
+LUBY      = 0
+GEOMETRIC = 1
 
 import exceptions
 import types
@@ -49,8 +49,9 @@ var_heuristics = ['No', 'MinDomain', 'Lex', 'AntiLex', 'MaxDegree', 'MinDomainMi
 
 solver_names = ['Mistral', 'SCIP', 'MiniSat', 'Walksat', 'OsiClp', 'OsiCbc',
                 'OsiGlpk', 'OsiVol', 'OsiDylp', 'OsiSpx', 'OsiSym',
-                'OsiGrb'] #, 'OsiCpx', 'OsiMsk', 'OsiXpr'] 
+                'OsiGrb']  # , 'OsiCpx', 'OsiMsk', 'OsiXpr']
 available = []
+
 
 def available_solvers():
     if len(available) == 0:
@@ -62,6 +63,7 @@ def available_solvers():
                 continue
     return available
 
+
 def flatten(x):
     result = []
     for el in x:
@@ -70,7 +72,6 @@ def flatten(x):
         else:
             result.append(el)
     return result
-
 
 
 class Domain(list):
@@ -2396,62 +2397,56 @@ class Nogood(object):
 class NBJ_STD_Solver(object):
     def __init__(self, Library, Wrapper, model=None, X=None, FD=False,
                  clause_limit=-1):
-        
-        
-
         self.decomposition_store = []
 
         self.solver = getattr(sys.modules[Library],
-                              Library+"Solver", None)()
-        
+                              Library + "Solver", None)()
+
         if hasattr(self.solver, "setClauseLimit"):
-            self.solver.setClauseLimit(clause_limit);
-        
+            self.solver.setClauseLimit(clause_limit)
+
         self.Library = Library
-        
         self.Wrapper = Wrapper
 
         """
         self.ExpArray = getattr(sys.modules[Library],
                                 Library+"ExpArray", None)
-        
+
         self.IntArray = getattr(sys.modules[Library],
                                 Library+"IntArray", None)
-        
+
         self.DoubleArray = getattr(sys.modules[Library],
                                    Library+"DoubleArray", None)
-        
+
         self.IntVar = getattr(sys.modules[Library],
                               Library+"_IntVar", None)
-        
+
         self.FloatVar = getattr(sys.modules[Library],
                                 Library+"_FloatVar", None)
         """
-           
-        self.ExpArray = getattr(sys.modules[Wrapper],
-                                Wrapper+"ExpArray", None)
-        
-        self.IntArray = getattr(sys.modules[Wrapper],
-                                Wrapper+"IntArray", None)
-        
-        self.DoubleArray = getattr(sys.modules[Wrapper],
-                                   Wrapper+"DoubleArray", None)
-        
-        self.IntVar = getattr(sys.modules[Wrapper],
-                              Wrapper+"_IntVar", None)
-        
-        self.FloatVar = getattr(sys.modules[Wrapper],
-                                Wrapper+"_FloatVar", None)
 
-                     
-        self.free_memory = getattr(sys.modules["_"+Library],
-                                   "delete_"+Library+"Solver", None)
-        
+        self.ExpArray = getattr(sys.modules[Wrapper],
+                                Wrapper + "ExpArray", None)
+
+        self.IntArray = getattr(sys.modules[Wrapper],
+                                Wrapper + "IntArray", None)
+
+        self.DoubleArray = getattr(sys.modules[Wrapper],
+                                   Wrapper + "DoubleArray", None)
+
+        self.IntVar = getattr(sys.modules[Wrapper],
+                              Wrapper + "_IntVar", None)
+
+        self.FloatVar = getattr(sys.modules[Wrapper],
+                                Wrapper + "_FloatVar", None)
+
+        self.free_memory = getattr(sys.modules["_" + Library],
+                                   "delete_" + Library + "Solver", None)
+
         self.variables = None
-        
         self.solver_id = model.getSolverId()
 
-        if model != None: 
+        if model != None:
             var_array = None
             self.model = model
             self.model.close()
@@ -2459,13 +2454,11 @@ class NBJ_STD_Solver(object):
                 self.solver.add(self.load_expr(expr))
 
             if X != None:
-
                 self.variables = VarArray(flatten(X))
-
                 var_array = self.ExpArray()
                 for x in self.variables:
-                    if len(x.var_list) > self.solver_id-1:
-                        var_array.add(x.var_list[self.solver_id-1])
+                    if len(x.var_list) > self.solver_id - 1:
+                        var_array.add(x.var_list[self.solver_id - 1])
                 if FD:
                     self.solver.forceFiniteDomain(var_array)
                 if var_array.size() > 0:
@@ -2485,9 +2478,9 @@ class NBJ_STD_Solver(object):
         var = None
         try:
             if argopt1 is None:
-                var = self.IntVar(arg1,arg2)
+                var = self.IntVar(arg1, arg2)
             else:
-                var = self.IntVar(arg1,arg2,argopt1)
+                var = self.IntVar(arg1, arg2, argopt1)
         except:
             raise Exception("ERROR while creating variable")
         return var
@@ -2495,7 +2488,7 @@ class NBJ_STD_Solver(object):
     def getFloatVar(self, lb, ub, ident):
         var = None
         try:
-            var = self.FloatVar(lb,ub,ident)
+            var = self.FloatVar(lb, ub, ident)
         except:
             raise ValueError("ERROR: Solver does not support real variables")
         return var
@@ -2512,17 +2505,17 @@ class NBJ_STD_Solver(object):
         #if not expr.has_children():
         if expr.is_var():
             # It is a leaf
-            if expr.is_var(): # Just to be sure
+            if expr.is_var():  # Just to be sure
                 alreadyBuild = False
                 if expr.is_built(self):
                     #if expr.get_solver() == self: # Checks if I have already assigned
                     alreadyBuild = True
 
                 if alreadyBuild:
-                    return expr.var_list[self.solver_id-1]
+                    return expr.var_list[self.solver_id - 1]
                 else:
                     # It is probably a variable
-                    (lb,ub,domain) = expr.get_domain_tuple()
+                    (lb, ub, domain) = expr.get_domain_tuple()
 
                     var = None
                     if domain is None:
@@ -2530,7 +2523,7 @@ class NBJ_STD_Solver(object):
                             var = self.getIntVar(lb, ub, expr.ident)
                         else:
                             var = self.getFloatVar(lb, ub, expr.ident)
-                    elif ub-lb+1 == len(domain):
+                    elif ub - lb + 1 == len(domain):
                         if type(lb) is int:
                             var = self.getIntVar(lb, ub, expr.ident)
                         else:
@@ -2545,7 +2538,7 @@ class NBJ_STD_Solver(object):
                     expr.solver = self
                     return var
             else:
-                raise Error("Problem, no such type exists in converting models")
+                raise Exception("Problem, no such type exists in converting models")
         else:
 #            factory = getattr(sys.modules[self.Library],
 #                              "%s_%s" % (self.Library, expr.get_operator()), None)
@@ -2553,16 +2546,15 @@ class NBJ_STD_Solver(object):
                               "%s_%s" % (self.Wrapper, expr.get_operator()), None)
 
             if factory is not None:
-            
                 arguments = None
                 if len(expr.get_children()) <= 2:
                     arguments = [self.load_expr(child) for child in expr.get_children()]
                 else:
                     var_array = self.ExpArray()
                     for child in expr.get_children():
-                        var_array.add(self.load_expr(child))                
+                        var_array.add(self.load_expr(child))
                     arguments = [var_array]
-                if expr.has_parameters(): # != None: # assumes an array of integers
+                if expr.has_parameters():  # != None: # assumes an array of integers
                     for param in expr.parameters:
                         if hasattr(param, '__iter__'):
                             w_array = None
@@ -2575,14 +2567,14 @@ class NBJ_STD_Solver(object):
                                 for w in param:
                                     for v in w:
                                         w_array.add(v)
-                                arguments.append(w_array)    
+                                arguments.append(w_array)
                             else:
                                 for w in param:
                                     w_array.add(w)
                                 arguments.append(w_array)
                         else:
                             arguments.append(param)
-    
+
                 var = factory(*arguments)
                 expr.setVar(self.solver_id, self.Library, var, self)
                 expr.solver = self
@@ -2594,14 +2586,14 @@ class NBJ_STD_Solver(object):
         if hasattr(expr, "decompose"):
             expr_list = expr.decompose()
             obj_exp = []
-            for exp in expr_list[1:]: 
+            for exp in expr_list[1:]:
                 obj = self.load_expr(exp)
                 obj_exp.append(obj)
                 self.solver.add(obj)
 
             expr.solver = self
             #expr_list[0].close()
-            for exp in expr_list: 
+            for exp in expr_list:
                 exp.close()
                 self.add_to_store(exp)
             decomp = self.load_expr(expr_list[0])
@@ -2609,7 +2601,6 @@ class NBJ_STD_Solver(object):
         else:
             raise ConstraintNotSupportedError(expr.get_operator(), self.Library)
 
-        
     ##@name Solving methods
     # @{
 
@@ -2626,10 +2617,10 @@ class NBJ_STD_Solver(object):
     ## Solves using restarts
     def solveAndRestart(self, policy=GEOMETRIC, base=64, factor=1.3, decay=0.0, reinit=-1):
         if reinit == -1:
-            if self.solver.solveAndRestart(policy,base,factor,decay) == SAT:
+            if self.solver.solveAndRestart(policy, base, factor, decay) == SAT:
                 return True
         else:
-            if self.solver.solveAndRestart(policy,base,factor,decay,reinit) == SAT:
+            if self.solver.solveAndRestart(policy, base, factor, decay, reinit) == SAT:
                 return True
         return False
 
@@ -2644,13 +2635,13 @@ class NBJ_STD_Solver(object):
     ## A generator which will yield true until no other solution exists
     def solutions(self):
         while self.getNextSolution():
-            yield True	# Could return something more useful??
+            yield True  # Could return something more useful??
 
     ## @}
 
     def next(self, exp, v):
         #return self.solver.next(exp.var_list[self.solver_id-1], v)
-        return exp.var_list[self.solver_id-1].next(v)
+        return exp.var_list[self.solver_id - 1].next(v)
 
     ##@name Search programming methods
     # @{
@@ -2660,38 +2651,40 @@ class NBJ_STD_Solver(object):
     def propagate(self):
         return self.solver.propagate()
 
-    ## Tell the solver to save the current state. 
+    ## Tell the solver to save the current state.
     def save(self):
         self.solver.save()
 
     ## Tell the solver to restore its state to the one last enqueued by 'save()'
-    def undo(self,bj=1):
+    def undo(self, bj=1):
         return self.solver.undo(bj)
 
     ## Tell the solver to add a constraint in the current state (it should be unary for now)
     def post(self, exp):
-        self.solver.post(exp.operator, exp.children[0].var_list[self.solver_id-1], exp.children[1])
+        self.solver.post(exp.operator, exp.children[0].var_list[self.solver_id - 1], exp.children[1])
 
     ## Tell the solver to post the negation of the last decision in the current states
     def deduce(self, exp=None):
-        if exp is None: self.solver.deduce()
-        else: self.solver.post(exp.operator, exp.children[0].var_list[self.solver_id-1], exp.children[1])
-    def deduce_print(self,lvl):
+        if exp is None:
+            self.solver.deduce()
+        else:
+            self.solver.post(exp.operator, exp.children[0].var_list[self.solver_id - 1], exp.children[1])
+
+    def deduce_print(self, lvl):
         x = self.variables[self.solver.get_decision_id()]
-        print lvl*' ', x.domain(self)
+        print lvl * ' ', x.domain(self)
         self.solver.deduce()
 
-
     ## Follow a 'left' branch in a binary serach tree (eq. to save() + post())
-    def branch_left(self,exp):
+    def branch_left(self, exp):
         self.solver.save()
-        self.solver.post(exp.operator, exp.children[0].var_list[self.solver_id-1], exp.children[1])
+        self.solver.post(exp.operator, exp.children[0].var_list[self.solver_id - 1], exp.children[1])
 
     ## Follow a 'right' branch in a binary serach tree (eq. to undo() + deduce())
     def branch_right(self):
         return self.solver.branch_right()
 
-    ## Resets the data structure of the solver to the initial state 
+    ## Resets the data structure of the solver to the initial state
     # @param full Boolean stating if the top-level deduction should be undone too
     def reset(self, full=False):
         self.solver.reset(full)
@@ -2700,20 +2693,19 @@ class NBJ_STD_Solver(object):
 
     def analyze_conflict(self):
         btlevel = self.solver.analyze_conflict()
-        if btlevel < 0: btlevel = None
+        if btlevel < 0:
+            btlevel = None
         return (self.solver.get_learnt_clause(), btlevel)
-
 
     def print_all_clauses(self):
         for i in range(self.solver.nbClauses()):
             self.solver.get_clause(i)
             self.print_clause()
 
-
-    def get_last_nogood(self): 
+    def get_last_nogood(self):
         #self.solver.get_last_nogood(i)
         self.print_clause()
-    
+
     def print_clause(self):
         def get_literal(i):
             var = self.solver.get_nogood_var(i)
@@ -2721,7 +2713,7 @@ class NBJ_STD_Solver(object):
             type = self.solver.get_nogood_type(i)
             sign = self.solver.get_nogood_sign(i)
             lit = str(self.variables[var])
-            
+
             if type == 0:
                 if sign == 0:
                     lit += ' == '
@@ -2734,17 +2726,15 @@ class NBJ_STD_Solver(object):
                     lit += ' > '
             lit += str(val)
             return lit
-            
+
         print '(',
         for i in range(self.solver.get_nogood_size()):
-            if i > 0: print 'or',
+            if i > 0:
+                print 'or',
             print get_literal(i),
         print ')'
 
-
-
-
-    def sacPreprocess(self,type):
+    def sacPreprocess(self, type):
         self.solver.sacPreprocess(type)
         return (not (self.solver.is_unsat()))
 
@@ -2760,75 +2750,72 @@ class NBJ_STD_Solver(object):
             randomization = val_name
             val_name = 'No'
         if var_name not in var_heuristics:
-            print 'c Warning: "'+var_name+'" unknown, use MinDomain instead' 
+            print 'c Warning: "' + var_name + '" unknown, use MinDomain instead'
             print 'c legal variable orderings: ', var_heuristics
         if val_name not in val_heuristics:
-            print 'c Warning: "'+val_name+'" unknown, use Lex instead' 
+            print 'c Warning: "' + val_name + '" unknown, use Lex instead'
             print 'c legal value orderings: ', val_heuristics
         self.solver.setHeuristic(str(var_name), str(val_name), randomization)
-   
+
     ## Sets a limit on the number of failures encountered before aborting search
-    def setFailureLimit(self,cutoff):  
+    def setFailureLimit(self, cutoff):
         self.solver.setFailureLimit(cutoff)
 
     ## Sets a limit on the CPU time before aborting search
-    def setTimeLimit(self,cutoff):
+    def setTimeLimit(self, cutoff):
         self.solver.setTimeLimit(cutoff)
 
     ## Sets a limit on the number of nodes explored before aborting search
-    def setNodeLimit(self,cutoff):
+    def setNodeLimit(self, cutoff):
         self.solver.setNodeLimit(cutoff)
 
     ## Sets the verbosity level of the solver
     def setVerbosity(self, degree):
-        self.solver.setVerbosity( degree )
+        self.solver.setVerbosity(degree)
 
     ## Sets the initial random seed
     def setRandomSeed(self, seed):
-        self.solver.setRandomSeed(seed);
+        self.solver.setRandomSeed(seed)
 
     ## @}
-    
+
     def setRandomized(self, degree):
         self.solver.setRandomized(degree)
 
     def addNogood(self, vars, vals):
         var_array = self.ExpArray()
         for var in vars:
-            var_array.add(var.var_list[self.solver_id-1])
+            var_array.add(var.var_list[self.solver_id - 1])
         val_array = self.IntArray()
         for val in vals:
             val_array.add(val)
         self.solver.addNogood(var_array, val_array)
-        
+
     def setAntiLex(self, vars):
         var_array = self.ExpArray()
         for var in vars:
-            var_array.add(var.var_list[self.solver_id-1])
+            var_array.add(var.var_list[self.solver_id - 1])
         self.solver.setAntiLex(var_array)
 
     def guide(self, vars, vals=None, probs=[]):
-        
         var_array = self.ExpArray()
         val_array = self.IntArray()
         pro_array = self.DoubleArray()
 
         if vals is not None:
             for var in vars:
-                var_array.add(var.var_list[self.solver_id-1])
+                var_array.add(var.var_list[self.solver_id - 1])
             for val in vals:
                 val_array.add(val)
         else:
             for var in vars.variables:
-                var_array.add(var.var_list[self.solver_id-1])
+                var_array.add(var.var_list[self.solver_id - 1])
                 if var in vars:
                     val_array.add(vars[var])
 
         for pro in probs:
             pro_array.add(pro)
         self.solver.guide(var_array, val_array, pro_array)
-        
-        
 
     #def backtrackTo(self, level):
     #    self.solver.backtrackTo(level)
@@ -2837,26 +2824,24 @@ class NBJ_STD_Solver(object):
     #def upOneLevel(self):
     #    self.solver.upOneLevel()
 
-
     def setLowerBounds(self, vars, lb):
-        tmp_array = []
         var_array = self.ExpArray()
         lob_array = self.IntArray()
-        for (x,l) in zip(vars,lb):
-            var_array.add(x.var_list[self.solver_id-1])
+        for (x,l) in zip(vars, lb):
+            var_array.add(x.var_list[self.solver_id - 1])
             lob_array.add(l)
         self.solver.setLowerBounds(var_array, lob_array)
+
     def setUpperBounds(self, vars, ub):
-        tmp_array = []
         var_array = self.ExpArray()
         upb_array = self.IntArray()
-        for (x,u) in zip(vars,ub):
-            var_array.add(x.var_list[self.solver_id-1])
+        for (x, u) in zip(vars, ub):
+            var_array.add(x.var_list[self.solver_id - 1])
             upb_array.add(u)
         self.solver.setUpperBounds(var_array, upb_array)
+
     def setRestartNogood(self):
         self.solver.setRestartNogood()
-
 
     ##@name Accessors
     # @{
@@ -2886,7 +2871,7 @@ class NBJ_STD_Solver(object):
     ## Returns the number of nodes explored during the last search
     def getNodes(self):
         return self.solver.getNodes()
-    
+
     ## Returns the number of failures encountered during the last search
     def getFailures(self):
         return self.solver.getFailures()
@@ -2915,21 +2900,21 @@ class NBJ_STD_Solver(object):
     def getNumConstraints(self):
         return self.solver.getNumConstraints()
 
-    def load_xml(self,file,type=4):
-        self.solver.load_xml(file,type)
+    def load_xml(self, file, type=4):
+        self.solver.load_xml(file, type)
 
     def load_mps(self, filename, extension):
         self.solver.load_mps(filename, extension)
 
     def load_gmpl(self, filename, data=None):
-        if data==None:
+        if data == None:
             self.solver.load_gmpl(filename)
         else:
             self.solver.load_gmpl(filename, data)
-            
+
     def load_lp(self, filename, epsilon):
-        self.solver.load_lp(filename, epsilon);
-    
+        self.solver.load_lp(filename, epsilon)
+
     def output_cnf(self, filename):
         if str(type(self)) not in ["MiniSat.Solver"]:
             raise UnsupportedSolverFunction(str(type(self)), "output_cnf", "Please load the model using the MiniSat solver to use this functionality.")
@@ -2950,20 +2935,26 @@ class NBJ_STD_Solver(object):
     def get_neighbors(self, x):
         neighbors = []
         for y in range(self.solver.degree(x)):
-            neighbors.append(self.solver.get_neighbor(x,y))
+            neighbors.append(self.solver.get_neighbor(x, y))
         return neighbors
-            
+
     def get_static_features(self):
         feats = {}
         for i in range(12):
             feats[self.solver.get_feature_name(i)] = self.solver.get_feature(i)
-        for i in range(16,36):
+        for i in range(16, 36):
             feats[self.solver.get_feature_name(i)] = self.solver.get_feature(i)
         return feats
-    
+
     def get_dynamic_features(self):
         feats = {}
-        for i in range(12,16):
+        for i in range(12, 16):
+            feats[self.solver.get_feature_name(i)] = self.solver.get_feature(i)
+        return feats
+
+    def get_features(self):
+        feats = {}
+        for i in range(36):
             feats[self.solver.get_feature_name(i)] = self.solver.get_feature(i)
         return feats
 
@@ -2974,7 +2965,7 @@ class NBJ_STD_Solver(object):
         return ' '
 
     def delete(self):
-        self.free_memory( self.solver )
+        self.free_memory(self.solver)
 
 ##  @}
 
@@ -2987,10 +2978,11 @@ Numberjack exceptions:
 
 
 class ConstraintNotSupportedError(exceptions.Exception):
+
     def __init__(self, value, solver):
         self.value = value
         self.solver = solver
-        
+
     def __str__(self):
         return "ERROR: Constraint %s not supported by solver %s and no decomposition is available." % (self.value, self.solver)
 

@@ -2147,11 +2147,10 @@ void SatWrapperSolver::output_cnf(const char *filename){
         std::vector<Lit> clause = clause_base[i];
         if(clause.size() > 0){
             for(unsigned int j=0;j<clause.size();j++){
-                if(j>0) f << " ";
                 if(sign(clause[j])) f << "-";
-                f << var(clause[j]);
+                f << var(clause[j]) << " ";
             }
-            f << std::endl;
+            f << "0" << std::endl;
         }
     }
     f.close();

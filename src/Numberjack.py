@@ -2916,8 +2916,8 @@ class NBJ_STD_Solver(object):
         self.solver.load_lp(filename, epsilon)
 
     def output_cnf(self, filename):
-        # print str(type(self)), self.__class__
-        if str(type(self)) not in ["<class 'MiniSat.Solver'>"]:
+        from MiniSat import Solver as mss
+        if type(self) is not mss:
             raise UnsupportedSolverFunction(str(type(self)), "output_cnf", "Please load the model using the MiniSat solver to use this functionality.")
         self.solver.output_cnf(filename)
 

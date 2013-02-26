@@ -270,7 +270,7 @@ int MiniSatSolver::solve()
       objective = minimise_obj->get_value()-1;
       if(objective < minimise_obj->getmin()) break;
 
-      if(verbosity >= 0) {
+      if(verbosity > 0) {
 	std::cout << "c  new objective: " << objective+1 << std::endl;
       }
       
@@ -298,7 +298,7 @@ int MiniSatSolver::solve()
       objective = maximise_obj->get_value()+1;
       if(objective > maximise_obj->getmax()) break;
 
-      if(verbosity >= 0) {
+      if(verbosity > 0) {
 	std::cout << "c  new objective: " << objective-1 << std::endl;
       }
       

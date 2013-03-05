@@ -2142,7 +2142,8 @@ void SatWrapperSolver::displayLiteral(Lit p) {
 void SatWrapperSolver::output_cnf(const char *filename){
     std::ofstream f(filename);
 
-    f << "p cnf " << _atom_to_domain.size() << " " << clause_base.size() << std::endl;
+    // CNF header line. Number of atoms - 1 because of the dummy literal.
+    f << "p cnf " << (_atom_to_domain.size() - 1) << " " << clause_base.size() << std::endl;
     for(unsigned int i=0;i<clause_base.size();i++){
         std::vector<Lit> clause = clause_base[i];
         if(clause.size() > 0){

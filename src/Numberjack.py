@@ -155,6 +155,7 @@ class Expression(object):
         # This is the stuff for maintaining multiple representations of the
         # model among different solvers
         self.var_list = []
+        self.encoding = None
 
     def __iter__(self):
         return self.get_domain()
@@ -504,8 +505,6 @@ class Model(object):
         ## \internal - Initialise from an expression?
         if len(expr) > 0:
             self.add_prime(expr)
-    
-
 
     def getSolverId(self):
         # \internal \internal - generates an ident for each new solver
@@ -604,16 +603,16 @@ class Model(object):
 
     ## Return a Solver for that Model
     # @param library A string standing for a back end solver ('Mistral', 'MiniSat', 'SCIP')
-    def load(self,library,X=None):
+    def load(self, library, X=None, encoding=None):
         """
         The solver is passed as a string, the corresponding module is
         imported, a Solver object created, initialised and returned
         """
         try:
-            lib =  __import__(library)
-            solver = lib.Solver(self,X)
+            lib = __import__(library)
+            solver = lib.Solver(self, X, encoding)
         except ImportError:
-            raise ImportError("ERROR: Failed during import, wrong module name? ("+library+")")
+            raise ImportError("ERROR: Failed during import, wrong module name? (%s)" % library)
         return solver
 
     ## Solve and returns a solution 
@@ -2396,8 +2395,9 @@ class Nogood(object):
 ## Generic Solver Class
 class NBJ_STD_Solver(object):
     def __init__(self, Library, Wrapper, model=None, X=None, FD=False,
-                 clause_limit=-1):
+                 clause_limit=-1, encoding=None):
         self.decomposition_store = []
+        self.enc_config_cache = {}
 
         self.solver = getattr(sys.modules[Library],
                               Library + "Solver", None)()
@@ -2440,6 +2440,9 @@ class NBJ_STD_Solver(object):
         self.FloatVar = getattr(sys.modules[Wrapper],
                                 Wrapper + "_FloatVar", None)
 
+        self.EncodingConfiguration = getattr(sys.modules[Wrapper],
+                                             "EncodingConfiguration", None)
+
         self.free_memory = getattr(sys.modules["_" + Library],
                                    "delete_" + Library + "Solver", None)
 
@@ -2450,6 +2453,11 @@ class NBJ_STD_Solver(object):
             var_array = None
             self.model = model
             self.model.close()
+            if self.EncodingConfiguration:
+                if not encoding:
+                    encoding = EncodingConfiguration()
+                self.solver.encoding = self.getEncodingConfiguration(encoding)
+
             for expr in self.model.get_exprs():
                 self.solver.add(self.load_expr(expr))
 
@@ -2493,6 +2501,21 @@ class NBJ_STD_Solver(object):
             raise ValueError("ERROR: Solver does not support real variables")
         return var
 
+    def getEncodingConfiguration(self, enc_config):
+        "Returns the C++ EncodingConfiguration equivalent of enc_config from the wrapper."
+        if not self.EncodingConfiguration:
+            raise UnsupportedSolverFunction(self.Library, "EncodingConfiguration", "This solver does not support custom encoding settings.")
+
+        if enc_config not in self.enc_config_cache:
+            try:
+                self.enc_config_cache[enc_config] = self.EncodingConfiguration(
+                    enc_config.direct, enc_config.order,
+                    enc_config.conflict, enc_config.support,
+                    enc_config.amo_encoding)
+            except Exception as e:
+                raise e
+        return self.enc_config_cache[enc_config]
+
     def load_expr(self, expr):
         #print 'load', expr
         if type(expr) is str:
@@ -2518,12 +2541,7 @@ class NBJ_STD_Solver(object):
                     (lb, ub, domain) = expr.get_domain_tuple()
 
                     var = None
-                    if domain is None:
-                        if type(lb) is int:
-                            var = self.getIntVar(lb, ub, expr.ident)
-                        else:
-                            var = self.getFloatVar(lb, ub, expr.ident)
-                    elif ub - lb + 1 == len(domain):
+                    if domain is None or (ub - lb + 1) == len(domain):
                         if type(lb) is int:
                             var = self.getIntVar(lb, ub, expr.ident)
                         else:
@@ -2534,6 +2552,8 @@ class NBJ_STD_Solver(object):
                             w_array.add(val)
                         var = self.getIntVar(w_array, expr.ident)
 
+                    if expr.encoding:
+                        var.encoding = self.getEncodingConfiguration(expr.encoding)
                     expr.setVar(self.solver_id, self.Library, var, self)
                     expr.solver = self
                     return var
@@ -2576,10 +2596,14 @@ class NBJ_STD_Solver(object):
                             arguments.append(param)
 
                 var = factory(*arguments)
+                if expr.encoding:
+                    var.encoding = self.getEncodingConfiguration(expr.encoding)
                 expr.setVar(self.solver_id, self.Library, var, self)
                 expr.solver = self
                 return var
             else:
+                if expr.encoding:
+                    print >> sys.stderr, "Warning: you have set the encoding for an expression that is being decomposed. Those encoding settings will not affect the decomposed expressions."
                 return self.decompose_expression(expr)
 
     def decompose_expression(self, expr):
@@ -2971,6 +2995,67 @@ class NBJ_STD_Solver(object):
 ##  @}
 
 
+def enum(*sequential):
+    enums = dict(zip(sequential, range(len(sequential))))
+    return type('Enum', (), enums)
+
+
+## @defgroup enc_config Encoding Configuration
+#  Encoding Configuration
+#  @{
+#
+
+# This enum ordering must be the same as that specified in the
+# EncodingConfiguration::AMOEncoding enum in SatWrapper.hpp
+AMOEncoding = enum('Pairwise', 'OrderChained')
+
+
+## Generic Solver Class
+class EncodingConfiguration(object):
+
+    def __init__(self, direct=True, order=True, conflict=True, support=False, amo_encoding=AMOEncoding.OrderChained):
+        # Domain encodings
+        self.direct = direct
+        self.order = order
+
+        # Constraint encoding
+        self.conflict = conflict
+        self.support = support
+
+        # At Most One encoding. Only OrderChained is supported right now.
+        self.amo_encoding = amo_encoding
+
+        # Check validity of the encoding config
+        if not self.direct and not self.order:
+            raise InvalidEncodingException("Domains must be encoded using at least one encoding: direct|order.")
+
+        if not self.conflict and not self.support:
+            raise InvalidEncodingException("Constraints must be encoded using at least one encoding: conflict|support.")
+
+        if self.amo_encoding not in [AMOEncoding.Pairwise, AMOEncoding.OrderChained]:
+            raise InvalidEncodingException("Invalid at-most-one encoding specified: %s" % (str(self.amo_encoding)))
+
+        # if self.amo_encoding == AMOEncoding.Pairwise and not self.direct:
+        #     raise InvalidEncodingException("Domains must be encoded using the direct encoding if using the pairwise AMO encoding.")
+
+        if self.amo_encoding == AMOEncoding.OrderChained and (not self.direct or not self.order):
+            raise InvalidEncodingException("Both the direct and order encodings must be enabled if using the OrderChained AMO encoding.")
+
+    # Make EncodingConfiguration hashable so that it can be used as a dictionary
+    # key for the cache of encoding configs during translation to SAT.
+    def __hash__(self):
+        return hash((self.direct, self.order, self.conflict, self.support, self.amo_encoding))
+
+    def __eq__(self, other):
+        return (self.direct == other.direct) and \
+               (self.order == other.order) and \
+               (self.conflict == other.conflict) and \
+               (self.support == other.support) and \
+               (self.amo_encoding == other.amo_encoding)
+
+##  @}
+
+
 """
 
 Numberjack exceptions:
@@ -2997,3 +3082,12 @@ class UnsupportedSolverFunction(exceptions.Exception):
 
     def __str__(self):
         return "ERROR: The solver %s does not support the function '%s'. %s" % (self.solver, self.func_name, self.msg)
+
+
+class InvalidEncodingException(exceptions.Exception):
+
+    def __init__(self, msg=""):
+        self.msg = msg
+
+    def __str__(self):
+        return "ERROR: Invalid encoding configuration. %s" % self.msg

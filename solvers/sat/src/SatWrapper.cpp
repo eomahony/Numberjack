@@ -128,6 +128,9 @@ int DomainEncoding::next(const int value, const int index) const {
 }
 
 Lit DomainEncoding::less_or_equal(const int value, const int index) const {
+    if(!owner->encoding->order) {
+        std::cerr << "ERROR call to Domain::less_or_equal when not using the order encoding." << std::endl;
+    }
     if(_lower > value) return Lit_False;
     else if(_upper <= value) return Lit_True;
     else if(_size == 2) return ~Lit(_direct_encoding);
@@ -142,6 +145,9 @@ Lit DomainEncoding::less_or_equal(const int value, const int index) const {
 }
 
 Lit DomainEncoding::equal(const int value, const int index) const {
+    if(!owner->encoding->direct) {
+        std::cerr << "ERROR call to Domain::equal when not using the direct encoding." << std::endl;
+    }
     if(_lower > value || _upper < value) return Lit_False;
     else if(_size == 2) {
         if(_lower == value) return ~Lit(_direct_encoding);
@@ -168,45 +174,64 @@ void DomainEncoding::encode(SatWrapperSolver *solver) {
     std::cout << std::endl;
 #endif
 
+    // FIXME: modify special case of _size=2 to handle different encoding configs
     if(_size == 2) _direct_encoding = solver->create_atom(this,SELF);
     else {
-        // create one atom for each value in the domain (direct encoding)
-        _direct_encoding = solver->create_atom(this,DIRECT);
-        for(int i=1; i<_size; ++i) solver->create_atom(this,DIRECT);
-
-        // create one atom for each value in the domain but the last (order encoding)
-        _order_encoding = solver->create_atom(this,ORDER);
-        for(int i=1; i<_size-1; ++i) solver->create_atom(this,ORDER);
-
         std::vector<Lit> lits;
 
-        // at least one value x=1 or x=2 or ...
-        for(int i=0; i<_size; ++i) lits.push_back(equal(getval(i),i));
-        solver->addClause(lits);
+        if(owner->encoding->direct){
+            // create one atom for each value in the domain (direct encoding)
+            _direct_encoding = solver->create_atom(this,DIRECT);
+            for(int i=1; i<_size; ++i) solver->create_atom(this,DIRECT);
 
-        for(int i=0; i<_size; ++i) {
-            // chain the bounds x<=i -> x<=i+1
-            if(i && i<_size-1) {
+            // at least one value x=1 or x=2 or ...
+            for(int i=0; i<_size; ++i) lits.push_back(equal(getval(i),i));
+            solver->addClause(lits);
+
+            // Pairwise at most one encoding for domain values
+            if(owner->encoding->amo_encoding == EncodingConfiguration::Pairwise){
+                for(unsigned int i=0; i<_size; i++){
+                    for(unsigned int j=i+1; j<_size; j++){
+                        lits.clear();
+                        lits.push_back(~equal(getval(i), i));
+                        lits.push_back(~equal(getval(j), j));
+                        solver->addClause(lits);
+                    }
+                }
+            }
+        }
+
+        if(owner->encoding->order){
+            // create one atom for each value in the domain but the last (order encoding)
+            _order_encoding = solver->create_atom(this,ORDER);
+            for(int i=1; i<_size-1; ++i){
+                solver->create_atom(this,ORDER);
+                // chain the bounds x<=i -> x<=i+1
                 lits.clear();
                 lits.push_back(~(less_or_equal(getval(i-1),i-1)));
                 lits.push_back(less_or_equal(getval(i),i));
                 solver->addClause(lits);
             }
+        }
 
-            // channel x=i -> x>i-1
-            if(i) {
-                lits.clear();
-                lits.push_back(~(equal(getval(i),i)));
-                lits.push_back(~(less_or_equal(getval(i-1),i-1)));
-                solver->addClause(lits);
-            }
+        if(owner->encoding->direct && owner->encoding->order){
+            // Chain the direct encoding representation with the order encoding
+            for(int i=0; i<_size; ++i) {
+                // channel x=i -> x>i-1
+                if(i) {
+                    lits.clear();
+                    lits.push_back(~(equal(getval(i),i)));
+                    lits.push_back(~(less_or_equal(getval(i-1),i-1)));
+                    solver->addClause(lits);
+                }
 
-            // channel x=i -> x<=i
-            if(i<_size-1) {
-                lits.clear();
-                lits.push_back(~equal(getval(i),i));
-                lits.push_back(less_or_equal(getval(i),i));
-                solver->addClause(lits);
+                // channel x=i -> x<=i
+                if(i<_size-1) {
+                    lits.clear();
+                    lits.push_back(~equal(getval(i),i));
+                    lits.push_back(less_or_equal(getval(i),i));
+                    solver->addClause(lits);
+                }
             }
         }
 
@@ -354,6 +379,9 @@ void additionEncoder(SatWrapper_Expression *X,
     std::vector<Lit> lits;
     int i, j, x, y;
 
+    std::cerr << "ERROR additionEncoder not updated for multiencoding yet." << std::endl;
+    exit(1);
+
     for(i=0; i<X->getsize(); ++i) {
         x = X->getval(i);
         for(j=0; j<Y->getsize(); ++j) {
@@ -384,6 +412,9 @@ void disequalityEncoder(SatWrapper_Expression *X,
                         SatWrapperSolver *solver) {
     std::vector<Lit> lits;
     int i=0, j=0, x, y;
+
+    std::cerr << "ERROR disequalityEncoder not updated for multiencoding yet." << std::endl;
+    exit(1);
     while( i<X->getsize() && j<Y->getsize() ) {
         x = X->getval(i);
         y = Y->getval(j);
@@ -404,35 +435,103 @@ void equalityEncoder(SatWrapper_Expression *X,
                      SatWrapperSolver *solver) {
     std::vector<Lit> lits;
     int i=0, j=0, x, y;
-    while( i<X->getsize() && j<Y->getsize() ) {
-        x = X->getval(i);
-        y = Y->getval(j);
 
-        if(x == y) {
-            lits.clear();
-            lits.push_back(~(X->equal(x,i)));
-            lits.push_back(Y->equal(y,j));
-            solver->addClause(lits);
+    // equalityEncoder has to ignore the specifications of whether to encode
+    // the conflicts & supports. Both need to be included to enforce this.
 
-            lits.clear();
-            lits.push_back(X->equal(x,i));
-            lits.push_back(~(Y->equal(y,j)));
-            solver->addClause(lits);
-            ++i;
-            ++j;
+    if(solver->encoding->direct){
+        while( i<X->getsize() && j<Y->getsize() ) {
+            x = X->getval(i);
+            y = Y->getval(j);
+
+            if(x < y) {
+                lits.clear();
+                lits.push_back(~(X->equal(x,i)));
+                solver->addClause(lits);
+                i++;
+            } else if(y < x) {
+                lits.clear();
+                lits.push_back(~(Y->equal(y,j)));
+                solver->addClause(lits);
+                j++;
+            } else if(x == y) {
+                lits.clear();
+                lits.push_back(~(X->equal(x,i)));
+                lits.push_back((Y->equal(y,j)));
+                solver->addClause(lits);
+                
+                lits.clear();
+                lits.push_back((X->equal(x,i)));
+                lits.push_back(~(Y->equal(y,j)));
+                solver->addClause(lits);
+                i++;
+                j++;
+            }
         }
-        if( x < y ) {
+        
+        // Need to add not equals for any domain values that are after the overlap.
+        // Values before the overlap are added in the while loop above.
+        while(i<X->getsize()){
+            x = X->getval(i);
             lits.clear();
-            lits.push_back(~(X->equal(x,i)));
+            lits.push_back(~(X->equal(x, i)));
             solver->addClause(lits);
-            ++i;
+            i++;
         }
-        if( y < x ) {
+        while(j<Y->getsize()){
+            y = Y->getval(j);
             lits.clear();
-            lits.push_back(~(Y->equal(y,j)));
+            lits.push_back(~(Y->equal(y, j)));
             solver->addClause(lits);
-            ++j;
+            j++;
         }
+    }
+    if(solver->encoding->order){
+        while( i<X->getsize() && j<Y->getsize() ) {
+            x = X->getval(i);
+            y = Y->getval(j);
+
+            if(x < y) {
+                lits.clear();
+                lits.push_back(~(X->less_or_equal(x,i)));
+                if(i > 0){
+                    lits.push_back((X->less_or_equal(X->getval(i-1),i-1)));
+                }
+                if(i < X->getsize()-1){
+                    lits.push_back(~(X->less_or_equal(X->getval(i+1),i+1)));
+                }
+                solver->addClause(lits);
+                i++;
+            } else if(y < x) {
+                lits.clear();
+                lits.push_back(~(Y->less_or_equal(y,j)));
+                if(j > 0){
+                    lits.push_back((Y->less_or_equal(Y->getval(j-1),j-1)));
+                }
+                if(j < Y->getsize()-1){
+                    lits.push_back(~(Y->less_or_equal(Y->getval(j+1),j+1)));
+                }
+                solver->addClause(lits);
+                j++;
+            } else if(x == y) {
+                lits.clear();
+                lits.push_back(~(X->less_or_equal(x,i)));
+                lits.push_back((Y->less_or_equal(y,j)));
+                solver->addClause(lits);
+                
+                lits.clear();
+                lits.push_back((X->less_or_equal(x,i)));
+                lits.push_back(~(Y->less_or_equal(y,j)));
+                solver->addClause(lits);
+                i++;
+                j++;
+            }
+        }
+    }
+
+    if(!solver->encoding->direct && !solver->encoding->order) {
+        std::cerr << "ERROR: no encoding representation has been specified for equalityEncoder, exiting." << std::endl;
+        exit(1);
     }
 }
 
@@ -443,6 +542,10 @@ void equalityEncoder(SatWrapper_Expression *X,
                      SatWrapperSolver *solver,
                      const bool spin) {
     unsigned int num_clauses = solver->clause_base.size();
+
+    std::cerr << "ERROR reified equalityEncoder not updated for multiencoding yet." << std::endl;
+    exit(1);
+
     equalityEncoder(X,Y,solver);
     while(num_clauses < solver->clause_base.size())
         solver->clause_base[num_clauses++].push_back((spin ? Z->equal(0) : ~(Z->equal(0))));
@@ -459,6 +562,9 @@ void precedenceEncoder(SatWrapper_Expression *X,
                        SatWrapperSolver *solver) {
     std::vector<Lit> lits;
     int i=0, j=0, x=0, y=0;
+
+    std::cerr << "ERROR precedenceEncoder not updated for multiencoding yet." << std::endl;
+    exit(1);
 
     while( i<X->getsize() ) {
         if(i<X->getsize()) x = X->getval(i);
@@ -502,6 +608,10 @@ void precedenceEncoder(SatWrapper_Expression *X,
                        const int K,
                        SatWrapperSolver *solver) {
     unsigned int num_clauses = solver->clause_base.size();
+
+    std::cerr << "ERROR reified precedenceEncoder not updated for multiencoding yet." << std::endl;
+    exit(1);
+
     precedenceEncoder(X,Y,K,solver);
     while(num_clauses < solver->clause_base.size())
         solver->clause_base[num_clauses++].push_back(Z->equal(0));
@@ -519,6 +629,7 @@ void SatWrapper_Expression::initialise() {
     _ident = -1;
     _solver = NULL;
     domain = NULL;
+    encoding = NULL;
 }
 
 SatWrapper_Expression::SatWrapper_Expression() {
@@ -613,6 +724,14 @@ bool SatWrapper_Expression::has_been_added() const {
 
 SatWrapper_Expression* SatWrapper_Expression::add(SatWrapperSolver *solver, bool top_level) {
     if(!has_been_added()) {
+        if(!encoding){
+            // If the encoding hasn't been overwritten for this expression,
+            // then we take the default for the solver.
+            encoding = solver->encoding;
+#ifdef _DEBUGWRAP    
+            std::cout << "Expression encoding not set, setting to solver's default: " << *encoding << std::endl;
+#endif
+        }
 
         _solver = solver;
         _ident = _solver->declare(this, true);
@@ -620,6 +739,7 @@ SatWrapper_Expression* SatWrapper_Expression::add(SatWrapperSolver *solver, bool
 
 #ifdef _DEBUGWRAP
         std::cout << "+ add x" << _ident << " [" << getmin() << ".." << getmax() << "]" << std::endl;
+        if(encoding) std::cout << "Expression encoding:" << (*encoding) << std::endl;
 #endif
 
         domain->encode(_solver);
@@ -1755,14 +1875,14 @@ SatWrapper_Expression* SatWrapper_Maximise::add(SatWrapperSolver *solver, bool t
 SatWrapperSolver::SatWrapperSolver() {
 
 #ifdef _DEBUGWRAP
-    std::cout << "create a minisat solver" << std::endl;
+    std::cout << "create a SatWrapper solver" << std::endl;
 #endif
 
     minimise_obj = NULL;
     maximise_obj = NULL;
+    encoding = NULL;
     cp_model = NULL;
 
-    //create_atom(NULL,0);
     Lit dummy(create_atom(NULL,0),true);
     Lit_True = Lit(dummy);
     Lit_False = ~Lit(dummy);
@@ -1810,6 +1930,9 @@ void SatWrapperSolver::addClause(std::vector<Lit>& cl) {
     std::vector<Lit> clause;
     if(!processClause(cl,clause)) {
         clause_base.push_back(clause);
+#ifdef _DEBUGWRAP
+        displayClause(clause);
+#endif
     }
 }
 
@@ -1837,6 +1960,7 @@ void SatWrapperSolver::add(SatWrapper_Expression* arg) {
 
 #ifdef _DEBUGWRAP
     std::cout << "add an expression to the solver" << std::endl;
+    std::cout << "Solver is using encoding: " << *encoding << std::endl;
 #endif
 
     if(arg != NULL) arg->add(this, true);

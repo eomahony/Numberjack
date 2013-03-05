@@ -182,7 +182,7 @@ MiniSatSolver::~MiniSatSolver()
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "delete wrapped solver" << std::endl;
+  std::cout << "delete minisat solver" << std::endl;
 #endif
 
 }

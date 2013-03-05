@@ -70,8 +70,30 @@ typedef SatWrapperArray< double > SatWrapperDoubleArray;
 
 
 
+class EncodingConfiguration{
+public:
+    // Domain encodings
+    bool direct, order;
 
+    // Constraint encoding
+    bool conflict, support;
 
+    // At Most One encoding. Only OrderChained is supported right now.
+    enum AMOEncoding {Pairwise, OrderChained};
+    AMOEncoding amo_encoding;
+
+    EncodingConfiguration(bool _direct, bool _order, bool _conflict, bool _support, AMOEncoding _amo_encoding) :
+        direct(_direct), order(_order), conflict(_conflict), support(_support), amo_encoding(_amo_encoding) {
+#ifdef _DEBUGWRAP
+            std::cout << "New " << (*this) << std::endl;
+#endif
+    }
+
+    friend std::ostream& operator<< (std::ostream& out, const EncodingConfiguration& e) {
+        out << "EncodingConfiguration<direct:" << e.direct << " order:" << e.order << " conflict:" << e.conflict << " support:" << e.support << " amo_encoding:" << e.amo_encoding << ">";
+        return out;
+    }
+};
 
 
 class SatWrapper_Expression;
@@ -373,6 +395,10 @@ public:
 
     SatWrapperSolver *_solver;
 
+    // Each expression can be configured to use a different encoding config.
+    // Otherwise it assumes the configuration of the solver object.
+    EncodingConfiguration *encoding;
+
     // unique identifier
     int _ident;
     int nbj_ident;
@@ -614,6 +640,9 @@ public:
 
     SatWrapper_Expression *minimise_obj;
     SatWrapper_Expression *maximise_obj;
+
+    // The default encoding configuration for each expression & variable.
+    EncodingConfiguration *encoding;
 
     // repository for all expressions
     std::vector< SatWrapper_Expression* > _expressions;

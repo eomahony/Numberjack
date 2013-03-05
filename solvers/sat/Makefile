@@ -39,7 +39,7 @@ SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 
 MCORE     = minisat_src/core
 MTL       = minisat_src/mtl
-CFLAGS    += -I$(MCORE) -I$(MTL) $(HACK) -Wall -ffloat-store -O3 # -DNDEBUG -D_DEBUGWRAP
+CFLAGS    += -I$(MCORE) -I$(MTL) $(HACK) -Wall -ffloat-store -O3  # -DNDEBUG
 
 #-----------------------------------------------------------------------------
 # Rules
@@ -48,7 +48,10 @@ CFLAGS    += -I$(MCORE) -I$(MTL) $(HACK) -Wall -ffloat-store -O3 # -DNDEBUG -D_D
 CXX = g++ 
 
 
-wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/SatWrapper.o 
+wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/SatWrapper.o
+
+debug: CFLAGS += -D_DEBUGWRAP
+debug: wrapper
 
 $(OBJDIR):
 	@mkdir -p $(OBJDIR)
@@ -57,13 +60,13 @@ $(PYTHON):
 	@mkdir -p $(PYTHON)
 
 install_python: wrapper
-	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
+	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install
 
 clean_swig:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
 
 clean_all: clean clean_swig
-	cd $(CORE)/; make clean
+	# cd $(CORE)/; make clean
 
 clean:
 	-rm -rf $(OBJDIR)/* $(PYTHON)/*o $(PYTHON)/*~ $(PYTHON)/build *~ $(SRCDIR)/*~

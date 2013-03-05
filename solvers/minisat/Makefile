@@ -51,7 +51,7 @@ SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 SATDIR    = $(MAINDIR)/solvers/sat
 MTL       = $(SATDIR)/minisat_src/mtl
 CORE      = $(SATDIR)/minisat_src/core
-CFLAGS    += -I$(SATDIR)/src/ -I$(MTL) $(HACK) -I$(CORE) -Wall -ffloat-store -O3 # -DNDEBUG -D_DEBUGWRAP
+CFLAGS    += -I$(SATDIR)/src/ -I$(MTL) $(HACK) -I$(CORE) -Wall -ffloat-store -O3 # -DNDEBUG
 #LFLAGS    = -lz
 
 
@@ -62,7 +62,10 @@ CFLAGS    += -I$(SATDIR)/src/ -I$(MTL) $(HACK) -I$(CORE) -Wall -ffloat-store -O3
 CXX = g++ #-g -D_DEBUGWRAP
 
 
-wrapper: $(OBJDIR) $(PYTHON) $(SATDIR)/$(OBJDIR) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/MiniSat.o 
+wrapper: $(OBJDIR) $(PYTHON) $(SATDIR)/$(OBJDIR) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/MiniSat.o
+
+debug: CFLAGS += -D_DEBUGWRAP
+debug: wrapper
 
 $(OBJDIR):
 	@mkdir -p $(OBJDIR)

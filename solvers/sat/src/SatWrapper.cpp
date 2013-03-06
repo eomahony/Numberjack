@@ -768,7 +768,8 @@ SatWrapper_Expression::~SatWrapper_Expression() {
 int SatWrapper_Expression::get_size() const {
     int i=0, domsize=0;
     for(i=0; i<getsize(); ++i)
-        domsize += (_solver->truth_value(equal(getval(i),i)) != l_False);
+        if(encoding->direct) domsize += (_solver->truth_value(equal(getval(i),i)) != l_False);
+        else if(encoding->order) domsize += (_solver->truth_value(less_or_equal(getval(i),i)) != l_False);
     return domsize;
 }
 

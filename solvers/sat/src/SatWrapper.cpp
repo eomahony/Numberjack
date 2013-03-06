@@ -631,16 +631,19 @@ void equalityEncoder(SatWrapper_Expression *X,
                      EncodingConfiguration *encoding,
                      const bool spin) {
     unsigned int num_clauses = solver->clause_base.size();
-
-    std::cerr << "ERROR reified equalityEncoder not updated for multiencoding yet." << std::endl;
-    exit(1);
+    Lit l;
 
     equalityEncoder(X, Y, solver, encoding);
+    if(encoding->direct) l = spin ? Z->equal(0) : ~(Z->equal(0));
+    else if(encoding->order) l = spin ? Z->less_or_equal(0) : ~(Z->less_or_equal(0));
     while(num_clauses < solver->clause_base.size())
-        solver->clause_base[num_clauses++].push_back((spin ? Z->equal(0) : ~(Z->equal(0))));
+        solver->clause_base[num_clauses++].push_back(l);
+
     disequalityEncoder(X, Y, solver, encoding);
+    if(encoding->direct) l = spin ? ~(Z->equal(0)) : Z->equal(0);
+    else if(encoding->order) l = spin ? ~(Z->less_or_equal(0)) : Z->less_or_equal(0);
     while(num_clauses < solver->clause_base.size())
-        solver->clause_base[num_clauses++].push_back((spin ? ~(Z->equal(0)) : Z->equal(0)));
+        solver->clause_base[num_clauses++].push_back(l);
 }
 
 

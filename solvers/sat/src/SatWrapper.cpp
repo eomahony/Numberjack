@@ -7,6 +7,24 @@
 Lit Lit_True;
 Lit Lit_False;
 
+
+void addAMOClauses(Lits literals, SatWrapperSolver *solver, EncodingConfiguration *encoding){
+    Lits lits;
+    if(encoding->amo_encoding == EncodingConfiguration::Pairwise){
+        for(unsigned int i=0; i<literals.size(); i++){
+            for(unsigned int j=i+1; j<literals.size(); j++){
+                lits.clear();
+                lits.push_back(~(literals[i]));
+                lits.push_back(~(literals[j]));
+                solver->addClause(lits);
+            }
+        }
+    } else {
+        std::cerr << "ERROR unknown AMO specified: " << encoding->amo_encoding << std::endl;
+        exit(1);
+    }
+}
+
 /**************************************************************
  ********************      ENCODINGS        *******************
  **************************************************************/
@@ -188,16 +206,10 @@ void DomainEncoding::encode(SatWrapperSolver *solver) {
             for(int i=0; i<_size; ++i) lits.push_back(equal(getval(i),i));
             solver->addClause(lits);
 
-            // Pairwise at most one encoding for domain values
-            if(owner->encoding->amo_encoding == EncodingConfiguration::Pairwise){
-                for(unsigned int i=0; i<_size; i++){
-                    for(unsigned int j=i+1; j<_size; j++){
-                        lits.clear();
-                        lits.push_back(~equal(getval(i), i));
-                        lits.push_back(~equal(getval(j), j));
-                        solver->addClause(lits);
-                    }
-                }
+            // If the order encoding is also used, then the chaining between
+            // the two representations will enforce AMO.
+            if(!owner->encoding->order){
+                addAMOClauses(lits, solver, owner->encoding);
             }
         }
 
@@ -371,12 +383,57 @@ bool processClause(std::vector<Lit>& cl_in, std::vector<Lit>& cl_out) {
     return i<cl_in.size();
 }
 
+
+bool less_or_equal(int x, int y){
+    return x <= y;
+}
+
+bool not_equal(int x, int y){
+    return x != y;
+}
+
+
+// Adds support clauses for comparison_func(X + K, Y)
+void supportClauseEncoder(SatWrapper_Expression *X,
+                          SatWrapper_Expression *Y,
+                          const int K,
+                          SatWrapperSolver *solver,
+                          EncodingConfiguration *encoding,
+                          bool(*comparison_func)(int,int)){
+    Lits lits;
+    unsigned int i=0, j=0;
+    int x, y;
+    bool subsumed;
+    
+    for(i=0;i<X->getsize();i++){
+        x = X->getval(i);
+        subsumed = true;
+        lits.clear();
+        for(j=0;j<Y->getsize();j++){
+            y = Y->getval(j);
+            if(comparison_func(x + K, y)){
+                lits.push_back(Y->equal(y, j));
+            } else {
+                subsumed = false;
+            }
+        }
+        // If every value in the domain of Y supports X=x, then there is no need
+        // to add this clause because it is subsumed by the ALO.
+        if(!subsumed){
+            lits.push_back(~(X->equal(x, i)));
+            solver->addClause(lits);
+        }
+    }
+}
+
+
 // (X + Y) == Z
 void additionEncoder(SatWrapper_Expression *X,
                      SatWrapper_Expression *Y,
                      SatWrapper_Expression *Z,
-                     SatWrapperSolver *solver) {
-    std::vector<Lit> lits;
+                     SatWrapperSolver *solver,
+                     EncodingConfiguration *encoding) {
+    Lits lits;
     int i, j, x, y;
 
     std::cerr << "ERROR additionEncoder not updated for multiencoding yet." << std::endl;
@@ -409,37 +466,68 @@ void additionEncoder(SatWrapper_Expression *X,
 // (X != Y)
 void disequalityEncoder(SatWrapper_Expression *X,
                         SatWrapper_Expression *Y,
-                        SatWrapperSolver *solver) {
-    std::vector<Lit> lits;
-    int i=0, j=0, x, y;
+                        SatWrapperSolver *solver,
+                        EncodingConfiguration *encoding) {
+    Lits lits;
+    int i=0, j=0, x, y, prev_x, prev_y;
 
-    std::cerr << "ERROR disequalityEncoder not updated for multiencoding yet." << std::endl;
-    exit(1);
-    while( i<X->getsize() && j<Y->getsize() ) {
-        x = X->getval(i);
-        y = Y->getval(j);
-        if(x == y) {
-            lits.clear();
-            lits.push_back(~(X->equal(x,i)));
-            lits.push_back(~(Y->equal(y,j)));
-            solver->addClause(lits);
+    if(encoding->direct && encoding->conflict) {
+        while( i<X->getsize() && j<Y->getsize() ) {
+            x = X->getval(i);
+            y = Y->getval(j);
+            if(x == y) {
+                lits.clear();
+                lits.push_back(~(X->equal(x,i)));
+                lits.push_back(~(Y->equal(y,j)));
+                solver->addClause(lits);
+            }
+            if( x <= y ) ++i;
+            if( y <= x ) ++j;
         }
-        if( x <= y ) ++i;
-        if( y <= x ) ++j;
+        
+    } else if(encoding->order) {
+        while( i<X->getsize() && j<Y->getsize() ) {
+            x = X->getval(i);
+            y = Y->getval(j);
+            if(x == y) {
+                lits.clear();
+                if(i>0) lits.push_back(X->less_or_equal(prev_x, i-1));
+                if(j>0) lits.push_back(Y->less_or_equal(prev_y, j-1));
+                lits.push_back(~(X->less_or_equal(x,i)));
+                lits.push_back(~(Y->less_or_equal(y,j)));
+                solver->addClause(lits);
+            }
+            if( x <= y ){
+                prev_x = x;
+                i++;
+            }
+            if( y <= x ){
+                prev_y = y;
+                j++;
+            }
+        }
+    } else if(encoding->direct && encoding->support) { //FIXME
+        // Encode support clauses (x_1 \/ x_2 \/ !y_3)
+        supportClauseEncoder(X, Y, 0, solver, encoding, &not_equal);
+        supportClauseEncoder(Y, X, 0, solver, encoding, &not_equal);
+    } else {
+        std::cerr << "ERROR: disequalityEncoder not implemented for this encoding, exiting." << std::endl;
+        exit(1);
     }
 }
 
 // (X == Y)
 void equalityEncoder(SatWrapper_Expression *X,
                      SatWrapper_Expression *Y,
-                     SatWrapperSolver *solver) {
+                     SatWrapperSolver *solver,
+                     EncodingConfiguration *encoding) {
     std::vector<Lit> lits;
     int i=0, j=0, x, y;
 
     // equalityEncoder has to ignore the specifications of whether to encode
     // the conflicts & supports. Both need to be included to enforce this.
 
-    if(solver->encoding->direct){
+    if(encoding->direct){
         while( i<X->getsize() && j<Y->getsize() ) {
             x = X->getval(i);
             y = Y->getval(j);
@@ -486,7 +574,7 @@ void equalityEncoder(SatWrapper_Expression *X,
             j++;
         }
     }
-    if(solver->encoding->order){
+    if(encoding->order){
         while( i<X->getsize() && j<Y->getsize() ) {
             x = X->getval(i);
             y = Y->getval(j);
@@ -529,7 +617,7 @@ void equalityEncoder(SatWrapper_Expression *X,
         }
     }
 
-    if(!solver->encoding->direct && !solver->encoding->order) {
+    if(!encoding->direct && !encoding->order) {
         std::cerr << "ERROR: no encoding representation has been specified for equalityEncoder, exiting." << std::endl;
         exit(1);
     }
@@ -540,16 +628,17 @@ void equalityEncoder(SatWrapper_Expression *X,
                      SatWrapper_Expression *Y,
                      SatWrapper_Expression *Z,
                      SatWrapperSolver *solver,
+                     EncodingConfiguration *encoding,
                      const bool spin) {
     unsigned int num_clauses = solver->clause_base.size();
 
     std::cerr << "ERROR reified equalityEncoder not updated for multiencoding yet." << std::endl;
     exit(1);
 
-    equalityEncoder(X,Y,solver);
+    equalityEncoder(X, Y, solver, encoding);
     while(num_clauses < solver->clause_base.size())
         solver->clause_base[num_clauses++].push_back((spin ? Z->equal(0) : ~(Z->equal(0))));
-    disequalityEncoder(X,Y,solver);
+    disequalityEncoder(X, Y, solver, encoding);
     while(num_clauses < solver->clause_base.size())
         solver->clause_base[num_clauses++].push_back((spin ? ~(Z->equal(0)) : Z->equal(0)));
 }
@@ -559,7 +648,8 @@ void equalityEncoder(SatWrapper_Expression *X,
 void precedenceEncoder(SatWrapper_Expression *X,
                        SatWrapper_Expression *Y,
                        const int K,
-                       SatWrapperSolver *solver) {
+                       SatWrapperSolver *solver,
+                       EncodingConfiguration *encoding) {
     std::vector<Lit> lits;
     int i=0, j=0, x=0, y=0;
 
@@ -606,16 +696,17 @@ void precedenceEncoder(SatWrapper_Expression *X,
                        SatWrapper_Expression *Y,
                        SatWrapper_Expression *Z,
                        const int K,
-                       SatWrapperSolver *solver) {
+                       SatWrapperSolver *solver,
+                       EncodingConfiguration *encoding) {
     unsigned int num_clauses = solver->clause_base.size();
 
     std::cerr << "ERROR reified precedenceEncoder not updated for multiencoding yet." << std::endl;
     exit(1);
 
-    precedenceEncoder(X,Y,K,solver);
+    precedenceEncoder(X, Y, K, solver, encoding);
     while(num_clauses < solver->clause_base.size())
         solver->clause_base[num_clauses++].push_back(Z->equal(0));
-    precedenceEncoder(Y,X,1-K,solver);
+    precedenceEncoder(Y, X, 1-K, solver, encoding);
     while(num_clauses < solver->clause_base.size())
         solver->clause_base[num_clauses++].push_back(~(Z->equal(0)));
 }
@@ -695,15 +786,35 @@ int SatWrapper_Expression::next(const int v) const {
 }
 
 int SatWrapper_Expression::get_min() const {
+    int v;
     for(int i=0; i<getsize(); ++i) {
-        if(_solver->truth_value(equal(getval(i),i)) != l_False) return getval(i);
+        v = getval(i);
+        if(encoding->direct){
+            if(_solver->truth_value(equal(v,i)) != l_False) return v;
+        } else if(encoding->order){
+            if(i < getsize() - 1 && _solver->truth_value(less_or_equal(v,i)) != l_False) return v;
+        }
     }
+    // Special case of last literal encoding the domain under the order encoding does not need to be created as it is implied.
+    v = getval(getsize()-2);
+    if(encoding->order && _solver->truth_value(less_or_equal(v, getsize()-2)) == l_False) return getval(getsize()-1);
     return getmin();
 }
 
 int SatWrapper_Expression::get_max() const {
-    for(int i=getsize()-1; i>=0; --i)
-        if(_solver->truth_value(equal(getval(i),i)) != l_False) return getval(i);
+    int v;
+    // Special case of last literal encoding the domain under the order encoding does not need to be created as it is implied.
+    v = getval(getsize()-2);
+    if(encoding->order && _solver->truth_value(less_or_equal(v, getsize()-2)) == l_False) return getval(getsize()-1);
+
+    for(int i=getsize()-1; i>=0; --i){
+        v = getval(i);
+        if(encoding->direct){
+            if(_solver->truth_value(equal(v,i)) != l_False) return v;
+        } else if(encoding->order){
+            if(i < getsize() - 1 && _solver->truth_value(less_or_equal(v,i)) == l_False) return getval(i+1);
+        }
+    }
     return getmax();
 }
 
@@ -724,18 +835,12 @@ bool SatWrapper_Expression::has_been_added() const {
 
 SatWrapper_Expression* SatWrapper_Expression::add(SatWrapperSolver *solver, bool top_level) {
     if(!has_been_added()) {
-        if(!encoding){
-            // If the encoding hasn't been overwritten for this expression,
-            // then we take the default for the solver.
-            encoding = solver->encoding;
-#ifdef _DEBUGWRAP    
-            std::cout << "Expression encoding not set, setting to solver's default: " << *encoding << std::endl;
-#endif
-        }
-
         _solver = solver;
         _ident = _solver->declare(this, true);
         solver->_variables.push_back(this);
+        
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
 
 #ifdef _DEBUGWRAP
         std::cout << "+ add x" << _ident << " [" << getmin() << ".." << getmax() << "]" << std::endl;
@@ -771,6 +876,9 @@ SatWrapper_Expression* SatWrapper_add::add(SatWrapperSolver *solver, bool top_le
         _solver = solver;
         _ident = _solver->declare(this, false);
 
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
+
 #ifdef _DEBUGWRAP
         std::cout << "creating add expression x" << _ident << " [" << getmin() << ".." << getmax() << "]" << std::endl;
 #endif
@@ -795,7 +903,7 @@ SatWrapper_Expression* SatWrapper_add::add(SatWrapperSolver *solver, bool top_le
                           << _vars[0]->_ident << " + x" << _vars[1]->_ident << std::endl;
 #endif
 
-                additionEncoder(_vars[0], _vars[1], this, _solver);
+                additionEncoder(_vars[0], _vars[1], this, _solver, encoding);
 
             }
         }
@@ -827,6 +935,9 @@ SatWrapper_Expression* SatWrapper_mul::add(SatWrapperSolver *solver, bool top_le
     if(!has_been_added()) {
         _solver = solver;
         _ident = _solver->declare(this, false);
+        
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
 
 #ifdef _DEBUGWRAP
         std::cout << "creating mul expression x" << _ident << " [" << getmin() << ".." << getmax() << "]" << std::endl;
@@ -881,6 +992,9 @@ SatWrapper_Expression* SatWrapper_AllDiff::add(SatWrapperSolver *solver, bool to
     if(!has_been_added()) {
         _solver = solver;
         _ident = _solver->declare(this, false);
+        
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
 
 #ifdef _DEBUGWRAP
         std::cout << "creating alldiff expression" << std::endl;
@@ -1007,6 +1121,9 @@ SatWrapper_Expression* SatWrapper_Sum::add(SatWrapperSolver *solver, bool top_le
     if(!has_been_added()) {
         _solver = solver;
         _ident = _solver->declare(this, false);
+        
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
 
 #ifdef _DEBUGWRAP
         std::cout << "add sum expression x" << _ident << " [" << getmin() << ".." << getmax() << "]" << std::endl;
@@ -1121,6 +1238,9 @@ SatWrapper_Expression* SatWrapper_or::add(SatWrapperSolver *solver, bool top_lev
     if(!has_been_added()) {
         _solver = solver;
         _ident = _solver->declare(this, false);
+        
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
 
         std::vector<Lit> lits;
         if(top_level) {
@@ -1226,6 +1346,9 @@ SatWrapper_Expression* SatWrapper_and::add(SatWrapperSolver *solver, bool top_le
     if(!has_been_added()) {
         _solver = solver;
         _ident = _solver->declare(this, false);
+        
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
 
         std::vector<Lit> lits;
         if(top_level) {
@@ -1338,6 +1461,9 @@ SatWrapper_Expression* SatWrapper_eq::add(SatWrapperSolver *solver, bool top_lev
     if(!has_been_added()) {
         _solver = solver;
         _ident = _solver->declare(this, false);
+        
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
 
 #ifdef _DEBUGWRAP
         std::cout << "creating eq expression x" << _ident << " [" << getmin() << ".." << getmax() << "]" << std::endl;
@@ -1357,7 +1483,7 @@ SatWrapper_Expression* SatWrapper_eq::add(SatWrapperSolver *solver, bool top_lev
                           << _vars[0]->_ident << " == x" << _vars[1]->_ident << std::endl;
 #endif
 
-                equalityEncoder(_vars[0], _vars[1], _solver);
+                equalityEncoder(_vars[0], _vars[1], _solver, encoding);
 
             } else {
 
@@ -1366,10 +1492,21 @@ SatWrapper_Expression* SatWrapper_eq::add(SatWrapperSolver *solver, bool top_lev
                           << _vars[0]->_ident << " == " << _rhs << std::endl;
 #endif
 
-                lits.clear();
-                lits.push_back(_vars[0]->equal(_rhs));
-                _solver->addClause(lits);
+                
+                if(encoding->direct){
+                    lits.clear();
+                    lits.push_back(_vars[0]->equal(_rhs));
+                    _solver->addClause(lits);
+                }
+                if(encoding->order){
+                    lits.clear();
+                    lits.push_back(_vars[0]->less_or_equal(_rhs));
+                    _solver->addClause(lits);
 
+                    lits.clear();
+                    lits.push_back(_vars[0]->greater_than(_rhs - 1));
+                    _solver->addClause(lits);
+                }
             }
         } else {
 
@@ -1383,7 +1520,7 @@ SatWrapper_Expression* SatWrapper_eq::add(SatWrapperSolver *solver, bool top_lev
                           << _vars[0]->_ident << " == x" << _vars[1]->_ident << ")" << std::endl;
 #endif
 
-                equalityEncoder(_vars[0], _vars[1], this, _solver, true);
+                equalityEncoder(_vars[0], _vars[1], this, _solver, encoding, true);
 
             }
         }
@@ -1419,6 +1556,9 @@ SatWrapper_Expression* SatWrapper_ne::add(SatWrapperSolver *solver, bool top_lev
     if(!has_been_added()) {
         _solver = solver;
         _ident = _solver->declare(this, false);
+        
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
 
         std::vector<Lit> lits;
 
@@ -1432,7 +1572,7 @@ SatWrapper_Expression* SatWrapper_ne::add(SatWrapperSolver *solver, bool top_lev
                 std::cout << "add notequal constraint" << std::endl;
 #endif
 
-                disequalityEncoder(_vars[0], _vars[1], _solver);
+                disequalityEncoder(_vars[0], _vars[1], _solver, encoding);
 
             } else  {
 
@@ -1457,7 +1597,7 @@ SatWrapper_Expression* SatWrapper_ne::add(SatWrapperSolver *solver, bool top_lev
                 std::cout << "add notequal predicate" << std::endl;
 #endif
 
-                equalityEncoder(_vars[0], _vars[1], this, _solver, false);
+                equalityEncoder(_vars[0], _vars[1], this, _solver, encoding, false);
 
             }
         }
@@ -1504,6 +1644,9 @@ SatWrapper_Expression* SatWrapper_le::add(SatWrapperSolver *solver, bool top_lev
     if(!has_been_added()) {
         _solver = solver;
         _ident = _solver->declare(this, false);
+        
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
 
         std::vector<Lit> lits;
 
@@ -1518,7 +1661,7 @@ SatWrapper_Expression* SatWrapper_le::add(SatWrapperSolver *solver, bool top_lev
                 std::cout << "Adding leq constraint" << std::endl;
 #endif
 
-                precedenceEncoder(_vars[0], _vars[1], 0, _solver);
+                precedenceEncoder(_vars[0], _vars[1], 0, _solver, encoding);
             } else {
                 _vars[0] = _vars[0]->add(_solver, false);
 
@@ -1547,7 +1690,7 @@ SatWrapper_Expression* SatWrapper_le::add(SatWrapperSolver *solver, bool top_lev
                 domain->encode(_solver);
                 _vars[1] = _vars[1]->add(_solver, false);
 
-                precedenceEncoder(_vars[0], _vars[1], this, 0, _solver);
+                precedenceEncoder(_vars[0], _vars[1], this, 0, _solver, encoding);
 
             }
         }
@@ -1592,6 +1735,9 @@ SatWrapper_Expression* SatWrapper_ge::add(SatWrapperSolver *solver, bool top_lev
     if(!has_been_added()) {
         _solver = solver;
         _ident = _solver->declare(this, false);
+        
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
 
         std::vector<Lit> lits;
 
@@ -1606,7 +1752,7 @@ SatWrapper_Expression* SatWrapper_ge::add(SatWrapperSolver *solver, bool top_lev
                 std::cout << "Adding geq constraint" << std::endl;
 #endif
 
-                precedenceEncoder(_vars[1], _vars[0], 0, _solver);
+                precedenceEncoder(_vars[1], _vars[0], 0, _solver, encoding);
 
             } else {
 
@@ -1635,7 +1781,7 @@ SatWrapper_Expression* SatWrapper_ge::add(SatWrapperSolver *solver, bool top_lev
                 domain->encode(_solver);
                 _vars[1] = _vars[1]->add(_solver, false);
 
-                precedenceEncoder(_vars[1], _vars[0], this, 0, _solver);
+                precedenceEncoder(_vars[1], _vars[0], this, 0, _solver, encoding);
 
             }
         }
@@ -1672,6 +1818,9 @@ SatWrapper_Expression* SatWrapper_lt::add(SatWrapperSolver *solver, bool top_lev
     if(!has_been_added()) {
         _solver = solver;
         _ident = _solver->declare(this, false);
+        
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
 
         std::vector<Lit> lits;
 
@@ -1686,7 +1835,7 @@ SatWrapper_Expression* SatWrapper_lt::add(SatWrapperSolver *solver, bool top_lev
                 std::cout << "Adding lt constraint" << std::endl;
 #endif
 
-                precedenceEncoder(_vars[0], _vars[1], 1, _solver);
+                precedenceEncoder(_vars[0], _vars[1], 1, _solver, encoding);
 
             } else {
 
@@ -1716,7 +1865,7 @@ SatWrapper_Expression* SatWrapper_lt::add(SatWrapperSolver *solver, bool top_lev
                 domain->encode(_solver);
                 _vars[1] = _vars[1]->add(_solver, false);
 
-                precedenceEncoder(_vars[0], _vars[1], this, 1, _solver);
+                precedenceEncoder(_vars[0], _vars[1], this, 1, _solver, encoding);
 
             }
         }
@@ -1747,6 +1896,9 @@ SatWrapper_Expression* SatWrapper_gt::add(SatWrapperSolver *solver, bool top_lev
     if(!has_been_added()) {
         _solver = solver;
         _ident = _solver->declare(this, false);
+        
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
 
         std::vector<Lit> lits;
 
@@ -1760,7 +1912,7 @@ SatWrapper_Expression* SatWrapper_gt::add(SatWrapperSolver *solver, bool top_lev
                 std::cout << "Adding gt constraint" << std::endl;
 #endif
 
-                precedenceEncoder(_vars[1], _vars[0], 1, _solver);
+                precedenceEncoder(_vars[1], _vars[0], 1, _solver, encoding);
 
             } else {
 
@@ -1789,7 +1941,7 @@ SatWrapper_Expression* SatWrapper_gt::add(SatWrapperSolver *solver, bool top_lev
                 domain->encode(_solver);
                 _vars[1] = _vars[1]->add(_solver, false);
 
-                precedenceEncoder(_vars[1], _vars[0], this, 1, _solver);
+                precedenceEncoder(_vars[1], _vars[0], this, 1, _solver, encoding);
 
             }
         }
@@ -1817,6 +1969,9 @@ SatWrapper_Expression* SatWrapper_Minimise::add(SatWrapperSolver *solver, bool t
     if(!has_been_added()) {
         _solver = solver;
         _ident = _solver->declare(this, false);
+        
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
 
         _obj = _obj->add(_solver, false);
 
@@ -1848,6 +2003,9 @@ SatWrapper_Expression* SatWrapper_Maximise::add(SatWrapperSolver *solver, bool t
     if(!has_been_added()) {
         _solver = solver;
         _ident = _solver->declare(this, false);
+        
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
 
         _obj = _obj->add(_solver, false);
 

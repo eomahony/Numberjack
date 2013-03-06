@@ -608,17 +608,18 @@ class Model(object):
         The solver is passed as a string, the corresponding module is
         imported, a Solver object created, initialised and returned
         """
+        print "got model", str(encoding)
         try:
             lib = __import__(library)
-            solver = lib.Solver(self, X, encoding)
+            solver = lib.Solver(self, X, encoding=encoding)
         except ImportError:
             raise ImportError("ERROR: Failed during import, wrong module name? (%s)" % library)
         return solver
 
-    ## Solve and returns a solution 
+    ## Solve and returns a solution
     # @param library A string standing for a back end solver ('Mistral', 'MiniSat', 'SCIP')
     # @return A Solution object
-    def solve_with(self,library):
+    def solve_with(self, library, encoding=None):
         """
         The solver is passed as a string, the corresponding module is
         imported, a Solver object created, initialised and called.
@@ -626,7 +627,7 @@ class Model(object):
         Model is unsatisfiable, or the solver fails to solve it, the
         Solution will be empty (None)
         """
-        solver = self.load(library)
+        solver = self.load(library, encoding)
         solver.solve()
         return solver.get_solution()
 
@@ -3007,13 +3008,13 @@ def enum(*sequential):
 
 # This enum ordering must be the same as that specified in the
 # EncodingConfiguration::AMOEncoding enum in SatWrapper.hpp
-AMOEncoding = enum('Pairwise', 'OrderChained')
+AMOEncoding = enum('Pairwise',)
 
 
 ## Generic Solver Class
 class EncodingConfiguration(object):
 
-    def __init__(self, direct=True, order=True, conflict=True, support=False, amo_encoding=AMOEncoding.OrderChained):
+    def __init__(self, direct=True, order=True, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise):
         # Domain encodings
         self.direct = direct
         self.order = order
@@ -3022,7 +3023,7 @@ class EncodingConfiguration(object):
         self.conflict = conflict
         self.support = support
 
-        # At Most One encoding. Only OrderChained is supported right now.
+        # At Most One encoding.
         self.amo_encoding = amo_encoding
 
         # Check validity of the encoding config
@@ -3032,14 +3033,14 @@ class EncodingConfiguration(object):
         if not self.conflict and not self.support:
             raise InvalidEncodingException("Constraints must be encoded using at least one encoding: conflict|support.")
 
-        if self.amo_encoding not in [AMOEncoding.Pairwise, AMOEncoding.OrderChained]:
+        if self.amo_encoding not in [AMOEncoding.Pairwise, ]:
             raise InvalidEncodingException("Invalid at-most-one encoding specified: %s" % (str(self.amo_encoding)))
 
         # if self.amo_encoding == AMOEncoding.Pairwise and not self.direct:
         #     raise InvalidEncodingException("Domains must be encoded using the direct encoding if using the pairwise AMO encoding.")
 
-        if self.amo_encoding == AMOEncoding.OrderChained and (not self.direct or not self.order):
-            raise InvalidEncodingException("Both the direct and order encodings must be enabled if using the OrderChained AMO encoding.")
+        # if self.amo_encoding == AMOEncoding.OrderChained and (not self.direct or not self.order):
+        #     raise InvalidEncodingException("Both the direct and order encodings must be enabled if using the OrderChained AMO encoding.")
 
     # Make EncodingConfiguration hashable so that it can be used as a dictionary
     # key for the cache of encoding configs during translation to SAT.
@@ -3052,6 +3053,10 @@ class EncodingConfiguration(object):
                (self.conflict == other.conflict) and \
                (self.support == other.support) and \
                (self.amo_encoding == other.amo_encoding)
+
+    def __str__(self):
+        return "EncodingConfig<direct:%r, order:%r, conflict:%r, support:%r, amo:%r>" % (
+            self.direct, self.order, self.conflict, self.support, self.amo_encoding)
 
 ##  @}
 

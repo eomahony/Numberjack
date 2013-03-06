@@ -2400,7 +2400,7 @@ void SatWrapperSolver::displayClause(std::vector<Lit>& cl) {
         for(unsigned int i=0; i<cl.size(); ++i) {
             std::cout << " " ;
             if(sign(cl[i])) std::cout << "~";
-            std::cout << (var(cl[i])+1);
+            std::cout << var(cl[i]);
         }
         std::cout << " / ";
         std::cout.flush();

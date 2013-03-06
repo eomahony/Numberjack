@@ -183,7 +183,7 @@ $(PYTHON)/%.i: $(SRCDIR)/%.hpp
 
 $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(PLIBOBJ)
 	@echo "-> linking $@"
-	$(CCC) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LFLAGS) $(AUXOBJFILES) $(MAINOBJFILES) $(PLIBOBJ) python/Mistral_wrap.o -o $@
+	$(CCC) $(BUNDLE) -Wno-long-double $(CFLAGS) $(AUXOBJFILES) $(MAINOBJFILES) $(PLIBOBJ) python/Mistral_wrap.o -o $@ $(LFLAGS)
 
 
 # The library

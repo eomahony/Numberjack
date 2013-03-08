@@ -608,7 +608,6 @@ class Model(object):
         The solver is passed as a string, the corresponding module is
         imported, a Solver object created, initialised and returned
         """
-        print "got model", str(encoding)
         try:
             lib = __import__(library)
             solver = lib.Solver(self, X, encoding=encoding)

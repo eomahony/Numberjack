@@ -50,7 +50,7 @@ CXX = g++
 
 wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/SatWrapper.o
 
-debug: CFLAGS += -D_DEBUGWRAP
+debug: CFLAGS += -D_DEBUGWRAP -g
 debug: wrapper
 
 $(OBJDIR):

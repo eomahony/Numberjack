@@ -64,7 +64,7 @@ CXX = g++ #-g -D_DEBUGWRAP
 
 wrapper: $(OBJDIR) $(PYTHON) $(SATDIR)/$(OBJDIR) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/MiniSat.o
 
-debug: CFLAGS += -D_DEBUGWRAP
+debug: CFLAGS += -D_DEBUGWRAP -g
 debug: wrapper
 
 $(OBJDIR):

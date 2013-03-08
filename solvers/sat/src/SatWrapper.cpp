@@ -404,6 +404,11 @@ void supportClauseEncoder(SatWrapper_Expression *X,
     unsigned int i=0, j=0;
     int x, y;
     bool subsumed;
+
+    if(!encoding->direct){
+        std::cerr << "ERROR supportClauseEncoder does not support this encoding." << std::endl;
+        exit(1);
+    }
     
     for(i=0;i<X->getsize();i++){
         x = X->getval(i);
@@ -484,7 +489,7 @@ void disequalityEncoder(SatWrapper_Expression *X,
             if( x <= y ) ++i;
             if( y <= x ) ++j;
         }
-        
+
     } else if(encoding->order) {
         while( i<X->getsize() && j<Y->getsize() ) {
             x = X->getval(i);
@@ -506,7 +511,7 @@ void disequalityEncoder(SatWrapper_Expression *X,
                 j++;
             }
         }
-    } else if(encoding->direct && encoding->support) { //FIXME
+    } else if(encoding->direct && encoding->support) {
         // Encode support clauses (x_1 \/ x_2 \/ !y_3)
         supportClauseEncoder(X, Y, 0, solver, encoding, &not_equal);
         supportClauseEncoder(Y, X, 0, solver, encoding, &not_equal);
@@ -653,44 +658,73 @@ void precedenceEncoder(SatWrapper_Expression *X,
                        const int K,
                        SatWrapperSolver *solver,
                        EncodingConfiguration *encoding) {
-    std::vector<Lit> lits;
+    Lits lits;
     int i=0, j=0, x=0, y=0;
 
-    std::cerr << "ERROR precedenceEncoder not updated for multiencoding yet." << std::endl;
-    exit(1);
-
-    while( i<X->getsize() ) {
-        if(i<X->getsize()) x = X->getval(i);
-        if(j<Y->getsize()) y = Y->getval(j);
-
-        if(x+K == y) {
-            lits.clear();
-            lits.push_back(X->less_or_equal(x,i));
-            lits.push_back(~(Y->less_or_equal(y,j)));
-            solver->addClause(lits);
-            ++i;
-            ++j;
-        } else if(x+K < y) {
-            ++i;
-        } else if(x+K > y) {
-            if(x == X->getmin()) {
-                lits.clear();
-                lits.push_back(~(Y->less_or_equal(y,j)));
-                solver->addClause(lits);
-                ++j;
-            } else if(y == Y->getmax()) {
-                lits.clear();
-                lits.push_back(X->less_or_equal(X->getval(i-1),i-1));
-                solver->addClause(lits);
-                ++i;
-            } else {
-                lits.clear();
-                lits.push_back(X->less_or_equal(X->getval(i-1),i-1));
-                lits.push_back(~(Y->less_or_equal(y,j)));
-                solver->addClause(lits);
-                ++j;
+    if (encoding->direct && encoding->conflict) {
+        for(i=0; i<X->getsize(); i++){
+            x = X->getval(i);
+            for(j=0; j<Y->getsize(); j++){
+                y = Y->getval(j);
+                if((x + K) > y){
+                    lits.clear();
+                    lits.push_back(~(X->equal(x, i)));
+                    lits.push_back(~(Y->equal(y, j)));
+                    solver->addClause(lits);
+                } else {
+                    // Every value of Y after this will satisfy x + k <= y.
+                    break;
+                }
             }
         }
+
+    } else if(encoding->order){
+        while(i<X->getsize()) {
+            if(i<X->getsize()) x = X->getval(i);
+            if(j<Y->getsize()) y = Y->getval(j);
+            
+#ifdef _DEBUGWRAP
+            std::cout << "order precedenceEncoder(K:" << K << ") i:" << i << " x:" << x << " j:" << j << " y:" << y << std::endl;
+#endif
+            
+            if((x + K) == y){
+                lits.clear();
+                lits.push_back(X->less_or_equal(x, i));
+                lits.push_back(~(Y->less_or_equal(y, j)));
+                solver->addClause(lits);
+                i++; j++;
+            } else if((x + K) < y){
+                i++;
+            } else if((x + K) > y){
+                if(x == X->getmin()) {
+                    lits.clear();
+                    lits.push_back(~(Y->less_or_equal(y,j)));
+                    solver->addClause(lits);
+                    ++j;
+                } else if(y == Y->getmax()) {
+                    lits.clear();
+                    lits.push_back(X->less_or_equal(X->getval(i-1),i-1));
+                    solver->addClause(lits);
+                    ++i;
+                } else {
+                    lits.clear();
+                    lits.push_back(X->less_or_equal(X->getval(i-1),i-1));
+                    lits.push_back(~(Y->less_or_equal(y,j)));
+                    solver->addClause(lits);
+                    ++j;
+                }
+            }
+        }
+        
+    } else if(encoding->direct && encoding->support) {
+        std::cout << "A" << std::endl;
+        supportClauseEncoder(X, Y, K, solver, encoding, &less_or_equal);
+        std::cout << "B" << std::endl;
+        supportClauseEncoder(Y, X, -K, solver, encoding, &less_or_equal);
+        std::cout << "C" << std::endl;
+    } else {
+        std::cerr << "ERROR: precedenceEncoder not implemented for this encoding, exiting." << std::endl;
+        exit(1);
     }
 }
 
@@ -702,16 +736,19 @@ void precedenceEncoder(SatWrapper_Expression *X,
                        SatWrapperSolver *solver,
                        EncodingConfiguration *encoding) {
     unsigned int num_clauses = solver->clause_base.size();
-
-    std::cerr << "ERROR reified precedenceEncoder not updated for multiencoding yet." << std::endl;
-    exit(1);
+    Lit l;
 
     precedenceEncoder(X, Y, K, solver, encoding);
+    if(encoding->direct) l = Z->equal(0);
+    else if(encoding->order) l = Z->less_or_equal(0);
     while(num_clauses < solver->clause_base.size())
-        solver->clause_base[num_clauses++].push_back(Z->equal(0));
+        solver->clause_base[num_clauses++].push_back(l);
+
     precedenceEncoder(Y, X, 1-K, solver, encoding);
+    if(encoding->direct) l = ~(Z->equal(0));
+    else if(encoding->order) l = ~(Z->less_or_equal(0));
     while(num_clauses < solver->clause_base.size())
-        solver->clause_base[num_clauses++].push_back(~(Z->equal(0)));
+        solver->clause_base[num_clauses++].push_back(l);
 }
 
 
@@ -1657,21 +1694,16 @@ SatWrapper_Expression* SatWrapper_le::add(SatWrapperSolver *solver, bool top_lev
         _vars[0] = _vars[0]->add(_solver, false);
         if(top_level) {
 
-            if(_vars[1]) {
-
-                _vars[1] = _vars[1]->add(_solver, false);
-
 #ifdef _DEBUGWRAP
                 std::cout << "Adding leq constraint" << std::endl;
 #endif
+
+            if(_vars[1]) {
+                _vars[1] = _vars[1]->add(_solver, false);
 
                 precedenceEncoder(_vars[0], _vars[1], 0, _solver, encoding);
             } else {
                 _vars[0] = _vars[0]->add(_solver, false);
-
-#ifdef _DEBUGWRAP
-                std::cout << "Adding leq constraint" << std::endl;
-#endif
 
                 // x0 <= r
                 if(_rhs < _vars[0]->getmin()) {
@@ -1690,12 +1722,10 @@ SatWrapper_Expression* SatWrapper_le::add(SatWrapperSolver *solver, bool top_lev
 #endif
 
             if(_vars[1]) {
-
                 domain->encode(_solver);
                 _vars[1] = _vars[1]->add(_solver, false);
 
                 precedenceEncoder(_vars[0], _vars[1], this, 0, _solver, encoding);
-
             }
         }
 
@@ -1830,9 +1860,7 @@ SatWrapper_Expression* SatWrapper_lt::add(SatWrapperSolver *solver, bool top_lev
 
         _vars[0] = _vars[0]->add(_solver, false);
         if(top_level) {
-
             if(_vars[1]) {
-
                 _vars[1] = _vars[1]->add(_solver, false);
 
 #ifdef _DEBUGWRAP
@@ -1840,9 +1868,7 @@ SatWrapper_Expression* SatWrapper_lt::add(SatWrapperSolver *solver, bool top_lev
 #endif
 
                 precedenceEncoder(_vars[0], _vars[1], 1, _solver, encoding);
-
             } else {
-
 #ifdef _DEBUGWRAP
                 std::cout << "Adding lt constraint" << std::endl;
 #endif
@@ -1852,25 +1878,23 @@ SatWrapper_Expression* SatWrapper_lt::add(SatWrapperSolver *solver, bool top_lev
                     std::cerr << "model is inconsistent, -exiting" <<std::endl;
                     exit(1);
                 } else if(_rhs <= _vars[0]->getmax()) {
-                    lits.clear();
-                    lits.push_back(_vars[0]->less_or_equal(_rhs-1));
-                    _solver->addClause(lits);
+                    SatWrapper_ConstantInt *RHS = new SatWrapper_ConstantInt(_rhs);
+                    RHS->encoding = encoding;
+                    precedenceEncoder(_vars[0], RHS, 1, _solver, encoding);
+                    delete RHS;
                 }
             }
 
         } else {
-
 #ifdef _DEBUGWRAP
             std::cout << "Adding lt predicate" << std::endl;
 #endif
 
             if(_vars[1]) {
-
                 domain->encode(_solver);
                 _vars[1] = _vars[1]->add(_solver, false);
 
                 precedenceEncoder(_vars[0], _vars[1], this, 1, _solver, encoding);
-
             }
         }
 
@@ -1929,9 +1953,16 @@ SatWrapper_Expression* SatWrapper_gt::add(SatWrapperSolver *solver, bool top_lev
                     std::cerr << "model is inconsistent, -exiting" <<std::endl;
                     exit(1);
                 } else if(_rhs >= _vars[0]->getmin()) {
-                    lits.clear();
-                    lits.push_back(_vars[0]->greater_than(_rhs));
-                    _solver->addClause(lits);
+                    if(_vars[0]->encoding->order){
+                        lits.clear();
+                        lits.push_back(_vars[0]->greater_than(_rhs));
+                        _solver->addClause(lits);
+                    } else if(_vars[0]->encoding->direct){
+                        SatWrapper_ConstantInt *RHS = new SatWrapper_ConstantInt(_rhs);
+                        RHS->encoding = encoding;
+                        precedenceEncoder(RHS, _vars[0], 1, _solver, encoding);
+                        delete RHS;
+                    }
                 }
             }
 

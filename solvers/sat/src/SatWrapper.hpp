@@ -463,6 +463,13 @@ public:
 
 };
 
+class SatWrapper_ConstantInt : public SatWrapper_Expression {
+public:
+    SatWrapper_ConstantInt(const int v) : SatWrapper_Expression() {
+        domain = new ConstantDomain(this, v);  // Free'd by ~SatWrapper_Expression()
+    }
+};
+
 
 typedef SatWrapperArray< SatWrapper_Expression* > SatWrapperExpArray;
 

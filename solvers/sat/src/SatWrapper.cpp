@@ -163,7 +163,7 @@ Lit DomainEncoding::less_or_equal(const int value, const int index) const {
 }
 
 Lit DomainEncoding::equal(const int value, const int index) const {
-    if(!owner->encoding->direct) {
+    if(!owner->encoding->direct && _size > 2) {
         std::cerr << "ERROR call to Domain::equal when not using the direct encoding." << std::endl;
     }
     if(_lower > value || _upper < value) return Lit_False;
@@ -334,6 +334,9 @@ Lit EqDomain::less_or_equal(const int v, const int index) const {
     if(v < 0) return Lit_False;
     if(v > 0) return Lit_True;
     // <= 0, i.e., false iff the pointed domain is not equal to 'value' (reverse if neg spin)
+    if(!_dom_ptr->owner->encoding->direct){
+        return (spin ? ~(_dom_ptr->less_or_equal(value,-1)) : _dom_ptr->less_or_equal(value,-1));
+    }
     return (spin ? ~(_dom_ptr->equal(value,-1)) : _dom_ptr->equal(value,-1));
 }
 Lit EqDomain::equal(const int v, const int index) const {
@@ -608,6 +611,7 @@ void equalityEncoder(SatWrapper_Expression *X,
                 j++;
             } else if(x == y) {
                 lits.clear();
+                if(i > 0) lits.push_back(X->less_or_equal(X->getval(i-1), i-1));
                 lits.push_back(~(X->less_or_equal(x,i)));
                 lits.push_back((Y->less_or_equal(y,j)));
                 solver->addClause(lits);
@@ -615,6 +619,7 @@ void equalityEncoder(SatWrapper_Expression *X,
                 lits.clear();
                 lits.push_back((X->less_or_equal(x,i)));
                 lits.push_back(~(Y->less_or_equal(y,j)));
+                if(j > 0) lits.push_back(Y->less_or_equal(Y->getval(j-1), j-1));
                 solver->addClause(lits);
                 i++;
                 j++;
@@ -1505,13 +1510,11 @@ SatWrapper_Expression* SatWrapper_eq::add(SatWrapperSolver *solver, bool top_lev
         std::cout << "creating eq expression x" << _ident << " [" << getmin() << ".." << getmax() << "]" << std::endl;
 #endif
 
-        std::vector<Lit> lits;
+        Lits lits;
 
         _vars[0] = _vars[0]->add(_solver, false);
         if(top_level) {
-
             if(_vars[1]) {
-
                 _vars[1] = _vars[1]->add(_solver, false);
 
 #ifdef _DEBUGWRAP
@@ -1522,13 +1525,11 @@ SatWrapper_Expression* SatWrapper_eq::add(SatWrapperSolver *solver, bool top_lev
                 equalityEncoder(_vars[0], _vars[1], _solver, encoding);
 
             } else {
-
 #ifdef _DEBUGWRAP
                 std::cout << "encode unary equality constraint x"
                           << _vars[0]->_ident << " == " << _rhs << std::endl;
 #endif
 
-                
                 if(encoding->direct){
                     lits.clear();
                     lits.push_back(_vars[0]->equal(_rhs));
@@ -1545,9 +1546,7 @@ SatWrapper_Expression* SatWrapper_eq::add(SatWrapperSolver *solver, bool top_lev
                 }
             }
         } else {
-
             if(_vars[1]) {
-
                 domain->encode(_solver);
                 _vars[1] = _vars[1]->add(_solver, false);
 
@@ -1557,10 +1556,8 @@ SatWrapper_Expression* SatWrapper_eq::add(SatWrapperSolver *solver, bool top_lev
 #endif
 
                 equalityEncoder(_vars[0], _vars[1], this, _solver, encoding, true);
-
             }
         }
-
         _solver->validate();
     }
 
@@ -1609,35 +1606,48 @@ SatWrapper_Expression* SatWrapper_ne::add(SatWrapperSolver *solver, bool top_lev
 #endif
 
                 disequalityEncoder(_vars[0], _vars[1], _solver, encoding);
-
             } else  {
-
 #ifdef _DEBUGWRAP
                 std::cout << "add notequal" << std::endl;
 #endif
 
-                lits.clear();
-                lits.push_back(~(_vars[0]->equal(_rhs)));
-                _solver->addClause(lits);
-
+                if(encoding->conflict){
+                    if(encoding->direct){
+                        lits.clear();
+                        lits.push_back(~(_vars[0]->equal(_rhs)));
+                        _solver->addClause(lits);
+                    }
+                    else if(encoding->order){
+                        lits.clear();
+                        lits.push_back(_vars[0]->less_or_equal(_rhs-1));
+                        lits.push_back(~(_vars[0]->less_or_equal(_rhs)));
+                        _solver->addClause(lits);
+                    } else {
+                        std::cerr << "ERROR SatWrapper_ne constant not implemented for this encoding yet." << std::endl;
+                        exit(1);
+                    }
+                } else if(encoding->support){
+                    SatWrapper_ConstantInt *RHS = new SatWrapper_ConstantInt(_rhs);
+                    RHS->encoding = encoding;
+                    supportClauseEncoder(RHS, _vars[0], 0, solver, encoding, &not_equal);
+                    delete RHS;
+                } else {
+                    std::cerr << "ERROR SatWrapper_ne constant not implemented for this encoding yet." << std::endl;
+                    exit(1);
+                }
             }
 
         } else {
-
             if(_vars[1]) {
-
                 domain->encode(_solver);
                 _vars[1] = _vars[1]->add(_solver, false);
 
 #ifdef _DEBUGWRAP
                 std::cout << "add notequal predicate" << std::endl;
 #endif
-
                 equalityEncoder(_vars[0], _vars[1], this, _solver, encoding, false);
-
             }
         }
-
         _solver->validate();
     }
 

@@ -812,16 +812,11 @@ int SatWrapper_Expression::get_size() const {
 
 int SatWrapper_Expression::next(const int v) const {
     int nxt = v;
-    do nxt = domain->next(nxt);
-    while( _solver->truth_value(equal(nxt)) == l_False );
 
-//   if(v < getmin()) nxt=getmin();
-//   while( ++nxt <= getmax() )
-//     {
-//       //nxt = domain->next(nxt);
-//       if(domain->contain(nxt) && _solver->truth_value(equal(nxt)) != l_False) break;
-//     }
-//   if(nxt > getmax()) nxt = v;
+    do nxt = domain->next(nxt);
+    while(nxt < domain->getmax() &&
+          ((encoding->direct && _solver->truth_value(equal(nxt)) == l_False) ||
+           (encoding->order && _solver->truth_value(less_or_equal(nxt)) == l_False)));
 
     return nxt;
 }

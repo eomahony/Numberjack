@@ -1732,9 +1732,19 @@ SatWrapper_Expression* SatWrapper_le::add(SatWrapperSolver *solver, bool top_lev
                     std::cerr << "model is inconsistent, -exiting" <<std::endl;
                     exit(1);
                 } else if(_rhs < _vars[0]->getmax()) {
-                    lits.clear();
-                    lits.push_back(_vars[0]->less_or_equal(_rhs));
-                    _solver->addClause(lits);
+                    if(encoding->order){
+                        lits.clear();
+                        lits.push_back(_vars[0]->less_or_equal(_rhs));
+                        _solver->addClause(lits);
+                    } else if(encoding->direct){
+                        SatWrapper_ConstantInt *RHS = new SatWrapper_ConstantInt(_rhs);
+                        RHS->encoding = encoding;
+                        precedenceEncoder(_vars[0], RHS, 0, _solver, encoding);
+                        delete RHS;
+                    } else {
+                        std::cerr << "ERROR: SatWrapper_le not implemented for this encoding, exiting." << std::endl;
+                        exit(1);
+                    }
                 }
             }
         } else {
@@ -1821,9 +1831,19 @@ SatWrapper_Expression* SatWrapper_ge::add(SatWrapperSolver *solver, bool top_lev
                     std::cerr << "model is inconsistent, -exiting" <<std::endl;
                     exit(1);
                 } else if(_rhs > _vars[0]->getmin()) {
-                    lits.clear();
-                    lits.push_back(_vars[0]->greater_than(_rhs-1));
-                    _solver->addClause(lits);
+                    if(encoding->order){
+                        lits.clear();
+                        lits.push_back(_vars[0]->greater_than(_rhs-1));
+                        _solver->addClause(lits);
+                    } else if(encoding->direct){
+                        SatWrapper_ConstantInt *RHS = new SatWrapper_ConstantInt(_rhs);
+                        RHS->encoding = encoding;
+                        precedenceEncoder(RHS, _vars[0], 0, _solver, encoding);
+                        delete RHS;
+                    } else {
+                        std::cerr << "ERROR: SatWrapper_ge not implemented for this encoding, exiting." << std::endl;
+                        exit(1);
+                    }
                 }
             }
         } else {
@@ -1975,11 +1995,11 @@ SatWrapper_Expression* SatWrapper_gt::add(SatWrapperSolver *solver, bool top_lev
                     std::cerr << "model is inconsistent, -exiting" <<std::endl;
                     exit(1);
                 } else if(_rhs >= _vars[0]->getmin()) {
-                    if(_vars[0]->encoding->order){
+                    if(encoding->order){
                         lits.clear();
                         lits.push_back(_vars[0]->greater_than(_rhs));
                         _solver->addClause(lits);
-                    } else if(_vars[0]->encoding->direct){
+                    } else if(encoding->direct){
                         SatWrapper_ConstantInt *RHS = new SatWrapper_ConstantInt(_rhs);
                         RHS->encoding = encoding;
                         precedenceEncoder(RHS, _vars[0], 1, _solver, encoding);

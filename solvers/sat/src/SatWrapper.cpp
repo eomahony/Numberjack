@@ -742,11 +742,8 @@ void precedenceEncoder(SatWrapper_Expression *X,
         }
         
     } else if(encoding->direct && encoding->support) {
-        std::cout << "A" << std::endl;
         supportClauseEncoder(X, Y, K, solver, encoding, &less_or_equal);
-        std::cout << "B" << std::endl;
         supportClauseEncoder(Y, X, -K, solver, encoding, &less_or_equal);
-        std::cout << "C" << std::endl;
     } else {
         std::cerr << "ERROR: precedenceEncoder not implemented for this encoding, exiting." << std::endl;
         exit(1);

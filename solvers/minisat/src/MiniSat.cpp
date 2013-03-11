@@ -271,12 +271,28 @@ int MiniSatSolver::solve()
       if(objective < minimise_obj->getmin()) break;
 
       if(verbosity > 0) {
-	std::cout << "c  new objective: " << objective+1 << std::endl;
+	      std::cout << "c  new objective: " << objective+1 << std::endl;
       }
       
-      lits.clear();
-      lits.push(minimise_obj->less_or_equal(objective));
-      Solver::addClause(lits);
+      if(minimise_obj->encoding->order){
+        lits.clear();
+        lits.push(minimise_obj->less_or_equal(objective));
+        Solver::addClause(lits);
+      } else if(minimise_obj->encoding->direct){
+        if(minimise_obj->encoding->conflict){
+          for(int v=objective+1; v<minimise_obj->getmax(); v++){
+            lits.clear();
+            lits.push(~minimise_obj->equal(v));
+            Solver::addClause(lits);
+          }
+        } else if(minimise_obj->encoding->support){
+          lits.clear();
+          for(int v=minimise_obj->getmin(); v<=objective; v++){
+            lits.push(minimise_obj->equal(v));
+          }
+          Solver::addClause(lits);
+        }
+      }
 
       result = SimpSolver::solve(true,true);
 
@@ -299,12 +315,31 @@ int MiniSatSolver::solve()
       if(objective > maximise_obj->getmax()) break;
 
       if(verbosity > 0) {
-	std::cout << "c  new objective: " << objective-1 << std::endl;
+	      std::cout << "c  new objective: " << objective-1 << std::endl;
       }
       
-      lits.clear();
-      lits.push(maximise_obj->greater_than(objective-1));
-      Solver::addClause(lits);
+      
+      if(maximise_obj->encoding->order){
+        lits.clear();
+        lits.push(maximise_obj->greater_than(objective-1));
+        Solver::addClause(lits);
+      } else if(maximise_obj->encoding->direct){
+        if(maximise_obj->encoding->conflict){
+          for(int v=maximise_obj->getmin(); v<objective; v++){
+            lits.clear();
+            lits.push(~maximise_obj->equal(v));
+            Solver::addClause(lits);
+          }
+        } else if(maximise_obj->encoding->support){
+          lits.clear();
+          for(int v=objective; v<=maximise_obj->getmax(); v++){
+            lits.push(maximise_obj->equal(v));
+          }
+          Solver::addClause(lits);
+        }
+      } else {
+
+      }
       
       result = SimpSolver::solve(true,true);
       if(result == l_True) {

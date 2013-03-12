@@ -448,20 +448,7 @@ void additionEncoder(SatWrapper_Expression *X,
     Lits lits;
     int i, j, x, y, z, prev_x, prev_y, prev_z;
 
-    if(encoding->direct) {
-        for(i=0; i<X->getsize(); ++i) {
-            x = X->getval(i);
-            for(j=0; j<Y->getsize(); ++j) {
-                y = Y->getval(j);
-                
-                lits.clear();
-                lits.push_back(~(X->equal(x, i)));
-                lits.push_back(~(Y->equal(y, j)));
-                lits.push_back(Z->equal(x+y));
-                solver->addClause(lits);
-            }
-        }
-    } else if(encoding->order){
+    if(encoding->order){ 
         for(i=0; i<X->getsize(); ++i) {
             x = X->getval(i);
             for(j=0; j<Y->getsize(); ++j) {
@@ -487,7 +474,19 @@ void additionEncoder(SatWrapper_Expression *X,
             }
             prev_x = x;
         }
-
+    } else if(encoding->direct) {
+        for(i=0; i<X->getsize(); ++i) {
+            x = X->getval(i);
+            for(j=0; j<Y->getsize(); ++j) {
+                y = Y->getval(j);
+                
+                lits.clear();
+                lits.push_back(~(X->equal(x, i)));
+                lits.push_back(~(Y->equal(y, j)));
+                lits.push_back(Z->equal(x+y));
+                solver->addClause(lits);
+            }
+        }
     } else {
        std::cerr << "ERROR: additionEncoder not implemented for this encoding, exiting." << std::endl;
        exit(1);
@@ -689,24 +688,7 @@ void precedenceEncoder(SatWrapper_Expression *X,
     Lits lits;
     int i=0, j=0, x=0, y=0;
 
-    if (encoding->direct && encoding->conflict) {
-        for(i=0; i<X->getsize(); i++){
-            x = X->getval(i);
-            for(j=0; j<Y->getsize(); j++){
-                y = Y->getval(j);
-                if((x + K) > y){
-                    lits.clear();
-                    lits.push_back(~(X->equal(x, i)));
-                    lits.push_back(~(Y->equal(y, j)));
-                    solver->addClause(lits);
-                } else {
-                    // Every value of Y after this will satisfy x + k <= y.
-                    break;
-                }
-            }
-        }
-
-    } else if(encoding->order){
+    if(encoding->order){
         while(i<X->getsize()) {
             if(i<X->getsize()) x = X->getval(i);
             if(j<Y->getsize()) y = Y->getval(j);
@@ -744,6 +726,23 @@ void precedenceEncoder(SatWrapper_Expression *X,
             }
         }
         
+    } else if (encoding->direct && encoding->conflict) {
+        for(i=0; i<X->getsize(); i++){
+            x = X->getval(i);
+            for(j=0; j<Y->getsize(); j++){
+                y = Y->getval(j);
+                if((x + K) > y){
+                    lits.clear();
+                    lits.push_back(~(X->equal(x, i)));
+                    lits.push_back(~(Y->equal(y, j)));
+                    solver->addClause(lits);
+                } else {
+                    // Every value of Y after this will satisfy x + k <= y.
+                    break;
+                }
+            }
+        }
+
     } else if(encoding->direct && encoding->support) {
         supportClauseEncoder(X, Y, K, solver, encoding, &less_or_equal);
         supportClauseEncoder(Y, X, -K, solver, encoding, &greater_or_equal);

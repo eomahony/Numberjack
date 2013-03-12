@@ -467,20 +467,18 @@ void additionEncoder(SatWrapper_Expression *X,
             for(j=0; j<Y->getsize(); ++j) {
                 y = Y->getval(j);
                 z = x + y;
-
+                
                 lits.clear();
-                if(i) lits.push_back(X->less_or_equal(prev_x, i-1));
-                if(j) lits.push_back(Y->less_or_equal(prev_y, j-1));
-                if(i || j) {
+                lits.push_back(~(X->less_or_equal(x, i)));
+                if(i > 0) lits.push_back(X->less_or_equal(prev_x, i-1));
+                lits.push_back(~(Y->less_or_equal(y, j)));
+                if(j > 0) lits.push_back(Y->less_or_equal(prev_y, j-1));
+                lits.push_back(Z->less_or_equal(z));
+                solver->addClause(lits);
+
+                if(i > 0 || j > 0){
+                    lits.pop_back();
                     lits.push_back(~(Z->less_or_equal(prev_z)));
-                    solver->addClause(lits);
-                }
-
-                lits.clear();
-                if(i<X->getsize()) lits.push_back(~(X->less_or_equal(x, i)));
-                if(j<Y->getsize()) lits.push_back(~(Y->less_or_equal(y, j)));
-                if(i<X->getsize() || j<Y->getsize()) {
-                    lits.push_back(Z->less_or_equal(z));
                     solver->addClause(lits);
                 }
 
@@ -489,6 +487,7 @@ void additionEncoder(SatWrapper_Expression *X,
             }
             prev_x = x;
         }
+
     } else {
        std::cerr << "ERROR: additionEncoder not implemented for this encoding, exiting." << std::endl;
        exit(1);
@@ -1631,27 +1630,25 @@ SatWrapper_Expression* SatWrapper_ne::add(SatWrapperSolver *solver, bool top_lev
 #ifdef _DEBUGWRAP
                 std::cout << "add notequal" << std::endl;
 #endif
-
-                if(encoding->conflict){
-                    if(encoding->direct){
+                if(encoding->direct){
+                    if(encoding->conflict){
                         lits.clear();
                         lits.push_back(~(_vars[0]->equal(_rhs)));
                         _solver->addClause(lits);
-                    }
-                    else if(encoding->order){
-                        lits.clear();
-                        lits.push_back(_vars[0]->less_or_equal(_rhs-1));
-                        lits.push_back(~(_vars[0]->less_or_equal(_rhs)));
-                        _solver->addClause(lits);
+                    } else if(encoding->support){
+                        SatWrapper_ConstantInt *RHS = new SatWrapper_ConstantInt(_rhs);
+                        RHS->encoding = encoding;
+                        supportClauseEncoder(RHS, _vars[0], 0, solver, encoding, &not_equal);
+                        delete RHS;
                     } else {
                         std::cerr << "ERROR SatWrapper_ne constant not implemented for this encoding yet." << std::endl;
                         exit(1);
                     }
-                } else if(encoding->support){
-                    SatWrapper_ConstantInt *RHS = new SatWrapper_ConstantInt(_rhs);
-                    RHS->encoding = encoding;
-                    supportClauseEncoder(RHS, _vars[0], 0, solver, encoding, &not_equal);
-                    delete RHS;
+                } else if(encoding->order){
+                    lits.clear();
+                    lits.push_back(_vars[0]->less_or_equal(_rhs-1));
+                    lits.push_back(~(_vars[0]->less_or_equal(_rhs)));
+                    _solver->addClause(lits);
                 } else {
                     std::cerr << "ERROR SatWrapper_ne constant not implemented for this encoding yet." << std::endl;
                     exit(1);

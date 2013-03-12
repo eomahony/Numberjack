@@ -280,7 +280,7 @@ int MiniSatSolver::solve()
         Solver::addClause(lits);
       } else if(minimise_obj->encoding->direct){
         if(minimise_obj->encoding->conflict){
-          for(int v=objective+1; v<minimise_obj->getmax(); v++){
+          for(int v=objective+1; v<=minimise_obj->getmax(); v++){
             lits.clear();
             lits.push(~minimise_obj->equal(v));
             Solver::addClause(lits);
@@ -295,7 +295,6 @@ int MiniSatSolver::solve()
       }
 
       result = SimpSolver::solve(true,true);
-
       if(result == l_True) {
 	++objective;
       }

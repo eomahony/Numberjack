@@ -391,6 +391,10 @@ bool less_or_equal(int x, int y){
     return x <= y;
 }
 
+bool greater_or_equal(int x, int y){
+    return x >= y;
+}
+
 bool not_equal(int x, int y){
     return x != y;
 }
@@ -743,7 +747,7 @@ void precedenceEncoder(SatWrapper_Expression *X,
         
     } else if(encoding->direct && encoding->support) {
         supportClauseEncoder(X, Y, K, solver, encoding, &less_or_equal);
-        supportClauseEncoder(Y, X, -K, solver, encoding, &less_or_equal);
+        supportClauseEncoder(Y, X, -K, solver, encoding, &greater_or_equal);
     } else {
         std::cerr << "ERROR: precedenceEncoder not implemented for this encoding, exiting." << std::endl;
         exit(1);

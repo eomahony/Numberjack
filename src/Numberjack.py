@@ -1846,7 +1846,7 @@ class Max(Predicate):
         return max([x.get_min(solver) for x in self.children])
 
     def get_max(self, solver=None):
-        return max([x.get_max() for x in self.children])
+        return max([x.get_max(solver) for x in self.children])
 
     def decompose(self):
         X = self.children

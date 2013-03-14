@@ -689,7 +689,7 @@ void precedenceEncoder(SatWrapper_Expression *X,
     int i=0, j=0, x=0, y=0;
 
     if(encoding->order){
-        while(i<X->getsize()) {
+        while(i<X->getsize() && j<Y->getsize()) {
             if(i<X->getsize()) x = X->getval(i);
             if(j<Y->getsize()) y = Y->getval(j);
             

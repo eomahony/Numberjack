@@ -301,6 +301,16 @@ class SATEncodingTest(unittest.TestCase):
         self.assertLess(v1.get_value(), 2)
         self.assertLess(v2.get_value(), 2)
 
+    def testMaxNegVars(self):
+        v1 = Variable(-5, -1)
+        v2 = Variable(-5, -1)
+        m = Model(Max([v1, v2]) < -2)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertLess(v1.get_value(), -2)
+        self.assertLess(v2.get_value(), -2)
+
     # def testLargeDomain(self):
     #     v1 = Variable(10000)
     #     v2 = Variable(10000)
@@ -319,3 +329,27 @@ class SATEncodingTest(unittest.TestCase):
     #     s.output_cnf("large_alldiff.cnf")
     #     s.solve()
     #     self.assertTrue(s.is_sat())
+
+    def testAbsEq(self):
+        v1 = Variable(-4, -1)
+        m = Model(Abs(v1) == 2)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), -2)
+
+    def testAbsGt(self):
+        v1 = Variable(-4, -1)
+        m = Model(Abs(v1) > 2)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertLess(v1.get_value(), -2)
+
+    def testAbsLt(self):
+        v1 = Variable(-4, -1)
+        m = Model(Abs(v1) < 2)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertGreater(v1.get_value(), -2)

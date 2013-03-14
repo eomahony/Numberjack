@@ -622,7 +622,8 @@ class Model(object):
             lib = __import__(library)
             solver = lib.Solver(self, X, encoding=encoding)
         except ImportError:
-            return solver
+            raise ImportError("ERROR: Failed during import, wrong module name? (%s)" % library)
+        return solver
 
     ## Solve and returns a solution
     # @param library A string standing for a back end solver ('Mistral', 'MiniSat', 'SCIP')

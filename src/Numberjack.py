@@ -696,7 +696,7 @@ class Variable(Expression):
         elif type(name) is not str:
             raise TypeError("Warning name variable is not a string")
         elif lb > ub:
-            raise ValueError("Warning lower bound of %s greater than upper bound " % name)
+            raise ValueError("Warning lower bound (%r) of %s greater than upper bound (%r)" % (lb, name, ub))
 
         Expression.__init__(self, name)
         self.domain_ = domain

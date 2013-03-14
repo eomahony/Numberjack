@@ -33,12 +33,8 @@
 #  numberjack.support@gmail.com
 
 
-UNSAT     = 0
-SAT       = 1
-UNKNOWN   = 2
-LIMITOUT  = 3
-LUBY      = 0
-GEOMETRIC = 1
+UNSAT, SAT, UNKNOWN, LIMITOUT = 0, 1, 2, 3
+LUBY, GEOMETRIC = 0, 1
 
 import exceptions
 import types
@@ -78,7 +74,7 @@ class Domain(list):
     def __init__(self, arg1, arg2=None):
         """
         \internal
-        This class is used to wrap the domain of variables 
+        This class is used to wrap the domain of variables
         in order to print them and/or iterate over values
 
         Initialised from a list of values, or a lower and an upper bound
@@ -88,7 +84,7 @@ class Domain(list):
             self.sort()
             self.is_bound = False
         else:
-            list.__init__(self, [arg1,arg2])
+            list.__init__(self, [arg1, arg2])
             self.is_bound = True
         self.current = -1
 
@@ -99,11 +95,15 @@ class Domain(list):
         """
         self.current += 1
         if self.is_bound:
-            if self[0]+self.current > self[-1]: raise StopIteration
-            else: return self[0]+self.current
+            if self[0] + self.current > self[-1]:
+                raise StopIteration
+            else:
+                return self[0] + self.current
         else:
-            if self.current >= list.__len__(self): raise StopIteration
-            else: return list.__getitem__(self, self.current)
+            if self.current >= list.__len__(self):
+                raise StopIteration
+            else:
+                return list.__getitem__(self, self.current)
 
     def __str__(self):
         """
@@ -112,31 +112,36 @@ class Domain(list):
         if self.is_bound:
             lb = self[0]
             ub = self[-1]
-            if lb+1 == ub and type(lb) is int:
-                return '{'+str(lb)+','+str(ub)+'}'
+            if lb + 1 == ub and type(lb) is int:
+                return '{' + str(lb) + ',' + str(ub) + '}'
             else:
-                return '{'+str(lb)+'..'+str(ub)+'}'
+                return '{' + str(lb) + '..' + str(ub) + '}'
 
         def extend(idx):
             x = self[idx]
             y = x
             idx += 1
             while idx < len(self):
-                if type(self[idx]) is int and self[idx] == y+1: y=self[idx]
-                else: break
+                if type(self[idx]) is int and self[idx] == y + 1:
+                    y = self[idx]
+                else:
+                    break
                 idx += 1
-            return (x,y,idx)
+            return (x, y, idx)
 
         ret_str = '{'
         idx = 0
         while idx < len(self):
-            if idx > 0: ret_str += ','
-            (x,y,idx) = extend(idx)
+            if idx > 0:
+                ret_str += ','
+            (x, y, idx) = extend(idx)
             ret_str += str(x)
-            if type(x) is int and x+1 < y: ret_str += ('..'+str(y))
-            elif x != y: ret_str += (','+str(y))
+            if type(x) is int and x + 1 < y:
+                ret_str += ('..' + str(y))
+            elif x != y:
+                ret_str += (',' + str(y))
 
-        return ret_str+'}'
+        return ret_str + '}'
 
 
 ## Base Expression class from which everything inherits
@@ -144,14 +149,14 @@ class Domain(list):
 #    All variables and constraints are expressions. Variables are
 #    just expressions where predicates extend the expression class to add
 #    more functionality.
-#   
+#
 class Expression(object):
-    
+
     def __init__(self, operator):
         #self.mod = None
         self.ident = -1
         self.operator = operator
-        
+
         # This is the stuff for maintaining multiple representations of the
         # model among different solvers
         self.var_list = []
@@ -165,13 +170,12 @@ class Expression(object):
         else:
             return None
 
-
     ## Returns a string representing the initial domain of the expression
     # @return String representation of original expression definition
     #
     #    This method returns a string representing the original definition
     #    of the expression.
-    #    
+    #
     #    For example:
     # \code
     #    var1 = Variable(0, 10)
@@ -180,10 +184,12 @@ class Expression(object):
     # \endcode
     def initial(self):
         output = self.name()
-        if self.domain_ is None: output += ' in ' + str(Domain(self.lb, self.ub))
-        else: output += ' in ' + str(Domain(self.domain_))
+        if self.domain_ is None:
+            output += ' in ' + str(Domain(self.lb, self.ub))
+        else:
+            output += ' in ' + str(Domain(self.domain_))
         return output
-    
+
     ## Returns a string representing the current domain of the expression
     # @param solver Solver from which current expression domain will be sourced
     # @return String representing of current expression domain
@@ -193,10 +199,10 @@ class Expression(object):
     #    the returned string represents the domain of the expression in the solver
     #    that has most recently loaded the expression.
     #
-    def domain(self,solver=None):
+    def domain(self, solver=None):
         output = self.name() + ' in ' + str(self.get_domain())
         return output
-    
+
     ## Returns a string containing the value of the expression
     # @param solver Solver from which expression solution will be sourced
     # @return String represent-ion of expression solution
@@ -213,7 +219,7 @@ class Expression(object):
         #output = self.operator
         #if (output == 'x' or output == 't') and self.ident >= 0:
         #    output += str(self.ident)
-        #return output 
+        #return output
         return self.operator
 
     def __str__(self):
@@ -224,13 +230,13 @@ class Expression(object):
 
     def is_str(self):
         return hasattr(self, 'model')
- 
+
     def getVar(self, solver_id):
-        return self.var_list[solver_id-1]
-    
+        return self.var_list[solver_id - 1]
+
     def setVar(self, solver_id, solver_name, variable, new_solver=None):
-        if (solver_id-1) < len(self.var_list):
-            self.var_list[solver_id-1] = variable
+        if (solver_id - 1) < len(self.var_list):
+            self.var_list[solver_id - 1] = variable
         else:
             self.var_list.append(variable)
 
@@ -243,12 +249,12 @@ class Expression(object):
     def is_built(self, solver=None):
         if solver is None:
             return len(self.var_list) > 0
-        else: 
+        else:
             return solver.solver_id - 1 < len(self.var_list)
 
     def is_var(self):
         return not issubclass(type(self), Predicate)
-        
+
     def close(self):
         if self.has_children():
             for child in self.children:
@@ -258,22 +264,25 @@ class Expression(object):
 
     def get_domain(self, solver=None):
         if self.is_built(solver):
-            if solver is None: solver = self.solver
+            if solver is None:
+                solver = self.solver
             if self.get_size(solver) == (self.get_max(solver) - self.get_min(solver) + 1):
-                dom = range(self.get_min(solver), self.get_max(solver)+1)
+                dom = range(self.get_min(solver), self.get_max(solver) + 1)
             else:
                 # we should make that more efficient by using the underlying solvers to iterate
-                #dom = [v for v in range(self.get_min(solver), self.get_max(solver)+1) if v in self] 
+                #dom = [v for v in range(self.get_min(solver), self.get_max(solver)+1) if v in self]
                 dom = [self.get_min(solver)]
-                while True: 
+                while True:
                     v = solver.next(self, dom[-1])
-                    if v == dom[-1]: break
-                    else: dom.append(v)
+                    if v == dom[-1]:
+                        break
+                    else:
+                        dom.append(v)
             return Domain(dom)
-        elif self.domain_ is not None: 
+        elif self.domain_ is not None:
             return Domain(self.domain_)
-        else: 
-            return Domain(self.lb, self.ub) #range(self.lb, self.ub+1))
+        else:
+            return Domain(self.lb, self.ub)
 
     ## Current value of the expression
     # @param solver solver reference for solver from which current value will be sourced
@@ -282,21 +291,22 @@ class Expression(object):
     #    get_value(self, solver=None) :- Returns the current value of the expression
     #    in the specified solver. Provided the solver has found a solution. If no solution
     #    has been found None is returned.
-    #    
+    #
     #    If not solver is specified then the solver that has loaded the expression
-    #    most recently is used. 
+    #    most recently is used.
     #
     def get_value(self, solver=None):
-        has_value = False        
+        has_value = False
         if self.is_built(solver):
             if self.solver.is_sat():
                 has_value = True
         value = None
-        
+
         if solver is not None:
-            var = self.var_list[solver.solver_id-1]
-        else: var = self.var_list[-1]    
-            
+            var = self.var_list[solver.solver_id - 1]
+        else:
+            var = self.var_list[-1]
+
         if has_value:
             if self.is_str():
                 value = self.model.strings[var.get_value()]
@@ -304,11 +314,10 @@ class Expression(object):
                 value = var.get_value()
         return value
 
-
     def get_size(self, solver=None):
-        if solver is not None: 
+        if solver is not None:
             if self.is_built(solver):
-                return self.var_list[solver.solver_id-1].get_size()
+                return self.var_list[solver.solver_id - 1].get_size()
             else:
                 return self.ub - self.lb + 1
         elif self.is_built():
@@ -322,15 +331,15 @@ class Expression(object):
     #
     #    get_min(self, solver=None) :- Returns the current lower bound of the expression
     #    in the specified solver.
-    #    
+    #
     #    If not solver is specified then the solver that has loaded the expression
-    #    most recently is used. 
+    #    most recently is used.
     #
     def get_min(self, solver=None):
         the_min = self.lb
-        if solver is not None: 
+        if solver is not None:
             if self.is_built(solver):
-                the_min = self.var_list[solver.solver_id-1].get_min()
+                the_min = self.var_list[solver.solver_id - 1].get_min()
         elif self.is_built():
             the_min = self.var_list[-1].get_min()
         if self.is_str():
@@ -343,15 +352,15 @@ class Expression(object):
     #
     #    get_max(self, solver=None) :- Returns the current upper bound of the expression
     #    in the specified solver.
-    #    
+    #
     #    If not solver is specified then the solver that has loaded the expression
-    #    most recently is used. 
+    #    most recently is used.
     #
     def get_max(self, solver=None):
         the_max = self.ub
-        if solver is not None: 
+        if solver is not None:
             if self.is_built(solver):
-                the_max = self.var_list[solver.solver_id-1].get_max()
+                the_max = self.var_list[solver.solver_id - 1].get_max()
         elif self.is_built():
             the_max = self.var_list[-1].get_max()
         if self.is_str():
@@ -362,7 +371,7 @@ class Expression(object):
     def get_ub(self):
         #print "DEPRECATED: Expression.get_ub()"
         return self.ub
-    
+
     # not safe!
     def get_lb(self):
         #print "DEPRECATED: Expression.get_lb()"
@@ -372,7 +381,7 @@ class Expression(object):
     def get_domain_tuple(self):
         if self.is_str():
             tmp_domain = sorted([self.model.string_map[value] for value in self.domain_])
-            return (tmp_domain[0], tmp_domain[len(tmp_domain)-1], tmp_domain)
+            return (tmp_domain[0], tmp_domain[len(tmp_domain) - 1], tmp_domain)
         else:
             return (self.lb, self.ub, self.domain_)
 
@@ -381,63 +390,63 @@ class Expression(object):
             return self.children
         else:
             return None
-        
+
     def get_operator(self):
         return self.operator
 
     def __and__(self, pred):
-        return And([self,pred])
+        return And([self, pred])
 
     def __or__(self, pred):
-        return Or([self,pred])
+        return Or([self, pred])
 
     def __add__(self, pred):
         return Sum([self, pred], [1, 1])
 
     def __radd__(self, pred):
-        return Sum([pred,self], [1, 1])
-        
+        return Sum([pred, self], [1, 1])
+
     def __sub__(self, pred):
         var = Sum([self, pred], [1, -1])
-        var.name = '('+str(self)+'-'+str(pred)+')'
+        var.name = '(' + str(self) + '-' + str(pred) + ')'
         return var
 
     def __rsub__(self, pred):
         return Sum([pred, self], [1, -1])
 
     def __div__(self, pred):
-        return Div([self,pred])
+        return Div([self, pred])
 
     def __rdiv__(self, pred):
-        return Div([pred,self])
-        
+        return Div([pred, self])
+
     def __mul__(self, pred):
-        return Mul([self,pred])
+        return Mul([self, pred])
 
     def __rmul__(self, pred):
-        return Mul([self,pred])
+        return Mul([self, pred])
 
     def __mod__(self, pred):
-        return Mod([self,pred])
+        return Mod([self, pred])
 
     def __rmod__(self, pred):
-        return Mod([pred,self])
-        
+        return Mod([pred, self])
+
     def __eq__(self, pred):
         return Eq([self, pred])
-    
+
     def __ne__(self, pred):
         return Ne([self, pred])
-        
+
     def __lt__(self, pred):
         return Lt([self, pred])
-    
+
     def __gt__(self, pred):
         return Gt([self, pred])
-    
+
     def __le__(self, pred):
         return Le([self, pred])
-    
+
     def __ge__(self, pred):
         return Ge([self, pred])
 
@@ -445,11 +454,13 @@ class Expression(object):
         return Neg([self])
 
     def __contains__(self, v):
-        if self.is_built(): return self.var_list[-1].contain(v)
-        elif self.domain_ is None: return self.lb <= v <= self.ub
-        else: return v in self.domain_
+        if self.is_built():
+            return self.var_list[-1].contain(v)
+        elif self.domain_ is None:
+            return self.lb <= v <= self.ub
+        else:
+            return v in self.domain_
 
-            
 
 ## @defgroup mod_group Modelling constructs
 # The modelling constructs
@@ -459,7 +470,7 @@ class Expression(object):
 ## Model object
 #
 #    Stores the variables and constraints.
-#    The constraints declarations are trees, whose internal nodes 
+#    The constraints declarations are trees, whose internal nodes
 #    are predicates or constraints and leaves are variables.
 #
 #    - self.variables contains the leaves of these trees.
@@ -467,7 +478,7 @@ class Expression(object):
 #    - self.constraints contains the internal nodes of these trees.
 #
 #    The constructor of Model can be called with any number of arguments.
-#    Each argument will be treated as an Expression or a list of 
+#    Each argument will be treated as an Expression or a list of
 #    Expressions to be added into the model. If no argument is given
 #    the Model will be initially empty.
 #    If X and Y are lists of Expressions, then the following declarations are all valid:
@@ -479,17 +490,16 @@ class Expression(object):
 #    m = Model( [x<y for (x,y) in zip(X,Y)] )
 # \endcode
 #
-#    Expressions and lists of Expressions can be subsequently added 
+#    Expressions and lists of Expressions can be subsequently added
 #    using the method self.add() or the operator '+='.
 #
 class Model(object):
-
 
     def __init__(self, *expr):
         ## \internal - List of expressions (predicate trees) that where added to the model
         self.__expressions = []
 
-        ## Leaves of the predicate trees 
+        ## Leaves of the predicate trees
         self.variables = VarArray([])
 
         ## Roots of the predicate trees
@@ -504,19 +514,17 @@ class Model(object):
         ## \internal - Initialise from an expression?
         if len(expr) > 0:
             self.add_prime(expr)
-    
-
 
     def getSolverId(self):
         # \internal \internal - generates an ident for each new solver
         self.current_id += 1
         return self.current_id
-        
+
     ## Add an expresion, or a list/tuple/dict of expressions to the model
     # @param *expr Any number of (nested lists of) Expressions
     def add(self, *expr):
         self.add_prime(expr)
-       
+
     def add_prime(self, expr):
         ## \internal - Used to distinguish between a single Expression and a list of Expressions
         if issubclass(type(expr), list):
@@ -529,7 +537,7 @@ class Model(object):
             for key in expr:
                 self.add_prime(exp[key])
         else:
-            self.__expressions.append(expr) 
+            self.__expressions.append(expr)
         self.close_exp()
 
     def __iadd__(self, *expr):
@@ -543,25 +551,25 @@ class Model(object):
         te = type(exp)
         if te not in [int, long, float, str, bool]:
             ## THIS IS BUGGY, WE CANNOT ADD THE SAME VARIABLE TO SEVERAL MODELS
-            if exp.ident == -1:            
+            if exp.ident == -1:
             #if exp.mod != self:
                 #exp.mod = self
                 if exp.get_children() is None:
                     if exp.is_var():
                         exp.ident = len(self.variables)
                         self.variables.append(exp)
-                else: # it is a constraint
-                    exp.ident = -2-len(self.constraints)
+                else:  # it is a constraint
+                    exp.ident = -2 - len(self.constraints)
                     self.constraints.append(exp)
                     for child in exp.get_children():
-                        self.add_expression(child,level+1)
+                        self.add_expression(child, level + 1)
 
     def close_exp(self):
         ## \internal - close() is used to fire up preprocessing requiring knowledge about the whole model
         for i in range(self.closed, len(self.__expressions)):
             self.add_expression(self.__expressions[i], 0)
         self.closed = len(self.__expressions)
-        
+
     def close(self):
         ## \internal - close() is used to fire up preprocessing requiring knowledge about the whole model
         if self.closed == len(self.__expressions):
@@ -574,52 +582,52 @@ class Model(object):
 
             self.strings = sorted(set(tmp_strings))
             self.string_map = {}.fromkeys(self.strings)
-                
+
             for k in range(len(self.strings)):
                 self.string_map[self.strings[k]] = k
 
         self.closed += 1
 
-        if self.closed == len(self.__expressions)+1:
+        if self.closed == len(self.__expressions) + 1:
             for expr in self.get_exprs():
                 expr.close()
-        
+
     def __str__(self):
         ## \internal - print
         mod = 'assign:\n  '
         for var in self.variables:
-            mod += var.domain()+'\n  '
+            mod += var.domain() + '\n  '
         mod += '\nsubject to:\n  '
         for con in self.__expressions:
-            mod += con.__str__()+'\n  '
+            mod += con.__str__() + '\n  '
         return mod
 
     def get_exprs(self):
         ## \internal - return the list of Expressions
         return self.__expressions
-    
+
     def is_native_model(self):
         ## \internal - distinguish with NumberjackSolver models (deprecated?)
         return False
 
     ## Return a Solver for that Model
     # @param library A string standing for a back end solver ('Mistral', 'MiniSat', 'SCIP')
-    def load(self,library,X=None):
+    def load(self, library, X=None):
         """
         The solver is passed as a string, the corresponding module is
         imported, a Solver object created, initialised and returned
         """
         try:
-            lib =  __import__(library)
-            solver = lib.Solver(self,X)
+            lib = __import__(library)
+            solver = lib.Solver(self, X)
         except ImportError:
-            raise ImportError("ERROR: Failed during import, wrong module name? ("+library+")")
+            raise ImportError("ERROR: Failed during import, wrong module name? (" + library + ")")
         return solver
 
-    ## Solve and returns a solution 
+    ## Solve and returns a solution
     # @param library A string standing for a back end solver ('Mistral', 'MiniSat', 'SCIP')
     # @return A Solution object
-    def solve_with(self,library):
+    def solve_with(self, library):
         """
         The solver is passed as a string, the corresponding module is
         imported, a Solver object created, initialised and called.
@@ -651,25 +659,25 @@ class Variable(Expression):
          Variable(list, 'x') :- Variable with domain specified as a list called 'x'
         '''
 
-        def numeric(x): 
+        def numeric(x):
             tx = type(x)
             return tx is int or tx is float
 
-        domain=None
-        lb=0
-        ub=1
+        domain = None
+        lb = 0
+        ub = 1
         name = 'x'
 
         if argopt3 is not None:
             lb = argopt1
             ub = argopt2
-            name  = argopt3
+            name = argopt3
         elif argopt2 is not None:
             if type(argopt2) is str:
                 if numeric(argopt1):
-                    ub = argopt1-1
+                    ub = argopt1 - 1
                     lb = type(ub)(lb)  # Ensure lb has the same datatype as ub
-                else: 
+                else:
                     domain = sorted(argopt1)
                     lb = domain[0]
                     ub = domain[-1]
@@ -677,16 +685,16 @@ class Variable(Expression):
             else:
                 lb = argopt1
                 ub = argopt2
-        elif argopt1 is not None: 
+        elif argopt1 is not None:
             if type(argopt1) is str:
                 name = argopt1
-            elif numeric(argopt1): 
-                ub = argopt1-1
+            elif numeric(argopt1):
+                ub = argopt1 - 1
                 lb = type(ub)(lb)  # Ensure lb has the same datatype as ub
-            else: 
+            else:
                 domain = sorted(argopt1)
                 lb = domain[0]
-                ub = domain[-1]            
+                ub = domain[-1]
 
         tlb = type(lb)
         tub = type(ub)
@@ -707,7 +715,7 @@ class Variable(Expression):
 
 '''
 def Variable(argopt1=None, argopt2=None, argopt3=None):
-    
+
      Variable() :- Binary variable
      Variable(N) :- Variable in the domain of {0, N-1}
      Variable('x') :- Binary variable called 'x'
@@ -716,9 +724,9 @@ def Variable(argopt1=None, argopt2=None, argopt3=None):
      Variable(l,u, 'x') :- Variable in the domain of {l, u} called 'x'
      Variable(list) :- Variable with domain specified as a list
      Variable(list, 'x') :- Variable with domain specified as a list called 'x'
-    
 
-    def numeric(x): 
+
+    def numeric(x):
         tx = type(x)
         return tx is int or tx is float
 
@@ -740,10 +748,10 @@ def Variable(argopt1=None, argopt2=None, argopt3=None):
         else:
             lb = argopt1
             ub = argopt2
-    elif argopt1 is not None: 
+    elif argopt1 is not None:
         if type(argopt1) is str:
             name = argopt1
-        elif numeric(argopt1): 
+        elif numeric(argopt1):
             ub = argopt1-1
         else: domain = sorted(argopt1)
 
@@ -759,26 +767,26 @@ def Variable(argopt1=None, argopt2=None, argopt3=None):
 
 ## Array of Expression
 #
-#    A VarArray is a list of Expression objects. 
-#    Various methods are overloaded to allow easy declaration, formatted printing 
+#    A VarArray is a list of Expression objects.
+#    Various methods are overloaded to allow easy declaration, formatted printing
 #    and modelling syntactic sugars
-#    
+#
 #    There are various ways of declaring a VarArray:
 #
 #    - X = VarArray(l) creates an array from a list l
 #    - X = VarArray(n) creates an array of n Boolean variables
 #    - X = VarArray(n, 'x') creates an array of n Boolean variables with names 'x0..xn-1'
 #    - X = VarArray(n, m, 'x') creates an array of n variables with domains [0..m-1] and names 'x0..xn-1'
-#    - X = VarArray(n, m) creates an array of n variables with domains [0..m-1] 
+#    - X = VarArray(n, m) creates an array of n variables with domains [0..m-1]
 #    - X = VarArray(n, d, 'x') creates an array of n variables with domains d and names 'x0..xn-1'
-#    - X = VarArray(n, d) creates an array of n variables with domains d 
+#    - X = VarArray(n, d) creates an array of n variables with domains d
 #    - X = VarArray(n, l, u, 'x') creates an array of n variables with domains [l..u] and names 'x0..xn-1'
-#    - X = VarArray(n, l, u) creates an array of n variables with domains [l..u] 
+#    - X = VarArray(n, l, u) creates an array of n variables with domains [l..u]
 #
 #    VarArray's allow to state Element and Lex Ordering constraint over a sequence
 #    of variables using, respectively the operator '[]' and '<', '>', '<=', '>='.
 #    For instance, given two VarArray X and Y, and an Expression x:
-#    
+#
 #    X[x] returns an Element Expression, that is, a variable equal to the xth element of the array X
 #    X <= Y returns a LeqLex Constraint between X and Y
 #
@@ -786,7 +794,7 @@ class VarArray(list):
 
     def __init__(self, n, optarg1=None, optarg2=None, optarg3=None):
         domain = None
-        if hasattr(n,'__iter__'):
+        if hasattr(n, '__iter__'):
             list.__init__(self, n)
             return
         else:
@@ -800,41 +808,44 @@ class VarArray(list):
                 elif type(optarg2) is int or type(optarg2) is float:
                     lb = optarg1
                     ub = optarg2
-                    if optarg3 is not None: name = optarg3
+                    if optarg3 is not None:
+                        name = optarg3
                 else:
                     if issubclass(type(optarg1), list) or issubclass(type(optarg1), list):
                         domain = optarg1
                         domain.sort()
                         lb = domain[0]
                         ub = domain[-1]
-                    else: ub = optarg1-1
-                    if optarg2 is not None: name = optarg2
+                    else:
+                        ub = optarg1 - 1
+                    if optarg2 is not None:
+                        name = optarg2
         names = name
         if type(name) is str:
-            names = [name+str(i) for i in range(n)]
+            names = [name + str(i) for i in range(n)]
         if domain is None:
             self.__init__([Variable(lb, ub, names[i]) for i in range(n)])
         else:
             self.__init__([Variable(domain, names[i]) for i in range(n)])
 
-    ## Returns a string representing the initial definition of the content of the arrray 
+    ## Returns a string representing the initial definition of the content of the arrray
     #@return string
     def initial(self):
         return "[" + ", ".join([var.initial() for var in self]) + "]"
-    
+
     ## Returns a string representing the current state of the content of the array
-    #@param solver The linked Solver 
+    #@param solver The linked Solver
     #@return string
     def domain(self, solver=None):
         return "[" + ", ".join([var.domain(solver) for var in self]) + "]"
-    
+
     ## Returns a string containing a brief view of the content of the array
     #@return string
     def name(self):
         return "[" + ", ".join([var.name() for var in self]) + "]"
 
     ## Returns a string containing the valuation of the content of the array
-    #@param solver The linked Solver 
+    #@param solver The linked Solver
     #@return string
     def solution(self, solver=None):
         return "[" + ", ".join([var.solution(solver) for var in self]) + "]"
@@ -849,8 +860,8 @@ class VarArray(list):
             return Element(self, expr)
 
     def __getslice__(self, i, j):
-        return VarArray(list.__getslice__(self,i,j))
-    
+        return VarArray(list.__getslice__(self, i, j))
+
     ## Syntactic sugar for the Lex Order Constraint X < Y
     #@param other Another VarArray of same length
     #@return LessLex Expression
@@ -879,27 +890,27 @@ class VarArray(list):
     #@param other Another VarArray of same length
     #@return a list of Equality Expressions
     def __eq__(self, other):
-        return [Eq((x,y)) for (x,y) in zip(self,other)]
-        
+        return [Eq((x, y)) for x, y in zip(self, other)]
+
 
 ## Matrix of Expression
 #
-#    A Matrix is a two-dimensional list of Expression objects. 
-#    Various methods are overloaded to allow easy declaration, formatted printing 
+#    A Matrix is a two-dimensional list of Expression objects.
+#    Various methods are overloaded to allow easy declaration, formatted printing
 #    and modelling syntactic sugars
-#    
+#
 #    There are various ways of declaring a Matrix:
 #
 #    - \code M = Matrix(l) \endcode creates a Matrix from a list l
 #    - M = Matrix(n, m) creates a n x m Matrix of Boolean variables
 #    - M = Matrix(n, m, 'x') creates a n x m Matrix of Boolean variables with names 'x0.0..xn-1.m-1'
-#    - M = Matrix(n, m, u) creates a n x m Matrix of variables with domains [0..u-1] 
+#    - M = Matrix(n, m, u) creates a n x m Matrix of variables with domains [0..u-1]
 #    - M = Matrix(n, m, u, 'x') creates a n x m Matrix of variables with domains [0..u-1] and names 'x0.0..xn-1.m-1'
 #    - M = Matrix(n, m, l, u) creates a n x m Matrix of variables with domains [l..u]
 #    - M = Matrix(n, m, l, u, 'x') creates a n x m Matrix of variables with domains [l..u] and names 'x0.0..xn-1.m-1'
 #
-#    Matrices feature specific handlers to access (subsets of) rows and columns. 
-#    The fields 'row', 'col' and 'flat' respectively refer to the list of rows, 
+#    Matrices feature specific handlers to access (subsets of) rows and columns.
+#    The fields 'row', 'col' and 'flat' respectively refer to the list of rows,
 #    columns and cell in the matrix. For instance:
 #
 # \code
@@ -955,16 +966,18 @@ class Matrix(list):
                 ub = optarg4
                 name = optarg5
             elif optarg4 is not None:
-                if type(optarg4) is str: 
+                if type(optarg4) is str:
                     name = optarg4
-                    ub = optarg3-1
+                    ub = optarg3 - 1
                 else:
                     ub = optarg4
                     lb = optarg3
             elif optarg3 is not None:
-                if type(optarg3) is str: name = optarg3
-                else: ub = optarg3-1
-            list.__init__(self, [VarArray(m, lb, ub, name+str(j)+'.') for j in range(n)])
+                if type(optarg3) is str:
+                    name = optarg3
+                else:
+                    ub = optarg3 - 1
+            list.__init__(self, [VarArray(m, lb, ub, name + str(j) + '.') for j in range(n)])
         self.row = self
         self.col = Matrix()
         for column in zip(*self):
@@ -973,14 +986,14 @@ class Matrix(list):
         self.col.row = self.col
         self.flat = VarArray([var for row in self for var in row])
         self.col.flat = self.flat
-        
-    ## Returns a string representing the initial definition of the content of the arrray 
+
+    ## Returns a string representing the initial definition of the content of the arrray
     #@return string
     def initial(self):
         return "[" + ",\n ".join([row.initial() for row in self]) + "]"
-        
+
     ## Returns a string representing the current state of the content of the matrix
-    #@param solver The linked Solver 
+    #@param solver The linked Solver
     #@return string
     def domain(self, solver=None):
         return "[" + ",\n ".join([row.domain(solver) for row in self]) + "]"
@@ -991,7 +1004,7 @@ class Matrix(list):
         return "[" + ",\n ".join([row.name() for row in self]) + "]"
 
     ## Returns a string containing the valuation of the content of the matrix
-    #@param solver The linked Solver 
+    #@param solver The linked Solver
     #@return string
     def solution(self, solver=None):
         return "[" + ",\n ".join([row.solution(solver) for row in self]) + "]"
@@ -1008,34 +1021,31 @@ class Matrix(list):
             elif type(i[1]) is int:
                 return list.__getitem__(self.col, i[1]).__getitem__(i[0])
             elif type(i[0]) is slice:
-                aux = Matrix(list.__getitem__(self,i[0])).col
-                aux = Matrix(list.__getitem__(aux,i[1])).col
+                aux = Matrix(list.__getitem__(self, i[0])).col
+                aux = Matrix(list.__getitem__(aux, i[1])).col
                 return aux
-            else: 
+            else:
                 return Element(self.flat, (i[0] * len(self.col)) + i[1])
         else:
             return MatrixWrapper(i, self)
 
-
     def __getslice__(self, i, j):
-        return Matrix(list.__getslice__(self,i,j))
+        return Matrix(list.__getslice__(self, i, j))
 
-     
+
 class MatrixWrapper(list):
-    
+
     def __init__(self, var, matrix):
         self.var = var
         self.matrix = matrix
-        
+
     def __getitem__(self, item):
         return self.matrix[self.var, item]
-        
+
     def __str__(self):
         return str(self.var) + " th index of " + str(self.matrix)
 
-##  @}    
-
-
+##  @}
 
 
 ## Class that all constraints inherit from
@@ -1043,7 +1053,7 @@ class MatrixWrapper(list):
 #    accessors to get information about the predicate trees and the variables
 #    the constraints constrain.
 #
-#    A given predicate can have a different meaning when posted at the top-level 
+#    A given predicate can have a different meaning when posted at the top-level
 #    or nested in a predicate tree. For instance:
 #
 # \code
@@ -1056,7 +1066,7 @@ class MatrixWrapper(list):
 #    >>> assign:
 #    >>>   x0 in {1..5}
 #    >>>   x1 in {1..4}
-#    >>> 
+#    >>>
 #    >>> subject to:
 #    >>>   (x0 < x1)
 #
@@ -1068,7 +1078,7 @@ class MatrixWrapper(list):
 #    >>> assign:
 #    >>>   x0 in {1..5}
 #    >>>   x1 in {1..4}
-#    >>> 
+#    >>>
 #    >>> subject to:
 #    >>>   ((x0 < x1) or (x0 > x1))
 # \endcode
@@ -1077,8 +1087,8 @@ class MatrixWrapper(list):
 #      between the Variables x and y
 #
 #    - In the second Model (m2), the same object x_lt_y is understood as a Boolean variable,
-#      whose truth value corresponds to the relation (x<y) and that can be constrained, 
-#      here with an "Or" constraint. 
+#      whose truth value corresponds to the relation (x<y) and that can be constrained,
+#      here with an "Or" constraint.
 class Predicate(Expression):
 
     def __init__(self, vars, op):
@@ -1087,19 +1097,18 @@ class Predicate(Expression):
 
     def set_children(self, children):
         #self.children = children
-        
-        ## List of children of the predicate 
+
+        ## List of children of the predicate
         #self.children = [child for child in children]
         self.children = flatten(children)
-
 
     ## Returns a string representing the initial definition of the Predicate
     # @return String representation of original predicate definition
     #
     #    Returns a string that represents the initial definition of the Predicate
     #    and all its children.
-    #    
-    # \code    
+    #
+    # \code
     #    var1 = Variable(0, 10)
     #    constraint = var1 < 10
     #    model = Model(constraint)
@@ -1117,7 +1126,7 @@ class Predicate(Expression):
         output = self.__str__()
         Expression.__str__ = save_str
         return output
-    
+
     ## Returns a string representing the current representation of the predicate
     # @param solver solver from which current domains of leaves will be sourced
     # @return String representation of current predicate state
@@ -1125,7 +1134,7 @@ class Predicate(Expression):
     #    Returns a string that represents the current value of the predicate and its'
     #    children in the specified solver. If no solver is specified then the solver
     #    that has loaded the expression the solver most recently is used.
-    #    
+    #
     # \code
     #    var1 = Variable(0, 10)
     #    constraint = var1 < 10
@@ -1144,7 +1153,7 @@ class Predicate(Expression):
         output = self.__str__()
         Expression.__str__ = save_str
         return output
-    
+
     ## Returns a string representing the current solution of the predicate
     # @param solver solver from which current domains of leaves will be sourced
     # @return String representation of the current predicate solution
@@ -1171,14 +1180,14 @@ class Predicate(Expression):
         output = self.__str__()
         Expression.__str__ = save_str
         return output
-    
+
     ## Returns a string representing the name of the Predicate
     # @return String representation of predicate definition
     #
     #    Returns a string that represents the name of the Predicate
     #    and the name of all its children.
-    #    
-    # \code    
+    #
+    # \code
     #    var1 = Variable(0, 10)
     #    constraint = var1 < 10
     #    model = Model(constraint)
@@ -1200,6 +1209,7 @@ class Predicate(Expression):
         Expression.__str__ = save_str
         return output
 
+
 ## Class that all binary predicates inherit from
 #
 #    All binary predicates such as And, LessThan and GreaterThan extend this
@@ -1207,18 +1217,20 @@ class Predicate(Expression):
 #    ease of print representations of the predicates.
 #
 class BinPredicate(Predicate):
-    
+
     def __init__(self, vars, op):
         Predicate.__init__(self, vars, op)
 
-    def get_symbol(self): return 'x'
+    def get_symbol(self):
+        return 'x'
 
     def __str__(self):
         save_str = Expression.__str__
         Expression.__str__ = Expression.name
-        output = '('+str(self.children[0])+' '+self.get_symbol()+' '+str(self.children[1])+')'
+        output = '(' + str(self.children[0]) + ' ' + self.get_symbol() + ' ' + str(self.children[1]) + ')'
         Expression.__str__ = save_str
         return output
+
 
 ## And expression
 #
@@ -1226,55 +1238,59 @@ class BinPredicate(Predicate):
 #   - Top-level: 'And' Constraint
 #   - Nested: Equal to the truth value of the 'And' relation
 #
-# \code    
+# \code
 #    var1 = Variable() :- Binary variable
 #    var2 = Variable() :- Binary variable
-#    
+#
 #    model.add(var1 & var2) :- Post var1 And var2 constraint
-#    
+#
 #    var1 = Variable() :- Binary variable
 #    var2 = Variable() :- Binary variable
 #    var3 = Variable() :- Binary variable
-#    
+#
 #    model.add( var3 == (var1 & var2) ) :- Used as an expression
 # \endcode
 #
 class And(BinPredicate):
-    
+
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "and")
 
-    def get_symbol(self): return '&'
+    def get_symbol(self):
+        return '&'
 
 ## @defgroup cons_group Constraint list
 # The list of constraints defined in Numberjack
 #  @{
 #
 
+
 ## Or expression
 #
 # \note
 #   - Top-level: 'Or' Constraint
 #   - Nested: Equal to the truth value of the 'Or' relation
-#    
+#
 # \code
 #    var1 = Variable() :- Binary variable
 #    var2 = Variable() :- Binary variable
-#    
+#
 #    model.add(var1 | var2) :- Post var1 Or var2 constraint
-#    
+#
 #    var1 = Variable() :- Binary variable
 #    var2 = Variable() :- Binary variable
 #    var3 = Variable() :- Binary variable
-#    
+#
 #    model.add( var3 == (var1 | var2) ) :- Used as an expression
 # \endcode
 #
 class Or(BinPredicate):
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "or")
-    
-    def get_symbol(self): return 'or'
+
+    def get_symbol(self):
+        return 'or'
+
 
 ## Div expression
 #
@@ -1286,11 +1302,11 @@ class Or(BinPredicate):
 #
 #    Div expression can be used to divide two expressions or an expression and
 #    a constraint.
-#    
+#
 # \code
 #    var1 = Variable(0, 10)
 #    var2 = Variable(0, 100)
-#    
+#
 #    divexp1 = var2 / var1
 #    divexp2 = var2 / 10
 # \endcode
@@ -1299,24 +1315,26 @@ class Div(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "div")
-    
-    def get_symbol(self): return '/'
+
+    def get_symbol(self):
+        return '/'
+
 
 ## Mul expression
 #
 # \note
 #   - Top-level: Can not be used as top-level Constraint
 #   - Nested: Equal to the multiplication of the operands
-# 
+#
 # \warning Can not be used with all solvers
 #
 #    Mul expression can be used to multiply two expressions or an expression and
 #    a constraint.
 #
-# \code    
+# \code
 #    var1 = Variable(0, 10)
 #    var2 = Variable(0, 100)
-#    
+#
 #    mulxp1 = var2 * var1
 #    mulexp2 = var2 * 10
 # \endcode
@@ -1325,8 +1343,10 @@ class Mul(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "mul")
-    
-    def get_symbol(self): return '*'
+
+    def get_symbol(self):
+        return '*'
+
 
 ## Mod expression
 # \note
@@ -1338,10 +1358,10 @@ class Mul(BinPredicate):
 #    Mod expression can be used to modulo two expressions or an expression and
 #    a constraint.
 #
-# \code    
+# \code
 #    var1 = Variable(0, 10)
 #    var2 = Variable(0, 100)
-#    
+#
 #    modxp1 = var2 % var1
 #    modexp2 = var2 % 10
 # \endcode
@@ -1350,8 +1370,10 @@ class Mod(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "mod")
-    
-    def get_symbol(self): return '%'
+
+    def get_symbol(self):
+        return '%'
+
 
 ## Equal expression
 #
@@ -1363,23 +1385,25 @@ class Mod(BinPredicate):
 #    expressions or an expression and a constraint. It can be used as either
 #    a hard constraint or as an expression.
 #
-# \code    
+# \code
 #    var1 = Variable(0, 10)
 #    var2 = Variable(0, 100)
 #    var3 = Variable()
-#    
+#
 #    model.add(var1 == var2)
 #    model.add(var1 == 5)
 #
-#    model.add( var3 == (var1 == var2) )    
+#    model.add( var3 == (var1 == var2) )
 # \endcode
 #
 class Eq(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "eq")
-    
-    def get_symbol(self): return '=='
+
+    def get_symbol(self):
+        return '=='
+
 
 ## Not Equal expression
 #
@@ -1391,23 +1415,25 @@ class Eq(BinPredicate):
 #    expressions or an expression and a constraint. It can be used as either
 #    a hard constraint or as an expression.
 #
-# \code    
+# \code
 #    var1 = Variable(0, 10)
 #    var2 = Variable(0, 100)
 #    var3 = Variable()
-#    
+#
 #    model.add(var1 != var2)
 #    model.add(var1 != 5)
 #
-#    model.add( var3 != (var1 != var2) )    
+#    model.add( var3 != (var1 != var2) )
 # \endcode
 #
 class Ne(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "ne")
-    
-    def get_symbol(self): return '=/='
+
+    def get_symbol(self):
+        return '=/='
+
 
 ## Less than expression
 #
@@ -1419,11 +1445,11 @@ class Ne(BinPredicate):
 #    expressions or an expression and a constraint. It can be used as either
 #    a hard constraint or as an expression.
 #
-# \code    
+# \code
 #    var1 = Variable(0, 10)
 #    var2 = Variable(0, 100)
 #    var3 = Variable()
-#    
+#
 #    model.add(var1 < var2)
 #    model.add(var1 < 5)
 #
@@ -1434,8 +1460,10 @@ class Lt(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "lt")
-    
-    def get_symbol(self): return '<'
+
+    def get_symbol(self):
+        return '<'
+
 
 ## Greater than expression
 #
@@ -1447,23 +1475,25 @@ class Lt(BinPredicate):
 #    expressions or an expression and a constraint. It can be used as either
 #    a hard constraint or as an expression.
 #
-# \code    
+# \code
 #    var1 = Variable(0, 10)
 #    var2 = Variable(0, 100)
 #    var3 = Variable()
-#    
+#
 #    model.add(var1 > var2)
 #    model.add(var1 > 5)
 #
-#    model.add( var3 > (var1 > var2) )    
+#    model.add( var3 > (var1 > var2) )
 # \endcode
 #
 class Gt(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "gt")
-    
-    def get_symbol(self): return '>'
+
+    def get_symbol(self):
+        return '>'
+
 
 ## Less than or equal expression
 #
@@ -1475,23 +1505,25 @@ class Gt(BinPredicate):
 #    expressions or an expression and a constraint. It can be used as either
 #    a hard constraint or as an expression.
 #
-# \code    
+# \code
 #    var1 = Variable(0, 10)
 #    var2 = Variable(0, 100)
 #    var3 = Variable()
-#    
+#
 #    model.add(var1 <= var2)
 #    model.add(var1 <= 5)
 #
-#    model.add( var3 <= (var1 <= var2) )    
+#    model.add( var3 <= (var1 <= var2) )
 # \endcode
 #
 class Le(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "le")
-    
-    def get_symbol(self): return '<='
+
+    def get_symbol(self):
+        return '<='
+
 
 ## Greater than or equal expression
 #
@@ -1503,24 +1535,26 @@ class Le(BinPredicate):
 #    expressions or an expression and a constraint. It can be used as either
 #    a hard constraint or as an expression.
 #
-# \code    
+# \code
 #    var1 = Variable(0, 10)
 #    var2 = Variable(0, 100)
 #    var3 = Variable()
-#    
+#
 #    model.add(var1 >= var2)
 #    model.add(var1 >= 5)
 #
-#    model.add( var3 >= (var1 >= var2) )    
+#    model.add( var3 >= (var1 >= var2) )
 # \endcode
 #
 class Ge(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "ge")
-    
-    def get_symbol(self): return '>='
-    
+
+    def get_symbol(self):
+        return '>='
+
+
 ## Negate expression
 #
 # \note
@@ -1530,9 +1564,9 @@ class Ge(BinPredicate):
 #    Neg expression, it is used to negate another expression. It is equivalent
 #    to multiplying by -1.
 #
-# \code    
+# \code
 #    var = Variable(1, 10)
-#    
+#
 #    model.add(-var < 3)
 # \endcode
 #
@@ -1542,13 +1576,13 @@ class Neg(Predicate):
         Predicate.__init__(self, vars, "neg")
 
     def __str__(self):
-        return '-'+str(self.children[0])
+        return '-' + str(self.children[0])
 
 
 ## Absolute expression
 #
 #    An expression which represents the absolute value of a variable.
-# 
+#
 # \code
 #	var = Variable(-5, 5)
 #
@@ -1576,7 +1610,7 @@ class Abs(Predicate):
 #    Table constraint used to handle list of allowed or forbidden tuples.
 #
 class Table(Predicate):
-    
+
     ## Table constraint constructor
     # @param vars variables to be constrained by the constraint
     # @param tuples tuples used for the table constraint
@@ -1612,16 +1646,13 @@ class Table(Predicate):
             self.parameters[0].append(tuple)
         else:
             self.parameters[0].remove(tuple)
-        
-    ## Prints the table of tuples    
+
+    ## Prints the table of tuples
     def printTable(self):
         print self.parameters[1]
         for var in self.children:
             print var,
-        print '\n ('+self.parameters[1]+')', self.parameters[0]
-
-
-
+        print '\n (' + self.parameters[1] + ')', self.parameters[0]
 
 
 ## Sum constraint
@@ -1633,16 +1664,16 @@ class Table(Predicate):
 #    Sum Constraint with linear coefficients.
 #
 class Sum(Predicate):
-    
+
     ## Table constraint constructor
     # @param vars variables to be summed
     # @param coefs list of coefficients ([1,1,..1] by default)
-    def __init__(self, vars, coefs = None):
+    def __init__(self, vars, coefs=None):
         Predicate.__init__(self, vars, "Sum")
-        
+
         if coefs is None:
             coefs = [1 for var in self.children]
-    
+
         self.parameters = [coefs, 0]
 
     def close(self):
@@ -1652,7 +1683,6 @@ class Sum(Predicate):
         """
         Predicate.close(self)
 
-        
         def extract_sum(var, coef):
 
             """
@@ -1664,7 +1694,7 @@ class Sum(Predicate):
                 if var.operator == "Sum":
                     res = []
                     for (s_var, s_coef) in zip(var.get_children(), var.parameters[0]):
-                        res.extend(extract_sum(s_var, s_coef*coef))
+                        res.extend(extract_sum(s_var, s_coef * coef))
                     if var.parameters[1] != 0:
                         res.append((var.parameters[1], 1))
                     return res
@@ -1676,28 +1706,27 @@ class Sum(Predicate):
                     elif (type(var.get_children()[1]) == types.IntType or
                          type(var.get_children()[1]) == types.FloatType):
 
-                        return [(new_var, new_coef*var.get_children()[1]*coef)
+                        return [(new_var, new_coef * var.get_children()[1] * coef)
                             for (new_var, new_coef) in extract_sum(var.get_children()[0], 1)]
 
                     else:
-                        return [(var, 1*coef)] # It is quadratic?
+                        return [(var, 1 * coef)]  # It is quadratic?
                 else:
-                    return [(var, 1*coef)]
+                    return [(var, 1 * coef)]
             else:
-                return [(var, 1*coef)]
+                return [(var, 1 * coef)]
 
-            
         # This is where it should go looking for +s
-        set_vars = set([])        
+        set_vars = set([])
         list_vars = []
         map_coefs = {}
         offset = self.parameters[1]
 
         for (var, coef) in zip(self.children, self.parameters[0]):
-            list = extract_sum(var, coef) 
+            list = extract_sum(var, coef)
             for (nVar, nCoef) in list:
                 if type(nVar) == types.IntType or type(nVar) == types.FloatType:
-                    offset += (nVar*nCoef)
+                    offset += (nVar * nCoef)
                 else:
                     if nVar in set_vars:
                         map_coefs[nVar] += nCoef
@@ -1713,42 +1742,39 @@ class Sum(Predicate):
                 flat_vars.append(nVar)
                 flat_coefs.append(map_coefs[nVar])
 
-
         self.set_children(flat_vars)
         self.parameters = [flat_coefs, offset]
 
-
-
-
-
-    def __str__(self):  
+    def __str__(self):
         #print len(self.children)
         op = '('
         if len(self.parameters[0]):
             if self.parameters[0][0] != 1:
-                op += (str(self.parameters[0][0])+'*')
+                op += (str(self.parameters[0][0]) + '*')
             op += (self.children[0].__str__())
-        for i in range(1,len(self.children)):
+        for i in range(1, len(self.children)):
             if self.parameters[0][i] == 1:
-                op += (' + '+self.children[i].__str__())
+                op += (' + ' + self.children[i].__str__())
             elif self.parameters[0][i] == -1:
-                op += (' - '+self.children[i].__str__())
+                op += (' - ' + self.children[i].__str__())
             elif self.parameters[0][i] > 0:
-                op += (' + '+str(self.parameters[0][i])+'*'+self.children[i].__str__())
+                op += (' + ' + str(self.parameters[0][i]) + '*' + self.children[i].__str__())
             elif self.parameters[0][i] < 0:
-                op += (' - '+str(-self.parameters[0][i])+'*'+self.children[i].__str__())
+                op += (' - ' + str(-self.parameters[0][i]) + '*' + self.children[i].__str__())
         if self.parameters[1] > 0:
-            op += (' + '+str(self.parameters[1]))
+            op += (' + ' + str(self.parameters[1]))
         elif self.parameters[1] < 0:
-            op += (' - '+str(-self.parameters[1]))
-        return op+')'
-
+            op += (' - ' + str(-self.parameters[1]))
+        return op + ')'
 
     def decompose(self):
         def addition(X):
-            if len(X) == 1: return X[0]
-            else: return X[0] + self.addition(X[1:])
+            if len(X) == 1:
+                return X[0]
+            else:
+                return X[0] + self.addition(X[1:])
         return [addition([child * coef for child, coef in zip(self.children, self.parameters)])]
+
 
 ## All-Different Constraint
 #
@@ -1764,9 +1790,10 @@ class AllDiff(Predicate):
         Predicate.__init__(self, vars, "AllDiff")
         if type != None:
             self.parameters = [type]
-    
+
     #def __str__(self):
     #    return " AllDiff(" + " ".join(map(str, self.children)) + " ) "
+
 
 ## Global Cardinality Constraint
 #
@@ -1779,10 +1806,10 @@ class AllDiff(Predicate):
 class Gcc(Predicate):
 
     ## Global Cardinality constraint constructor
-    # @param vars variables 
+    # @param vars variables
     # @param cards dictionary: value -> pairs of integers (l,u)
     #
-    # The cardinalities connot be Variables. 
+    # The cardinalities connot be Variables.
     # The parameter cards is a dictionary mapping a set of values
     # to lower and upper bounds. For instance:
     #
@@ -1797,7 +1824,7 @@ class Gcc(Predicate):
     #>>>   x2 in {1..4}
     #>>>   x3 in {1..4}
     #>>>   x4 in {1..4}
-    #>>>   
+    #>>>
     #>>> subject to:
     #>>>   Gcc(x0 x1 x2 x3 x4 | 1 in [1,2] 2 in [2,2] 3 in [0,3] 4 in [1,2] )
     # \endcode
@@ -1812,23 +1839,24 @@ class Gcc(Predicate):
             lb.append(cards[val][0])
             ub.append(cards[val][1])
         self.parameters = [values, lb, ub]
-        
+
     def __str__(self):
         save_str = Expression.__str__
         Expression.__str__ = Expression.name
-        output = " Gcc(" + " ".join(map(str, self.children)) + " | " 
-        for (v,l,u) in zip(*(self.parameters)):
-            output += str(v)+' in ['+str(l)+','+str(u)+'] '
+        output = " Gcc(" + " ".join(map(str, self.children)) + " | "
+        for v, l, u in zip(*(self.parameters)):
+            output += str(v) + ' in [' + str(l) + ',' + str(u) + '] '
         Expression.__str__ = save_str
-        return output+')'
+        return output + ')'
 
     def decompose(self):
         X = self.children
         decomp = []
         for val, l, u in zip(self.parameters[0], self.parameters[1], self.parameters[2]):
-            card = Variable(l,u)
-            decomp.append((card == Cardinality(X,val)))
+            card = Variable(l, u)
+            decomp.append((card == Cardinality(X, val)))
         return decomp
+
 
 ## Max Constraint
 #
@@ -1877,7 +1905,7 @@ class Min(Predicate):
         return min([x.get_min(solver) for x in self.children])
 
     def get_max(self, solver=None):
-        return  min([x.get_max(solver) for x in self.children])
+        return min([x.get_max(solver) for x in self.children])
 
     def decompose(self):
         X = self.children
@@ -1889,6 +1917,7 @@ class Min(Predicate):
 
     #def __str__(self):
     #    return " MIN ( " + " ".join(map(str, self.children)) + " ) "
+
 
 ## Element Constraint
 #
@@ -1908,15 +1937,15 @@ class Min(Predicate):
 #>>> Element(var0, var1, var2, var3, var4, x)
 #print elt2
 #>>> Element(var0, var1, var2, var3, var4, x)
-# \endcode 
+# \endcode
 #
 class Element(Predicate):
     def __init__(self, vars, index):
         children = list(vars)
         children.append(index)
         Predicate.__init__(self, children, "Element")
-        
-        
+
+
 ## Boolean Clause
 class Clause(Predicate):
     def __init__(self, *vars):
@@ -1941,32 +1970,34 @@ class Clause(Predicate):
             self.children.append(literal)
 
     def __str__(self):
-        ret_str = "Clause(";
+        ret_str = "Clause("
         for i in range(len(self.children)):
             ret_str += ' '
             if self.parameters[0][i] == 1:
                 ret_str += str(self.children[i])
             else:
-                ret_str += ('~'+str(self.children[i]))
-        return ret_str+' )';
-    
+                ret_str += ('~' + str(self.children[i]))
+        return ret_str + ' )'
+
+
 ## Less Lexicographic Ordering Constraint
 class LessLex(Predicate):
     def __init__(self, vars_1, vars_2):
         children = list(vars_1)
         children.extend(vars_2)
         Predicate.__init__(self, children, "LessLex")
-        
-    def __str__(self):
-        length = len(self.children)/2
 
-        toprint = '['+str(self.children[0])
-        for i in range(1,length):
-            toprint += (', '+str(self.children[i]))
-        toprint += '] < ['+str(self.children[length])
-        for i in range(length+1,2*length):
-            toprint += (', '+str(self.children[i]))
-        return toprint+']'
+    def __str__(self):
+        length = len(self.children) / 2
+
+        toprint = '[' + str(self.children[0])
+        for i in range(1, length):
+            toprint += (', ' + str(self.children[i]))
+        toprint += '] < [' + str(self.children[length])
+        for i in range(length + 1, 2 * length):
+            toprint += (', ' + str(self.children[i]))
+        return toprint + ']'
+
 
 ## Leq Lexicographic Ordering Constraint
 class LeqLex(Predicate):
@@ -1974,17 +2005,18 @@ class LeqLex(Predicate):
         children = list(vars_1)
         children.extend(vars_2)
         Predicate.__init__(self, children, "LeqLex")
-        
-    def __str__(self):
-        length = len(self.children)/2
 
-        toprint = '['+str(self.children[0])
-        for i in range(1,length):
-            toprint += (', '+str(self.children[i]))
-        toprint += '] <= ['+str(self.children[length])
-        for i in range(length+1,2*length):
-            toprint += (', '+str(self.children[i]))
-        return toprint+']'
+    def __str__(self):
+        length = len(self.children) / 2
+
+        toprint = '[' + str(self.children[0])
+        for i in range(1, length):
+            toprint += (', ' + str(self.children[i]))
+        toprint += '] <= [' + str(self.children[length])
+        for i in range(length + 1, 2 * length):
+            toprint += (', ' + str(self.children[i]))
+        return toprint + ']'
+
 
 ## Maximisation objective function
 #
@@ -1993,13 +2025,15 @@ class LeqLex(Predicate):
 class Maximise(Predicate):
     def __init__(self, vars):
         Predicate.__init__(self, [vars], "Maximise")
-        
+
     #def __str__(self):
     #    return " Maximise ( " + " ".join(map(str, self.children)) + " ) "
+
 
 ## Alias for American spelling
 def Maximize(var):
     return Maximise(var)
+
 
 ## Minimisation objective function
 #
@@ -2011,6 +2045,7 @@ class Minimise(Predicate):
 
     #def __str__(self):
     #    return " Minimise ( " + " ".join(map(str, self.children)) + " ) "
+
 
 ## Alias for American spelling
 def Minimize(var):
@@ -2030,10 +2065,10 @@ class Disjunction(Predicate):
 class Convex(Predicate):
     def __init__(self, vars):
         Predicate.__init__(self, [var for var in vars], "Convex")
-        
+
     def __str__(self):
         return "[" + " ".join(map(str, self.children)) + "] is row-convex"
-        
+
     def decompose(self):
         ### BUGGY!!
 
@@ -2050,14 +2085,15 @@ class Convex(Predicate):
         print VarArray(decomposition)
         return decomposition
 
+
 class Cardinality(Predicate):
     def __init__(self, vars, value):
         Predicate.__init__(self, [var for var in vars], "Card")
         self.parameters = [value]
 
     def __str__(self):
-        return "card of "+str(self.parameters[0])+" in [" + " ".join(map(str, self.children)) + "]"
-        
+        return "card of " + str(self.parameters[0]) + " in [" + " ".join(map(str, self.children)) + "]"
+
     def decompose(self):
         X = self.children
         val = self.parameters[0]
@@ -2069,12 +2105,12 @@ class Cmp2(BinPredicate):
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "Cmp")
 
-    def get_symbol(self): return 'cmp'
-        
+    def get_symbol(self):
+        return 'cmp'
+
     def decompose(self):
         X = self.children
-        return [(X[1]<X[0])-(X[0]<X[1])]
-
+        return [(X[1] < X[0]) - (X[0] < X[1])]
 
 
 ## @defgroup sched_group Scheduling constructs
@@ -2086,7 +2122,7 @@ class Cmp2(BinPredicate):
 class Job(VarArray):
     def __init__(self, L):
         VarArray.__init__(self, n)
-'''   
+'''
 
 
 ## Task specific Variable
@@ -2099,7 +2135,7 @@ class Task(Expression):
 # arg2: duration
 
     def __init__(self, arg1=None, arg2=None, arg3=None):
-        
+
         lb = 0
         ub = 1
         self.duration = 1
@@ -2107,13 +2143,13 @@ class Task(Expression):
             if arg2 != None:
                 if arg3 != None:
                     lb = arg1
-                    ub = arg2-arg3
+                    ub = arg2 - arg3
                     self.duration = arg3
-                else: # only 2 args, read as <makespan,duration>
-                    ub = arg1-arg2
+                else:  # only 2 args, read as <makespan,duration>
+                    ub = arg1 - arg2
                     self.duration = arg2
-            else: # only 1 arg, read as the makespan
-                ub = arg2-1
+            else:  # only 1 arg, read as the makespan
+                ub = arg2 - 1
         Expression.__init__(self, "t")
         self.lb = lb
         self.ub = ub
@@ -2124,14 +2160,15 @@ class Task(Expression):
             return str(self.get_value())
         else:
             ident = str(self.ident)
-            if self.ident == -1: ident = ''
-            return 't'+str(ident)+': ['+str(self.get_min())+':'+str(self.duration)+':'+str(self.get_max()+self.duration)+']'
-        
+            if self.ident == -1:
+                ident = ''
+            return 't' + str(ident) + ': [' + str(self.get_min()) + ':' + str(self.duration) + ':' + str(self.get_max() + self.duration) + ']'
+
     def __lt__(self, pred):
         if type(pred) is int:
-            return Le([self, pred-self.duration])
+            return Le([self, pred - self.duration])
         return Precedence(self, pred, self.duration)
-    
+
     def __gt__(self, pred):
         if type(pred) is int:
             return Gt([self, pred])
@@ -2141,7 +2178,8 @@ class Task(Expression):
         resource.add(self)
 
     def reset(self, makespan):
-        self.ub = makespan-self.duration
+        self.ub = makespan - self.duration
+
 
 ## Precedence Constraint
 class Precedence(Predicate):
@@ -2150,37 +2188,40 @@ class Precedence(Predicate):
         self.parameters = [dur]
 
     def decompose(self):
-        return [ ((self.children[0] + self.parameters[0]) <= self.children[1]) ]
+        return [((self.children[0] + self.parameters[0]) <= self.children[1])]
 
     def __str__(self):
-        return str(self.children[0])+' + '+str(self.parameters[0])+' <= '+str(self.children[1])
+        return str(self.children[0]) + ' + ' + str(self.parameters[0]) + ' <= ' + str(self.children[1])
 
 
 ## Binary disjunctive Constraint
 class NoOverlap(Predicate):
 
     def __init__(self, task_i, task_j, dur_i=None, dur_j=None):
-        if dur_i == None: dur_i = task_i.duration
-        if dur_j == None: dur_j = task_j.duration
+        if dur_i == None:
+            dur_i = task_i.duration
+        if dur_j == None:
+            dur_j = task_j.duration
         Predicate.__init__(self, [task_i, task_j], "NoOverlap")
-        self.parameters = [dur_i,dur_j]
-        
+        self.parameters = [dur_i, dur_j]
+
     def decompose(self):
-        return [ ( ((self.children[0] + self.parameters[0]) <= (self.children[1])) |
-                   ((self.children[1] + self.parameters[1]) <= (self.children[0])) )]
+        return [(((self.children[0] + self.parameters[0]) <= (self.children[1])) |
+                 ((self.children[1] + self.parameters[1]) <= (self.children[0])))]
 
     def __str__(self):
-        return str(self.children[0])+' + '+str(self.parameters[0])+' <= '+str(self.children[1])+' OR '+str(self.children[1])+' + '+str(self.parameters[1])+' <= '+str(self.children[0])
+        return str(self.children[0]) + ' + ' + str(self.parameters[0]) + ' <= ' + str(self.children[1]) + ' OR ' + str(self.children[1]) + ' + ' + str(self.parameters[1]) + ' <= ' + str(self.children[0])
+
 
 '''
 ## Not sure what that is?
 class Interval(list):
-    
+
     def __init__(self, lhs, rhs):
         list.__init__(self)
         self.lhs = lhs
-        self.rhs = rhs    
-        
+        self.rhs = rhs
+
     def __contains__(self, y):
         if type(y) is not types.IntType and type(y) is not types.FloatType:
             constraint = (y >= self.lhs) & (y <= self.rhs)
@@ -2190,47 +2231,50 @@ class Interval(list):
             constraint = (self.lhs <= y) & (self.rhs >= y)
             self.append(constraint)
             return constraint
-        
+
     def isin(self, y):
         return self.__contains__(y)
 '''
 
+
 ## Unary resource constraint
 class UnaryResource(list):
-    
+
     def __init__(self, arg=[], distance=0):
-        list.__init__(self, [NoOverlap(arg[i], arg[j], arg[i].duration+distance, arg[j].duration+distance) for i in range(1,len(arg)) for j in range(i)])
+        list.__init__(self, [NoOverlap(arg[i], arg[j], arg[i].duration + distance, arg[j].duration + distance) for i in range(1, len(arg)) for j in range(i)])
         self.tasks = [task for task in arg]
         self.distance = distance
 
     def add(self, new_task):
         for task in self.tasks:
-            self.append( NoOverlap(new_task, task, new_task.duration+self.distance, task.duration+self.distance) )            
+            self.append(NoOverlap(new_task, task, new_task.duration + self.distance, task.duration + self.distance))
         self.tasks.append(new_task)
-        
+
     def __str__(self):
-        return "[" + " ".join(map(str, self.tasks)) + "] share a unary resource" #: "+" ".join(map(str, self))
-        
+        return "[" + " ".join(map(str, self.tasks)) + "] share a unary resource"  # "+" ".join(map(str, self))
+
+
 class UnaryResourceB(Predicate):
     def __init__(self, tasks, distance=0):
         Predicate.__init__(self, [task for task in tasks], "UnaryResource")
         self.distance = distance
-        
+
     def add(self, new_task):
         self.children.append(new_task)
-        
+
     def __str__(self):
         return "[" + " ".join(map(str, self.children)) + "] share a unary resource"
-        
+
     def decompose(self):
-        return [NoOverlap(task1, task2) #, task1.duration+self.distance, task2.duration+self.distance)
+        return [NoOverlap(task1, task2)  # , task1.duration+self.distance, task2.duration+self.distance)
                 for task1, task2 in pair_of(self.children)]
-        
+
 ## @}
+
 
 class ParamList(dict):
     def __init__(self, X):
-        dict.__init__(self,X)
+        dict.__init__(self, X)
 
     def __call__(self, *args):
         return [self.__getitem__(arg) for arg in args]
@@ -2249,7 +2293,7 @@ def input(default):
     for arg in commandline:
         #print arg
 
-        if arg[0] == '-' and arg != '-1.0': # new argument
+        if arg[0] == '-' and arg != '-1.0':  # new argument
             # first take previous param into account
             #print 'end of option:', params
             if option != None and option != '1.0':
@@ -2275,28 +2319,28 @@ def input(default):
                         #print 'float'
                             np = [float(p) for p in params]
                             params = np
-                    param_list[option] = params;
+                    param_list[option] = params
 
             option = arg[1:]
             #print 'new option', option
 
             if option != 'end_argument':
                 if not param_list.has_key(option):
-                    
+
                     #print 'unknwn option'
                     if option == 'h' or option == '-h' or option == 'help' or option == '-help':
                         #print 'help'
                         the_keys = param_list.keys()
                         the_keys.sort()
                         for key in the_keys:
-                            print ('-'+key).ljust(20)+":",
+                            print ('-' + key).ljust(20) + ":",
                             if type(param_list[key]) == int:
                                 print 'int'.ljust(14),
                             if type(param_list[key]) == float:
                                 print 'float'.ljust(14),
                             elif type(param_list[key]) == str:
                                 print 'string'.ljust(14),
-                            elif hasattr(param_list[key],'__iter__'):
+                            elif hasattr(param_list[key], '__iter__'):
                                 print 'list',
                                 if len(param_list[key]) > 0:
                                     if type(param_list[key][0]) == int:
@@ -2307,7 +2351,7 @@ def input(default):
                                         print 'of string',
                                 else:
                                     print 'of string',
-                            print ' (default='+str(param_list[key])+')'
+                            print ' (default=' + str(param_list[key]) + ')'
                         exit(1)
                     else:
                         print 'Warning: wrong parameter name, ignoring arguments following', option
@@ -2319,34 +2363,38 @@ def input(default):
             #print 'input param:', params
 
     return param_list
-                
+
 
 def pair_of(l):
-    return [pair for k in range(1,len(l)) for pair in zip(l, l[k:])]
-    
-def value(x): return x.get_value()
+    return [pair for k in range(1, len(l)) for pair in zip(l, l[k:])]
+
+
+def value(x):
+    return x.get_value()
+
 
 def load_in_decompositions():
     import Decomp
-    
+
     # First add the constraints
     for attr_name in dir(Decomp):
         attr = getattr(Decomp, attr_name)
         if hasattr(attr, "__name__") and attr.__name__.find("decompose") is -1:
             if not hasattr(sys.modules[__name__], attr.__name__):
                 setattr(sys.modules[__name__], attr.__name__, attr)
-                
+
     # Now load up the decompositions, introspection is great huh :)
     for attr_name in dir(sys.modules[__name__]):
-        if hasattr(Decomp, "decompose_"+attr_name):
+        if hasattr(Decomp, "decompose_" + attr_name):
             setattr(getattr(sys.modules[__name__], attr_name),
-                    "decompose", getattr(Decomp, "decompose_"+attr_name) )
+                    "decompose", getattr(Decomp, "decompose_" + attr_name))
+
 
 load_in_decompositions()
 
 
 class Solution(list):
-    def __init__(self,vars):
+    def __init__(self, vars):
         list.__init__(self)
         if issubclass(type(vars), Matrix):
             self.variables = vars.flat
@@ -2361,23 +2409,21 @@ class Solution(list):
 
     def __getitem__(self, i):
         if type(i) is int:
-            return list.__getitem__(self,i)
+            return list.__getitem__(self, i)
         else:
             return self.dico[i]
 
-    def __contains__(self,x):
+    def __contains__(self, x):
         return self.dico.has_key(x)
-    
+
     def __str__(self):
-        if len(self) == 0: return '[]'
+        if len(self) == 0:
+            return '[]'
         elif type(self[0]) is list:
-            return '['+',\n '.join([str(row) for row in self])+']'
-        else: return list.__str__(self)
-    #    output = 
-    #    #output = str(self.variables[0])+' = '+str(self[self.variables[0]])
-    #    #for var in self.variables[1:]:
-    #    #    output += ', '+str(var)+' = '+str(self[var])
-    #    #return output
+            return '[' + ',\n '.join([str(row) for row in self]) + ']'
+        else:
+            return list.__str__(self)
+
 
 class Nogood(object):
     def __init__(self, clause, solver):
@@ -2827,7 +2873,7 @@ class NBJ_STD_Solver(object):
     def setLowerBounds(self, vars, lb):
         var_array = self.ExpArray()
         lob_array = self.IntArray()
-        for (x,l) in zip(vars, lb):
+        for (x, l) in zip(vars, lb):
             var_array.add(x.var_list[self.solver_id - 1])
             lob_array.add(l)
         self.solver.setLowerBounds(var_array, lob_array)

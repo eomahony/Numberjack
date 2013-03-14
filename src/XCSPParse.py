@@ -1,68 +1,72 @@
 from Numberjack import *
-import Mistral, os, sys
 
-vars = {}
 
-def getNJExp(mexp, ident):
-    type = mexp.get_type()
-    if type == 'var':
-        return getNJVar(mexp, ident)
+def getNJExp(variables, mexp, ident):
+    t = mexp.get_type()
+    if t == 'var':
+        return getNJVar(variables, mexp, ident)
     else:
-        return getNJPred(mexp)
-            
-def getNJPred(mexp):
-    type = mexp.get_type()
-    
+        return getNJPred(variables, mexp)
+
+
+def getNJPred(variables, mexp):
+    t = mexp.get_type()
+
     children = []
     for i in range(mexp.get_arity()):
-        children.append(getNJExp(mexp.get_child(i), 0))
-        
-    if type == "eq":
+        children.append(getNJExp(variables, mexp.get_child(i), 0))
+
+    if t == "eq":
         return children[0] == children[1]
-    elif type == "sum":
+    elif t == "sum":
         return Sum(children)
-    elif type == "prec": # I think this it an le
+    elif t == "prec":  # I think this it an le
         return children[0] <= children[1]
-    elif type == "mul":
+    elif t == "mul":
         # Check this for SCIP
         return children[0] * children[1]
-    elif type == "ne":
+    elif t == "ne":
         return children[0] != children[1]
-    elif type == "or":
+    elif t == "or":
         return children[0] | children[1]
-    elif type == "abs":
+    elif t == "abs":
         return Max([children[0], -children[0]])
-    elif type == "max":
+    elif t == "max":
         return Max(children)
-    elif type == "min":
+    elif t == "min":
         return Min(children)
-    elif type == "neg":
+    elif t == "neg":
         return -children[0]
     else:
-        print "Error: Failed to parse expression:", type
+        print "Error: Failed to parse expression:", t
         exit(1)
-        
+
+
 def parseModel(xmlfile):
-    vars = {}
+    import Mistral
+
+    variables = {}
     parser = Mistral.Solver(Model())
     parser.load_xml(xmlfile, 0)
     prse = parser.solver
-
     model = Model()
 
     n = prse.num_expression()
     for i in range(n):
-        expr = getNJExp(prse.get_expression(i), 0)
+        expr = getNJExp(variables, prse.get_expression(i), 0)
         model.add(expr)
-        
+
     return model
-    
-def getNJVar(mexp, ident):
-    vars[mexp.getVariableId()] = Variable(mexp.get_min(),
-                                          mexp.get_max())
-    return vars[mexp.getVariableId()]
+
+
+def getNJVar(variables, mexp, ident):
+    variables[mexp.getVariableId()] = Variable(mexp.get_min(), mexp.get_max())
+    return variables[mexp.getVariableId()]
+
 
 if __name__ == "__main__":
+    import sys
+
     xmlfile = sys.argv[-1]
     if xmlfile[-3:] != 'xml':
         print "argument's probably wrong, mate"

@@ -53,6 +53,46 @@ class SATEncodingTest(unittest.TestCase):
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value(), v2.get_value())
 
+    def testSmallDomainEq(self):
+        v1 = Variable(2)
+        m = Model(v1 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), 1)
+
+    def testSmallDomainLt(self):
+        v1 = Variable(2)
+        m = Model(v1 < 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertLess(v1.get_value(), 1)
+
+    def testSmallDomainLe(self):
+        v1 = Variable(2)
+        m = Model(v1 <= 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertLessEqual(v1.get_value(), 1)
+
+    def testSmallDomainGt(self):
+        v1 = Variable(2)
+        m = Model(v1 > 0)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), 1)
+
+    def testSmallDomainGe(self):
+        v1 = Variable(2)
+        m = Model(v1 >= 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), 1)
+
     # def testConstantDomain(self):
     #     v1 = Variable(1, 4)
     #     v2 = Variable([2])

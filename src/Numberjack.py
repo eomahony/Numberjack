@@ -1576,8 +1576,17 @@ class Neg(Predicate):
     def __init__(self, vars):
         Predicate.__init__(self, vars, "neg")
 
+    def get_min(self, solver=None):
+        return -1 * self.children[0].get_max(solver)
+
+    def get_max(self, solver=None):
+        return -1 * self.children[0].get_min(solver)
+
     def __str__(self):
         return '-' + str(self.children[0])
+
+    def decompose(self):
+        return [self.children[0] * -1]
 
 
 ## Absolute expression
@@ -1599,7 +1608,7 @@ class Abs(Predicate):
         return "Abs(" + str(self.children[0]) + ")"
 
     def decompose(self):
-        return [Max([self.children[0], self.children[0] * -1])]
+        return [Max([self.children[0], Neg([self.children[0]])])]
 
 
 ## Table constraint

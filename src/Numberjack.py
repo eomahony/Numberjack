@@ -2650,8 +2650,6 @@ class NBJ_STD_Solver(object):
                 expr.solver = self
                 return var
             else:
-                if expr.encoding:
-                    print >> sys.stderr, "Warning: you have set the encoding for an expression that is being decomposed. Those encoding settings will not affect the decomposed expressions."
                 return self.decompose_expression(expr)
 
     def decompose_expression(self, expr):
@@ -2659,6 +2657,7 @@ class NBJ_STD_Solver(object):
             expr_list = expr.decompose()
             obj_exp = []
             for exp in expr_list[1:]:
+                exp.encoding = expr.encoding
                 obj = self.load_expr(exp)
                 obj_exp.append(obj)
                 self.solver.add(obj)

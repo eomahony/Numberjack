@@ -151,7 +151,11 @@ Lit DomainEncoding::less_or_equal(const int value, const int index) const {
     }
     if(_lower > value) return Lit_False;
     else if(_upper <= value) return Lit_True;
-    else if(_size == 2) return ~Lit(_direct_encoding);
+    else if(_size == 2) {
+        if(value == _lower) return ~Lit(_direct_encoding);
+        if(value == _upper) return Lit(_direct_encoding);
+        return Lit_False;
+    }
     else if(index >= 0 && index < _size-1) {
         return Lit(_order_encoding+index);
     } else if(!_values) return Lit(_order_encoding+value-_lower);

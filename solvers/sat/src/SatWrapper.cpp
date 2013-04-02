@@ -448,33 +448,7 @@ void additionEncoder(SatWrapper_Expression *X,
     Lits lits;
     int i, j, x, y, z, prev_x, prev_y, prev_z;
 
-    if(encoding->order){ 
-        for(i=0; i<X->getsize(); ++i) {
-            x = X->getval(i);
-            for(j=0; j<Y->getsize(); ++j) {
-                y = Y->getval(j);
-                z = x + y;
-                
-                lits.clear();
-                lits.push_back(~(X->less_or_equal(x, i)));
-                if(i > 0) lits.push_back(X->less_or_equal(prev_x, i-1));
-                lits.push_back(~(Y->less_or_equal(y, j)));
-                if(j > 0) lits.push_back(Y->less_or_equal(prev_y, j-1));
-                lits.push_back(Z->less_or_equal(z));
-                solver->addClause(lits);
-
-                if(i > 0 || j > 0){
-                    lits.pop_back();
-                    lits.push_back(~(Z->less_or_equal(prev_z)));
-                    solver->addClause(lits);
-                }
-
-                prev_y = y;
-                prev_z = z;
-            }
-            prev_x = x;
-        }
-    } else if(encoding->direct) {
+    if(encoding->direct) {
         for(i=0; i<X->getsize(); ++i) {
             x = X->getval(i);
             for(j=0; j<Y->getsize(); ++j) {
@@ -486,6 +460,38 @@ void additionEncoder(SatWrapper_Expression *X,
                 lits.push_back(Z->equal(x+y));
                 solver->addClause(lits);
             }
+        }
+    } else if(encoding->order){ 
+        for(i=0; i<X->getsize(); ++i) {
+            x = X->getval(i);
+            for(j=0; j<Y->getsize(); ++j) {
+                y = Y->getval(j);
+                z = x + y;
+#ifdef _DEBUGWRAP
+                std::cout << "order additionEncoder i:" << i << " x:" << x << " j:" << j << " y:" << y << " z:" << z << std::endl;
+#endif
+                
+                lits.clear();
+                lits.push_back(~(X->less_or_equal(x, i)));
+                // if(i > 0) lits.push_back(X->less_or_equal(prev_x, i-1));
+                lits.push_back(~(Y->less_or_equal(y, j)));
+                // if(j > 0) lits.push_back(Y->less_or_equal(prev_y, j-1));
+                lits.push_back(Z->less_or_equal(z));
+                solver->addClause(lits);
+
+                if(i > 0 || j > 0){
+                    // lits.pop_back();
+                    lits.clear();
+                    if(i > 0) lits.push_back(X->less_or_equal(prev_x, i-1));
+                    if(j > 0) lits.push_back(Y->less_or_equal(prev_y, j-1));
+                    lits.push_back(~(Z->less_or_equal(prev_z)));
+                    solver->addClause(lits);
+                }
+
+                prev_y = y;
+                prev_z = z;
+            }
+            prev_x = x;
         }
     } else {
        std::cerr << "ERROR: additionEncoder not implemented for this encoding, exiting." << std::endl;

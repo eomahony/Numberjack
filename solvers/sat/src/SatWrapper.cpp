@@ -529,6 +529,11 @@ void disequalityEncoder(SatWrapper_Expression *X,
         while( i<X->getsize() && j<Y->getsize() ) {
             x = X->getval(i);
             y = Y->getval(j);
+
+#ifdef _DEBUGWRAP
+                std::cout << "order disequalityEncoder i:" << i << " x:" << x << " j:" << j << " y:" << y << " Xsize:" << X->getsize() << " Ysize:" << Y->getsize() << std::endl;
+#endif
+
             if(x == y) {
                 lits.clear();
                 if(i>0) lits.push_back(X->less_or_equal(prev_x, i-1));

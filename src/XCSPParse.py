@@ -36,7 +36,7 @@ def getNJPred(variables, mexp):
     elif t == "min":
         return Min(children)
     elif t == "neg":
-        return -children[0]
+        return Neg(children[0])
     else:
         print "Error: Failed to parse expression:", t
         exit(1)

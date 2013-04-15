@@ -30,7 +30,7 @@ def getNJPred(variables, mexp):
     elif t == "or":
         return children[0] | children[1]
     elif t == "abs":
-        return Max([children[0], -children[0]])
+        return Abs(children[0])
     elif t == "max":
         return Max(children)
     elif t == "min":

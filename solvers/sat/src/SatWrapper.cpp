@@ -404,6 +404,14 @@ bool not_equal(int x, int y){
     return x != y;
 }
 
+bool equal_abs_first(int x, int y){
+    return abs(x) == y;
+}
+
+bool equal_abs_second(int x, int y){
+    return x == abs(y);
+}
+
 
 // Adds support clauses for comparison_func(X + K, Y)
 void supportClauseEncoder(SatWrapper_Expression *X,
@@ -650,6 +658,55 @@ void disequalityEncoder(SatWrapper_Expression *X,
         supportClauseEncoder(Y, X, 0, solver, encoding, &not_equal);
     } else {
         std::cerr << "ERROR: disequalityEncoder not implemented for this encoding, exiting." << std::endl;
+        exit(1);
+    }
+}
+
+// (X == Abs(y))
+void absoluteEncoder(SatWrapper_Expression *X,
+                     SatWrapper_Expression *Y,
+                     SatWrapperSolver *solver,
+                     EncodingConfiguration *encoding) {
+    Lits lits;
+    int i=0, j=0, x, y, prev_x, prev_y;
+
+    if(encoding->direct && encoding->conflict) {
+        for(i=0; i<X->getsize(); i++){
+            x = X->getval(i);
+            lits.clear();
+            lits.push_back(~(X->equal(x, i)));
+            for(j=0; j<Y->getsize(); j++){
+                y = Y->getval(j);
+                if(x != abs(y)){
+                    lits.push_back(~(Y->equal(y, j)));
+                    solver->addClause(lits);
+                    lits.pop_back();
+                }
+            }
+        }
+    } else if(encoding->order) {
+        for(i=0; i<X->getsize(); i++){
+            x = X->getval(i);
+            for(j=0; j<Y->getsize(); j++){
+                y = Y->getval(j);
+                if(x != abs(y)) {
+                    lits.clear();
+                    if(i>0) lits.push_back(X->less_or_equal(prev_x, i-1));
+                    if(j>0) lits.push_back(Y->less_or_equal(prev_y, j-1));
+                    lits.push_back(~(X->less_or_equal(x,i)));
+                    lits.push_back(~(Y->less_or_equal(y,j)));
+                    solver->addClause(lits);
+                }
+                prev_y = y;
+            }
+            prev_x = x;
+        }
+    } else if(encoding->direct && encoding->support) {
+        // Encode support clauses (x_1 \/ x_2 \/ !y_3)
+        supportClauseEncoder(X, Y, 0, solver, encoding, &equal_abs_second);
+        supportClauseEncoder(Y, X, 0, solver, encoding, &equal_abs_first);
+    } else {
+        std::cerr << "ERROR: absoluteEncoder not implemented for this encoding, exiting." << std::endl;
         exit(1);
     }
 }
@@ -1151,6 +1208,60 @@ SatWrapper_Expression* SatWrapper_mul::add(SatWrapperSolver *solver, bool top_le
 }
 
 SatWrapper_mul::~SatWrapper_mul() {}
+
+SatWrapper_Abs::SatWrapper_Abs(SatWrapper_Expression *arg1)
+    : SatWrapper_Expression() {
+
+    // Need to extract just the set of absolute values from arg1's domain.
+    std::set<int> values_set;
+    for(int i=0; i<arg1->getsize(); i++){
+        values_set.insert(abs(arg1->getval(i)));
+    }
+    SatWrapperIntArray values;
+    for(std::set<int>::iterator it=values_set.begin(); it!=values_set.end(); it++){
+        values.add(*it);
+    }
+
+    _var = arg1;
+    domain = new DomainEncoding(this, values);
+}
+
+SatWrapper_Expression* SatWrapper_Abs::add(SatWrapperSolver *solver, bool top_level) {
+    if(!has_been_added()) {
+        _solver = solver;
+        _ident = _solver->declare(this, false);
+        
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
+
+#ifdef _DEBUGWRAP
+        std::cout << "creating abs expression x" << _ident << " [" << getmin() << ".." << getmax() << "]" << std::endl;
+#endif
+
+        if(top_level) {
+
+            std::cerr << "Abs predicate at the top level not supported" << std::endl;
+            exit(1);
+
+        } else {
+            domain->encode(solver);
+            _var = _var->add(solver, false);
+
+#ifdef _DEBUGWRAP
+            std::cout << "encode abs predicate Abs(x" << _ident << ") == x"
+                      << _var->_ident << std::endl;
+#endif
+
+            absoluteEncoder(this, _var, solver, encoding);
+        }
+
+        _solver->validate();
+    }
+
+    return this;
+}
+
+SatWrapper_Abs::~SatWrapper_Abs() {}
 
 void SatWrapper_AllDiff::addVar(SatWrapper_Expression* v) {
     _vars.add(v);

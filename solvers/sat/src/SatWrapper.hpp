@@ -551,6 +551,15 @@ public:
     virtual SatWrapper_Expression* add(SatWrapperSolver *solver, bool top_level);
 };
 
+class SatWrapper_Abs : public SatWrapper_Expression {
+protected:
+    SatWrapper_Expression *_var;
+public:
+    SatWrapper_Abs(SatWrapper_Expression* arg1);
+    virtual ~SatWrapper_Abs();
+    virtual SatWrapper_Expression* add(SatWrapperSolver *solver, bool top_level);
+};
+
 class SatWrapper_or: public SatWrapper_binop {
 public:
     SatWrapper_or(SatWrapper_Expression *var1, SatWrapper_Expression *var2);

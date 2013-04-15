@@ -192,6 +192,26 @@ class SATEncodingTest(unittest.TestCase):
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value() + v2.get_value(), v3.get_value())
 
+    def testAddGapsSat(self):
+        v1 = Variable([0, 4, 8])
+        v2 = Variable()
+        v3 = Variable(10)
+        m = Model(v1 + v2 == v3, v3 == 5)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value() + v2.get_value(), v3.get_value())
+        self.assertEqual(v3.get_value(), 5)
+
+    def testAddGapsUnsat(self):
+        v1 = Variable([0, 4, 8])
+        v2 = Variable()
+        v3 = Variable(10)
+        m = Model(v1 + v2 == v3, v3 == 3)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_unsat())
+
     def testSubEq(self):
         v1 = Variable(5)
         v2 = Variable(5)
@@ -242,25 +262,44 @@ class SATEncodingTest(unittest.TestCase):
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value() * 3, v2.get_value())
 
-    # FIXME Encoding multiplication between expressions is not supported yet.
-    # def testMulVars(self):
-    #     v1 = Variable(5)
-    #     v2 = Variable(5)
-    #     m = Model(v1 * v2 == 3)
-    #     s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
-    #     s.solve()
-    #     self.assertTrue(s.is_sat())
-    #     self.assertEqual(v1.get_value() * v2.get_value(), 3)
+    def testMulVars(self):
+        v1 = Variable(5)
+        v2 = Variable(5)
+        m = Model(v1 * v2 == 3)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value() * v2.get_value(), 3)
 
-    # def testMulVars(self):
-    #     v1 = Variable(5)
-    #     v2 = Variable(5)
-    #     v3 = Variable(5)
-    #     m = Model(v1 * v2 == v3)
-    #     s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
-    #     s.solve()
-    #     self.assertTrue(s.is_sat())
-    #     self.assertEqual(v1.get_value() * v2.get_value(), v3.get_value())
+    def testMulPredicate(self):
+        v1 = Variable(5)
+        v2 = Variable(5)
+        v3 = Variable(5)
+        m = Model(v1 * v2 == v3)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value() * v2.get_value(), v3.get_value())
+
+    def testMulGapsSat(self):
+        v1 = Variable([0, 4, 8])
+        v2 = Variable()
+        v3 = Variable(10)
+        m = Model(v1 * v2 == v3, v3 == 4)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value() * v2.get_value(), v3.get_value())
+        self.assertEqual(v3.get_value(), 4)
+
+    def testMulGapsUnsat(self):
+        v1 = Variable([0, 4, 8])
+        v2 = Variable()
+        v3 = Variable(10)
+        m = Model(v1 * v2 == v3, v3 == 3)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_unsat())
 
     # def testDivConstant(self):
     #     v1 = Variable(5)

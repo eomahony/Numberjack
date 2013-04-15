@@ -467,11 +467,15 @@ void additionEncoder(SatWrapper_Expression *X,
             }
         }
     } else if(encoding->order){ 
+        // The set of values in Z that were used for adding conflicts on Z later.
+        std::set<int> used_zvalues;
+
         for(i=0; i<X->getsize(); ++i) {
             x = X->getval(i);
             for(j=0; j<Y->getsize(); ++j) {
                 y = Y->getval(j);
                 z = x + y;
+                used_zvalues.insert(z);
 #ifdef _DEBUGWRAP
                 std::cout << "order additionEncoder i:" << i << " x:" << x << " j:" << j << " y:" << y << " z:" << z << std::endl;
 #endif
@@ -497,6 +501,18 @@ void additionEncoder(SatWrapper_Expression *X,
                 prev_z = z;
             }
             prev_x = x;
+        }
+        // Need to add clauses saying that Z cannot be any of the values which
+        // do not occurr as a result of X + Y
+        for(i=0; i<Z->getsize(); i++){
+            z = Z->getval(i);
+            if(used_zvalues.find(z) == used_zvalues.end()){
+                lits.clear();
+                if(i > 0) lits.push_back(Z->less_or_equal(prev_z, i - 1));
+                lits.push_back(~(Z->less_or_equal(z, i)));
+                solver->addClause(lits);
+            }
+            prev_z = z;
         }
     } else {
        std::cerr << "ERROR: additionEncoder not implemented for this encoding, exiting." << std::endl;

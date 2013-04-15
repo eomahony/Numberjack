@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <set>
 #include "SatWrapper.hpp"
 
 
@@ -503,6 +504,82 @@ void additionEncoder(SatWrapper_Expression *X,
     }
 }
 
+
+
+// (X * Y) == Z
+// This is almost the exact same as additionEncoder; TODO parameterise the operator.
+void multiplicationEncoder(SatWrapper_Expression *X,
+                     SatWrapper_Expression *Y,
+                     SatWrapper_Expression *Z,
+                     SatWrapperSolver *solver,
+                     EncodingConfiguration *encoding) {
+    Lits lits;
+    int i, j, x, y, z, prev_x, prev_y, prev_z;
+
+    if(encoding->direct) {
+        for(i=0; i<X->getsize(); ++i) {
+            x = X->getval(i);
+            for(j=0; j<Y->getsize(); ++j) {
+                y = Y->getval(j);
+                
+                lits.clear();
+                lits.push_back(~(X->equal(x, i)));
+                lits.push_back(~(Y->equal(y, j)));
+                lits.push_back(Z->equal(x * y));
+                solver->addClause(lits);
+            }
+        }
+    } else if(encoding->order){
+        // The set of values in Z that were used for adding conflicts on Z later.
+        std::set<int> used_zvalues;
+
+        for(i=0; i<X->getsize(); ++i) {
+            x = X->getval(i);
+            for(j=0; j<Y->getsize(); ++j) {
+                y = Y->getval(j);
+                z = x * y;
+                used_zvalues.insert(z);
+#ifdef _DEBUGWRAP
+                std::cout << "order multiplicationEncoder i:" << i << " x:" << x << " j:" << j << " y:" << y << " z:" << z << std::endl;
+#endif
+                
+                lits.clear();
+                lits.push_back(~(X->less_or_equal(x, i)));
+                lits.push_back(~(Y->less_or_equal(y, j)));
+                lits.push_back(Z->less_or_equal(z));
+                solver->addClause(lits);
+
+                if(i > 0 || j > 0){
+                    lits.clear();
+                    if(i > 0) lits.push_back(X->less_or_equal(prev_x, i-1));
+                    if(j > 0) lits.push_back(Y->less_or_equal(prev_y, j-1));
+                    lits.push_back(~(Z->less_or_equal(prev_z)));
+                    solver->addClause(lits);
+                }
+
+                prev_y = y;
+                prev_z = z;
+            }
+            prev_x = x;
+        }
+        // Need to add clauses saying that Z cannot be any of the values which
+        // do not occurr as a result of X * Y
+        for(i=0; i<Z->getsize(); i++){
+            z = Z->getval(i);
+            if(used_zvalues.find(z) == used_zvalues.end()){
+                lits.clear();
+                if(i > 0) lits.push_back(Z->less_or_equal(prev_z, i - 1));
+                lits.push_back(~(Z->less_or_equal(z, i)));
+                solver->addClause(lits);
+            }
+            prev_z = z;
+        }
+    } else {
+       std::cerr << "ERROR: multiplicationEncoder not implemented for this encoding, exiting." << std::endl;
+       exit(1);
+    }
+}
+
 // (X != Y)
 void disequalityEncoder(SatWrapper_Expression *X,
                         SatWrapper_Expression *Y,
@@ -998,12 +1075,30 @@ SatWrapper_mul::SatWrapper_mul(SatWrapper_Expression *arg1, const int arg2)
 
 }
 
+void get_mul_bounds(int lb1, int ub1, int lb2, int ub2, int *lb, int *ub){
+    std::vector<int> bounds;
+    bounds.push_back(lb1 * lb2);
+    bounds.push_back(lb1 * ub2);
+    bounds.push_back(ub1 * lb2);
+    bounds.push_back(ub1 * ub2);
+    *lb = *(std::min_element(bounds.begin(), bounds.end()));
+    *ub = *(std::max_element(bounds.begin(), bounds.end()));
+}
+
+void get_mul_bounds(SatWrapper_Expression *arg1, SatWrapper_Expression *arg2, int *lb, int *ub){
+    get_mul_bounds(arg1->getmin(), arg1->getmax(), arg2->getmin(), arg2->getmax(), lb, ub);
+}
+
+
 SatWrapper_mul::SatWrapper_mul(SatWrapper_Expression *arg1, SatWrapper_Expression *arg2)
     : SatWrapper_binop(arg1, arg2) {
 
-    std::cerr << "c NOT SUPPORTED (multiplication) - exiting" << std::endl;
-    exit(1);
-
+    // We create a range between the lb and ub of the possible multiplications
+    // between arg1 and arg2. Could possibly change this to only list the
+    // possible values later.
+    int lb, ub;
+    get_mul_bounds(arg1, arg2, &lb, &ub);  
+    domain = new DomainEncoding(this, lb, ub);
 }
 
 SatWrapper_Expression* SatWrapper_mul::add(SatWrapperSolver *solver, bool top_level) {
@@ -1024,14 +1119,12 @@ SatWrapper_Expression* SatWrapper_mul::add(SatWrapperSolver *solver, bool top_le
             exit(1);
 
         } else {
-
             _vars[0] = _vars[0]->add(_solver, false);
 
             if(_vars[1]) {
-
-                std::cerr << "c NOT SUPPORTED (multiplication) - exiting" << std::endl;
-                exit(1);
-
+                _vars[1] = _vars[1]->add(_solver, false);
+                domain->encode(_solver);
+                multiplicationEncoder(_vars[0], _vars[1], this, solver, encoding);
             }
         }
 

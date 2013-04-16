@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <set>
+#include <algorithm>
 #include "SatWrapper.hpp"
 
 
@@ -9,9 +10,15 @@ Lit Lit_True;
 Lit Lit_False;
 
 
-void addAMOClauses(Lits literals, SatWrapperSolver *solver, EncodingConfiguration *encoding){
+void addAMOClauses(Lits literals, Lits auxiliary, SatWrapperSolver *solver, EncodingConfiguration::AMOEncoding amo_encoding){
+    /*
+        'literals' is the vector of literals for which we are constraining AMO to be true.
+        'auxiliary' is a vector of aux variables used for encodings such as the ladder encoding.
+            If the ladder encoding is used then 'auxiliary' should contain literals.size()-1
+            literals, or else 0 in which case auxiliary variables will be created.
+    */
     Lits lits;
-    if(encoding->amo_encoding == EncodingConfiguration::Pairwise){
+    if(amo_encoding == EncodingConfiguration::Pairwise){
         for(unsigned int i=0; i<literals.size(); i++){
             for(unsigned int j=i+1; j<literals.size(); j++){
                 lits.clear();
@@ -20,10 +27,41 @@ void addAMOClauses(Lits literals, SatWrapperSolver *solver, EncodingConfiguratio
                 solver->addClause(lits);
             }
         }
+    } else if(amo_encoding == EncodingConfiguration::Ladder){
+        if(auxiliary.size() == 0){
+            for(unsigned int i=0; i<literals.size()-1; i++){
+                auxiliary.push_back(Lit(solver->create_atom(NULL,0)));
+            }
+        } else if(auxiliary.size() != literals.size() - 1){
+            std::cerr << "ERROR: mismatch in size of auxiliary literals to liters when using ladder encoding." << std::endl;
+            exit(1);
+        }
+        for(unsigned int i=0; i<literals.size(); ++i) {
+            // channel x=i -> x>i-1
+            if(i) {
+                lits.clear();
+                lits.push_back(~(literals[i]));
+                lits.push_back(~(auxiliary[i-1]));
+                solver->addClause(lits);
+            }
+
+            // channel x=i -> x<=i
+            if(i<literals.size()-1) {
+                lits.clear();
+                lits.push_back(~literals[i]);
+                lits.push_back(auxiliary[i]);
+                solver->addClause(lits);
+            }
+        }
     } else {
-        std::cerr << "ERROR unknown AMO specified: " << encoding->amo_encoding << std::endl;
+        std::cerr << "ERROR unknown AMO specified: " << amo_encoding << std::endl;
         exit(1);
     }
+}
+
+void addAMOClauses(Lits literals, SatWrapperSolver *solver, EncodingConfiguration::AMOEncoding amo_encoding){
+    Lits dummy;
+    addAMOClauses(literals, dummy, solver, amo_encoding);
 }
 
 /**************************************************************
@@ -214,7 +252,7 @@ void DomainEncoding::encode(SatWrapperSolver *solver) {
             // If the order encoding is also used, then the chaining between
             // the two representations will enforce AMO.
             if(!owner->encoding->order){
-                addAMOClauses(lits, solver, owner->encoding);
+                addAMOClauses(lits, solver, owner->encoding->amo_encoding);
             }
         }
 
@@ -233,23 +271,10 @@ void DomainEncoding::encode(SatWrapperSolver *solver) {
 
         if(owner->encoding->direct && owner->encoding->order){
             // Chain the direct encoding representation with the order encoding
-            for(int i=0; i<_size; ++i) {
-                // channel x=i -> x>i-1
-                if(i) {
-                    lits.clear();
-                    lits.push_back(~(equal(getval(i),i)));
-                    lits.push_back(~(less_or_equal(getval(i-1),i-1)));
-                    solver->addClause(lits);
-                }
-
-                // channel x=i -> x<=i
-                if(i<_size-1) {
-                    lits.clear();
-                    lits.push_back(~equal(getval(i),i));
-                    lits.push_back(less_or_equal(getval(i),i));
-                    solver->addClause(lits);
-                }
-            }
+            Lits direct_lits, order_lits;
+            for(int i=0; i<_size; i++) direct_lits.push_back(Lit(_direct_encoding + i));
+            for(int i=0; i<_size - 1; i++) order_lits.push_back(Lit(_order_encoding + i));
+            addAMOClauses(direct_lits, order_lits, solver, EncodingConfiguration::Ladder);
         }
 
         solver->validate();
@@ -2729,7 +2754,9 @@ void SatWrapperSolver::displayClause(std::vector<Lit>& cl) {
 void SatWrapperSolver::displayLiteral(Lit p) {
     int x = var(p);
     if(x>=0) {
-        _atom_to_domain[x]->print_lit(p,_atom_to_type[x]);
+        if(_atom_to_domain[x] != NULL)
+            _atom_to_domain[x]->print_lit(p,_atom_to_type[x]);
+        else std::cout << "(aux)";
     } else std::cout << "false" ;
 }
 

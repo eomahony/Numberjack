@@ -78,8 +78,8 @@ public:
     // Constraint encoding
     bool conflict, support;
 
-    // At Most One encoding. Only OrderChained is supported right now.
-    enum AMOEncoding {Pairwise, OrderChained};
+    // At Most One encoding. Only Ladder is supported right now.
+    enum AMOEncoding {Pairwise, Ladder};
     AMOEncoding amo_encoding;
 
     EncodingConfiguration(bool _direct, bool _order, bool _conflict, bool _support, AMOEncoding _amo_encoding) :

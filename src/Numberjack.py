@@ -3063,7 +3063,7 @@ def enum(*sequential):
 
 # This enum ordering must be the same as that specified in the
 # EncodingConfiguration::AMOEncoding enum in SatWrapper.hpp
-AMOEncoding = enum('Pairwise',)
+AMOEncoding = enum('Pairwise', 'Ladder')
 
 
 ## Generic Solver Class
@@ -3088,14 +3088,11 @@ class EncodingConfiguration(object):
         if not self.conflict and not self.support:
             raise InvalidEncodingException("Constraints must be encoded using at least one encoding: conflict|support.")
 
-        if self.amo_encoding not in [AMOEncoding.Pairwise, ]:
+        if self.amo_encoding not in [AMOEncoding.Pairwise, AMOEncoding.Ladder]:
             raise InvalidEncodingException("Invalid at-most-one encoding specified: %s" % (str(self.amo_encoding)))
 
         # if self.amo_encoding == AMOEncoding.Pairwise and not self.direct:
         #     raise InvalidEncodingException("Domains must be encoded using the direct encoding if using the pairwise AMO encoding.")
-
-        # if self.amo_encoding == AMOEncoding.OrderChained and (not self.direct or not self.order):
-        #     raise InvalidEncodingException("Both the direct and order encodings must be enabled if using the OrderChained AMO encoding.")
 
     # Make EncodingConfiguration hashable so that it can be used as a dictionary
     # key for the cache of encoding configs during translation to SAT.

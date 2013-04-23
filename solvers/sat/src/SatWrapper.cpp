@@ -41,7 +41,7 @@ void addAMOClauses(Lits literals, Lits auxiliary, SatWrapperSolver *solver, Enco
                 }
             }
         } else if(auxiliary.size() != literals.size() - 1){
-            std::cerr << "ERROR: mismatch in size of auxiliary literals to liters when using ladder encoding." << std::endl;
+            std::cerr << "ERROR: mismatch in size of auxiliary literals to literals when using ladder encoding." << std::endl;
             exit(1);
         }
         for(unsigned int i=0; i<literals.size(); ++i) {

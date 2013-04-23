@@ -77,48 +77,51 @@ $(SATDIR)/$(OBJDIR):
 	@mkdir -p $(SATDIR)/$(OBJDIR)
 
 $(CORE)/%.o: $(CORE)/%.C 
-	@echo Compiling: "$@ ( $< )"
-	$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
+	@echo "-> compiling: $@ ( $< )"
+	@$(CXX) $(CFLAGS) -fPIC -c -o $@ $<
 
 $(SATDIR)/obj/%.o: $(SATDIR)/src/%.cpp
-	@echo Compiling: "$@ ( $< )"
-	gcc $(CFLAGS) -fPIC -c -o $@ $<
+	@echo "-> compiling: $@ ( $< )"
+	@gcc $(CFLAGS) -fPIC -c -o $@ $<
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
 
 clean_swig:
-	-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
+	@echo "-> cleaning swig interface"
+	@-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
 
 clean_all: clean clean_swig
-	cd $(CORE)/; make clean
+	@cd $(CORE)/; make clean
 
 
 clean:
-	-rm -rf $(OBJDIR)/* $(PYTHON)/*o $(PYTHON)/*~ $(PYTHON)/build *~ $(SRCDIR)/*~
+	@echo "-> cleaning"
+	@-rm -rf $(OBJDIR)/* $(PYTHON)/*o $(PYTHON)/*~ $(PYTHON)/build *~ $(SRCDIR)/*~
 
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
-		@echo "-> compiling $@"
-		$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+	@echo "-> compiling $@"
+	@$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
-		@echo "-> compiling $@"
-		$(CXX) $(CFLAGS) -I$(SRCDIR) -I$(PYLIB) -fPIC -c $< -o $@
+	@echo "-> compiling $@"
+	@$(CXX) $(CFLAGS) -I$(SRCDIR) -I$(PYLIB) -fPIC -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	
-	$(SWIG) -c++ -python $<
-	python $(MAINDIR)/tools/finalize.py $(<:.i=.py) SatWrapper
+	@$(SWIG) -c++ -python  $<
+	@python $(MAINDIR)/tools/finalize.py $(<:.i=.py) SatWrapper
 
 
 $(PYTHON)/%.i: $(SRCDIR)/%.hpp
-	python $(MAINDIR)/tools/mk_subinterface.py sat SatWrapper $<
+	@echo "-> creating interface $@"
+	@python $(MAINDIR)/tools/mk_subinterface.py sat SatWrapper $<
 
 
 $(PYTHON)/_%.so: $(AUXOBJFILES) $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(CORE)/Solver.o $(SATDIR)/obj/SatWrapper.o
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(AUXOBJFILES) $(MAINOBJFILES) $(CORE)/Solver.o $(SATDIR)/obj/SatWrapper.o python/MiniSat_wrap.o -o $@
+	@$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(AUXOBJFILES) $(MAINOBJFILES) $(CORE)/Solver.o $(SATDIR)/obj/SatWrapper.o python/MiniSat_wrap.o -o $@
 
 
 

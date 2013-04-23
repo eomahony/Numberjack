@@ -93,12 +93,12 @@ public:
 #endif
     }
 
-    friend std::ostream& operator<< (std::ostream& out, const EncodingConfiguration& e) {
-        out << "EncodingConfiguration<direct:" << e.direct \
-            << " order:" << e.order << " conflict:" << e.conflict \
-            << " support:" << e.support << " amo_encoding:" << e.amo_encoding \
-            << " alldiff_encoding:" << e.alldiff_encoding << ">";
-        return out;
+    virtual std::ostream& display(std::ostream& o) {
+        o << "EncodingConfiguration<direct:" << direct \
+          << " order:" << order << " conflict:" << conflict \
+          << " support:" << support << " amo_encoding:" << amo_encoding \
+          << " alldiff_encoding:" << alldiff_encoding << ">";
+        return o;
     }
 };
 

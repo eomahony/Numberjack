@@ -468,7 +468,7 @@ void supportClauseEncoder(SatWrapper_Expression *X,
                           EncodingConfiguration *encoding,
                           bool(*comparison_func)(int,int)){
     Lits lits;
-    unsigned int i=0, j=0;
+    int i=0, j=0;
     int x, y;
     bool subsumed;
 
@@ -1116,7 +1116,7 @@ SatWrapper_Expression* SatWrapper_Expression::add(SatWrapperSolver *solver, bool
 
 #ifdef _DEBUGWRAP
         std::cout << "+ add x" << _ident << " [" << getmin() << ".." << getmax() << "]" << std::endl;
-        if(encoding) std::cout << "Expression encoding:" << (*encoding) << std::endl;
+        if(encoding) {std::cout << "Expression encoding:"; encoding->display(std::cout); std::cout << std::endl;}
 #endif
 
         domain->encode(_solver);
@@ -2519,7 +2519,7 @@ void SatWrapperSolver::add(SatWrapper_Expression* arg) {
 
 #ifdef _DEBUGWRAP
     std::cout << "add an expression to the solver" << std::endl;
-    std::cout << "Solver is using encoding: " << *encoding << std::endl;
+    std::cout << "Solver is using encoding: "; encoding->display(std::cout); std::cout << std::endl;
 #endif
 
     if(arg != NULL) arg->add(this, true);

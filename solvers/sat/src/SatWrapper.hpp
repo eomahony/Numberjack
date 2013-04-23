@@ -82,15 +82,22 @@ public:
     enum AMOEncoding {Pairwise, Ladder};
     AMOEncoding amo_encoding;
 
-    EncodingConfiguration(bool _direct, bool _order, bool _conflict, bool _support, AMOEncoding _amo_encoding) :
-        direct(_direct), order(_order), conflict(_conflict), support(_support), amo_encoding(_amo_encoding) {
+    // All Different encoding.
+    enum AllDiffEncoding {PairwiseDecomp, LadderAMO};
+    AllDiffEncoding alldiff_encoding;
+
+    EncodingConfiguration(bool _direct, bool _order, bool _conflict, bool _support, AMOEncoding _amo_encoding, AllDiffEncoding _alldiff_encoding) :
+        direct(_direct), order(_order), conflict(_conflict), support(_support), amo_encoding(_amo_encoding), alldiff_encoding(_alldiff_encoding) {
 #ifdef _DEBUGWRAP
             std::cout << "New " << (*this) << std::endl;
 #endif
     }
 
     friend std::ostream& operator<< (std::ostream& out, const EncodingConfiguration& e) {
-        out << "EncodingConfiguration<direct:" << e.direct << " order:" << e.order << " conflict:" << e.conflict << " support:" << e.support << " amo_encoding:" << e.amo_encoding << ">";
+        out << "EncodingConfiguration<direct:" << e.direct \
+            << " order:" << e.order << " conflict:" << e.conflict \
+            << " support:" << e.support << " amo_encoding:" << e.amo_encoding \
+            << " alldiff_encoding:" << e.alldiff_encoding << ">";
         return out;
     }
 };

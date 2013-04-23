@@ -2568,7 +2568,7 @@ class NBJ_STD_Solver(object):
                 self.enc_config_cache[enc_config] = self.EncodingConfiguration(
                     enc_config.direct, enc_config.order,
                     enc_config.conflict, enc_config.support,
-                    enc_config.amo_encoding)
+                    enc_config.amo_encoding, enc_config.alldiff_encoding)
             except Exception as e:
                 raise e
         return self.enc_config_cache[enc_config]
@@ -3061,15 +3061,16 @@ def enum(*sequential):
 #  @{
 #
 
-# This enum ordering must be the same as that specified in the
-# EncodingConfiguration::AMOEncoding enum in SatWrapper.hpp
+# This enum ordering must be the same as that specified in the enums
+# EncodingConfiguration::AMOEncoding and AllDiffEncoding in SatWrapper.hpp
 AMOEncoding = enum('Pairwise', 'Ladder')
+AllDiffEncoding = enum('PairwiseDecomp', 'LadderAMO')
 
 
 ## Generic Solver Class
 class EncodingConfiguration(object):
 
-    def __init__(self, direct=True, order=True, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise):
+    def __init__(self, direct=True, order=True, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise, alldiff_encoding=AllDiffEncoding.PairwiseDecomp):
         # Domain encodings
         self.direct = direct
         self.order = order
@@ -3080,6 +3081,9 @@ class EncodingConfiguration(object):
 
         # At Most One encoding.
         self.amo_encoding = amo_encoding
+
+        # All Different encoding.
+        self.alldiff_encoding = alldiff_encoding
 
         # Check validity of the encoding config
         if not self.direct and not self.order:
@@ -3093,6 +3097,9 @@ class EncodingConfiguration(object):
 
         # if self.amo_encoding == AMOEncoding.Pairwise and not self.direct:
         #     raise InvalidEncodingException("Domains must be encoded using the direct encoding if using the pairwise AMO encoding.")
+
+        # if self.alldiff_encoding == AllDiffEncoding.PairwiseDecomp and not self.direct:
+        #     raise InvalidEncodingException("The direct encoding must be enabled if the pairwise decomposition all different is used.")
 
     # Make EncodingConfiguration hashable so that it can be used as a dictionary
     # key for the cache of encoding configs during translation to SAT.

@@ -18,6 +18,20 @@ void addAMOClauses(Lits literals, Lits auxiliary, SatWrapperSolver *solver, Enco
             literals, or else 0 in which case auxiliary variables will be created.
     */
     Lits lits;
+
+#ifdef _DEBUGWRAP
+    std::cout << "addAMOClauses literals.size():" << literals.size() << " aux.size():" << auxiliary.size() << " " << amo_encoding << std::endl;
+#endif
+
+    if(literals.size() == 1) return;
+    else if(literals.size() == 2){
+        lits.clear();
+        lits.push_back(~literals[0]);
+        lits.push_back(~literals[1]);
+        solver->addClause(lits);
+        return;
+    }
+
     if(amo_encoding == EncodingConfiguration::Pairwise){
         for(unsigned int i=0; i<literals.size(); i++){
             for(unsigned int j=i+1; j<literals.size(); j++){
@@ -30,7 +44,7 @@ void addAMOClauses(Lits literals, Lits auxiliary, SatWrapperSolver *solver, Enco
     } else if(amo_encoding == EncodingConfiguration::Ladder){
         if(auxiliary.size() == 0){
             for(unsigned int i=0; i<literals.size()-1; i++){
-                Lit l = Lit(solver->create_atom(NULL,0));
+                Lit l = Lit(solver->create_atom(NULL, ORDER));
                 auxiliary.push_back(l);
                 if(i > 0){
                     // chain the bounds x<=i -> x<=i+1
@@ -1312,8 +1326,10 @@ SatWrapper_AllDiff::SatWrapper_AllDiff( SatWrapperExpArray& vars )
 }
 
 SatWrapper_AllDiff::~SatWrapper_AllDiff() {
-    for(unsigned int i=0; i<_clique.size(); ++i)
-        delete _clique[i];
+    if(encoding->alldiff_encoding == EncodingConfiguration::PairwiseDecomp){
+        for(unsigned int i=0; i<_clique.size(); ++i)
+            delete _clique[i];
+    } else if(encoding->alldiff_encoding == EncodingConfiguration::LadderAMO){}
 }
 
 SatWrapper_Expression* SatWrapper_AllDiff::add(SatWrapperSolver *solver, bool top_level) {
@@ -1329,18 +1345,58 @@ SatWrapper_Expression* SatWrapper_AllDiff::add(SatWrapperSolver *solver, bool to
 #endif
 
         if(top_level) {
+            int i, j, n=_vars.size(), v;
+            SatWrapper_Expression *exp;
 
-            int i, j, n=_vars.size();
             for(i=0; i<n; ++i)
                 _vars.set_item(i, (_vars.get_item(i))->add(_solver,false));
 
-            SatWrapper_Expression *exp;
-            for(i=1; i<n; ++i)
-                for(j=0; j<i; ++j) {
-                    exp = new SatWrapper_ne(_vars.get_item(j), _vars.get_item(i));
-                    _solver->add(exp);
-                    _clique.push_back(exp);
+            if(encoding->alldiff_encoding == EncodingConfiguration::PairwiseDecomp){
+                for(i=1; i<n; ++i)
+                    for(j=0; j<i; ++j) {
+                        exp = new SatWrapper_ne(_vars.get_item(j), _vars.get_item(i));
+                        _solver->add(exp);
+                        _clique.push_back(exp);
+                    }
+
+            } else if(encoding->alldiff_encoding == EncodingConfiguration::LadderAMO){
+                if(!encoding->direct){
+                    std::cerr << "Error: The ladder at-most-one encoding of Alldiff requires the direct encoding to be enabled." << std::endl;
+                    exit(1);
                 }
+
+                /*  Encode an at most one on the literals representing each
+                    value shared across the domains of _vars. First gather
+                    all unique values into a set, then post an AMO for each.
+                */
+                std::set<int> values_set;
+                Lits lits;
+
+                for(i=0; i<n; i++){
+                    exp = _vars.get_item(i);
+                    for(j=0; j<exp->getsize(); j++){
+                        values_set.insert(exp->getval(j));
+                    }
+                }
+                
+                for(std::set<int>::iterator it=values_set.begin(); it!=values_set.end(); it++){
+                    v = *it;
+                    lits.clear();
+                    for(i=0; i<n; i++){
+                        exp = _vars.get_item(i);
+                        lits.push_back(exp->equal(v));
+                    }
+                    std::cout << "Adding AMO for value " << v << " accross #variables:" << n << std::endl;
+                    addAMOClauses(lits, solver, EncodingConfiguration::Ladder);
+                }
+
+                _solver->validate();
+
+            } else {
+                std::cerr << "Error: AllDiff not implemented for this encoding. Please use either PairwiseDecomp or LadderAMO." << std::endl;
+                exit(1);
+            }
+
 
         } else {
 

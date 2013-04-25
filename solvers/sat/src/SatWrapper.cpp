@@ -1386,7 +1386,6 @@ SatWrapper_Expression* SatWrapper_AllDiff::add(SatWrapperSolver *solver, bool to
                         exp = _vars.get_item(i);
                         lits.push_back(exp->equal(v));
                     }
-                    std::cout << "Adding AMO for value " << v << " accross #variables:" << n << std::endl;
                     addAMOClauses(lits, solver, EncodingConfiguration::Ladder);
                 }
 

@@ -86,19 +86,19 @@ public:
     enum AllDiffEncoding {PairwiseDecomp, LadderAMO};
     AllDiffEncoding alldiff_encoding;
 
-    EncodingConfiguration(bool _direct, bool _order, bool _conflict, bool _support, AMOEncoding _amo_encoding, AllDiffEncoding _alldiff_encoding) :
-        direct(_direct), order(_order), conflict(_conflict), support(_support), amo_encoding(_amo_encoding), alldiff_encoding(_alldiff_encoding) {
-#ifdef _DEBUGWRAP
-            std::cout << "New " << (*this) << std::endl;
-#endif
-    }
-
     virtual std::ostream& display(std::ostream& o) {
         o << "EncodingConfiguration<direct:" << direct \
           << " order:" << order << " conflict:" << conflict \
           << " support:" << support << " amo_encoding:" << amo_encoding \
           << " alldiff_encoding:" << alldiff_encoding << ">";
         return o;
+    }
+
+    EncodingConfiguration(bool _direct, bool _order, bool _conflict, bool _support, AMOEncoding _amo_encoding, AllDiffEncoding _alldiff_encoding) :
+        direct(_direct), order(_order), conflict(_conflict), support(_support), amo_encoding(_amo_encoding), alldiff_encoding(_alldiff_encoding) {
+#ifdef _DEBUGWRAP
+            std::cout << "New "; this->display(std::cout); std::cout << std::endl;
+#endif
     }
 };
 

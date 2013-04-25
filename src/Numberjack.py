@@ -3104,18 +3104,19 @@ class EncodingConfiguration(object):
     # Make EncodingConfiguration hashable so that it can be used as a dictionary
     # key for the cache of encoding configs during translation to SAT.
     def __hash__(self):
-        return hash((self.direct, self.order, self.conflict, self.support, self.amo_encoding))
+        return hash((self.direct, self.order, self.conflict, self.support, self.amo_encoding, self.alldiff_encoding))
 
     def __eq__(self, other):
         return (self.direct == other.direct) and \
                (self.order == other.order) and \
                (self.conflict == other.conflict) and \
                (self.support == other.support) and \
-               (self.amo_encoding == other.amo_encoding)
+               (self.amo_encoding == other.amo_encoding) and \
+               (self.alldiff_encoding == other.alldiff_encoding)
 
     def __str__(self):
-        return "EncodingConfig<direct:%r, order:%r, conflict:%r, support:%r, amo:%r>" % (
-            self.direct, self.order, self.conflict, self.support, self.amo_encoding)
+        return "EncodingConfig<direct:%r, order:%r, conflict:%r, support:%r, amo:%r, alldiff:%r>" % (
+            self.direct, self.order, self.conflict, self.support, self.amo_encoding, self.alldiff_encoding)
 
 ##  @}
 

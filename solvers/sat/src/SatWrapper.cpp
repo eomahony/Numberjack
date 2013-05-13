@@ -686,8 +686,8 @@ void disequalityEncoder(SatWrapper_Expression *X,
                 lits.clear();
                 if(i>0) lits.push_back(X->less_or_equal(prev_x, i-1));
                 if(j>0) lits.push_back(Y->less_or_equal(prev_y, j-1));
-                lits.push_back(~(X->less_or_equal(x,i)));
-                lits.push_back(~(Y->less_or_equal(y,j)));
+                if(i<X->getsize()-1) lits.push_back(~(X->less_or_equal(x,i)));
+                if(j<Y->getsize()-1) lits.push_back(~(Y->less_or_equal(y,j)));
                 solver->addClause(lits);
             }
             if( x <= y ){

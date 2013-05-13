@@ -32,7 +32,7 @@ void addAMOClauses(Lits literals, Lits auxiliary, SatWrapperSolver *solver, Enco
         return;
     }
 
-    if(amo_encoding == EncodingConfiguration::Pairwise){
+    if(amo_encoding & EncodingConfiguration::Pairwise){
         for(unsigned int i=0; i<literals.size(); i++){
             for(unsigned int j=i+1; j<literals.size(); j++){
                 lits.clear();
@@ -41,7 +41,8 @@ void addAMOClauses(Lits literals, Lits auxiliary, SatWrapperSolver *solver, Enco
                 solver->addClause(lits);
             }
         }
-    } else if(amo_encoding == EncodingConfiguration::Ladder){
+    }
+    if(amo_encoding & EncodingConfiguration::Ladder){
         if(auxiliary.size() == 0){
             for(unsigned int i=0; i<literals.size()-1; i++){
                 Lit l = Lit(solver->create_atom(NULL, ORDER));
@@ -75,7 +76,8 @@ void addAMOClauses(Lits literals, Lits auxiliary, SatWrapperSolver *solver, Enco
                 solver->addClause(lits);
             }
         }
-    } else {
+    }
+    if(!(amo_encoding & EncodingConfiguration::Pairwise || amo_encoding & EncodingConfiguration::Ladder)) {
         std::cerr << "ERROR unknown AMO specified: " << amo_encoding << std::endl;
         exit(1);
     }
@@ -1326,10 +1328,11 @@ SatWrapper_AllDiff::SatWrapper_AllDiff( SatWrapperExpArray& vars )
 }
 
 SatWrapper_AllDiff::~SatWrapper_AllDiff() {
-    if(encoding->alldiff_encoding == EncodingConfiguration::PairwiseDecomp){
+    if(encoding->alldiff_encoding & EncodingConfiguration::PairwiseDecomp){
         for(unsigned int i=0; i<_clique.size(); ++i)
             delete _clique[i];
-    } else if(encoding->alldiff_encoding == EncodingConfiguration::LadderAMO){}
+    }
+    if(encoding->alldiff_encoding & EncodingConfiguration::LadderAMO){}
 }
 
 SatWrapper_Expression* SatWrapper_AllDiff::add(SatWrapperSolver *solver, bool top_level) {
@@ -1351,7 +1354,7 @@ SatWrapper_Expression* SatWrapper_AllDiff::add(SatWrapperSolver *solver, bool to
             for(i=0; i<n; ++i)
                 _vars.set_item(i, (_vars.get_item(i))->add(_solver,false));
 
-            if(encoding->alldiff_encoding == EncodingConfiguration::PairwiseDecomp){
+            if(encoding->alldiff_encoding & EncodingConfiguration::PairwiseDecomp){
                 for(i=1; i<n; ++i)
                     for(j=0; j<i; ++j) {
                         exp = new SatWrapper_ne(_vars.get_item(j), _vars.get_item(i));
@@ -1359,7 +1362,8 @@ SatWrapper_Expression* SatWrapper_AllDiff::add(SatWrapperSolver *solver, bool to
                         _clique.push_back(exp);
                     }
 
-            } else if(encoding->alldiff_encoding == EncodingConfiguration::LadderAMO){
+            }
+            if(encoding->alldiff_encoding & EncodingConfiguration::LadderAMO){
                 if(!encoding->direct){
                     std::cerr << "Error: The ladder at-most-one encoding of Alldiff requires the direct encoding to be enabled." << std::endl;
                     exit(1);
@@ -1391,7 +1395,8 @@ SatWrapper_Expression* SatWrapper_AllDiff::add(SatWrapperSolver *solver, bool to
 
                 _solver->validate();
 
-            } else {
+            }
+            if(!(encoding->alldiff_encoding & EncodingConfiguration::PairwiseDecomp || encoding->alldiff_encoding & EncodingConfiguration::LadderAMO)) {
                 std::cerr << "Error: AllDiff not implemented for this encoding. Please use either PairwiseDecomp or LadderAMO." << std::endl;
                 exit(1);
             }

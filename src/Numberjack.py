@@ -3052,7 +3052,7 @@ class NBJ_STD_Solver(object):
 
 
 def enum(*sequential):
-    enums = dict(zip(sequential, range(len(sequential))))
+    enums = dict(zip(sequential, (2 ** i for i in range(len(sequential)))))
     return type('Enum', (), enums)
 
 
@@ -3092,13 +3092,14 @@ class EncodingConfiguration(object):
         if not self.conflict and not self.support:
             raise InvalidEncodingException("Constraints must be encoded using at least one encoding: conflict|support.")
 
-        if self.amo_encoding not in [AMOEncoding.Pairwise, AMOEncoding.Ladder]:
+        if not self.amo_encoding & AMOEncoding.Pairwise and \
+           not self.amo_encoding & AMOEncoding.Ladder:
             raise InvalidEncodingException("Invalid at-most-one encoding specified: %s" % (str(self.amo_encoding)))
 
-        # if self.amo_encoding == AMOEncoding.Pairwise and not self.direct:
+        # if self.amo_encoding & AMOEncoding.Pairwise and not self.direct:
         #     raise InvalidEncodingException("Domains must be encoded using the direct encoding if using the pairwise AMO encoding.")
 
-        # if self.alldiff_encoding == AllDiffEncoding.PairwiseDecomp and not self.direct:
+        # if self.alldiff_encoding & AllDiffEncoding.PairwiseDecomp and not self.direct:
         #     raise InvalidEncodingException("The direct encoding must be enabled if the pairwise decomposition all different is used.")
 
     # Make EncodingConfiguration hashable so that it can be used as a dictionary

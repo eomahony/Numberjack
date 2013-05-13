@@ -78,12 +78,16 @@ public:
     // Constraint encoding
     bool conflict, support;
 
-    // At Most One encoding. Only Ladder is supported right now.
-    enum AMOEncoding {Pairwise, Ladder};
+    // At Most One encoding.
+    enum AMOEncoding {
+        Pairwise=1,
+        Ladder=2};
     AMOEncoding amo_encoding;
 
     // All Different encoding.
-    enum AllDiffEncoding {PairwiseDecomp, LadderAMO};
+    enum AllDiffEncoding {
+        PairwiseDecomp=1,
+        LadderAMO=2};
     AllDiffEncoding alldiff_encoding;
 
     virtual std::ostream& display(std::ostream& o) {

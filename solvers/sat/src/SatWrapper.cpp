@@ -506,7 +506,7 @@ void additionEncoder(SatWrapper_Expression *X,
                      SatWrapperSolver *solver,
                      EncodingConfiguration *encoding) {
     Lits lits;
-    int i, j, x, y, z, prev_x, prev_y, prev_z;
+    int i, j, x, y, z, prev_x = NULL, prev_y = NULL, prev_z = NULL;
 
     if(encoding->direct) {
         for(i=0; i<X->getsize(); ++i) {
@@ -585,7 +585,7 @@ void multiplicationEncoder(SatWrapper_Expression *X,
                      SatWrapperSolver *solver,
                      EncodingConfiguration *encoding) {
     Lits lits;
-    int i, j, x, y, z, prev_x, prev_y, prev_z;
+    int i, j, x, y, z, prev_x = NULL, prev_y = NULL, prev_z = NULL;
 
     if(encoding->direct) {
         for(i=0; i<X->getsize(); ++i) {
@@ -657,7 +657,7 @@ void disequalityEncoder(SatWrapper_Expression *X,
                         SatWrapperSolver *solver,
                         EncodingConfiguration *encoding) {
     Lits lits;
-    int i=0, j=0, x, y, prev_x, prev_y;
+    int i=0, j=0, x, y, prev_x = NULL, prev_y = NULL;
 
     if(encoding->direct && encoding->conflict) {
         while( i<X->getsize() && j<Y->getsize() ) {
@@ -715,7 +715,7 @@ void absoluteEncoder(SatWrapper_Expression *X,
                      SatWrapperSolver *solver,
                      EncodingConfiguration *encoding) {
     Lits lits;
-    int i=0, j=0, x, y, prev_x, prev_y;
+    int i=0, j=0, x, y, prev_x = NULL, prev_y = NULL;
 
     if(encoding->direct && encoding->conflict) {
         for(i=0; i<X->getsize(); i++){

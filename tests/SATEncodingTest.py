@@ -253,6 +253,33 @@ class SATEncodingTest(unittest.TestCase):
         self.assertTrue(s.is_sat())
         self.assertEqual(sum(v.get_value() for v in vs), v_sum.get_value())
 
+    def testSumSingleCoef(self):
+        v1 = Variable(5)
+        m = Model(Sum([v1], [-2]) == -4)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value() * -2, -4)
+
+    def testSumCoefEq(self):
+        v1 = Variable(5)
+        v2 = Variable(5)
+        v3 = Variable(5)
+        m = Model(Sum([v1, v2], [2, 2]) == v3)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value() * 2 + v2.get_value() * 2, v3.get_value())
+
+    def testSumCoefNeg(self):
+        v1 = Variable(5)
+        v2 = Variable(5)
+        m = Model(Sum([v1, v2], [-1, -1]) == -3)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value() * -1 + v2.get_value() * -1, -3)
+
     def testMulConstant(self):
         v1 = Variable(5)
         v2 = Variable(5)
@@ -391,21 +418,19 @@ class SATEncodingTest(unittest.TestCase):
         self.assertLess(v2.get_value(), -2)
 
     # def testLargeDomain(self):
-    #     v1 = Variable(10000)
-    #     v2 = Variable(10000)
+    #     v1 = Variable(1000)
+    #     v2 = Variable(1000)
     #     m = Model(v1 == v2)
     #     s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
-    #     s.output_cnf("large_domain.cnf")
+    #     # s.output_cnf("large_domain.cnf")
     #     s.solve()
     #     self.assertTrue(s.is_sat())
-    #     import sys
-    #     print >> sys.stderr, v1.get_value(), v2.get_value()
 
     # def testAllDiffLargeDomain(self):
-    #     vs = VarArray(100, 1, 10000)
+    #     vs = VarArray(100, 1, 1000)
     #     m = Model(AllDiff(vs))
     #     s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
-    #     s.output_cnf("large_alldiff.cnf")
+    #     # s.output_cnf("large_alldiff.cnf")
     #     s.solve()
     #     self.assertTrue(s.is_sat())
 

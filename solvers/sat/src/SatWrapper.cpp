@@ -1518,15 +1518,17 @@ SatWrapper_Expression* SatWrapper_Sum::add(SatWrapperSolver *solver, bool top_le
 #endif
 
         if(!top_level) {
+            int w1, w2;
+            SatWrapper_Expression *exp, *exp1, *exp2;
 
             if(_vars.size() == 1) {
-
-                _vars.set_item(0, _vars.get_item(0)->add(_solver, false));
+                w1 = _weights.get_item(0);
+                if(w1 != 1) exp = new SatWrapper_mul(_vars.get_item(0), w1);
+                else exp = _vars.get_item(0);
+                _vars.set_item(0, exp->add(_solver, false));
 
             } else {
-
-                int w1, w2;
-                SatWrapper_Expression *exp, *exp1, *exp2;
+                
                 for(int i=0; i+1<_vars.size(); i+=2) {
                     w1 = _weights.get_item(i);
                     w2 = _weights.get_item(i+1);

@@ -1042,9 +1042,13 @@ SatWrapper_Expression::~SatWrapper_Expression() {
 
 int SatWrapper_Expression::get_size() const {
     int i=0, domsize=0;
-    for(i=0; i<getsize(); ++i)
-        if(encoding->direct) domsize += (_solver->truth_value(equal(getval(i),i)) != l_False);
-        else if(encoding->order) domsize += (_solver->truth_value(less_or_equal(getval(i),i)) != l_False);
+    if(_solver != NULL){
+        for(i=0; i<getsize(); ++i)
+            if(encoding->direct) domsize += (_solver->truth_value(equal(getval(i),i)) != l_False);
+            else if(encoding->order) domsize += (_solver->truth_value(less_or_equal(getval(i),i)) != l_False);
+    } else {
+        domsize = getsize();
+    }
     return domsize;
 }
 
@@ -1060,33 +1064,37 @@ int SatWrapper_Expression::next(const int v) const {
 }
 
 int SatWrapper_Expression::get_min() const {
-    int v;
-    for(int i=0; i<getsize(); ++i) {
-        v = getval(i);
-        if(encoding->direct){
-            if(_solver->truth_value(equal(v,i)) != l_False) return v;
-        } else if(encoding->order){
-            if(i < getsize() - 1 && _solver->truth_value(less_or_equal(v,i)) != l_False) return v;
+    if(_solver != NULL){
+        int v;
+        for(int i=0; i<getsize(); ++i) {
+            v = getval(i);
+            if(encoding->direct){
+                if(_solver->truth_value(equal(v,i)) != l_False) return v;
+            } else if(encoding->order){
+                if(i < getsize() - 1 && _solver->truth_value(less_or_equal(v,i)) != l_False) return v;
+            }
         }
+        // Special case of last literal encoding the domain under the order encoding does not need to be created as it is implied.
+        v = getval(getsize()-2);
+        if(encoding->order && _solver->truth_value(less_or_equal(v, getsize()-2)) == l_False) return getval(getsize()-1);
     }
-    // Special case of last literal encoding the domain under the order encoding does not need to be created as it is implied.
-    v = getval(getsize()-2);
-    if(encoding->order && _solver->truth_value(less_or_equal(v, getsize()-2)) == l_False) return getval(getsize()-1);
     return getmin();
 }
 
 int SatWrapper_Expression::get_max() const {
-    int v;
-    // Special case of last literal encoding the domain under the order encoding does not need to be created as it is implied.
-    v = getval(getsize()-2);
-    if(encoding->order && _solver->truth_value(less_or_equal(v, getsize()-2)) == l_False) return getval(getsize()-1);
+    if(_solver != NULL){
+        int v;
+        // Special case of last literal encoding the domain under the order encoding does not need to be created as it is implied.
+        v = getval(getsize()-2);
+        if(encoding->order && _solver->truth_value(less_or_equal(v, getsize()-2)) == l_False) return getval(getsize()-1);
 
-    for(int i=getsize()-1; i>=0; --i){
-        v = getval(i);
-        if(encoding->direct){
-            if(_solver->truth_value(equal(v,i)) != l_False) return v;
-        } else if(encoding->order){
-            if(i < getsize() - 1 && _solver->truth_value(less_or_equal(v,i)) == l_False) return getval(i+1);
+        for(int i=getsize()-1; i>=0; --i){
+            v = getval(i);
+            if(encoding->direct){
+                if(_solver->truth_value(equal(v,i)) != l_False) return v;
+            } else if(encoding->order){
+                if(i < getsize() - 1 && _solver->truth_value(less_or_equal(v,i)) == l_False) return getval(i+1);
+            }
         }
     }
     return getmax();

@@ -39,7 +39,7 @@ SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 
 MCORE     = minisat_src/core
 MTL       = minisat_src/mtl
-CFLAGS    += -I$(MCORE) -I$(MTL) $(HACK) -Wall -ffloat-store -O3 # -DNDEBUG -D_DEBUGWRAP
+CFLAGS    += -I$(MCORE) -I$(MTL) $(HACK) -Wall -ffloat-store -O3  # -DNDEBUG
 
 #-----------------------------------------------------------------------------
 # Rules
@@ -48,7 +48,10 @@ CFLAGS    += -I$(MCORE) -I$(MTL) $(HACK) -Wall -ffloat-store -O3 # -DNDEBUG -D_D
 CXX = g++ 
 
 
-wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/SatWrapper.o 
+wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/SatWrapper.o
+
+debug: CFLAGS += -D_DEBUGWRAP -g
+debug: wrapper
 
 $(OBJDIR):
 	@mkdir -p $(OBJDIR)
@@ -57,36 +60,39 @@ $(PYTHON):
 	@mkdir -p $(PYTHON)
 
 install_python: wrapper
-	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
+	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install
 
 clean_swig:
-	-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
+	@echo "-> cleaning swig interface"
+	@-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
 
 clean_all: clean clean_swig
-	cd $(CORE)/; make clean
+	# cd $(CORE)/; make clean
 
 clean:
-	-rm -rf $(OBJDIR)/* $(PYTHON)/*o $(PYTHON)/*~ $(PYTHON)/build *~ $(SRCDIR)/*~
+	@echo "-> cleaning"
+	@-rm -rf $(OBJDIR)/* $(PYTHON)/*o $(PYTHON)/*~ $(PYTHON)/build *~ $(SRCDIR)/*~
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 		@echo "-> compiling $@"
-		$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+		@$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 		@echo "-> compiling $@"
-		$(CXX) $(CFLAGS) -I$(SRCDIR) -I$(PYLIB) -fPIC -c $< -o $@
+		@$(CXX) $(CFLAGS) -I$(SRCDIR) -I$(PYLIB) -fPIC -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	
-	$(SWIG) -c++ -python $<
-	python $(MAINDIR)/tools/finalize.py $(<:.i=.py)
+	@$(SWIG) -c++ -python $<
+	@python $(MAINDIR)/tools/finalize.py $(<:.i=.py)
 
 $(PYTHON)/%.i: $(SRCDIR)/%.hpp
-	python $(MAINDIR)/tools/mk_interface.py $<
+	@echo "-> creating interface $@"
+	@python $(MAINDIR)/tools/mk_interface.py $<
 
 
 $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o 
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(PYTHON)/SatWrapper_wrap.o -o $@
+	@$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(PYTHON)/SatWrapper_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

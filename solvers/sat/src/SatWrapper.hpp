@@ -70,8 +70,41 @@ typedef SatWrapperArray< double > SatWrapperDoubleArray;
 
 
 
+class EncodingConfiguration{
+public:
+    // Domain encodings
+    bool direct, order;
 
+    // Constraint encoding
+    bool conflict, support;
 
+    // At Most One encoding.
+    enum AMOEncoding {
+        Pairwise=1,
+        Ladder=2};
+    AMOEncoding amo_encoding;
+
+    // All Different encoding.
+    enum AllDiffEncoding {
+        PairwiseDecomp=1,
+        LadderAMO=2};
+    AllDiffEncoding alldiff_encoding;
+
+    virtual std::ostream& display(std::ostream& o) {
+        o << "EncodingConfiguration<direct:" << direct \
+          << " order:" << order << " conflict:" << conflict \
+          << " support:" << support << " amo_encoding:" << amo_encoding \
+          << " alldiff_encoding:" << alldiff_encoding << ">";
+        return o;
+    }
+
+    EncodingConfiguration(bool _direct, bool _order, bool _conflict, bool _support, AMOEncoding _amo_encoding, AllDiffEncoding _alldiff_encoding) :
+        direct(_direct), order(_order), conflict(_conflict), support(_support), amo_encoding(_amo_encoding), alldiff_encoding(_alldiff_encoding) {
+#ifdef _DEBUGWRAP
+            std::cout << "New "; this->display(std::cout); std::cout << std::endl;
+#endif
+    }
+};
 
 
 class SatWrapper_Expression;
@@ -373,6 +406,10 @@ public:
 
     SatWrapperSolver *_solver;
 
+    // Each expression can be configured to use a different encoding config.
+    // Otherwise it assumes the configuration of the solver object.
+    EncodingConfiguration *encoding;
+
     // unique identifier
     int _ident;
     int nbj_ident;
@@ -435,6 +472,13 @@ public:
         nbj_ident = ident;
     }
 
+};
+
+class SatWrapper_ConstantInt : public SatWrapper_Expression {
+public:
+    SatWrapper_ConstantInt(const int v) : SatWrapper_Expression() {
+        domain = new ConstantDomain(this, v);  // Free'd by ~SatWrapper_Expression()
+    }
 };
 
 
@@ -515,6 +559,15 @@ public:
     SatWrapper_mul( SatWrapper_Expression* arg1, SatWrapper_Expression* arg2 );
     SatWrapper_mul( SatWrapper_Expression* arg1, const int arg2 );
     virtual ~SatWrapper_mul();
+    virtual SatWrapper_Expression* add(SatWrapperSolver *solver, bool top_level);
+};
+
+class SatWrapper_Abs : public SatWrapper_Expression {
+protected:
+    SatWrapper_Expression *_var;
+public:
+    SatWrapper_Abs(SatWrapper_Expression* arg1);
+    virtual ~SatWrapper_Abs();
     virtual SatWrapper_Expression* add(SatWrapperSolver *solver, bool top_level);
 };
 
@@ -614,6 +667,9 @@ public:
 
     SatWrapper_Expression *minimise_obj;
     SatWrapper_Expression *maximise_obj;
+
+    // The default encoding configuration for each expression & variable.
+    EncodingConfiguration *encoding;
 
     // repository for all expressions
     std::vector< SatWrapper_Expression* > _expressions;

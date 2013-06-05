@@ -9,6 +9,11 @@ import unittest
 
 class SATEncodingTest(unittest.TestCase):
     solver = None
+    # encoding = EncodingConfiguration(direct=True, order=False, conflict=True, support=True, amo_encoding=AMOEncoding.Pairwise)   # Direct & Support Encoding
+    # encoding = EncodingConfiguration(direct=True, order=False, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise)  # Direct Encoding
+    # encoding = EncodingConfiguration(direct=True, order=False, conflict=False, support=True, amo_encoding=AMOEncoding.Pairwise)  # Support Encoding
+    # encoding = EncodingConfiguration(direct=False, order=True, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise)  # Order Encoding
+    encoding = EncodingConfiguration(direct=True, order=True, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise)  # Direct & Order Encoding
 
     # Tests checking that the overloaded Variable constructor conforms
     # to its definition in the documentation.
@@ -16,7 +21,7 @@ class SATEncodingTest(unittest.TestCase):
     def testEq1(self):
         v1 = Variable(1, 5)
         m = Model(v1 == 3)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value(), 3)
@@ -25,7 +30,7 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(1, 5)
         v2 = Variable(3, 8)
         m = Model(v1 == v2)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value(), v2.get_value())
@@ -34,7 +39,7 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(1, 4)
         v2 = Variable(4, 6)
         m = Model(v1 == v2)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value(), v2.get_value())
@@ -43,16 +48,56 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable([1, 3, 5, 7])
         v2 = Variable(4, 8)
         m = Model(v1 == v2)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value(), v2.get_value())
+
+    def testSmallDomainEq(self):
+        v1 = Variable(2)
+        m = Model(v1 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), 1)
+
+    def testSmallDomainLt(self):
+        v1 = Variable(2)
+        m = Model(v1 < 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertLess(v1.get_value(), 1)
+
+    def testSmallDomainLe(self):
+        v1 = Variable(2)
+        m = Model(v1 <= 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertLessEqual(v1.get_value(), 1)
+
+    def testSmallDomainGt(self):
+        v1 = Variable(2)
+        m = Model(v1 > 0)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), 1)
+
+    def testSmallDomainGe(self):
+        v1 = Variable(2)
+        m = Model(v1 >= 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), 1)
 
     # def testConstantDomain(self):
     #     v1 = Variable(1, 4)
     #     v2 = Variable([2])
     #     m = Model(v1 == v2)
-    #     s = SATEncodingTest.solver(m)
+    #     s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
     #     s.solve()
     #     self.assertTrue(s.is_sat())
     #     self.assertEqual(v1.get_value(), v2.get_value())
@@ -61,7 +106,7 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(1, 4)
         v2 = Variable(1, 5)
         m = Model(v1 + 3 == v2)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value() + 3, v2.get_value())
@@ -69,7 +114,7 @@ class SATEncodingTest(unittest.TestCase):
     def testNe1(self):
         v1 = Variable(1, 2)
         m = Model(v1 != 1)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertNotEqual(v1.get_value(), 1)
@@ -78,7 +123,7 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(1, 2)
         v2 = Variable(1, 2)
         m = Model(v1 != v2)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertNotEqual(v1.get_value(), v2.get_value())
@@ -87,7 +132,7 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(1, 3)
         v2 = Variable(1, 3)
         m = Model(v1 > v2)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertGreater(v1.get_value(), v2.get_value())
@@ -96,7 +141,7 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(1, 3)
         v2 = Variable(1, 3)
         m = Model(v1 >= v2)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertGreaterEqual(v1.get_value(), v2.get_value())
@@ -105,7 +150,7 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(1, 3)
         v2 = Variable(1, 3)
         m = Model(v1 < v2)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertLess(v1.get_value(), v2.get_value())
@@ -114,7 +159,7 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(1, 3)
         v2 = Variable(1, 3)
         m = Model(v1 <= v2)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertLessEqual(v1.get_value(), v2.get_value())
@@ -123,7 +168,7 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable([1, 3, 5])
         v2 = Variable([3])
         m = Model(v1 < v2)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertLess(v1.get_value(), v2.get_value())
@@ -132,7 +177,7 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(5)
         v2 = Variable(5)
         m = Model(v1 + v2 == 6)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value() + v2.get_value(), 6)
@@ -142,17 +187,37 @@ class SATEncodingTest(unittest.TestCase):
         v2 = Variable(5)
         v3 = Variable(5)
         m = Model(v1 + v2 == v3)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value() + v2.get_value(), v3.get_value())
+
+    def testAddGapsSat(self):
+        v1 = Variable([0, 4, 8])
+        v2 = Variable()
+        v3 = Variable(10)
+        m = Model(v1 + v2 == v3, v3 == 5)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value() + v2.get_value(), v3.get_value())
+        self.assertEqual(v3.get_value(), 5)
+
+    def testAddGapsUnsat(self):
+        v1 = Variable([0, 4, 8])
+        v2 = Variable()
+        v3 = Variable(10)
+        m = Model(v1 + v2 == v3, v3 == 3)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_unsat())
 
     def testSubEq(self):
         v1 = Variable(5)
         v2 = Variable(5)
         v3 = Variable(5)
         m = Model(v1 - v2 == v3)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value() - v2.get_value(), v3.get_value())
@@ -164,7 +229,7 @@ class SATEncodingTest(unittest.TestCase):
         v4 = Variable(5)
         v5 = Variable(5)
         m = Model(v1 + v2 + v3 + v4 == v5)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value() + v2.get_value() + v3.get_value() + v4.get_value(), v5.get_value())
@@ -174,7 +239,7 @@ class SATEncodingTest(unittest.TestCase):
         v2 = Variable(5)
         v3 = Variable(5)
         m = Model(Sum([v1, v2]) == v3)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value() + v2.get_value(), v3.get_value())
@@ -183,45 +248,91 @@ class SATEncodingTest(unittest.TestCase):
         vs = VarArray(4, 1, 5)
         v_sum = Variable(5)
         m = Model(Sum(vs) == v_sum)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertEqual(sum(v.get_value() for v in vs), v_sum.get_value())
+
+    def testSumSingleCoef(self):
+        v1 = Variable(5)
+        m = Model(Sum([v1], [-2]) == -4)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value() * -2, -4)
+
+    def testSumCoefEq(self):
+        v1 = Variable(5)
+        v2 = Variable(5)
+        v3 = Variable(5)
+        m = Model(Sum([v1, v2], [2, 2]) == v3)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value() * 2 + v2.get_value() * 2, v3.get_value())
+
+    def testSumCoefNeg(self):
+        v1 = Variable(5)
+        v2 = Variable(5)
+        m = Model(Sum([v1, v2], [-1, -1]) == -3)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value() * -1 + v2.get_value() * -1, -3)
 
     def testMulConstant(self):
         v1 = Variable(5)
         v2 = Variable(5)
         m = Model(v1 * 3 == v2)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value() * 3, v2.get_value())
 
-    # FIXME Encoding multiplication between expressions is not supported yet.
-    # def testMulVars(self):
-    #     v1 = Variable(5)
-    #     v2 = Variable(5)
-    #     m = Model(v1 * v2 == 3)
-    #     s = SATEncodingTest.solver(m)
-    #     s.solve()
-    #     self.assertTrue(s.is_sat())
-    #     self.assertEqual(v1.get_value() * v2.get_value(), 3)
+    def testMulVars(self):
+        v1 = Variable(5)
+        v2 = Variable(5)
+        m = Model(v1 * v2 == 3)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value() * v2.get_value(), 3)
 
-    # def testMulVars(self):
-    #     v1 = Variable(5)
-    #     v2 = Variable(5)
-    #     v3 = Variable(5)
-    #     m = Model(v1 * v2 == v3)
-    #     s = SATEncodingTest.solver(m)
-    #     s.solve()
-    #     self.assertTrue(s.is_sat())
-    #     self.assertEqual(v1.get_value() * v2.get_value(), v3.get_value())
+    def testMulPredicate(self):
+        v1 = Variable(5)
+        v2 = Variable(5)
+        v3 = Variable(5)
+        m = Model(v1 * v2 == v3)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value() * v2.get_value(), v3.get_value())
+
+    def testMulGapsSat(self):
+        v1 = Variable([0, 4, 8])
+        v2 = Variable()
+        v3 = Variable(10)
+        m = Model(v1 * v2 == v3, v3 == 4)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value() * v2.get_value(), v3.get_value())
+        self.assertEqual(v3.get_value(), 4)
+
+    def testMulGapsUnsat(self):
+        v1 = Variable([0, 4, 8])
+        v2 = Variable()
+        v3 = Variable(10)
+        m = Model(v1 * v2 == v3, v3 == 3)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_unsat())
 
     # def testDivConstant(self):
     #     v1 = Variable(5)
     #     v2 = Variable(5)
     #     m = Model(v1 / 3 == v2)
-    #     s = SATEncodingTest.solver(m)
+    #     s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
     #     s.solve()
     #     self.assertTrue(s.is_sat())
     #     self.assertEqual(v1.get_value() / 3, v2.get_value())
@@ -229,7 +340,7 @@ class SATEncodingTest(unittest.TestCase):
     def testAllDiff(self):
         vs = VarArray(5, 1, 5)
         m = Model(AllDiff(vs))
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         values = [v.get_value() for v in vs]
         self.assertItemsEqual(range(1, 6), values)
@@ -238,7 +349,7 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(5)
         v2 = Variable(5)
         m = Model(v1 < v2, Maximise(v1))
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value(), 3)
@@ -248,7 +359,7 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(5)
         v2 = Variable(5)
         m = Model(v1 < v2, Minimise(v2))
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value(), 0)
@@ -259,7 +370,7 @@ class SATEncodingTest(unittest.TestCase):
         m = Model(((a == True) | (b == False)),
                   ((b == True) | (a == False)),
                   (c == True))
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertTrue(c.get_value())
@@ -270,7 +381,7 @@ class SATEncodingTest(unittest.TestCase):
         m = Model(((a == True) | (b == False)) &
                   ((b == True) | (a == False)) &
                   (c == True))
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertTrue(c.get_value())
@@ -281,7 +392,7 @@ class SATEncodingTest(unittest.TestCase):
     #     v1, v2 = VarArray(2, 1, 3)
     #     t = Table([v1, v2], [[1, 1], [2, 2], [3, 3]])
     #     m = Model(t)
-    #     s = SATEncodingTest.solver(m)
+    #     s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
     #     s.solve()
     #     self.assertTrue(s.is_sat())
     #     self.assertNotEqual(v1.get_value(), v2.get_value())
@@ -290,27 +401,59 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(5)
         v2 = Variable(5)
         m = Model(Max([v1, v2]) < 2)
-        s = SATEncodingTest.solver(m)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertLess(v1.get_value(), 2)
         self.assertLess(v2.get_value(), 2)
 
+    def testMaxNegVars(self):
+        v1 = Variable(-5, -1)
+        v2 = Variable(-5, -1)
+        m = Model(Max([v1, v2]) < -2)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertLess(v1.get_value(), -2)
+        self.assertLess(v2.get_value(), -2)
+
     # def testLargeDomain(self):
-    #     v1 = Variable(10000)
-    #     v2 = Variable(10000)
+    #     v1 = Variable(1000)
+    #     v2 = Variable(1000)
     #     m = Model(v1 == v2)
-    #     s = SATEncodingTest.solver(m)
-    #     s.output_cnf("large_domain.cnf")
+    #     s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+    #     # s.output_cnf("large_domain.cnf")
     #     s.solve()
     #     self.assertTrue(s.is_sat())
-    #     import sys
-    #     print >> sys.stderr, v1.get_value(), v2.get_value()
 
     # def testAllDiffLargeDomain(self):
-    #     vs = VarArray(100, 1, 10000)
+    #     vs = VarArray(100, 1, 1000)
     #     m = Model(AllDiff(vs))
-    #     s = SATEncodingTest.solver(m)
-    #     s.output_cnf("large_alldiff.cnf")
+    #     s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+    #     # s.output_cnf("large_alldiff.cnf")
     #     s.solve()
     #     self.assertTrue(s.is_sat())
+
+    def testAbsEq(self):
+        v1 = Variable(-4, -1)
+        m = Model(Abs(v1) == 2)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), -2)
+
+    def testAbsGt(self):
+        v1 = Variable(-4, -1)
+        m = Model(Abs(v1) > 2)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertLess(v1.get_value(), -2)
+
+    def testAbsLt(self):
+        v1 = Variable(-4, -1)
+        m = Model(Abs(v1) < 2)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertGreater(v1.get_value(), -2)

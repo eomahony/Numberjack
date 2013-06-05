@@ -23,6 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <cassert>
 #include <stdint.h>
+#include <vector>
 
 //=================================================================================================
 // Variables, literals, lifted booleans, clauses:
@@ -65,6 +66,8 @@ inline  Lit  id          (Lit p, bool sgn) { Lit q; q.x = p.x ^ (int)sgn; return
 
 const Lit lit_Undef(var_Undef, false);  // }- Useful special constants.
 const Lit lit_Error(var_Undef, true );  // }
+
+typedef std::vector<Lit> Lits;
 
 
 //=================================================================================================

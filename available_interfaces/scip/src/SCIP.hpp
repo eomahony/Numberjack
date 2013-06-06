@@ -44,6 +44,7 @@ public:
   int getNodes();
   bool is_sat();
   bool is_unsat();
+  bool is_opt();
   void printStatistics();
   double getTime();
   

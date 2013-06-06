@@ -80,9 +80,12 @@ MIPFLAGS        =       -I$(MIPDIR)/src/
 # Rules
 #-----------------------------------------------------------------------------
 
-NFLAGS = $(FLAGS) #-D_DEBUGWRAP
+NFLAGS = $(FLAGS)
 
 wrapper: check-env $(OBJDIR) $(PYTHON) $(SCIPDIR)/done.txt $(IFILE) $(WXXFILE) $(SOFILE)
+
+debug: NFLAGS += -D_DEBUGWRAP -g
+debug: wrapper
 
 check-env:
 	@if test "$(ZIBPATH)" = ""; then \

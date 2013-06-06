@@ -131,6 +131,10 @@ bool SCIPSolver::is_sat(){
 
 bool SCIPSolver::is_unsat(){ return ! is_sat(); }
 
+bool SCIPSolver::is_opt(){
+  return SCIPgetStatus(_scip) == SCIP_STATUS_OPTIMAL;
+}
+
 void SCIPSolver::printStatistics(){
   std::cout << "\td Time: " << getTime() << "\tNodes:" << getNodes()
 	    << std::endl;

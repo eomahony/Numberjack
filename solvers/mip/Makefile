@@ -34,12 +34,7 @@ WOBFILE		= 	$(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 
 
-
-
-
-#MCORE     = minisat_src/core
-#MTL       = minisat_src/mtl
-CFLAGS    += -Wall -ffloat-store -O3 #-g -D_DEBUGWRAP
+CFLAGS    += -Wall -ffloat-store -O3
 
 #-----------------------------------------------------------------------------
 # Rules
@@ -49,6 +44,9 @@ CXX = g++
 
 
 wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/MipWrapper.o 
+
+debug: CFLAGS += -D_DEBUGWRAP -g
+debug: wrapper
 
 $(OBJDIR):
 	@mkdir -p $(OBJDIR)

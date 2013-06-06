@@ -223,6 +223,18 @@ public:
     virtual ~MipWrapper_sub();
 };
 
+class MipWrapper_mul: public MipWrapper_Expression {
+protected:
+    MipWrapper_Expression *vars[2];
+
+public:
+    MipWrapper_mul(MipWrapper_Expression* arg1, MipWrapper_Expression* arg2);
+    MipWrapper_mul(MipWrapper_Expression* arg1, const int arg2);
+    virtual ~MipWrapper_mul();
+    virtual MipWrapper_Expression* add(MipWrapperSolver *solver, bool top_level);
+    virtual void initbounds();
+};
+
 class MipWrapper_binop: public MipWrapper_FloatVar {
 protected:
     MipWrapper_Expression *_vars[2];

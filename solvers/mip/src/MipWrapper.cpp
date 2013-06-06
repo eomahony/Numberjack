@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "MipWrapper.hpp"
+#include <algorithm>
 #include <math.h>
 
 using namespace std;
@@ -329,6 +330,93 @@ MipWrapper_sub::MipWrapper_sub(MipWrapper_Expression *arg1,
 }
 
 MipWrapper_sub::~MipWrapper_sub() {
+}
+
+MipWrapper_mul::MipWrapper_mul(MipWrapper_Expression *arg1, MipWrapper_Expression *arg2) :
+    MipWrapper_Expression() {
+    initialise(false);
+    vars[0] = arg1;
+    vars[1] = arg2;
+    initialise(false);
+    initbounds();
+}
+
+MipWrapper_mul::MipWrapper_mul(MipWrapper_Expression *arg1, const int arg2) :
+    MipWrapper_Expression() {
+    initialise(false);
+    vars[0] = arg1;
+    vars[1] = NULL;
+    _coef = arg2;
+}
+
+MipWrapper_mul::~MipWrapper_mul() {
+}
+
+void MipWrapper_mul::initbounds() {
+    if(vars[1] != NULL){
+        std::vector<int> bounds;
+        int lb1, lb2, ub1, ub2;
+        lb1 = (int) (vars[0]->_lower);
+        ub1 = (int) (vars[0]->_upper);
+        lb2 = (int) (vars[1]->_lower);
+        ub2 = (int) (vars[1]->_upper);
+        
+        bounds.push_back(lb1 * lb2);
+        bounds.push_back(lb1 * ub2);
+        bounds.push_back(ub1 * lb2);
+        bounds.push_back(ub1 * ub2);
+        _lower = (double) *(std::min_element(bounds.begin(), bounds.end()));
+        _upper = (double) *(std::max_element(bounds.begin(), bounds.end()));
+        DBG("mul has bounds %f..%f\n", _lower, _upper);
+    } else {
+        if(_coef < 0){
+            _lower = _coef * vars[0]->_upper;
+            _upper = _coef * vars[0]->_lower;
+        } else {
+            _lower = _coef * vars[0]->_lower;
+            _upper = _coef * vars[0]->_upper;
+        }
+    }
+}
+
+MipWrapper_Expression* MipWrapper_mul::add(MipWrapperSolver *solver,
+        bool top_level) {
+    if (!has_been_added()) {
+        _solver = solver;
+
+        if (top_level) {
+            std::cout << "Multiplication at the top level is not supported." << std::endl;
+            exit(1);
+        } else {
+            DBG("Adding mul %s\n", "");
+            
+            if(vars[1] != NULL){
+                vars[0] = vars[0]->add(solver, false);
+                vars[0]->encode(solver);
+                vars[1] = vars[1]->add(solver, false);
+                vars[1]->encode(solver);
+
+                encode(solver);
+
+                for (int i = (int)vars[0]->_lower; i <= (int)vars[0]->_upper; i++) {
+                    for (int j = (int)vars[1]->_lower; j <= (int)vars[1]->_upper; j++) {
+                        LinearConstraint *con = new LinearConstraint(-1, 1);
+                        con->add_coef(vars[0]->_expr_encoding[i], 1);
+                        con->add_coef(vars[1]->_expr_encoding[j], 1);
+                        con->add_coef(_expr_encoding[i * j], -1);
+                        solver->_constraints.push_back(con);
+                    }
+                }
+            } else {
+                MipWrapperDoubleArray w;
+                w.add(_coef);
+                MipWrapper_Sum *s = new MipWrapper_Sum(vars[0], w); 
+                s->add(solver, false);
+                return s;
+            }
+        }
+    }
+    return this;
 }
 
 MipWrapper_AllDiff::MipWrapper_AllDiff(MipWrapper_Expression* arg1,

@@ -1466,7 +1466,7 @@ void SatWrapper_Sum::initialise() {
         int _upper = 0;
 
         int weight;
-        for(int i = 0; i < _vars.size(); ++i) {
+        for(unsigned int i = 0; i < _vars.size(); ++i) {
             weight = _weights.get_item(i);
 
             if( weight > 0 ) {
@@ -1537,7 +1537,7 @@ SatWrapper_Expression* SatWrapper_Sum::add(SatWrapperSolver *solver, bool top_le
 
             } else {
                 
-                for(int i=0; i+1<_vars.size(); i+=2) {
+                for(unsigned int i=0; i+1<_vars.size(); i+=2) {
                     w1 = _weights.get_item(i);
                     w2 = _weights.get_item(i+1);
 

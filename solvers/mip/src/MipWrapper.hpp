@@ -88,7 +88,7 @@ public:
     }
     virtual ~MipWrapperArray() {
     }
-    int size() {
+    size_t size() {
         return _array.size();
     }
     void add(T arg) {

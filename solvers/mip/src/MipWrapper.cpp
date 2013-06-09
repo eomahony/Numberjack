@@ -189,7 +189,7 @@ MipWrapper_IntVar::MipWrapper_IntVar(MipWrapperIntArray& values,
     // Ensure that bounds are set up properly
     _upper = _values.get_item(0);
     _lower = _values.get_item(0);
-    for (int i = 0; i < _values.size(); ++i) {
+    for (unsigned int i = 0; i < _values.size(); ++i) {
         if (_values.get_item(i) > _upper)
             _upper = _values.get_item(i);
         if (_values.get_item(i) < _lower)
@@ -217,7 +217,7 @@ void MipWrapper_IntVar::encode(MipWrapperSolver* solver) {
             _expr_encoding -= (int) _lower;
 
             LinearConstraint *con = new LinearConstraint(1, 1);
-            for (int i = 0; i < _values.size(); ++i) {
+            for (unsigned int i = 0; i < _values.size(); ++i) {
                 _expr_encoding[_values.get_item(i)] = new MipWrapper_IntVar(0, 1);
                 _expr_encoding[_values.get_item(i)]->add(solver, false);
                 con->add_coef(_expr_encoding[_values.get_item(i)], 1);
@@ -467,11 +467,11 @@ MipWrapper_Flow::MipWrapper_Flow() :
 }
 
 void MipWrapper_Flow::initbounds() {
-    int i, lb, ub;
+    int lb, ub;
     max_val = -INT_MAX;
     min_val = INT_MAX;
 
-    for (i = 0; i < _vars.size(); ++i) {
+    for (unsigned int i = 0; i < _vars.size(); ++i) {
         lb = (int) (this->_vars.get_item(i)->_lower);
         ub = (int) (this->_vars.get_item(i)->_upper);
 
@@ -507,7 +507,7 @@ MipWrapper_Expression* MipWrapper_Flow::add(MipWrapperSolver *solver,
 
         if (top_level) {
 
-            for (int i = 0; i < _vars.size(); ++i) {
+            for (unsigned int i = 0; i < _vars.size(); ++i) {
                 _vars.get_item(i)->add(solver, false);
                 _vars.get_item(i)->encode(solver);
             }
@@ -515,7 +515,7 @@ MipWrapper_Expression* MipWrapper_Flow::add(MipWrapperSolver *solver,
             for (int i = min_val; i <= max_val; ++i) {
                 LinearConstraint *con = new LinearConstraint(card_lb[i],
                         card_ub[i]);
-                for (int j = 0; j < _vars.size(); ++j)
+                for (unsigned int j = 0; j < _vars.size(); ++j)
                     if (i <= (int) (_vars.get_item(j)->_upper)
                             && i >= (int) (_vars.get_item(j)->_lower)
                             && _vars.get_item(j)->_expr_encoding[i] != NULL
@@ -537,7 +537,7 @@ MipWrapper_Sum::MipWrapper_Sum(MipWrapperExpArray& vars,
     MipWrapper_FloatVar() {
     _offset = offset;
     _vars = vars;
-    for (int i = 0; i < weights.size(); i++)
+    for (unsigned int i = 0; i < weights.size(); i++)
         _weights.add((double) weights.get_item(i));
     initialise();
 }
@@ -548,7 +548,7 @@ MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg1,
     _offset = offset;
     _vars.add(arg1);
     _vars.add(arg2);
-    for (int i = 0; i < w.size(); i++)
+    for (unsigned int i = 0; i < w.size(); i++)
         _weights.add((double) w.get_item(i));
     initialise();
 }
@@ -558,7 +558,7 @@ MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg,
     MipWrapper_FloatVar() {
     _offset = offset;
     _vars.add(arg);
-    for (int i = 0; i < w.size(); i++)
+    for (unsigned int i = 0; i < w.size(); i++)
         _weights.add((double) w.get_item(i));
     initialise();
 }
@@ -598,7 +598,7 @@ MipWrapper_Sum::MipWrapper_Sum() :
 
 void MipWrapper_Sum::initialise() {
     DBG("creating sum: size of params: %d\n", _vars.size());
-    for (int i = 0; i < this->_vars.size(); ++i) {
+    for (unsigned int i = 0; i < this->_vars.size(); ++i) {
         int weight = this->_weights.get_item(i);
         if (weight > 0) {
             _lower += (weight * _vars.get_item(i)->_lower);
@@ -633,7 +633,7 @@ MipWrapper_Expression* MipWrapper_Sum::add(MipWrapperSolver *solver,
     if (!this->has_been_added()) {
         _solver = solver;
         DBG("Adding sum constraint %s\n", "");
-        for (int i = 0; i < _vars.size(); ++i)
+        for (unsigned int i = 0; i < _vars.size(); ++i)
             _vars.set_item(i, _vars.get_item(i)->add(solver, false));
 
         if (top_level) {
@@ -647,14 +647,14 @@ MipWrapper_Expression* MipWrapper_Sum::add(MipWrapperSolver *solver,
 
 double MipWrapper_Sum::get_value() {
     double res = 0;
-    for (int i = 0; i < _vars.size(); ++i)
+    for (unsigned int i = 0; i < _vars.size(); ++i)
         res += _vars.get_item(i)->get_whatever_value() * _weights.get_item(i);
     return res;
 }
 
 LINEAR_ARG* MipWrapper_Sum::for_linear() {
     LINEAR_ARG* largs = (LINEAR_ARG*) calloc(_vars.size(), sizeof(LINEAR_ARG));
-    for (int i = 0; i < _vars.size(); ++i) {
+    for (unsigned int i = 0; i < _vars.size(); ++i) {
         largs[i].expr = _vars.get_item(i);
         largs[i].coef = _weights.get_item(i);
         largs[i].offset = _offset;

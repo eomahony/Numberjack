@@ -51,7 +51,7 @@ private:
 public:
     SatWrapperArray() {}
     virtual ~SatWrapperArray() {}
-    int size() const {
+    size_t size() const {
         return _array.size();
     }
     void add(T arg) {

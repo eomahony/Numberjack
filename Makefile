@@ -2,8 +2,13 @@
 SRC = ./src
 SOL = ./solvers
 
+# List of wrappers that need to be compiled before the solver interfaces.
+WRAPPERS = sat mip
+
 SOLVERS = $(wildcard $(SOL)/*)
-TARGETS = $(patsubst $(SOL)/%, %, $(SOLVERS))
+TEMPTARGETS = $(patsubst $(SOL)/%, %, $(SOLVERS))
+TARGETS = $(WRAPPERS) $(filter-out $(WRAPPERS),$(TEMPTARGETS))
+
 TARGET_LIB = $(TARGETS:=_lib)
 TARGET_INSTALL = $(TARGETS:=_install)
 TARGET_LOCAL = $(TARGETS:=_local)

@@ -58,32 +58,33 @@ install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
 
 clean_swig:
-	-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
+	@echo "-> cleaning swig interface"
+	@-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
 
 clean_all: clean clean_swig
 
 clean:
-	-rm -rf $(OBJDIR)/* $(PYTHON)/*o $(PYTHON)/*~ $(PYTHON)/build *~ $(SRCDIR)/*~
+	@echo "-> cleaning"
+	@-rm -rf $(OBJDIR)/* $(PYTHON)/*o $(PYTHON)/*~ $(PYTHON)/build *~ $(SRCDIR)/*~
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
-		@echo "-> compiling $@"
-		$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+	@echo "-> compiling $@"
+	@$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
-		@echo "-> compiling $@"
-		$(CXX) $(CFLAGS) -I$(SRCDIR) -I$(PYLIB) -fPIC -c $< -o $@
+	@echo "-> compiling $@"
+	@$(CXX) $(CFLAGS) -I$(SRCDIR) -I$(PYLIB) -fPIC -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	
-	$(SWIG) -c++ -python $<
-	python $(MAINDIR)/tools/finalize.py $(<:.i=.py)
+	@$(SWIG) -c++ -python $<
+	@python $(MAINDIR)/tools/finalize.py $(<:.i=.py)
 
 $(PYTHON)/%.i: $(SRCDIR)/%.hpp
-	python $(MAINDIR)/tools/mk_interface.py $<
-
+	@python $(MAINDIR)/tools/mk_interface.py $<
 
 $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o 
 	@echo "-> linking $@"
-	$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(PYTHON)/MipWrapper_wrap.o -o $@
+	@$(CXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LFLAGS) $(MAINOBJFILES) $(PYTHON)/MipWrapper_wrap.o -o $@
 
 #---- EOF --------------------------------------------------------------------

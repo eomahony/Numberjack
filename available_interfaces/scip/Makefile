@@ -103,35 +103,38 @@ $(PYTHON):
 	@mkdir -p $(PYTHON)
 
 clean:
-	-rm -rf $(OBJDIR)/* $(PYTHON)/*o $(PYTHON)/*~ $(PYTHON)/build *~ $(SRCDIR)/*~ $(SCIPDIR)/done.txt
+	@echo "-> cleaning"
+	@-rm -rf $(OBJDIR)/* $(PYTHON)/*o $(PYTHON)/*~ $(PYTHON)/build *~ $(SRCDIR)/*~ $(SCIPDIR)/done.txt
 
-clean_swig: 
-	-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~ 
+clean_swig:
+	@echo "-> cleaning swig interface"
+	@-rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~ 
 
 clean_all: clean clean_swig
 	cd $(SCIPDIR); make clean
 
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
-		@echo "-> compiling $@"
-		$(CXX) $(NFLAGS) $(MIPFLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) -fPIC -c $< $(CXX_o)$@
+	@echo "-> compiling $@"
+	@$(CXX) $(NFLAGS) $(MIPFLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) -fPIC -c $< $(CXX_o)$@
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
-		@echo "-> compiling $@"
-		$(CXX) $(MIPFLAGS) $(NFLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) -I$(PYLIB) -fPIC -c $< $(CXX_o)$@
+	@echo "-> compiling $@"
+	@$(CXX) $(MIPFLAGS) $(NFLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) -I$(PYLIB) -fPIC -c $< $(CXX_o)$@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	
-	$(SWIG) -c++ -python $<
-	python $(MAINDIR)/tools/finalize.py $(<:.i=.py) MipWrapper
+	@$(SWIG) -c++ -python $<
+	@python $(MAINDIR)/tools/finalize.py $(<:.i=.py) MipWrapper
 
 $(PYTHON)/%.i: $(SRCDIR)/%.hpp
-	python $(MAINDIR)/tools/mk_subinterface.py mip MipWrapper $<
+	@echo "-> creating interface $@"
+	@python $(MAINDIR)/tools/mk_subinterface.py mip MipWrapper $<
 
 
 $(PYTHON)/_%.so: $(SCIPLIBFILE) $(NLPILIBFILE) $(LPILIBFILE) $(MAINOBJFILES) $(OBJDIR)/%.o  $(MIPDIR)/obj/MipWrapper.o $(PYTHON)/%_wrap.o
 	@echo "-> linking $@"
-	$(LINKCXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(LINKCXX_L)$(SCIPDIR)/lib $(LINKCXX_l)$(SCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(NLPILIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(OBJSCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(LPILIB)$(LINKLIBSUFFIX)  $(OFLAGS) $(LPSLDFLAGS) $(MIPDIR)/obj/MipWrapper.o python/SCIP_wrap.o $(LINKCXX_o)$@
+	@$(LINKCXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(LINKCXX_L)$(SCIPDIR)/lib $(LINKCXX_l)$(SCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(NLPILIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(OBJSCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(LPILIB)$(LINKLIBSUFFIX)  $(OFLAGS) $(LPSLDFLAGS) $(MIPDIR)/obj/MipWrapper.o python/SCIP_wrap.o $(LINKCXX_o)$@
 
 #scip_lib: $(SCIPDIR)/Makefile.backup 
 #	cp  $(SCIPDIR)/Makefile $(SCIPDIR)/Makefile.backup
@@ -141,11 +144,11 @@ $(PYTHON)/_%.so: $(SCIPLIBFILE) $(NLPILIBFILE) $(LPILIBFILE) $(MAINOBJFILES) $(O
 #	cd  $(SCIPDIR)/..; make ZIMPL=false ZLIB=false READLINE=false
 
 $(SCIPDIR)/done.txt: 
-	cp $(MAINDIR)/tools/Makefile.Numberjack $(SCIPDIR)/../
-	cp $(MAINDIR)/tools/Makefile.doit.Numberjack $(SCIPDIR)/../
-	cp $(MAINDIR)/tools/Makefile.scip.Numberjack $(SCIPDIR)/
-	cp $(MAINDIR)/tools/Makefile.soplex.Numberjack $(SOPLEXDIR)/
-	cd $(SCIPDIR)/..; make -f Makefile.Numberjack ZIMPL=false ZLIB=false READLINE=false	
+	@cp $(MAINDIR)/tools/Makefile.Numberjack $(SCIPDIR)/../
+	@cp $(MAINDIR)/tools/Makefile.doit.Numberjack $(SCIPDIR)/../
+	@cp $(MAINDIR)/tools/Makefile.scip.Numberjack $(SCIPDIR)/
+	@cp $(MAINDIR)/tools/Makefile.soplex.Numberjack $(SOPLEXDIR)/
+	@cd $(SCIPDIR)/..; make -f Makefile.Numberjack ZIMPL=false ZLIB=false READLINE=false	
 	@echo finished | cat > $(SCIPDIR)/done.txt
 
 #---- EOF --------------------------------------------------------------------

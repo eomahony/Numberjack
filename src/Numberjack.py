@@ -267,12 +267,12 @@ class Expression(object):
         if self.is_built(solver):
             if solver is None:
                 solver = self.solver
-            if self.get_size(solver) == (self.get_max(solver) - self.get_min(solver) + 1):
-                dom = range(self.get_min(solver), self.get_max(solver) + 1)
+            lb, ub = self.get_min(solver), self.get_max(solver)
+            if self.get_size(solver) == (ub - lb + 1):
+                dom = range(lb, ub + 1)
             else:
                 # we should make that more efficient by using the underlying solvers to iterate
-                #dom = [v for v in range(self.get_min(solver), self.get_max(solver)+1) if v in self]
-                dom = [self.get_min(solver)]
+                dom = [lb]
                 while True:
                     v = solver.next(self, dom[-1])
                     if v == dom[-1]:

@@ -2072,6 +2072,15 @@ class Disjunction(Predicate):
         return [Sum(self.children) > 0]
 
 
+class Conjunction(Predicate):
+
+    def __init__(self, vars):
+        Predicate.__init__(self, vars, "AND")
+
+    def decompose(self):
+        return [Sum(self.children) == len(self.children)]
+
+
 class Convex(Predicate):
     def __init__(self, vars):
         Predicate.__init__(self, [var for var in vars], "Convex")

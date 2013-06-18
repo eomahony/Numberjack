@@ -422,7 +422,6 @@ class SATEncodingTest(unittest.TestCase):
     #     v2 = Variable(1000)
     #     m = Model(v1 == v2)
     #     s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
-    #     # s.output_cnf("large_domain.cnf")
     #     s.solve()
     #     self.assertTrue(s.is_sat())
 
@@ -430,9 +429,10 @@ class SATEncodingTest(unittest.TestCase):
     #     vs = VarArray(100, 1, 1000)
     #     m = Model(AllDiff(vs))
     #     s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
-    #     # s.output_cnf("large_alldiff.cnf")
     #     s.solve()
     #     self.assertTrue(s.is_sat())
+
+    # ---------------- Absolute ----------------
 
     def testAbsEq(self):
         v1 = Variable(-4, -1)
@@ -457,3 +457,282 @@ class SATEncodingTest(unittest.TestCase):
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertGreater(v1.get_value(), -2)
+
+    # ---------------- Reification of inequalities ----------------
+
+    def testReifEqTrue(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        m = Model(v2 == (v1 == 3), v2 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), 3)
+        self.assertEqual(v2.get_value(), 1)
+
+    def testReifEqFalse(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        m = Model(v2 == (v1 == 3), v2 == 0)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertNotEqual(v1.get_value(), 3)
+        self.assertEqual(v2.get_value(), 0)
+
+    def testReifNeTrue(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        m = Model(v2 == (v1 != 3), v2 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertNotEqual(v1.get_value(), 3)
+        self.assertEqual(v2.get_value(), 1)
+
+    def testReifNeFalse(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        m = Model(v2 == (v1 != 3), v2 == 0)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), 3)
+        self.assertEqual(v2.get_value(), 0)
+
+    def testReifLeTrue(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        m = Model(v2 == (v1 <= 3), v2 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertLessEqual(v1.get_value(), 3)
+        self.assertEqual(v2.get_value(), 1)
+
+    def testReifLeFalse(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        m = Model(v2 == (v1 <= 3), v2 == 0)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertGreater(v1.get_value(), 3)
+        self.assertEqual(v2.get_value(), 0)
+
+    def testReifLtTrue(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        m = Model(v2 == (v1 < 3), v2 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertLess(v1.get_value(), 3)
+        self.assertEqual(v2.get_value(), 1)
+
+    def testReifLtFalse(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        m = Model(v2 == (v1 < 3), v2 == 0)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertGreaterEqual(v1.get_value(), 3)
+        self.assertEqual(v2.get_value(), 0)
+
+    def testReifGeTrue(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        m = Model(v2 == (v1 >= 3), v2 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertGreaterEqual(v1.get_value(), 3)
+        self.assertEqual(v2.get_value(), 1)
+
+    def testReifGeFalse(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        m = Model(v2 == (v1 >= 3), v2 == 0)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertLess(v1.get_value(), 3)
+        self.assertEqual(v2.get_value(), 0)
+
+    def testReifGtTrue(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        m = Model(v2 == (v1 > 3), v2 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertGreater(v1.get_value(), 3)
+        self.assertEqual(v2.get_value(), 1)
+
+    def testReifGtFalse(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        m = Model(v2 == (v1 > 3), v2 == 0)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertLessEqual(v1.get_value(), 3)
+        self.assertEqual(v2.get_value(), 0)
+
+    # ---------------- Reification of inequalities between two expressions ----------------
+
+    def testReif2ExprEqTrue(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        v3 = Variable(5)
+        m = Model(v2 == (v1 == v3 + 2), v2 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), v3.get_value() + 2)
+        self.assertEqual(v2.get_value(), 1)
+
+    def testReif2ExprEqFalse(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        v3 = Variable(5)
+        m = Model(v2 == (v1 == v3 + 2), v2 == 0)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertNotEqual(v1.get_value(), v3.get_value() + 2)
+        self.assertEqual(v2.get_value(), 0)
+
+    def testReif2ExprNeTrue(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        v3 = Variable(5)
+        m = Model(v2 == (v1 != v3 + 2), v2 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertNotEqual(v1.get_value(), v3.get_value() + 2)
+        self.assertEqual(v2.get_value(), 1)
+
+    def testReif2ExprNeFalse(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        v3 = Variable(5)
+        m = Model(v2 == (v1 != v3 + 2), v2 == 0)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), v3.get_value() + 2)
+        self.assertEqual(v2.get_value(), 0)
+
+    def testReif2ExprLeTrue(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        v3 = Variable(5)
+        m = Model(v2 == (v1 <= v3 + 2), v2 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertLessEqual(v1.get_value(), v3.get_value() + 2)
+        self.assertEqual(v2.get_value(), 1)
+
+    def testReif2ExprLeFalse(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        v3 = Variable(5)
+        m = Model(v2 == (v1 <= v3 + 2), v2 == 0)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertGreater(v1.get_value(), v3.get_value() + 2)
+        self.assertEqual(v2.get_value(), 0)
+
+    def testReif2ExprLtTrue(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        v3 = Variable(5)
+        m = Model(v2 == (v1 < v3 + 2), v2 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertLess(v1.get_value(), v3.get_value() + 2)
+        self.assertEqual(v2.get_value(), 1)
+
+    def testReif2ExprLtFalse(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        v3 = Variable(5)
+        m = Model(v2 == (v1 < v3 + 2), v2 == 0)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertGreaterEqual(v1.get_value(), v3.get_value() + 2)
+        self.assertEqual(v2.get_value(), 0)
+
+    def testReif2ExprGeTrue(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        v3 = Variable(5)
+        m = Model(v2 == (v1 >= v3 + 2), v2 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertGreaterEqual(v1.get_value(), v3.get_value() + 2)
+        self.assertEqual(v2.get_value(), 1)
+
+    def testReif2ExprGeFalse(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        v3 = Variable(5)
+        m = Model(v2 == (v1 >= v3 + 2), v2 == 0)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertLess(v1.get_value(), v3.get_value() + 2)
+        self.assertEqual(v2.get_value(), 0)
+
+    def testReif2ExprGtTrue(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        v3 = Variable(5)
+        m = Model(v2 == (v1 > v3 + 2), v2 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertGreater(v1.get_value(), v3.get_value() + 2)
+        self.assertEqual(v2.get_value(), 1)
+
+    def testReif2ExprGtFalse(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        v3 = Variable(5)
+        m = Model(v2 == (v1 > v3 + 2), v2 == 0)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertLessEqual(v1.get_value(), v3.get_value() + 2)
+        self.assertEqual(v2.get_value(), 0)
+
+    def testReif2ExprMul(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        v3 = Variable(1, 5)
+        v4 = Variable(1, 5)
+        m = Model(v2 == (v1 == v3 * v4), v2 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), v3.get_value() * v4.get_value())
+        self.assertEqual(v2.get_value(), 1)
+
+    def testReif2ExprFactorDomain(self):
+        v1 = Variable(5)
+        v2 = Variable()
+        v3 = Variable(5)
+        m = Model(v2 == (v1 == v3 * 2), v2 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), v3.get_value() * 2)
+        self.assertEqual(v2.get_value(), 1)

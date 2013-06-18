@@ -214,7 +214,9 @@ Lit DomainEncoding::less_or_equal(const int value, const int index) const {
     }
     if(_lower > value) return Lit_False;
     else if(_upper <= value) return Lit_True;
-    else if(_size == 2) {
+    else if(_order_encoding < 0 && !(_size == 2 || _direct_encoding < 0)){
+        std::cerr << "Warning: call to DomainEncoding::less_or_equal before the domain has been encoded. owner: x" << owner->_ident << std::endl;
+    } else if(_size == 2) {
         if(value == _lower) return ~Lit(_direct_encoding);
         if(value == _upper) return Lit(_direct_encoding);
         return Lit_False;
@@ -233,8 +235,11 @@ Lit DomainEncoding::equal(const int value, const int index) const {
     if(!owner->encoding->direct && _size > 2) {
         std::cerr << "ERROR call to Domain::equal when not using the direct encoding." << std::endl;
     }
+
     if(_lower > value || _upper < value) return Lit_False;
-    else if(_size == 2) {
+    else if(_direct_encoding < 0){
+        std::cerr << "Warning: call to DomainEncoding::equal before the domain has been encoded. owner: x" << owner->_ident << std::endl;
+    } else if(_size == 2) {
         if(_lower == value) return ~Lit(_direct_encoding);
         if(_upper == value) return Lit(_direct_encoding);
         return Lit_False;
@@ -259,7 +264,6 @@ void DomainEncoding::encode(SatWrapperSolver *solver) {
     std::cout << std::endl;
 #endif
 
-    // FIXME: modify special case of _size=2 to handle different encoding configs
     if(_size == 2) _direct_encoding = solver->create_atom(this,SELF);
     else {
         std::vector<Lit> lits;
@@ -1137,20 +1141,13 @@ SatWrapper_Expression* SatWrapper_Expression::add(SatWrapperSolver *solver, bool
 
 
 SatWrapper_add::SatWrapper_add(SatWrapper_Expression *arg1, SatWrapper_Expression *arg2)
-    : SatWrapper_binop(arg1, arg2) {
-    int _lower = arg1->getmin()+arg2->getmin();
-    int _upper = arg1->getmax()+arg2->getmax();
-    domain = new DomainEncoding(this, _lower, _upper);
-}
+    : SatWrapper_binop(arg1, arg2) {}
 
 SatWrapper_add::SatWrapper_add(SatWrapper_Expression *arg1, const int arg2)
     : SatWrapper_binop(arg1, arg2) {
-    domain = new OffsetDomain(this,arg1->domain, arg2);
-
 #ifdef _DEBUGWRAP
     std::cout << "creating offset expression [" << getmin() << ".." << getmax() << "]" << std::endl;
 #endif
-
 }
 
 SatWrapper_Expression* SatWrapper_add::add(SatWrapperSolver *solver, bool top_level) {
@@ -1175,10 +1172,12 @@ SatWrapper_Expression* SatWrapper_add::add(SatWrapperSolver *solver, bool top_le
             _vars[0] = _vars[0]->add(_solver, false);
 
             if(_vars[1]) {
-
                 _vars[1] = _vars[1]->add(_solver, false);
-                domain->encode(_solver);
 
+                int _lower = _vars[0]->getmin()+_vars[1]->getmin();
+                int _upper = _vars[0]->getmax()+_vars[1]->getmax();
+                domain = new DomainEncoding(this, _lower, _upper);
+                domain->encode(_solver);
 
 #ifdef _DEBUGWRAP
                 std::cout << "encode add predicate x" << _ident << " == x"
@@ -1186,7 +1185,9 @@ SatWrapper_Expression* SatWrapper_add::add(SatWrapperSolver *solver, bool top_le
 #endif
 
                 additionEncoder(_vars[0], _vars[1], this, _solver, encoding);
-
+            } else {
+                domain = new OffsetDomain(this, _vars[0]->domain, _rhs);
+                domain->encode(_solver);
             }
         }
 
@@ -1199,11 +1200,7 @@ SatWrapper_Expression* SatWrapper_add::add(SatWrapperSolver *solver, bool top_le
 SatWrapper_add::~SatWrapper_add() {}
 
 SatWrapper_mul::SatWrapper_mul(SatWrapper_Expression *arg1, const int arg2)
-    : SatWrapper_binop(arg1, arg2) {
-
-    domain = new FactorDomain(this,arg1->domain, arg2);
-
-}
+    : SatWrapper_binop(arg1, arg2) {}
 
 void get_mul_bounds(int lb1, int ub1, int lb2, int ub2, int *lb, int *ub){
     std::vector<int> bounds;
@@ -1221,15 +1218,7 @@ void get_mul_bounds(SatWrapper_Expression *arg1, SatWrapper_Expression *arg2, in
 
 
 SatWrapper_mul::SatWrapper_mul(SatWrapper_Expression *arg1, SatWrapper_Expression *arg2)
-    : SatWrapper_binop(arg1, arg2) {
-
-    // We create a range between the lb and ub of the possible multiplications
-    // between arg1 and arg2. Could possibly change this to only list the
-    // possible values later.
-    int lb, ub;
-    get_mul_bounds(arg1, arg2, &lb, &ub);  
-    domain = new DomainEncoding(this, lb, ub);
-}
+    : SatWrapper_binop(arg1, arg2) {}
 
 SatWrapper_Expression* SatWrapper_mul::add(SatWrapperSolver *solver, bool top_level) {
     if(!has_been_added()) {
@@ -1253,8 +1242,18 @@ SatWrapper_Expression* SatWrapper_mul::add(SatWrapperSolver *solver, bool top_le
 
             if(_vars[1]) {
                 _vars[1] = _vars[1]->add(_solver, false);
+
+                // We create a range between the lb and ub of the possible multiplications
+                // between arg1 and arg2. Could possibly change this to only list the
+                // possible values later.
+                int lb, ub;
+                get_mul_bounds(_vars[0], _vars[1], &lb, &ub);  
+                domain = new DomainEncoding(this, lb, ub);
                 domain->encode(_solver);
                 multiplicationEncoder(_vars[0], _vars[1], this, solver, encoding);
+            } else {
+                domain = new FactorDomain(this, _vars[0]->domain, _rhs);
+                domain->encode(_solver);
             }
         }
 
@@ -1268,19 +1267,7 @@ SatWrapper_mul::~SatWrapper_mul() {}
 
 SatWrapper_Abs::SatWrapper_Abs(SatWrapper_Expression *arg1)
     : SatWrapper_Expression() {
-
-    // Need to extract just the set of absolute values from arg1's domain.
-    std::set<int> values_set;
-    for(int i=0; i<arg1->getsize(); i++){
-        values_set.insert(abs(arg1->getval(i)));
-    }
-    SatWrapperIntArray values;
-    for(std::set<int>::iterator it=values_set.begin(); it!=values_set.end(); it++){
-        values.add(*it);
-    }
-
     _var = arg1;
-    domain = new DomainEncoding(this, values);
 }
 
 SatWrapper_Expression* SatWrapper_Abs::add(SatWrapperSolver *solver, bool top_level) {
@@ -1301,8 +1288,20 @@ SatWrapper_Expression* SatWrapper_Abs::add(SatWrapperSolver *solver, bool top_le
             exit(1);
 
         } else {
-            domain->encode(solver);
             _var = _var->add(solver, false);
+            
+            // Need to extract just the set of absolute values from arg1's domain.
+            std::set<int> values_set;
+            for(int i=0; i<_var->getsize(); i++){
+                values_set.insert(abs(_var->getval(i)));
+            }
+            SatWrapperIntArray values;
+            for(std::set<int>::iterator it=values_set.begin(); it!=values_set.end(); it++){
+                values.add(*it);
+            }
+
+            domain = new DomainEncoding(this, values);
+            domain->encode(solver);
 
 #ifdef _DEBUGWRAP
             std::cout << "encode abs predicate Abs(x" << _ident << ") == x"
@@ -1480,7 +1479,6 @@ void SatWrapper_Sum::initialise() {
         }
         _lower += _offset;
         _upper += _offset;
-
         domain = new DomainEncoding(this,_lower, _upper);
     }
 
@@ -1491,7 +1489,6 @@ void SatWrapper_Sum::initialise() {
 }
 
 SatWrapper_Sum::~SatWrapper_Sum() {
-
 #ifdef _DEBUGWRAP
     std::cout << "delete sum" << std::endl;
 #endif
@@ -1534,7 +1531,6 @@ SatWrapper_Expression* SatWrapper_Sum::add(SatWrapperSolver *solver, bool top_le
                 if(w1 != 1) exp = new SatWrapper_mul(_vars.get_item(0), w1);
                 else exp = _vars.get_item(0);
                 _vars.set_item(0, exp->add(_solver, false));
-
             } else {
                 
                 for(unsigned int i=0; i+1<_vars.size(); i+=2) {
@@ -1556,11 +1552,13 @@ SatWrapper_Expression* SatWrapper_Sum::add(SatWrapperSolver *solver, bool top_le
                 }
             }
 
+            if(domain != NULL) delete domain;
             domain = new OffsetDomain(this,_vars.get_item(_vars.size()-1)->domain, _offset);
-
         } else {
             std::cout << "Warning SUM constraint on top level not supported" << std::endl;
         }
+
+        _solver->validate();
     }
 
     return this;
@@ -1837,22 +1835,16 @@ SatWrapper_Expression* SatWrapper_and::add(SatWrapperSolver *solver, bool top_le
 
 
 SatWrapper_eq::SatWrapper_eq(SatWrapper_Expression *var1, SatWrapper_Expression *var2)
-    : SatWrapper_binop(var1,var2) {
-    domain = new DomainEncoding(this);
-}
+    : SatWrapper_binop(var1,var2) {}
 
 SatWrapper_eq::SatWrapper_eq(SatWrapper_Expression *var1, int rhs)
-    : SatWrapper_binop(var1,rhs) {
-    domain = new EqDomain(this,var1->domain, rhs, 1);
-}
+    : SatWrapper_binop(var1,rhs) {}
 
 
 SatWrapper_eq::~SatWrapper_eq() {
-
 #ifdef _DEBUGWRAP
     std::cout << "delete eq" << std::endl;
 #endif
-
 }
 
 SatWrapper_Expression* SatWrapper_eq::add(SatWrapperSolver *solver, bool top_level) {
@@ -1868,7 +1860,6 @@ SatWrapper_Expression* SatWrapper_eq::add(SatWrapperSolver *solver, bool top_lev
 #endif
 
         Lits lits;
-
         _vars[0] = _vars[0]->add(_solver, false);
         if(top_level) {
             if(_vars[1]) {
@@ -1904,8 +1895,10 @@ SatWrapper_Expression* SatWrapper_eq::add(SatWrapperSolver *solver, bool top_lev
             }
         } else {
             if(_vars[1]) {
-                domain->encode(_solver);
                 _vars[1] = _vars[1]->add(_solver, false);
+
+                domain = new DomainEncoding(this);
+                domain->encode(_solver);
 
 #ifdef _DEBUGWRAP
                 std::cout << "encode equality predicate x" << this->_ident << " == (x"
@@ -1913,6 +1906,14 @@ SatWrapper_Expression* SatWrapper_eq::add(SatWrapperSolver *solver, bool top_lev
 #endif
 
                 equalityEncoder(_vars[0], _vars[1], this, _solver, encoding, true);
+            } else {
+
+#ifdef _DEBUGWRAP
+                std::cout << "encode equality predicate x" << this->_ident << " == (x"
+                          << _vars[0]->_ident << " == " << _rhs << ")" << std::endl;
+#endif
+                domain = new EqDomain(this,_vars[0]->domain, _rhs, 1);
+                domain->encode(_solver);
             }
         }
         _solver->validate();
@@ -1925,21 +1926,15 @@ SatWrapper_Expression* SatWrapper_eq::add(SatWrapperSolver *solver, bool top_lev
 /* Disequality operator */
 
 SatWrapper_ne::SatWrapper_ne(SatWrapper_Expression *var1, SatWrapper_Expression *var2)
-    : SatWrapper_binop(var1,var2) {
-    domain = new DomainEncoding(this);
-}
+    : SatWrapper_binop(var1,var2) {}
 
 SatWrapper_ne::SatWrapper_ne(SatWrapper_Expression *var1, int rhs)
-    : SatWrapper_binop(var1,rhs) {
-    domain = new EqDomain(this,var1->domain, rhs, 0);
-}
+    : SatWrapper_binop(var1,rhs) {}
 
 SatWrapper_ne::~SatWrapper_ne() {
-
 #ifdef _DEBUGWRAP
     std::cout << "delete notequal" << std::endl;
 #endif
-
 }
 
 SatWrapper_Expression* SatWrapper_ne::add(SatWrapperSolver *solver, bool top_level) {
@@ -1994,13 +1989,18 @@ SatWrapper_Expression* SatWrapper_ne::add(SatWrapperSolver *solver, bool top_lev
 
         } else {
             if(_vars[1]) {
-                domain->encode(_solver);
                 _vars[1] = _vars[1]->add(_solver, false);
+
+                domain = new DomainEncoding(this);
+                domain->encode(_solver);                
 
 #ifdef _DEBUGWRAP
                 std::cout << "add notequal predicate" << std::endl;
 #endif
                 equalityEncoder(_vars[0], _vars[1], this, _solver, encoding, false);
+            } else {
+                domain = new EqDomain(this, _vars[0]->domain, _rhs, 0);
+                domain->encode(_solver);
             }
         }
         _solver->validate();
@@ -2017,28 +2017,20 @@ SatWrapper_le::SatWrapper_le(SatWrapper_Expression *var1, SatWrapper_Expression 
 #ifdef _DEBUGWRAP
     std::cout << "Creating Le constraint" << std::endl;
 #endif
-
-    domain = new DomainEncoding(this);
-
 }
 
 SatWrapper_le::SatWrapper_le(SatWrapper_Expression *var1, int rhs)
     : SatWrapper_binop(var1,rhs) {
-
 #ifdef _DEBUGWRAP
     std::cout << "Leq on constant constructor" << std::endl;
 #endif
-
-    domain = new LeqDomain(this,var1->domain, rhs, 1);
 }
 
 
 SatWrapper_le::~SatWrapper_le() {
-
 #ifdef _DEBUGWRAP
     std::cout << "delete lessequal" << std::endl;
 #endif
-
 }
 
 SatWrapper_Expression* SatWrapper_le::add(SatWrapperSolver *solver, bool top_level) {
@@ -2092,10 +2084,14 @@ SatWrapper_Expression* SatWrapper_le::add(SatWrapperSolver *solver, bool top_lev
 #endif
 
             if(_vars[1]) {
-                domain->encode(_solver);
                 _vars[1] = _vars[1]->add(_solver, false);
+                domain = new DomainEncoding(this);
+                domain->encode(_solver);
 
                 precedenceEncoder(_vars[0], _vars[1], this, 0, _solver, encoding);
+            } else {
+                domain = new LeqDomain(this,_vars[0]->domain, _rhs, 1);
+                domain->encode(_solver);
             }
         }
 
@@ -2113,8 +2109,6 @@ SatWrapper_ge::SatWrapper_ge(SatWrapper_Expression *var1, SatWrapper_Expression 
 #ifdef _DEBUGWRAP
     std::cout << "Creating Ge constraint" << std::endl;
 #endif
-
-    domain = new DomainEncoding(this);
 }
 
 SatWrapper_ge::SatWrapper_ge(SatWrapper_Expression *var1, int rhs)
@@ -2123,16 +2117,12 @@ SatWrapper_ge::SatWrapper_ge(SatWrapper_Expression *var1, int rhs)
 #ifdef _DEBUGWRAP
     std::cout << "Geq on constant constructor" << std::endl;
 #endif
-
-    domain = new LeqDomain(this,var1->domain, rhs-1, 0);
 }
 
 SatWrapper_ge::~SatWrapper_ge() {
-
 #ifdef _DEBUGWRAP
     std::cout << "delete greaterequal" << std::endl;
 #endif
-
 }
 
 SatWrapper_Expression* SatWrapper_ge::add(SatWrapperSolver *solver, bool top_level) {
@@ -2191,12 +2181,14 @@ SatWrapper_Expression* SatWrapper_ge::add(SatWrapperSolver *solver, bool top_lev
 #endif
 
             if(_vars[1]) {
-
-                domain->encode(_solver);
                 _vars[1] = _vars[1]->add(_solver, false);
+                domain = new DomainEncoding(this);
+                domain->encode(_solver);
 
                 precedenceEncoder(_vars[1], _vars[0], this, 0, _solver, encoding);
-
+            } else {
+                domain = new LeqDomain(this, _vars[0]->domain, _rhs-1, 0);
+                domain->encode(_solver);
             }
         }
 
@@ -2211,21 +2203,15 @@ SatWrapper_Expression* SatWrapper_ge::add(SatWrapperSolver *solver, bool top_lev
 /* Lt object */
 
 SatWrapper_lt::SatWrapper_lt(SatWrapper_Expression *var1, SatWrapper_Expression *var2)
-    : SatWrapper_binop(var1,var2) {
-    domain = new DomainEncoding(this);
-}
+    : SatWrapper_binop(var1,var2) {}
 
 SatWrapper_lt::SatWrapper_lt(SatWrapper_Expression *var1, int rhs)
-    : SatWrapper_binop(var1,rhs) {
-    domain = new LeqDomain(this,var1->domain, rhs-1, 1);
-}
+    : SatWrapper_binop(var1,rhs) {}
 
 SatWrapper_lt::~SatWrapper_lt() {
-
 #ifdef _DEBUGWRAP
     std::cout << "delete lessthan" << std::endl;
 #endif
-
 }
 
 SatWrapper_Expression* SatWrapper_lt::add(SatWrapperSolver *solver, bool top_level) {
@@ -2271,10 +2257,14 @@ SatWrapper_Expression* SatWrapper_lt::add(SatWrapperSolver *solver, bool top_lev
 #endif
 
             if(_vars[1]) {
-                domain->encode(_solver);
                 _vars[1] = _vars[1]->add(_solver, false);
+                domain = new DomainEncoding(this);
+                domain->encode(_solver);
 
                 precedenceEncoder(_vars[0], _vars[1], this, 1, _solver, encoding);
+            } else {
+                domain = new LeqDomain(this,_vars[0]->domain, _rhs-1, 1);
+                domain->encode(_solver);
             }
         }
 
@@ -2288,14 +2278,10 @@ SatWrapper_Expression* SatWrapper_lt::add(SatWrapperSolver *solver, bool top_lev
 /* Gt object */
 
 SatWrapper_gt::SatWrapper_gt(SatWrapper_Expression *var1, SatWrapper_Expression *var2)
-    : SatWrapper_binop(var1,var2) {
-    domain = new DomainEncoding(this);
-}
+    : SatWrapper_binop(var1,var2) {}
 
 SatWrapper_gt::SatWrapper_gt(SatWrapper_Expression *var1, int rhs)
-    : SatWrapper_binop(var1,rhs) {
-    domain = new LeqDomain(this, var1->domain, rhs, 0);
-}
+    : SatWrapper_binop(var1,rhs) {}
 
 SatWrapper_gt::~SatWrapper_gt() {
 }
@@ -2353,11 +2339,14 @@ SatWrapper_Expression* SatWrapper_gt::add(SatWrapperSolver *solver, bool top_lev
 #endif
 
             if(_vars[1]) {
-                domain->encode(_solver);
                 _vars[1] = _vars[1]->add(_solver, false);
+                domain = new DomainEncoding(this);
+                domain->encode(_solver);
 
                 precedenceEncoder(_vars[1], _vars[0], this, 1, _solver, encoding);
-
+            } else {
+                domain = new LeqDomain(this, _vars[0]->domain, _rhs, 0);
+                domain->encode(_solver);
             }
         }
 

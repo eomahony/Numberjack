@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# translate flatzinc format to python/Numberjack 
+
+# usage: ./fzn2py problem.fzn | python
+
+# remove end of line (;), annotations (except variable output), predicate and comments.
+# replace a..b by range(a,1+b)
+# replace false by False and true by True
+# replace array index a[i] by a[i-1]  # BUT a[var] STILL NOT TRANSFORMED!?!
+# after awk parsing, replace {} by []
+SED='sed -r'
+INPUT="$1"
+uname=$(uname)
+
+pushd . > /dev/null
+SCRIPT_PATH="${BASH_SOURCE[0]}";
+if ([ -h "${SCRIPT_PATH}" ]) then
+  while([ -h "${SCRIPT_PATH}" ]) do cd `dirname "$SCRIPT_PATH"`; SCRIPT_PATH=`readlink "${SCRIPT_PATH}"`; done
+fi
+cd `dirname ${SCRIPT_PATH}` > /dev/null
+SCRIPT_PATH=`pwd`;
+popd  > /dev/null
+
+MZNNJ_DIR=$SCRIPT_PATH
+
+if [[ "$uname" == "Darwin" ]]; then
+    # The version of sed on Mac has a different option to enable extended regular expressions
+    SED='sed -E'
+
+    if [[ "$INPUT" == "-" ]]; then
+        # sed on Mac will read from stdin by default, if '-' is specified it will try to open a file named '-'.
+        INPUT=""
+    fi
+fi
+
+# sed 's/;$//' $1 | sed -r 's/:: output_[a-zA-Z0-9_]+([(].*[)])*/::_output_/g' | sed -r 's/:: [a-zA-Z0-9_]+([(].*[)])*//g' | sed 's/^predicate .*$//' | sed 's/%.*$//' | sed 's/false/0/g' | sed 's/true/1/g' | sed -r 's/([-]*[0-9]+)[.][.]([-]*[0-9]+)/range(\1,1+\2)/g' | sed -r 's/([a-zA-Z0-9_]+)[[]([0-9+]+)[]]/\1[\2-1]/g' | awk -f ./fzn2py.awk | sed 's/{/[/g' | sed 's/}/]/g'
+$SED 's/;$//' $INPUT | $SED 's/:: output_[a-zA-Z0-9_]+([(].*[)])*/::_output_/g' | $SED 's/:: [a-zA-Z0-9_]+([(].*[)])*//g' | $SED 's/^predicate .*$//' | $SED 's/%.*$//' | $SED 's/false/False/g' | $SED 's/true/True/g' | $SED 's/([-]*[0-9]+)[.][.]([-]*[0-9]+)/range(\1,1+\2)/g' | $SED 's/([a-zA-Z0-9_]+)[[]([0-9+]+)[]]/\1[\2-1]/g' | awk -f $MZNNJ_DIR/fzn2py.awk | $SED 's/\{/\[/g' | $SED 's/\}/\]/g'

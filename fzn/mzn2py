@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# mzn2fzn -G numberjack --output-to-stdout $* | ./fzn2py -
+mzn2fzn -I ./mznlib --output-to-stdout $* | ./fzn2py -

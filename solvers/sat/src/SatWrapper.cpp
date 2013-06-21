@@ -187,10 +187,6 @@ int DomainEncoding::contain(const int value) const {
 
 int DomainEncoding::next(const int value, const int index) const {
     int nxt = value;
-
-//   std::cout << _lower << " < " << value << " < " << _upper << std::endl;
-//   std::cout << "size: " << _size << std::endl;
-
     if(nxt < _upper) {
         if(_size == 2) return _upper;
         if(_values) {
@@ -198,10 +194,6 @@ int DomainEncoding::next(const int value, const int index) const {
                 if(index < _size) return _values[index+1];
             } else {
                 int x = get_index_p(value);
-
-// 	std::cout << "index: " << x << std::endl;
-
-
                 if(x < _size) return _values[x+1];
             }
         } else return ++nxt;
@@ -366,14 +358,12 @@ Lit FactorDomain::less_or_equal(const int value, const int index) const {
         if(value < 0 && value%factor) --quotient;
 
         return _dom_ptr->less_or_equal(quotient,-1);
-        //return _dom_ptr->less_or_equal(value/factor,-1);
     } else {
 
         int quotient = (value/factor)-1;
         if(value < 0 && value%factor) ++quotient;
 
         return ~(_dom_ptr->less_or_equal(quotient,-1));
-        //return ~(_dom_ptr->less_or_equal((value/factor)-1+(value%factor != 0),-1));
     }
 }
 
@@ -1553,22 +1543,16 @@ SatWrapper_Expression* SatWrapper_AllDiff::add(SatWrapperSolver *solver, bool to
                 }
 
                 _solver->validate();
-
             }
             if(!(encoding->alldiff_encoding & EncodingConfiguration::PairwiseDecomp || encoding->alldiff_encoding & EncodingConfiguration::LadderAMO)) {
                 std::cerr << "Error: AllDiff not implemented for this encoding. Please use either PairwiseDecomp or LadderAMO." << std::endl;
                 exit(1);
             }
-
-
         } else {
-
             std::cerr << "Alldiff not in top level insupported at the moment" << std::endl;
             exit(1);
-
         }
     }
-
     return NULL;
 }
 

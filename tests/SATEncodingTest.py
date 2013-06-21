@@ -4,6 +4,7 @@ This module is responsible for testing the SAT encodings of Numberjack.
 
 '''
 from Numberjack import *
+from copy import copy
 import unittest
 
 
@@ -459,6 +460,9 @@ class SATEncodingTest(unittest.TestCase):
         self.assertGreater(v1.get_value(), -2)
 
     # ---------------- Reification of inequalities ----------------
+    # Note that some of these tests require that the order encoding of the domain
+    # is enabled. For now, this will just take a copy and set the bit to true,
+    # but should find a better solution for parameterized test-cases in future.
 
     def testReifEqTrue(self):
         v1 = Variable(5)
@@ -504,7 +508,9 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(5)
         v2 = Variable()
         m = Model(v2 == (v1 <= 3), v2 == 1)
-        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        e = copy(SATEncodingTest.encoding)
+        e.order = True
+        s = SATEncodingTest.solver(m, encoding=e)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertLessEqual(v1.get_value(), 3)
@@ -514,7 +520,9 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(5)
         v2 = Variable()
         m = Model(v2 == (v1 <= 3), v2 == 0)
-        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        e = copy(SATEncodingTest.encoding)
+        e.order = True
+        s = SATEncodingTest.solver(m, encoding=e)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertGreater(v1.get_value(), 3)
@@ -524,7 +532,9 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(5)
         v2 = Variable()
         m = Model(v2 == (v1 < 3), v2 == 1)
-        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        e = copy(SATEncodingTest.encoding)
+        e.order = True
+        s = SATEncodingTest.solver(m, encoding=e)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertLess(v1.get_value(), 3)
@@ -534,7 +544,9 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(5)
         v2 = Variable()
         m = Model(v2 == (v1 < 3), v2 == 0)
-        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        e = copy(SATEncodingTest.encoding)
+        e.order = True
+        s = SATEncodingTest.solver(m, encoding=e)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertGreaterEqual(v1.get_value(), 3)
@@ -544,7 +556,9 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(5)
         v2 = Variable()
         m = Model(v2 == (v1 >= 3), v2 == 1)
-        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        e = copy(SATEncodingTest.encoding)
+        e.order = True
+        s = SATEncodingTest.solver(m, encoding=e)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertGreaterEqual(v1.get_value(), 3)
@@ -554,7 +568,9 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(5)
         v2 = Variable()
         m = Model(v2 == (v1 >= 3), v2 == 0)
-        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        e = copy(SATEncodingTest.encoding)
+        e.order = True
+        s = SATEncodingTest.solver(m, encoding=e)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertLess(v1.get_value(), 3)
@@ -564,7 +580,9 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(5)
         v2 = Variable()
         m = Model(v2 == (v1 > 3), v2 == 1)
-        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        e = copy(SATEncodingTest.encoding)
+        e.order = True
+        s = SATEncodingTest.solver(m, encoding=e)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertGreater(v1.get_value(), 3)
@@ -574,7 +592,9 @@ class SATEncodingTest(unittest.TestCase):
         v1 = Variable(5)
         v2 = Variable()
         m = Model(v2 == (v1 > 3), v2 == 0)
-        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        e = copy(SATEncodingTest.encoding)
+        e.order = True
+        s = SATEncodingTest.solver(m, encoding=e)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertLessEqual(v1.get_value(), 3)

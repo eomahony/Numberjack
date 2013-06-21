@@ -736,3 +736,37 @@ class SATEncodingTest(unittest.TestCase):
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value(), v3.get_value() * 2)
         self.assertEqual(v2.get_value(), 1)
+
+    # ---------------- Modulus ----------------
+
+    def testModConstant(self):
+        v1 = Variable(10)
+        v2 = Variable(5)
+        m = Model(v2 == (v1 % 3), v1 == 4)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), 4)
+        self.assertEqual(v2.get_value(), 1)
+
+    def testModNegConstant(self):
+        v1 = Variable(-5, 5)
+        v2 = Variable(-5, 5)
+        m = Model(v2 == (v1 % 3), v1 == -5)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), -5)
+        self.assertEqual(v2.get_value(), -2)
+
+    def testModTwoVars(self):
+        v1 = Variable(-10, 10)
+        v2 = Variable(-5, 5)
+        v3 = Variable(-5, 5)
+        m = Model(v3 == (v1 % v2), v1 == -5, v2 == 3)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), -5)
+        self.assertEqual(v2.get_value(), 3)
+        self.assertEqual(v3.get_value(), -2)

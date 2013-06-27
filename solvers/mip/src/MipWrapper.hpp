@@ -183,6 +183,7 @@ public:
                    const int offset = 0);
     MipWrapper_Sum(MipWrapper_Expression* arg1, MipWrapper_Expression* arg2,
                    MipWrapperDoubleArray& weights, const int offset = 0);
+    MipWrapper_Sum(MipWrapper_Expression *arg, double w, const int offset = 0);
     MipWrapper_Sum(MipWrapper_Expression* arg, MipWrapperDoubleArray& weights,
                    const int offset = 0);
 
@@ -234,6 +235,41 @@ public:
     virtual MipWrapper_Expression* add(MipWrapperSolver *solver, bool top_level);
     virtual void initbounds();
 };
+
+class MipWrapper_mod: public MipWrapper_Expression {
+protected:
+    MipWrapper_Expression *vars[2];
+
+public:
+    MipWrapper_mod(MipWrapper_Expression* arg1, MipWrapper_Expression* arg2);
+    MipWrapper_mod(MipWrapper_Expression* arg1, const int arg2);
+    virtual ~MipWrapper_mod();
+    virtual MipWrapper_Expression* add(MipWrapperSolver *solver, bool top_level);
+    virtual void initbounds();
+};
+
+
+class MipWrapper_neg: public MipWrapper_Expression {
+private:
+    MipWrapper_Expression *_var;
+public:
+    MipWrapper_neg(MipWrapper_Expression *arg);
+    virtual ~MipWrapper_neg();
+    virtual MipWrapper_Expression* add(MipWrapperSolver* solver, bool top_level);
+    virtual void initbounds();
+};
+
+
+class MipWrapper_Abs: public MipWrapper_Expression {
+private:
+    MipWrapper_Expression *_var;
+public:
+    MipWrapper_Abs(MipWrapper_Expression *arg);
+    virtual ~MipWrapper_Abs();
+    virtual MipWrapper_Expression* add(MipWrapperSolver* solver, bool top_level);
+    virtual void initbounds();
+};
+
 
 class MipWrapper_binop: public MipWrapper_FloatVar {
 protected:

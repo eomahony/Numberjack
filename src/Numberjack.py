@@ -1354,16 +1354,18 @@ class Mul(BinPredicate):
 #   - Top-level: Can not be used as top-level Constraint
 #   - Nested: Equal to the modulo of the operands
 #
-# \warning Can not be used with all solvers
-#
 #    Mod expression can be used to modulo two expressions or an expression and
 #    a constraint.
+#
+#    For MIP and SAT, the constraint is encoded such that the remainder takes
+#    the sign of the numerator, as per the C standard. This differs from Python
+#    where the remainder takes the sign of the denominator.
 #
 # \code
 #    var1 = Variable(0, 10)
 #    var2 = Variable(0, 100)
 #
-#    modxp1 = var2 % var1
+#    modexp1 = var2 % var1
 #    modexp2 = var2 % 10
 # \endcode
 #

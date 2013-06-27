@@ -2,7 +2,7 @@
 
 #include "MipWrapper.hpp"
 #include <algorithm>
-#include <math.h>
+#include <cmath>
 
 using namespace std;
 
@@ -195,8 +195,7 @@ MipWrapper_IntVar::MipWrapper_IntVar(MipWrapperIntArray& values,
         if (_values.get_item(i) < _lower)
             _lower = _values.get_item(i);
     }
-    DBG("Creating variable with holes in the domain, size:%d \n",
-        _values.size());
+    DBG("Creating variable with holes in the domain, size:%zu \n", _values.size());
 }
 
 MipWrapper_Expression* MipWrapper_IntVar::add(MipWrapperSolver* solver,
@@ -334,7 +333,6 @@ MipWrapper_sub::~MipWrapper_sub() {
 
 MipWrapper_mul::MipWrapper_mul(MipWrapper_Expression *arg1, MipWrapper_Expression *arg2) :
     MipWrapper_Expression() {
-    initialise(false);
     vars[0] = arg1;
     vars[1] = arg2;
     initialise(false);
@@ -385,7 +383,7 @@ MipWrapper_Expression* MipWrapper_mul::add(MipWrapperSolver *solver,
         _solver = solver;
 
         if (top_level) {
-            std::cout << "Multiplication at the top level is not supported." << std::endl;
+            std::cerr << "Multiplication at the top level is not supported." << std::endl;
             exit(1);
         } else {
             DBG("Adding mul %s\n", "");
@@ -418,6 +416,212 @@ MipWrapper_Expression* MipWrapper_mul::add(MipWrapperSolver *solver,
     }
     return this;
 }
+
+
+MipWrapper_mod::MipWrapper_mod(MipWrapper_Expression *arg1, MipWrapper_Expression *arg2) :
+    MipWrapper_Expression() {
+    initialise(false);
+    vars[0] = arg1;
+    vars[1] = arg2;
+    initbounds();
+}
+
+MipWrapper_mod::MipWrapper_mod(MipWrapper_Expression *arg1, const int arg2) :
+    MipWrapper_Expression() {
+    initialise(false);
+    vars[0] = arg1;
+    vars[1] = NULL;
+    _coef = std::abs(arg2);
+    if(arg2 == 0){
+        std::cerr << "Error cannot create expression with modulus zero." << std::endl;
+        exit(1);
+    }
+    initbounds();
+}
+
+MipWrapper_mod::~MipWrapper_mod() {
+}
+
+void MipWrapper_mod::initbounds() {
+    double var0_min = vars[0]->_lower;
+    if(vars[1] != NULL){
+        _lower = std::min(0.0, vars[1]->_lower + 1);
+        _upper = vars[1]->_upper - 1;
+        if(var0_min < 0.0) _lower = std::min(_lower, -_upper);
+    } else {
+        _lower = 0.0;
+        _upper = _coef - 1;
+        if(var0_min < 0.0) _lower = std::min(_lower, -_coef + 1);
+    }
+    DBG("modulus has bounds %f..%f\n", _lower, _upper);
+}
+
+MipWrapper_Expression* MipWrapper_mod::add(MipWrapperSolver *solver,
+        bool top_level) {
+    if (!has_been_added()) {
+        _solver = solver;
+
+        if (top_level) {
+            std::cerr << "Modulus at the top level is not supported." << std::endl;
+            exit(1);
+        } else {
+            DBG("Adding mod %s\n", "");
+            MipWrapper_Expression *v = new MipWrapper_IntVar(_lower, _upper);
+            v = v->add(solver, false);
+            vars[0] = vars[0]->add(solver, false);
+            
+            if(vars[1] != NULL){
+                vars[1] = vars[1]->add(solver, false);
+                int min_divisor = std::max(1, (int)vars[1]->_lower);
+                int max_divs = (int)(vars[0]->_upper / min_divisor);
+                DBG("Creating aux var with bounds %d..%d\n", -max_divs, max_divs);
+
+                // cannot create mod on zero.
+                vars[1]->neq(0, solver);
+
+                MipWrapper_Expression *abs_v = new MipWrapper_Abs(v);
+                abs_v = abs_v->add(solver, false);
+
+                MipWrapper_Expression *abs_var0 = new MipWrapper_Abs(vars[0]);
+                abs_var0 = abs_var0->add(solver, false);
+
+                MipWrapper_Expression *abs_var1 = new MipWrapper_Abs(vars[1]);
+                abs_var1 = abs_var1->add(solver, false);
+
+                // Ensure that the remainder is less than the denominator
+                MipWrapper_Expression *lt1 = new MipWrapper_lt(abs_v, abs_var1);
+                lt1 = lt1->add(solver, true);
+
+                // b = floor(var[0]/vars[1])
+                MipWrapper_Expression *num_div = new MipWrapper_IntVar(-max_divs, max_divs);
+                MipWrapper_Expression *b = new MipWrapper_mul(abs_var1, num_div);
+                b = b->add(solver, false);
+
+                MipWrapper_Expression *abs_b = new MipWrapper_Abs(b);
+                abs_b = abs_b->add(solver, false);
+
+                // Ensure that b is never larger (positive case), smaller (negative case) than vars[0]
+                MipWrapper_Expression *lt2 = new MipWrapper_le(abs_b, abs_var0);
+                lt2 = lt2->add(solver, true);
+
+                LinearConstraint *con = new LinearConstraint(0, 0);
+                con->add_coef(vars[0], 1);
+                con->add_coef(b, -1);
+                con->add_coef(v, -1);
+                solver->_constraints.push_back(con);
+
+            } else {
+                int max_divs = (int)(vars[0]->_upper / _coef);
+                DBG("Creating aux var with bounds %d..%d\n", -max_divs, max_divs);
+                MipWrapper_Expression *num_div = new MipWrapper_IntVar(-max_divs, max_divs);
+                num_div = num_div->add(solver, false);
+
+                LinearConstraint *con = new LinearConstraint(0, INFINITY);
+                con->add_coef(vars[0], 1);
+                con->add_coef(num_div, -_coef);
+                con->add_coef(v, -1);
+                solver->_constraints.push_back(con);
+            }
+            return v;
+        }
+    }
+    return this;
+}
+
+
+MipWrapper_neg::MipWrapper_neg(MipWrapper_Expression *arg1) :
+    MipWrapper_Expression() {
+    initialise(false);
+    _var = arg1;
+    initbounds();
+}
+
+MipWrapper_neg::~MipWrapper_neg() {
+}
+
+void MipWrapper_neg::initbounds() {
+    _lower = -1 * _var->_upper;
+    _upper = -1 * _var->_lower;
+    DBG("neg has bounds %f..%f\n", _lower, _upper);
+}
+
+MipWrapper_Expression* MipWrapper_neg::add(MipWrapperSolver *solver,
+        bool top_level) {
+    if (!has_been_added()) {
+        _solver = solver;
+
+        if (top_level) {
+            std::cerr << "Negation at the top level is not supported." << std::endl;
+            exit(1);
+        } else {
+            DBG("Adding neg %s\n", "");
+
+            MipWrapper_Sum *s = new MipWrapper_Sum(_var, -1); 
+            s->add(solver, false);
+            return s;
+        }
+    }
+    return this;
+}
+
+
+MipWrapper_Abs::MipWrapper_Abs(MipWrapper_Expression *arg1) :
+    MipWrapper_Expression() {
+    initialise(false);
+    _var = arg1;
+    initbounds();
+}
+
+MipWrapper_Abs::~MipWrapper_Abs() {
+}
+
+void MipWrapper_Abs::initbounds() {
+    std::vector<int> bounds;
+    bounds.push_back(std::abs(_var->_lower));
+    bounds.push_back(std::abs(_var->_upper));
+    if(_var->_lower < 0.0 && 0.0 < _var->_upper) bounds.push_back(0.0);
+
+    _lower = (double) *(std::min_element(bounds.begin(), bounds.end()));
+    _upper = (double) *(std::max_element(bounds.begin(), bounds.end()));
+
+    DBG("abs has bounds %f..%f\n", _lower, _upper);
+}
+
+MipWrapper_Expression* MipWrapper_Abs::add(MipWrapperSolver *solver,
+        bool top_level) {
+    if (!has_been_added()) {
+        _solver = solver;
+
+        if (top_level) {
+            std::cerr << "Absolute at the top level is not supported." << std::endl;
+            exit(1);
+        } else {
+            DBG("Adding abs %s\n", "");
+
+            // x == |_var|
+            MipWrapper_Expression *x = new MipWrapper_IntVar(_lower, _upper);  // FIXME absolute of a double
+            x = x->add(solver, false);
+
+            MipWrapper_Expression *neg_var = new MipWrapper_neg(_var);
+            neg_var = neg_var->add(solver, false);
+
+            // _var <= x
+            MipWrapper_Expression *leq1 = new MipWrapper_le(_var, x);
+            leq1->add(solver, true);
+
+            // -_var <= x
+            MipWrapper_Expression *leq2 = new MipWrapper_le(neg_var, x);
+            leq2->add(solver, true);
+
+            // x <= _var or x <= -_var
+            MipWrapper_Expression *or_cons = new MipWrapper_or(new MipWrapper_le(x, _var), new MipWrapper_le(x, neg_var));
+            or_cons->add(solver, true);
+            return x;
+        }
+    }
+    return this;
+}
+
 
 MipWrapper_AllDiff::MipWrapper_AllDiff(MipWrapper_Expression* arg1,
                                        MipWrapper_Expression* arg2) :
@@ -524,8 +728,7 @@ MipWrapper_Expression* MipWrapper_Flow::add(MipWrapperSolver *solver,
                 solver->_constraints.push_back(con);
             }
         } else {
-            std::cout << "Warning Flow constraint supported only on top level"
-                      << std::endl;
+            std::cerr << "Warning Flow constraint supported only on top level" << std::endl;
             exit(1);
         }
     }
@@ -563,6 +766,15 @@ MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg,
     initialise();
 }
 
+MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg,
+                               double w, const int offset) :
+    MipWrapper_FloatVar() {
+    _offset = offset;
+    _vars.add(arg);
+    _weights.add(w);
+    initialise();
+}
+
 MipWrapper_Sum::MipWrapper_Sum(MipWrapperExpArray& vars,
                                MipWrapperDoubleArray& weights, const int offset) :
     MipWrapper_FloatVar() {
@@ -597,7 +809,7 @@ MipWrapper_Sum::MipWrapper_Sum() :
 }
 
 void MipWrapper_Sum::initialise() {
-    DBG("creating sum: size of params: %d\n", _vars.size());
+    DBG("creating sum: size of params: %zu\n", _vars.size());
     for (unsigned int i = 0; i < this->_vars.size(); ++i) {
         int weight = this->_weights.get_item(i);
         if (weight > 0) {
@@ -637,7 +849,7 @@ MipWrapper_Expression* MipWrapper_Sum::add(MipWrapperSolver *solver,
             _vars.set_item(i, _vars.get_item(i)->add(solver, false));
 
         if (top_level) {
-            std::cout << "Warning SUM constraint on top level not supported"
+            std::cerr << "Warning SUM constraint on top level not supported"
                       << std::endl;
             exit(1);
         }
@@ -658,7 +870,6 @@ LINEAR_ARG* MipWrapper_Sum::for_linear() {
         largs[i].expr = _vars.get_item(i);
         largs[i].coef = _weights.get_item(i);
         largs[i].offset = _offset;
-        //std::cout << "Weight:" << largs[i].coef << std::endl;
     }
     return largs;
 }
@@ -775,8 +986,7 @@ MipWrapper_Expression* MipWrapper_NoOverlap::add(MipWrapperSolver *solver,
             orexp->add(solver, true);
 
         } else {
-            std::cout << "No support for NoOverLap operator not in top level"
-                      << std::endl;
+            std::cerr << "No support for NoOverLap operator not in top level" << std::endl;
             exit(1);
         }
     }
@@ -808,8 +1018,7 @@ MipWrapper_Expression* MipWrapper_Precedence::add(MipWrapperSolver *solver,
             return this;
         } else {
 
-            std::cout << "Precedence not at top level not supported yet"
-                      << std::endl;
+            std::cerr << "Precedence not at top level not supported yet" << std::endl;
             exit(1);
         }
     }
@@ -819,12 +1028,12 @@ MipWrapper_Expression* MipWrapper_Precedence::add(MipWrapperSolver *solver,
 MipWrapper_eq::MipWrapper_eq(MipWrapper_Expression *var1,
                              MipWrapper_Expression *var2) :
     MipWrapper_binop(var1, var2) {
-    DBG("creating equality constraint", NULL);
+    DBG("creating equality constraint %s\n", "");
 }
 
 MipWrapper_eq::MipWrapper_eq(MipWrapper_Expression *var1, double rhs) :
     MipWrapper_binop(var1, rhs) {
-    DBG("creating equality constraint", NULL);
+    DBG("creating equality constraint %s\n", "");
 }
 
 MipWrapper_eq::~MipWrapper_eq() {
@@ -834,7 +1043,7 @@ MipWrapper_Expression* MipWrapper_eq::add(MipWrapperSolver *solver,
         bool top_level) {
     if (!has_been_added()) {
         _solver = solver;
-        DBG("adding equality constraint", NULL);
+        DBG("adding equality constraint %s\n", "");
         _vars[0] = _vars[0]->add(solver, false);
 
         if (top_level) {
@@ -977,8 +1186,7 @@ MipWrapper_Expression* MipWrapper_ne::add(MipWrapperSolver *solver,
                 c->add(solver, false);
 
                 //TODO:
-                std::cout << "Warning ne reif not supported at the moment"
-                          << std::endl;
+                std::cerr << "Warning ne reif not supported at the moment" << std::endl;
                 exit(1);
             }
         }

@@ -1077,7 +1077,7 @@ MipWrapper_Expression* MipWrapper_eq::add(MipWrapperSolver *solver,
                 int ub = (int) std::min(_vars[0]->_upper, _vars[1]->_upper);
 
                 // \forall_{i \in D_a \cup D_b} -1 <= A_i + B_i - C <= 1
-                for (int i = lb; i <= ub; ++lb) {
+                for (int i = lb; i <= ub; ++i) {
                     if (_vars[0]->_expr_encoding[i] != NULL
                             && _vars[1]->_expr_encoding[i]) {
                         LinearConstraint *con = new LinearConstraint(-1, 1);
@@ -1090,15 +1090,16 @@ MipWrapper_Expression* MipWrapper_eq::add(MipWrapperSolver *solver,
 
                 double range_max = std::max(_vars[0]->_upper - _vars[1]->_lower,
                                             _vars[1]->_upper - _vars[0]->_lower);
-                MipWrapper_FloatVar *y = new MipWrapper_FloatVar(0, range_max);
+                MipWrapper_Expression *y = new MipWrapper_FloatVar(0, range_max);
+                y = y->add(solver, false);
 
-                LinearConstraint *con = new LinearConstraint(1, INFINITY);
+                LinearConstraint *con = new LinearConstraint(0, INFINITY);
                 con->add_coef(_vars[0], 1);
                 con->add_coef(_vars[1], -1);
                 con->add_coef(y, 1);
                 solver->_constraints.push_back(con);
 
-                con = new LinearConstraint(1, INFINITY);
+                con = new LinearConstraint(0, INFINITY);
                 con->add_coef(_vars[0], -1);
                 con->add_coef(_vars[1], 1);
                 con->add_coef(y, 1);

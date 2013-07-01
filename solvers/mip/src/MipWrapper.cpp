@@ -1180,15 +1180,51 @@ MipWrapper_Expression* MipWrapper_ne::add(MipWrapperSolver *solver,
                 } else
                     return new MipWrapper_IntVar(1, 1);
             } else {
+                MipWrapper_Expression *bvar = new MipWrapper_IntVar(0, 1);
+                bvar = bvar->add(solver, false);
                 _vars[1] = _vars[1]->add(solver, false);
                 _vars[1]->encode(solver);
 
-                MipWrapper_Expression *c = new MipWrapper_IntVar(0, 1);
-                c->add(solver, false);
+                int lb = (int) std::max(_vars[0]->_lower, _vars[1]->_lower);
+                int ub = (int) std::min(_vars[0]->_upper, _vars[1]->_upper);
 
-                //TODO:
-                std::cerr << "Warning ne reif not supported at the moment" << std::endl;
-                exit(1);
+                // \forall_{i \in D_a \cup D_b} 0 <= A_i + B_i - C <= 2
+                for (int i = lb; i <= ub; ++i) {
+                    if (_vars[0]->_expr_encoding[i] != NULL
+                            && _vars[1]->_expr_encoding[i]) {
+                        LinearConstraint *con = new LinearConstraint(0, 2);
+                        con->add_coef(bvar, 1);
+                        con->add_coef(_vars[0]->_expr_encoding[i], 1);
+                        con->add_coef(_vars[1]->_expr_encoding[i], 1);
+                        solver->_constraints.push_back(con);
+                    }
+                }
+
+                double range_max = std::max(_vars[0]->_upper - _vars[1]->_lower,
+                                            _vars[1]->_upper - _vars[0]->_lower);
+                MipWrapper_Expression *y = new MipWrapper_FloatVar(0, range_max);
+                y = y->add(solver, false);
+
+                LinearConstraint *con = new LinearConstraint(0, INFINITY);
+                con->add_coef(_vars[0], 1);
+                con->add_coef(_vars[1], -1);
+                con->add_coef(y, 1);
+                solver->_constraints.push_back(con);
+
+                con = new LinearConstraint(0, INFINITY);
+                con->add_coef(_vars[0], -1);
+                con->add_coef(_vars[1], 1);
+                con->add_coef(y, 1);
+                solver->_constraints.push_back(con);
+
+                // 0 <= C*(-RM) + Y <= 0
+                con = new LinearConstraint(0, 0);
+                con->add_coef(bvar, -range_max);
+                con->add_coef(y, 1);
+                solver->_constraints.push_back(con);
+
+                _repr = bvar;
+                return bvar;
             }
         }
     }

@@ -293,7 +293,13 @@ class Expression(object):
     #    in the specified solver. Provided the solver has found a solution. If no solution
     #    has been found None is returned.
     #
-    #    If not solver is specified then the solver that has loaded the expression
+    #    In the case of variables, it may not be passed in to the solver if it
+    #    is not involved in a non-trivial constraint. For example, x <= 1, x
+    #    will not get added (by this constraint alone) if it has a upperbound
+    #    which is less or equal to 1. get_value() will return the variable's
+    #    lower bound as the value in this case.
+    #
+    #    If no solver is specified then the solver that has loaded the expression
     #    most recently is used.
     #
     def get_value(self, solver=None):

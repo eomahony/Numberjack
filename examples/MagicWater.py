@@ -59,9 +59,12 @@ def basic_solve(param):
     solver.setNodeLimit(param['cutoff'])
     solver.setTimeLimit(param['tcutoff'])
 
-    solver.solveAndRestart(GEOMETRIC, param['base'], param['factor'], param['decay']);
+    if (param['restart'] == 'no'):
+        solver.solve()
+    else:
+        solver.solveAndRestart(GEOMETRIC, param['base'], param['factor'], param['decay']);
         
-    #print 'Objective:', objective.get_value(), 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
+    print 'Objective:', (sum(e.get_value() for e in water.flat) - (N*N*(N*N+1)/2)), 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
     return (Solution(square),Solution(water),solver)
     
 
@@ -208,12 +211,12 @@ def solve(param):
     return out   
 
 
-solvers = ['Mistral']
+solvers = ['Mistral','Toulbar2']
 default = {'N':4, 'var':'DomainOverWDegree', 'proba':0.8,
            'val':'RandomSplit', 'restart':'yes', 'rand':5, 
            'verbose':1, 'cutoff':30000, 'factor':1.2, 'base':64, 
            'decay':0.0,'algo':'basic','solver':'Mistral', 
-           'print':'no','tcutoff':5}
+           'print':'no','tcutoff':30}
 
 if __name__ == '__main__':
     param = input(default) 

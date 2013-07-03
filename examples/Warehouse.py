@@ -31,15 +31,17 @@ def solve(param):
         # Make sure that each store does not exceed it's supply capacity
         [Sum(col) <= cap for (col, cap) in zip(ShopSupplied.col, data.get("Capacity"))]
     )
+    print len(WareHouseOpen)+len(ShopSupplied.flat)
 
     solver = lib.Solver(model)
     solver.setNodeLimit(cutoff)
     solver.setHeuristic('Impact')
     solver.setVerbosity(param['verbose'])
     solver.setTimeLimit(param['tcutoff'])
-    solver.solve()
-
-    return "\nFINAL COST: " + str(obj.get_value())
+    solver.solveAndRestart()
+    if (solver.is_sat()):
+        print WareHouseOpen
+    return "\nFINAL COST: " + str(obj.get_value() if obj.get_value() is not None else solver.getOptimum())
     
 class WareHouseParser:
     
@@ -63,8 +65,8 @@ class WareHouseParser:
         return None
     
 
-solvers = ['Mistral', 'SCIP']
-default = {'solver':'Mistral', 'data':'data/cap44.dat.txt', 'cutoff':5000, 'verbose':1, 'tcutoff':3}
+solvers = ['Mistral', 'SCIP', 'Toulbar2']
+default = {'solver':'Mistral', 'data':'data/warehouse0.txt', 'cutoff':5000, 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':
     param = input(default) 

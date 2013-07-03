@@ -16,7 +16,7 @@ def array_bool_or(x,y):
         if len(x) == 2:
             return Or(x)
         else:
-            return Distunction(x)
+            return Disjunction(x)
     else:
         return (y == Disjunction(x))
 
@@ -47,7 +47,7 @@ def bool2int(x, y):
     return (x == y)
 
 def bool_and(x, y, z):
-    return And(x, y) if z == True else z == And(x, y)
+    return (And(x, y) if z == True else (z == And(x, y)))
 
 def bool_clause(x, y):
     return (Disjunction(x) | Disjunction([(e == 0) for e in y]))
@@ -104,7 +104,8 @@ def int_ne_reif(x,y,z):
     return [((x == y) | (z != 0)), ((x != y) | (z == 0))]
 
 def int_lin_eq(coef,vars,res):
-    return (res == Sum(vars,coef))
+#    return (res == Sum(vars,coef))
+    return (Sum(vars,coef) == res)
 
 def bool_lin_eq(coef,vars,res):
     return (int_lin_eq(coef,vars,res))
@@ -163,7 +164,7 @@ def set_in(x,dom):
 #    return (Disjunction([(x == v) for v in dom]))
 
 def set_in_reif(x,dom,z):
-    return (Disjunction([(x == v) for v in dom]) == z)
+    return (z == Disjunction([(x == v) for v in dom]))
 
 # specific global constraints for numberjack
 

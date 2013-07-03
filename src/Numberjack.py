@@ -35,17 +35,22 @@
 
 UNSAT, SAT, UNKNOWN, LIMITOUT = 0, 1, 2, 3
 LUBY, GEOMETRIC = 0, 1
+MAXCOST = 100000000
 
 import exceptions
 import types
 import sys
+#SDG: extend recursive limit for predicate decomposition
+sys.setrecursionlimit(10000)
+#SDG: needed by the default eval method in BinPredicate
+import operator
 
 val_heuristics = ['Lex', 'AntiLex', 'Random', 'RandomMinMax', 'DomainSplit', 'RandomSplit', 'Promise', 'Impact', 'No']
 var_heuristics = ['No', 'MinDomain', 'Lex', 'AntiLex', 'MaxDegree', 'MinDomainMinVal', 'Random', 'MinDomainMaxDegree', 'DomainOverDegree', 'DomainOverWDegree', 'DomainOverWLDegree', 'Neighbour', 'Impact', 'ImpactOverDegree', 'ImpactOverWDegree', 'ImpactOverWLDegree', 'Scheduling']
 
 solver_names = ['Mistral', 'SCIP', 'MiniSat', 'Walksat', 'OsiClp', 'OsiCbc',
                 'OsiGlpk', 'OsiVol', 'OsiDylp', 'OsiSpx', 'OsiSym',
-                'OsiGrb']  # , 'OsiCpx', 'OsiMsk', 'OsiXpr']
+                'OsiGrb', 'Toulbar2']  # , 'OsiCpx', 'OsiMsk', 'OsiXpr']
 available = []
 
 
@@ -302,13 +307,12 @@ class Expression(object):
             if self.solver.is_sat():
                 has_value = True
         value = None
-
-        if solver is not None:
-            var = self.var_list[solver.solver_id - 1]
-        else:
-            var = self.var_list[-1]
-
+        #SDG: do not ask for var if there is no value
         if has_value:
+            if solver is not None:
+                var = self.var_list[solver.solver_id - 1]
+            else:
+                var = self.var_list[-1]
             if self.is_str():
                 value = self.model.strings[var.get_value()]
             else:
@@ -368,15 +372,17 @@ class Expression(object):
             return self.model.strings[the_max]
         return the_max
 
-    # not safe!
-    def get_ub(self):
-        #print "DEPRECATED: Expression.get_ub()"
-        return self.ub
-
-    # not safe!
-    def get_lb(self):
-        #print "DEPRECATED: Expression.get_lb()"
-        return self.lb
+    #SDG: methods to access initial lb and ub and domain of the expression or one of its children
+    def get_ub(self, child=None):
+        if (child == None):
+            return self.ub
+        else:
+            return self.children[child].ub if issubclass(type(self.children[child]), Expression) else self.children[child]
+    def get_lb(self, child=None):
+        if (child == None):
+            return self.lb
+        else:
+            return self.children[child].lb if issubclass(type(self.children[child]), Expression) else self.children[child]
 
     # not safe!
     def get_domain_tuple(self):
@@ -506,6 +512,12 @@ class Model(object):
         ## Roots of the predicate trees
         self.constraints = VarArray([])
 
+        #SDG: initial bounds for optimization problems
+        ## Initial upper bound for a minimization problem
+        self.upper_bound = MAXCOST
+        ## Initial lower bound for a maximization problem
+        self.lower_bound = -MAXCOST
+
         ## \internal - Before giving an expression to a solver, or before printing it, it needs to
         self.closed = 0
 
@@ -517,7 +529,7 @@ class Model(object):
             self.add_prime(expr)
 
     def getSolverId(self):
-        # \internal \internal - generates an ident for each new solver
+        # \internal - generates an ident for each new solver
         self.current_id += 1
         return self.current_id
 
@@ -571,8 +583,14 @@ class Model(object):
             self.add_expression(self.__expressions[i], 0)
         self.closed = len(self.__expressions)
 
-    def close(self):
-        ## \internal - close() is used to fire up preprocessing requiring knowledge about the whole model
+    def close(self, solver=None):
+        ## \internal - close() is used to fire up preprocessing requiring knowledge about the whole model AND THE SOLVER USED
+        #SDG: check if it is an optimization problem
+        if not any([issubclass(type(expr), Minimise) or issubclass(type(expr), Maximise) or issubclass(type(expr), CostFunction) for expr in self.__expressions]):
+            self.upper_bound = 1
+        if solver is not None and  solver.Library is 'Toulbar2' and self.upper_bound is not None:
+             solver.setOption('updateUb',str(self.upper_bound))
+
         if self.closed == len(self.__expressions):
             tmp_strings = []
             for var in self.variables:
@@ -592,6 +610,28 @@ class Model(object):
         if self.closed == len(self.__expressions) + 1:
             for expr in self.get_exprs():
                 expr.close()
+             
+        #SDG: replace [Min/Maximise(obj),Eq(obj,Sum(vars,coefs))] by [Min/Maximise(Sum(vars,coefs))] 
+        #  and [Min/Maximise(obj),Eq(Sum([obj]+vars, [-1]+coefs),0)] by [Min/Maximise(Sum(vars,coefs))] 
+        if (solver.Library is 'Toulbar2'):
+            objexpr = filter(lambda expr: issubclass(type(expr), Minimise) or issubclass(type(expr), Maximise), self.__expressions)
+            if (len(objexpr)==1 and objexpr[0].children[0].is_var()):
+                objvar = objexpr[0].children[0]
+                objconstr = filter(lambda expr: issubclass(type(expr), Eq) and issubclass(type(expr.children[0]), Sum) and expr.children[1]==0 and (objvar,-1) in zip(expr.children[0].children,expr.children[0].parameters[0]), self.__expressions)
+                if (len(objconstr)==1):
+                    #print objvar,objexpr,objconstr
+                    objexpr[0].children[0] = objconstr[0].children[0]
+                    for (i,var) in enumerate(objconstr[0].children[0].children):
+                        if (var == objvar): 
+                            objconstr[0].children[0].parameters[0][i] = 0
+                            break
+                    objconstr[0].children[0] = Variable(0,0)
+                else:
+                    objconstr = filter(lambda expr: issubclass(type(expr), Eq) and issubclass(type(expr.children[1]), Sum) and expr.children[0]==objvar, self.__expressions)
+                    if (len(objconstr)==1):
+                        objexpr[0].children[0] = objconstr[0].children[1]
+                        objconstr[0].children[0] = Variable(0,0)
+                        objconstr[0].children[1] = 0
 
     def __str__(self):
         ## \internal - print
@@ -639,6 +679,17 @@ class Model(object):
         solver = self.load(library, encoding)
         solver.solve()
         return solver.get_solution()
+
+    #SDG: initial bounds updated by the user
+    ## Give an initial upper bound as a string
+    # @param ub string for an initial upper bound
+    def set_upper_bound(self, ub):
+        self.upper_bound = ub
+
+    ## Give an initial lower bound as a string
+    # @param lb string for an initial lower bound
+    def set_lower_bound(self, lb):
+        self.lower_bound = lb
 
 
 ## Variable creation function
@@ -1232,6 +1283,13 @@ class BinPredicate(Predicate):
         Expression.__str__ = save_str
         return output
 
+    #SDG: generic eval method using Predicate operator name
+    def eval(self, x,y):
+        try:
+            return int(getattr(operator, self.operator)(x,y))
+        except AttributeError:
+            return int(eval(str(x) + ' ' + self.get_symbol() + ' ' + str(y)))
+
 
 ## And expression
 #
@@ -1256,6 +1314,8 @@ class And(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "and")
+        self.lb = min(self.get_lb(0), self.get_lb(1))    #SDG: initialize lb,ub
+        self.ub = min(self.get_ub(0), self.get_ub(1))
 
     def get_symbol(self):
         return '&'
@@ -1288,6 +1348,8 @@ class And(BinPredicate):
 class Or(BinPredicate):
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "or")
+        self.lb = max(self.get_lb(0), self.get_lb(1))    #SDG: initialize lb,ub
+        self.ub = max(self.get_ub(0), self.get_ub(1))
 
     def get_symbol(self):
         return 'or'
@@ -1316,6 +1378,19 @@ class Div(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "div")
+        #SDG: initialize lb,ub
+        if (self.get_lb(1) < 0 and self.get_ub(1) > 0):    
+            self.lb = min(self.get_lb(0), -1 * self.get_ub(0))   #SDG: Warning! It assumes var2 can be equal to -1 or 1 
+            self.ub = max(self.get_ub(0), -1 * self.get_lb(0))
+        elif (self.get_ub(1) < 0):
+            self.lb = min(self.get_lb(0) / self.get_ub(1), self.get_ub(0) / self.get_ub(1))
+            self.ub = max(self.get_lb(0) / self.get_ub(1), self.get_ub(0) / self.get_ub(1))
+        elif (self.get_lb(1) > 0):
+            self.lb = min(self.get_lb(0) / self.get_lb(1), self.get_ub(0) / self.get_lb(1))
+            self.ub = max(self.get_lb(0) / self.get_lb(1), self.get_ub(0) / self.get_lb(1))
+        else:
+            self.lb = None
+            self.ub = None
 
     def get_symbol(self):
         return '/'
@@ -1344,6 +1419,9 @@ class Mul(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "mul")
+        #SDG: initialize lb,ub
+        self.lb = min(self.get_lb(0) * self.get_lb(1), self.get_lb(0) * self.get_ub(1), self.get_ub(0) * self.get_lb(1), self.get_ub(0) * self.get_ub(1))
+        self.ub = max(self.get_lb(0) * self.get_lb(1), self.get_lb(0) * self.get_ub(1), self.get_ub(0) * self.get_lb(1), self.get_ub(0) * self.get_ub(1))
 
     def get_symbol(self):
         return '*'
@@ -1371,6 +1449,13 @@ class Mod(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "mod")
+        #SDG: initialize lb,ub
+        if (self.get_ub(1) > 0):
+            self.lb = 0
+            self.ub = self.get_ub(1) - 1
+        else:
+            self.lb = None   #SDG: Warning! lb and ub undefined if var2 can be negative
+            self.ub = None
 
     def get_symbol(self):
         return '%'
@@ -1401,6 +1486,9 @@ class Eq(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "eq")
+        #SDG: initialize lb,ub
+        self.lb = int((self.get_lb(0) == self.get_ub(0)) and (self.get_lb(1) == self.get_ub(1)) and (self.get_lb(0) == self.get_lb(1)))
+        self.ub = int(not((self.get_ub(0) < self.get_lb(1)) or (self.get_lb(0) > self.get_ub(1))))
 
     def get_symbol(self):
         return '=='
@@ -1431,9 +1519,12 @@ class Ne(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "ne")
+        #SDG: initialize lb,ub
+        self.lb = int((self.get_ub(0) < self.get_lb(1)) or (self.get_lb(0) > self.get_ub(1)))
+        self.ub = int(not((self.get_lb(0) == self.get_ub(0)) and (self.get_lb(1) == self.get_ub(1)) and (self.get_lb(0) == self.get_lb(1))))
 
     def get_symbol(self):
-        return '=/='
+        return '!='  #SDG: operator '=/=' does not belong to python language
 
 
 ## Less than expression
@@ -1461,6 +1552,9 @@ class Lt(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "lt")
+        #SDG: initialize lb,ub
+        self.lb = int(self.get_ub(0) < self.get_lb(1))    
+        self.ub = int(not(self.get_lb(0) >= self.get_ub(1)))
 
     def get_symbol(self):
         return '<'
@@ -1491,6 +1585,9 @@ class Gt(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "gt")
+        #SDG: initialize lb,ub
+        self.lb = int(self.get_lb(0) > self.get_ub(1))    
+        self.ub = int(not(self.get_ub(0) <= self.get_lb(1)))
 
     def get_symbol(self):
         return '>'
@@ -1521,6 +1618,9 @@ class Le(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "le")
+        #SDG: initialize lb,ub
+        self.lb = int(self.get_ub(0) <= self.get_lb(1))    
+        self.ub = int(not(self.get_lb(0) > self.get_ub(1)))
 
     def get_symbol(self):
         return '<='
@@ -1551,6 +1651,9 @@ class Ge(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "ge")
+        #SDG: initialize lb,ub
+        self.lb = int(self.get_lb(0) >= self.get_ub(1))    
+        self.ub = int(not(self.get_ub(0) < self.get_lb(1)))
 
     def get_symbol(self):
         return '>='
@@ -1575,6 +1678,8 @@ class Neg(Predicate):
 
     def __init__(self, vars):
         Predicate.__init__(self, vars, "neg")
+        self.lb = -(self.get_ub(0))      #SDG: initialize lb/ub
+        self.ub = -(self.get_lb(0))
 
     def get_min(self, solver=None):
         return -1 * self.children[0].get_max(solver)
@@ -1603,6 +1708,12 @@ class Abs(Predicate):
 
     def __init__(self, vars):
         Predicate.__init__(self, [vars], "Abs")
+        if (self.get_lb(0) < 0 and self.get_ub(0) > 0):      #SDG: initialize lb/ub
+            self.lb = 0
+            self.ub = max(abs(self.get_lb(0)),abs(self.get_ub(0)))
+        else:
+            self.lb = min(abs(self.get_lb(0)),abs(self.get_ub(0)))
+            self.ub = max(abs(self.get_lb(0)),abs(self.get_ub(0)))
 
     def __str__(self):
         return "Abs(" + str(self.children[0]) + ")"
@@ -1628,6 +1739,8 @@ class Table(Predicate):
     def __init__(self, vars, tuples=[], type='support'):
         Predicate.__init__(self, vars, "Table")
         self.parameters = [[tuple for tuple in tuples], type]
+        self.lb = None  #SDG: initial lb/ub undefined
+        self.ub = None
 
     ## Adds another support tuple to the list of tuples
     # @param tuple tuple to be added
@@ -1664,6 +1777,9 @@ class Table(Predicate):
             print var,
         print '\n (' + self.parameters[1] + ')', self.parameters[0]
 
+    def __str__(self):      #SDG: pretty print of Table Predicate
+        return self.operator + "([" + ",".join([str(var) for var in self.children]) + "]," + str(self.parameters[0]) + ",'" + self.parameters[1] + "')"
+
 
 ## Sum constraint
 #
@@ -1675,7 +1791,7 @@ class Table(Predicate):
 #
 class Sum(Predicate):
 
-    ## Table constraint constructor
+    ## Sum constraint constructor
     # @param vars variables to be summed
     # @param coefs list of coefficients ([1,1,..1] by default)
     def __init__(self, vars, coefs=None):
@@ -1685,6 +1801,9 @@ class Sum(Predicate):
             coefs = [1 for var in self.children]
 
         self.parameters = [coefs, 0]
+        #SDG: initial bounds
+        self.lb = sum(c*self.get_lb(i) if (c >= 0) else c*self.get_ub(i) for i,c in enumerate(coefs))
+        self.ub = sum(c*self.get_ub(i) if (c >= 0) else c*self.get_lb(i) for i,c in enumerate(coefs))
 
     def close(self):
 
@@ -1782,8 +1901,8 @@ class Sum(Predicate):
             if len(X) == 1:
                 return X[0]
             else:
-                return X[0] + self.addition(X[1:])
-        return [addition([child * coef for child, coef in zip(self.children, self.parameters)])]
+                return Add([X[0], addition(X[1:])])   #SDG: use specific Add BinPredicate instead of Sum
+        return [addition([(child if coef is 1 else (child * Variable(coef,coef,str(coef)))) for child, coef in zip(self.children, self.parameters[0])] + [Variable(e,e,str(e)) for e in self.parameters[1:] if e is not 0])]
 
 
 ## All-Different Constraint
@@ -1800,6 +1919,8 @@ class AllDiff(Predicate):
         Predicate.__init__(self, vars, "AllDiff")
         if type != None:
             self.parameters = [type]
+        self.lb = None  #SDG: initial lb/ub undefined
+        self.ub = None
 
     #def __str__(self):
     #    return " AllDiff(" + " ".join(map(str, self.children)) + " ) "
@@ -1849,6 +1970,8 @@ class Gcc(Predicate):
             lb.append(cards[val][0])
             ub.append(cards[val][1])
         self.parameters = [values, lb, ub]
+        self.lb = None  #SDG: initial lb/ub undefined
+        self.ub = None
 
     def __str__(self):
         save_str = Expression.__str__
@@ -1880,6 +2003,9 @@ class Max(Predicate):
 
     def __init__(self, vars):
         Predicate.__init__(self, vars, "Max")
+        #SDG:  initial bounds
+        self.lb = max(self.get_lb(i) for i in range(len(vars)))
+        self.ub = max(self.get_ub(i) for i in range(len(vars)))
 
     def get_min(self, solver=None):
         return max([x.get_min(solver) for x in self.children])
@@ -1910,6 +2036,9 @@ class Max(Predicate):
 class Min(Predicate):
     def __init__(self, vars):
         Predicate.__init__(self, vars, "Min")
+        #SDG:  initial bounds
+        self.lb = min(self.get_lb(i) for i in range(len(vars)))
+        self.ub = min(self.get_ub(i) for i in range(len(vars)))
 
     def get_min(self, solver=None):
         return min([x.get_min(solver) for x in self.children])
@@ -1954,6 +2083,9 @@ class Element(Predicate):
         children = list(vars)
         children.append(index)
         Predicate.__init__(self, children, "Element")
+        #SDG:  initial bounds
+        self.lb = min(self.get_lb(i) for i in range(len(vars)))
+        self.ub = max(self.get_ub(i) for i in range(len(vars)))
 
 
 ## Boolean Clause
@@ -1970,6 +2102,8 @@ class Clause(Predicate):
                 polarity.append(1)
                 self.children.append(literal)
         self.parameters = [polarity]
+        self.lb = None  #SDG: initial lb/ub undefined
+        self.ub = None
 
     def add(self, literal):
         if literal.operator == 'neg':
@@ -1996,6 +2130,8 @@ class LessLex(Predicate):
         children = list(vars_1)
         children.extend(vars_2)
         Predicate.__init__(self, children, "LessLex")
+        self.lb = None  #SDG: initial lb/ub undefined
+        self.ub = None
 
     def __str__(self):
         length = len(self.children) / 2
@@ -2015,6 +2151,8 @@ class LeqLex(Predicate):
         children = list(vars_1)
         children.extend(vars_2)
         Predicate.__init__(self, children, "LeqLex")
+        self.lb = None  #SDG: initial lb/ub undefined
+        self.ub = None
 
     def __str__(self):
         length = len(self.children) / 2
@@ -2035,6 +2173,8 @@ class LeqLex(Predicate):
 class Maximise(Predicate):
     def __init__(self, vars):
         Predicate.__init__(self, [vars], "Maximise")
+        self.lb = None  #SDG: initial lb/ub undefined
+        self.ub = None
 
     #def __str__(self):
     #    return " Maximise ( " + " ".join(map(str, self.children)) + " ) "
@@ -2052,6 +2192,8 @@ def Maximize(var):
 class Minimise(Predicate):
     def __init__(self, vars):
         Predicate.__init__(self, [vars], "Minimise")
+        self.lb = None  #SDG: initial lb/ub undefined
+        self.ub = None
 
     #def __str__(self):
     #    return " Minimise ( " + " ".join(map(str, self.children)) + " ) "
@@ -2067,6 +2209,8 @@ class Disjunction(Predicate):
 
     def __init__(self, vars):
         Predicate.__init__(self, vars, "OR")
+        self.lb = max(self.get_lb(i) for i in range(len(vars)))    #SDG: initialize lb,ub
+        self.ub = max(self.get_ub(i) for i in range(len(vars)))
 
     def decompose(self):
         return [Sum(self.children) > 0]
@@ -2076,6 +2220,8 @@ class Conjunction(Predicate):
 
     def __init__(self, vars):
         Predicate.__init__(self, vars, "AND")
+        self.lb = min(self.get_lb(i) for i in range(len(vars)))    #SDG: initialize lb,ub
+        self.ub = min(self.get_ub(i) for i in range(len(vars)))
 
     def decompose(self):
         return [Sum(self.children) == len(self.children)]
@@ -2084,6 +2230,8 @@ class Conjunction(Predicate):
 class Convex(Predicate):
     def __init__(self, vars):
         Predicate.__init__(self, [var for var in vars], "Convex")
+        self.lb = None  #SDG: initial lb/ub undefined
+        self.ub = None
 
     def __str__(self):
         return "[" + " ".join(map(str, self.children)) + "] is row-convex"
@@ -2109,6 +2257,9 @@ class Cardinality(Predicate):
     def __init__(self, vars, value):
         Predicate.__init__(self, [var for var in vars], "Card")
         self.parameters = [value]
+        #SDG: initial lb/ub
+        self.lb = sum(((value == x.get_lb()) and (value == x.get_ub())) for x in vars)
+        self.ub = sum(((value >= x.get_lb()) and (value <= x.get_ub())) for x in vars)
 
     def __str__(self):
         return "card of " + str(self.parameters[0]) + " in [" + " ".join(map(str, self.children)) + "]"
@@ -2518,7 +2669,7 @@ class NBJ_STD_Solver(object):
         if model != None:
             var_array = None
             self.model = model
-            self.model.close()
+            self.model.close(self)   #SDG: needs to know for which solver the model is built
             if self.EncodingConfiguration:
                 if not encoding:
                     encoding = EncodingConfiguration()
@@ -2583,7 +2734,7 @@ class NBJ_STD_Solver(object):
         return self.enc_config_cache[enc_config]
 
     def load_expr(self, expr):
-        #print 'load', expr
+        #print 'load', expr , expr.get_lb() if issubclass(type(expr),Expression) else None, expr.get_ub() if issubclass(type(expr),Expression) else None   #SDG: VERY USEFUL FOR DEBUGGING
         if type(expr) is str:
             return self.model.string_map[expr]
         if type(expr) is bool:
@@ -2673,7 +2824,9 @@ class NBJ_STD_Solver(object):
     def decompose_expression(self, expr):
         if hasattr(expr, "decompose"):
             expr_list = expr.decompose()
+            #print expr_list   #SDG: VERY USEFUL FOR DEBUGGING
             obj_exp = []
+            #SDG: all decomposed expressions except the first are assumed to be constraints (ie, at the top-level)
             for exp in expr_list[1:]:
                 exp.encoding = expr.encoding
                 obj = self.load_expr(exp)
@@ -2866,6 +3019,18 @@ class NBJ_STD_Solver(object):
     def setRandomSeed(self, seed):
         self.solver.setRandomSeed(seed)
 
+    ##SDG: Sets an option in toulbar2 whose name is passed as the first parameter, and value as a second one
+    def setOption(self,func,param=None):
+        try:
+            function = getattr(self.solver,func)
+        except AttributeError:
+            print "Warning: "+func+" option does not exist in this solver!"
+        else:
+            if param is None:
+                function()
+            else:
+                function(param)
+
     ## @}
 
     def setRandomized(self, degree):
@@ -2952,6 +3117,10 @@ class NBJ_STD_Solver(object):
     ## Returns True iff the solver proved unsatisfiability
     def is_unsat(self):
         return self.solver.is_unsat()
+
+    ##SDG: Returns the current best solution cost
+    def getOptimum(self):
+        return self.solver.getOptimum()
 
     ## Returns the number of backtracks performed during the last search
     def getBacktracks(self):
@@ -3166,3 +3335,13 @@ class InvalidEncodingException(exceptions.Exception):
 
     def __str__(self):
         return "ERROR: Invalid encoding configuration. %s" % self.msg
+
+
+class ModelSizeError(exceptions.Exception):
+
+    def __init__(self, value, solver):
+        self.value = value
+        self.solver = solver
+
+    def __str__(self):
+        return "ERROR: Model decomposition size too big %s for solver %s." % (self.value, self.solver)

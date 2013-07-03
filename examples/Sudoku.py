@@ -2,7 +2,7 @@ from Numberjack import *
 
 
 def get_model(N,clues):
-    grid = Matrix(N*N,N*N,1,N*N,'')
+    grid = Matrix(N*N,N*N,1,N*N,'cell_')
 
     sudoku = Model( [AllDiff(row) for row in grid.row],
                     [AllDiff(col) for col in grid.col],
@@ -18,33 +18,29 @@ def solve(param):
     clues = param['file']
 
     grid,sudoku = get_model(N,clues)
-
     solver = sudoku.load(param['solver'])
     solver.setVerbosity(param['verbose'])
     solver.setTimeLimit(param['tcutoff'])
-
-    #solver.solve()
+    solver.solve()
     
     #solver.propagate()
     #print str(grid)
     #out = ""
 
-
-    solver.startNewSearch();
+#    solver.startNewSearch();
     
-    while solver.getNextSolution(): 
-        out = ''
-        if solver.is_sat():
-            out = str(grid)
-        out += ('\nNodes: ' + str(solver.getNodes()))
-        out += '\n'
-
+#    while solver.getNextSolution(): 
+    out = ''
+    if solver.is_sat():
+        out = str(grid)
+    out += ('\nNodes: ' + str(solver.getNodes()))
+#        out += '\n'
 
     return out  
 
 
 
-solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
+solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat', 'Toulbar2']
 default = {'N':3,'solver':'Mistral','file':'data/sdk.txt', 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':

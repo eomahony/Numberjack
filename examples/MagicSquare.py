@@ -33,7 +33,7 @@ def solve(param):
     out += ('\nNodes: ' + str(solver.getNodes()))
     return out    
 
-solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
+solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat', 'Toulbar2']
 default = {'solver':'Mistral', 'N':4, 'var':'MinDomain',
            'val':'RandomMinMax', 'restart':'yes', 'rand':2, 'verbose':1, 'cutoff':10}
 

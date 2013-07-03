@@ -3,22 +3,44 @@
 
 BEGIN {
 	MAXINT = 10000000;
-	CPUTIME = 900;
-
 	print "#! /usr/bin/env python"
+	print "import time"
 	print "from Numberjack import *"
-	system("cat fzn2py.py");
+	system("cat " MZNNJ_DIR "/fzn2py.py");
 	print "";
-	print "model = Model()";
+	print "model = Model()";	
 	parameter = 1;
 	error = 0;
 }
 
 # { print $0 } # for debugging purposes only
 
-/::_output_/ {
-	gsub("::_output_","");
+/::_output_var/ {
+	gsub("::_output_var","");
 	$0 = $0 " ::_output_";
+}
+
+/::_output_array/ {
+	regexp = "::_output_array[(][[](range[(][0-9]+,1[+][0-9]+[)][ ,]*)+[]][)]";
+	if (match($0,regexp)) {
+	  array = substr($0, RSTART, RLENGTH);
+	  sub(regexp,"");
+	  gsub("[[]","",array);
+	  gsub("[]]","",array);
+	  gsub(" ","",array);
+	  gsub("range[(]","",array);
+	  gsub(",1[+]","..",array);
+	  gsub("[)]","",array);
+	  nbdim = array;
+	  gsub("[^,]","",nbdim);
+	  dim = length(nbdim)+1;
+	  sub("::_output_array", "array" dim "d",array);
+	  $0 = $0 " ::_output_" array;
+	} else {
+		print "ERROR WRONG OUTPUT ARRAY DEFINITION",$0;
+		error = 3;
+		exit(2);
+	}
 }
 
 /^var / {
@@ -84,13 +106,12 @@ parameter {
 	name = $6;
 	print name " = VarArray(" isup ",'" name "')";
 	if (match($0,"::_output_")) {
-		for (i=0; i<isup; i++) {
-			output[ name "[" i "]"] = 1;
-		}
+		output[ name ] = isup;
+		outputstring[ name ] = substr($0, RSTART+RLENGTH);
 	}
 	if ($7 == "=") {
 		sub(".*= ","");
-		sub("::_output_","");
+		sub("::_output_.*","");
 		gsub(" ","");
 		for (i=0; i<isup; i++) {
 			print "model.add(" name "[" i "] == " $0 "[" i "])";
@@ -119,13 +140,12 @@ parameter {
 	name = $6;
 	print name " = VarArray(" isup ",-" MAXINT "," MAXINT ",'" name "')";
 	if (match($0,"::_output_")) {
-		for (i=0; i<isup; i++) {
-			output[ name "[" i "]"] = 1;
-		}
+		output[ name ] = isup;
+		outputstring[ name ] = substr($0, RSTART+RLENGTH);
 	}
 	if ($7 == "=") {
 		sub(".*= ","");
-		sub("::_output_","");
+		sub("::_output_.*","");
 		gsub(" ","");
 		for (i=0; i<isup; i++) {
 			print "model.add(" name "[" i "] == " $0 "[" i "])";
@@ -157,13 +177,12 @@ parameter {
 	name = $6;
 	print name " = VarArray(" isup "," $5 ",'" name "')";
 	if (match($0,"::_output_")) {
-		for (i=0; i<isup; i++) {
-			output[ name "[" i "]"] = 1;
-		}
+		output[ name ] = isup;
+		outputstring[ name ] = substr($0, RSTART+RLENGTH);
 	}
 	if ($7 == "=") {
 		sub(".*= ","");
-		sub("::_output_","");
+		sub("::_output_.*","");
 		gsub(" ","");
 		for (i=0; i<isup; i++) {
 			print "model.add(" name "[" i "] == " $0 "[" i "])";
@@ -194,13 +213,12 @@ parameter {
 	name = $6;
 	print name " = [Variable(" $5 ",'" name "_" i "') for i in range(" isup ")]";
 	if (match($0,"::_output_")) {
-		for (i=0; i<isup; i++) {
-			output[ name "[" i "]"] = 1;
-		}
+		output[ name ] = isup;
+		outputstring[ name ] = substr($0, RSTART+RLENGTH);
 	}
 	if ($7 == "=") {
 		sub(".*= ","");
-		sub("::_output_","");
+		sub("::_output_.*","");
 		gsub(" ","");
 		for (i=0; i<isup; i++) {
 			print "model.add(" name "[" i "] == " $0 "[" i "])";
@@ -210,7 +228,7 @@ parameter {
 
 /^constraint /{
 	$1 = "model.add(";
-    $NF = $NF " )";
+    	$NF = $NF " )";
 	print $0;
 }
 
@@ -226,34 +244,42 @@ parameter {
 
 END {
 	if (!error) {
-
-	print "solvers = ['Mistral', 'SCIP', 'MiniSat', 'toulbar2', 'Gurobi']";
-	print "default = dict([('solver', 'Mistral'), ('verbose', 1), ('tcutoff', 900), ('var', 'DomainOverWDegree'), ('val', 'Lex'), ('rand', 2)])";
-    print "param = input(default)";
-    print "solver = model.load(param['solver'])";
-    print "solver.setVerbosity(param['verbose'])";
-    print "solver.setTimeLimit(param['tcutoff'])";
-    print "solver.setHeuristic(param['var'], param['val'], param['rand'])";
-    print "if param['solver'] == 'Mistral':";
-    print "    solver.solveAndRestart(GEOMETRIC, 256, 1.3)";
-    print "else:";
-    print "    solver.solve()";
-
-	print "sat_result = 's SATISFIABLE' if solver.is_sat() else 's UNKNOWN'"
+	print "solvers = ['Mistral', 'SCIP', 'MiniSat', 'Toulbar2', 'Gurobi']";
+	print "default = dict([('solver', 'Mistral'), ('verbose', 0), ('tcutoff', 900), ('var', 'DomainOverWDegree'), ('val', 'Lex'), ('rand', 2)])";
+	print "param = input(default)";
+	print "solver = model.load(param['solver'])";
+	print "solver.setVerbosity(param['verbose'])";
+	print "solver.setTimeLimit(param['tcutoff'] - int(time.clock()+0.5))";
+	print "solver.setHeuristic(param['var'], param['val'], param['rand'])";
+	print "if param['solver'] == 'Mistral':";
+	print "    solver.solveAndRestart(GEOMETRIC, 256, 1.3)";
+	print "else:";
+	print "    solver.solve()";
+	print "if solver.is_sat():"
+	n = asorti(output,varnames);
+	for (i=1; i<=n; i++) {
+		e = varnames[i];
+		if (output[e]==1) {
+			if (e != objective && e != "objective" && e != "obj") print "    print '" e " = '," e ".get_value(),';'";
+			else print "    print '" e " = ', (solver.getOptimum() if param['solver'] == 'Toulbar2' else " e ".get_value()),';'";
+		} else {
+			print "    print '" e " = " outputstring[e] ",',str(" e "),');'";
+		}
+	}
+	print "    print '----------'";
 	print "if solver.is_unsat():"
-	print "    sat_result = 's UNSATISFIABLE'"
-	print "print sat_result"
+	print "    print '=====UNSATISFIABLE====='"
 	if (objective){
-		print "if solver.is_sat():"
-		print "    print 'c Optimal', 1 if solver.is_opt() else 0";
+		print "elif solver.is_opt():"
+		print "    print '=========='"
+	} else {
+		print "elif solver.is_sat():"
+		print "    print '=========='"
 	}
-	print "print 'c SolveTime', solver.getTime()";
-	print "print 'c Nodes', solver.getNodes()";
-	if (objective) print "print 'c Objective'," objective ".get_value()";
-	for (e in output) {
-		name = e;
-		sub("[]]","+1]",name);
-		print "print 'constraint int_eq(" name ",'," e ".get_value(),');'";
-	}
+        print "else:"
+	print "    print '=====UNKNOWN====='"
+	print "print '% SolveTime', solver.getTime()";
+	print "print '% Nodes', solver.getNodes()";
+	if (objective) print "if solver.is_sat(): print '% Objective', (solver.getOptimum() if param['solver'] == 'Toulbar2' else " objective ".get_value())";
 	}
 }

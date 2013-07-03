@@ -89,6 +89,8 @@ def solve(param):
         solver.solveAndRestart(GEOMETRIC, 256, 1.3)
     else:
         solver.solve()
+    if (solver.is_sat()):
+        print "C_max= ",C_max.get_value()
 
     schedule = [[-1]*C_max.get_value() for job in jsp.job]
     index = 0
@@ -127,8 +129,8 @@ def solve(param):
 ###############################################
 ##############      Input        ##############
 ###############################################
-solvers = ['Mistral', 'MiniSat']
-default = {'solver':'Mistral', 'data':'data/tiny_jsp.txt', 'print':'no', 'verbose':1, 'tcutoff':3}
+solvers = ['Mistral', 'MiniSat', 'Toulbar2']
+default = {'solver':'Mistral', 'data':'data/tiny_jsp.txt', 'print':'no', 'verbose':1, 'tcutoff':6}
 
 if __name__ == '__main__':
     param = input(default) 

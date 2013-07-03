@@ -1,8 +1,8 @@
 from Numberjack import *
 
 def get_model(k,v,n):
-    design = Matrix(v,n)
-    pairs = Matrix(v*(v-1)/2,n)
+    design = Matrix(v,n,'design')
+    pairs = Matrix(v*(v-1)/2,n,'pairs')
     index = [[0 for i in range(v)] for j in range(v)]
     a  = 0
     for i in range(v-1):
@@ -11,10 +11,10 @@ def get_model(k,v,n):
             index[j][i] = a
             a += 1
 
-    pair_occurrence = VarArray(v*(v-1)/2,1,v-k)
+    pair_occurrence = VarArray(v*(v-1)/2,1,v-k,'pairoccur')
 
-    first = VarArray(v*(v-1)/2,n)
-    last = VarArray(v*(v-1)/2,n)
+    first = VarArray(v*(v-1)/2,n,'first')
+    last = VarArray(v*(v-1)/2,n,'last')
 
 
     model = Model(
@@ -43,7 +43,6 @@ def get_model(k,v,n):
         design[k-1][1] == 0,
         design[k][1] == 1,
     )
-    
     return first,pairs,last,design,index,model
 
 '''
@@ -131,8 +130,8 @@ def solve(param):
 
 
 
-solvers = ['Mistral', 'MiniSat', 'Walksat']
-default = {'k':3, 'v':6, 'solver':'MiniSat', 'verbose':1, 'tcutoff':3}
+solvers = ['Mistral', 'MiniSat', 'Walksat', 'Toulbar2']
+default = {'k':3, 'v':6, 'solver':'Mistral', 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':
     param = input(default) 

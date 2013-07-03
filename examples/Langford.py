@@ -39,7 +39,7 @@ def printLangford(M,X):
     return str(sequence)
 
 
-solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
+solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat', 'Toulbar2']
 default = {'solver':'Mistral', 'N':7, 'M':2, 'verbose':1, 'tcutoff':3}
 
 if __name__ == '__main__':

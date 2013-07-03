@@ -73,7 +73,7 @@ def multi_solver():
 
 
 ruler = (0, 1, 3, 6, 11, 17, 25, 34, 44, 55, 72, 85, 106, 127)
-solvers = ['Mistral', 'MiniSat', 'SCIP']
+solvers = ['Mistral', 'MiniSat', 'SCIP', 'Toulbar2']
 default = {'solver': 'Mistral', 'marks': 6, 'heuristic': 'Impact', 'verbose': 1, 'tcutoff': 3}
 
 

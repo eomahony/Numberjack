@@ -1,7 +1,7 @@
 from Numberjack import *
 
 def get_model(N):
-    queens = [Variable(N) for i in range(N)]
+    queens = VarArray(N,N)
     model  = Model( 
         AllDiff( queens ),
         AllDiff( [queens[i] + i for i in range(N)] ),
@@ -29,7 +29,7 @@ def print_chessboard(queens):
         out += ('|   '*queen.get_value()+'| Q |'+'   |'*(len(queens)-1-queen.get_value())+'\n'+'+---'*len(queens)+'+\n')
     return out
 
-solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
+solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat', 'Toulbar2']
 default = {'solver':'Mistral', 'N':6, 'heuristic':'MinDomainMinVal',
            'print':'yes', 'value':'Lex', 'verbose':1, 'tcutoff':3}
 

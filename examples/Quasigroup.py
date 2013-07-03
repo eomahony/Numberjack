@@ -32,8 +32,8 @@ def solve(param):
     return out    
 
 
-solvers = ['Mistral']
-default = {'solver':'Mistral', 'N':8, 'T':3, 'verbose':1, 'tcutoff':3}
+solvers = ['Mistral', 'Toulbar2']
+default = {'solver':'Mistral', 'N':8, 'T':3, 'verbose':1, 'tcutoff':6}
 
 if __name__ == '__main__':
     param = input(default) 

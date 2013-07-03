@@ -5499,11 +5499,11 @@ void BuildObjectTable::build( Solver *s, VariableInt **tmp,
 	  tables[pred->params[1]] = new ConstraintAC3Bitset( s, tmp, spin );
 	} break;      
 	case 2: {
-	  std::cout << "AC3valid" << std::endl;
+//	  std::cout << "AC3valid" << std::endl;
 	  tables[pred->params[1]] = new ConstraintGAC3Valid( s, tmp, n );
 	} break;
 	default: {
-	  std::cout << "AC2001allowed" << std::endl;
+//	  std::cout << "AC2001allowed" << std::endl;
 	  tables[pred->params[1]] = new ConstraintGAC2001Allowed( s, tmp, n );
 	}
 	}

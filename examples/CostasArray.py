@@ -37,12 +37,10 @@ def solve(param):
 
 
 
-solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
-default = {'solver':'Mistral', 'N':6, 'verbose':1, 'tcutoff':3}
+solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat', 'Toulbar2']
+default = {'solver':'Mistral', 'N':8, 'verbose':1, 'tcutoff':3}
 
 
 if __name__ == '__main__':
     param = input(default) 
     print solve(param)
-
-

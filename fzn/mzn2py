@@ -1,4 +1,19 @@
-#!/bin/sh
+#!/bin/bash
 
-# mzn2fzn -G numberjack --output-to-stdout $* | ./fzn2py -
-mzn2fzn -I ./mznlib --output-to-stdout $* | ./fzn2py -
+# mzn2fzn -I ./mznlib --output-to-stdout $* | ./fzn2py -
+
+pushd . > /dev/null
+SCRIPT_PATH="${BASH_SOURCE[0]}";
+if ([ -h "${SCRIPT_PATH}" ]) then
+  while([ -h "${SCRIPT_PATH}" ]) do cd `dirname "$SCRIPT_PATH"`; SCRIPT_PATH=`readlink "${SCRIPT_PATH}"`; done
+fi
+cd `dirname ${SCRIPT_PATH}` > /dev/null
+SCRIPT_PATH=`pwd`;
+popd  > /dev/null
+
+MZNNJ_DIR=$SCRIPT_PATH
+
+param1=${*##*.dzn}
+param=${param1##*.mzn}
+problem=`echo "$*" | sed -r 's/ -.*//'`
+mzn2fzn -I ${MZNNJ_DIR}/mznlib --output-to-stdout $problem | ${MZNNJ_DIR}/fzn2py - | tee problem.py | python - $param

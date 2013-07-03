@@ -1,0 +1,54 @@
+
+toulbar2 v0.9
+
+Copyright© - INRA - 2010
+
+* All rights reserved.
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
+*
+*     * Redistributions of source code must retain the above copyright
+*       notice, this list of conditions and the following disclaimer.
+*     * Redistributions in binary form must reproduce the above copyright
+*       notice, this list of conditions and the following disclaimer in the
+*       documentation and/or other materials provided with the distribution.
+*     * Neither the name of INRA nor the names of its contributors may be used 
+*       to endorse or promote products derived from this software without
+*       specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY INRA AND CONTRIBUTORS "AS IS" AND ANY
+* EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+* DISCLAIMED. IN NO EVENT SHALL INRA AND CONTRIBUTORS BE LIABLE FOR ANY
+* DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+* (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+References
+__________
+
+Soft global cost functions from K. L. Leung and J.H.M. Lee,
+The Chinese University of Hong Kong
+
+UAI evaluation 2010: ToulBar2, an open source exact cost function network solver
+D. Allouche, S. de Givry, T. Schiex
+Contributors: A. Favier (F), M. Sanchez (SP) , S. Bouveret (F), H. Fargier (F),
+F. Heras (SP), P. Jégou (F), J. Larrosa (SP), K. L. Leung (CN), S. N'diaye (F),
+E. Rollon (SP), C. Terrioux (F), G. Verfaillie (F), M. Zytnicki (F)
+
+http://www.inra.fr/mia/T/degivry/ToulBar2UAI10.pdf
+
+Max-CSP competition 2008: toulbar2 solver description.
+M. Sanchez, S. Bouveret, S. de Givry, F. Heras, P. Jégou, J. Larrosa, S. Ndiaye, E. Rollon, T. Schiex, C. Terrioux, G. Verfaillie, and M. Zytnicki.
+In Proceedings of the Third International CSP Solver Competition, 2008.
+
+http://www.inra.fr/mia/T/degivry/Sanchez08b.pdf
+
+The XCSP 2.1 format reader of CSP and WCSP instances has been provided by Olivier Roussel (roussel at cril.univ-artois.fr).
+
+Please send email to degivry@toulouse.inra.fr for further information.
+
+http://mulcyber.toulouse.inra.fr/projects/toulbar2/

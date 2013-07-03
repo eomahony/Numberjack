@@ -229,8 +229,13 @@ void MipWrapper_IntVar::encode(MipWrapperSolver* solver) {
 }
 
 int MipWrapper_IntVar::get_value() {
-    if (_expr_encoding == NULL
-       ) return (int) (round(_solver->get_value(_var)));
+    if (_expr_encoding == NULL) {
+        /* Check if a solver's representation of this variable was actually
+           created. It may not have been created if it was not involved in any
+           non-trivial constraints of the model. */
+        if(_var != NULL) return (int) (round(_solver->get_value(_var)));
+        else return get_min();
+    }
     double res = 0;
     for (int i = _lower; i <= _upper; ++i)
         if (_expr_encoding[i] != NULL
@@ -271,8 +276,13 @@ MipWrapper_FloatVar::MipWrapper_FloatVar(const double lb, const double ub,
 }
 
 double MipWrapper_FloatVar::get_value() {
-    if (_expr_encoding == NULL
-       ) return _solver->get_value(_var);
+    if (_expr_encoding == NULL){
+        /* Check if a solver's representation of this variable was actually
+           created. It may not have been created if it was not involved in any
+           non-trivial constraints of the model. */
+        if(_var != NULL) return _solver->get_value(_var);
+        else return get_min();
+    }
     double res = 0;
     for (int i = _lower; i <= _upper; ++i)
         if (_expr_encoding[i] != NULL

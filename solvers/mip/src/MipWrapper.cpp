@@ -532,7 +532,7 @@ MipWrapper_Expression* MipWrapper_mod::add(MipWrapperSolver *solver,
 MipWrapper_neg::MipWrapper_neg(MipWrapper_Expression *arg1) :
     MipWrapper_Expression() {
     initialise(false);
-    _var = arg1;
+    _arg = arg1;
     initbounds();
 }
 
@@ -540,8 +540,8 @@ MipWrapper_neg::~MipWrapper_neg() {
 }
 
 void MipWrapper_neg::initbounds() {
-    _lower = -1 * _var->_upper;
-    _upper = -1 * _var->_lower;
+    _lower = -1 * _arg->_upper;
+    _upper = -1 * _arg->_lower;
     DBG("neg has bounds %f..%f\n", _lower, _upper);
 }
 
@@ -556,7 +556,7 @@ MipWrapper_Expression* MipWrapper_neg::add(MipWrapperSolver *solver,
         } else {
             DBG("Adding neg %s\n", "");
 
-            MipWrapper_Sum *s = new MipWrapper_Sum(_var, -1); 
+            MipWrapper_Sum *s = new MipWrapper_Sum(_arg, -1); 
             s->add(solver, false);
             return s;
         }
@@ -568,7 +568,7 @@ MipWrapper_Expression* MipWrapper_neg::add(MipWrapperSolver *solver,
 MipWrapper_Abs::MipWrapper_Abs(MipWrapper_Expression *arg1) :
     MipWrapper_Expression() {
     initialise(false);
-    _var = arg1;
+    _arg = arg1;
     initbounds();
 }
 
@@ -577,9 +577,9 @@ MipWrapper_Abs::~MipWrapper_Abs() {
 
 void MipWrapper_Abs::initbounds() {
     std::vector<int> bounds;
-    bounds.push_back(std::abs(_var->_lower));
-    bounds.push_back(std::abs(_var->_upper));
-    if(_var->_lower < 0.0 && 0.0 < _var->_upper) bounds.push_back(0.0);
+    bounds.push_back(std::abs(_arg->_lower));
+    bounds.push_back(std::abs(_arg->_upper));
+    if(_arg->_lower < 0.0 && 0.0 < _arg->_upper) bounds.push_back(0.0);
 
     _lower = (double) *(std::min_element(bounds.begin(), bounds.end()));
     _upper = (double) *(std::max_element(bounds.begin(), bounds.end()));
@@ -598,23 +598,23 @@ MipWrapper_Expression* MipWrapper_Abs::add(MipWrapperSolver *solver,
         } else {
             DBG("Adding abs %s\n", "");
 
-            // x == |_var|
+            // x == |_arg|
             MipWrapper_Expression *x = new MipWrapper_IntVar(_lower, _upper);  // FIXME absolute of a double
             x = x->add(solver, false);
 
-            MipWrapper_Expression *neg_var = new MipWrapper_neg(_var);
+            MipWrapper_Expression *neg_var = new MipWrapper_neg(_arg);
             neg_var = neg_var->add(solver, false);
 
-            // _var <= x
-            MipWrapper_Expression *leq1 = new MipWrapper_le(_var, x);
+            // _arg <= x
+            MipWrapper_Expression *leq1 = new MipWrapper_le(_arg, x);
             leq1->add(solver, true);
 
-            // -_var <= x
+            // -_arg <= x
             MipWrapper_Expression *leq2 = new MipWrapper_le(neg_var, x);
             leq2->add(solver, true);
 
-            // x <= _var or x <= -_var
-            MipWrapper_Expression *or_cons = new MipWrapper_or(new MipWrapper_le(x, _var), new MipWrapper_le(x, neg_var));
+            // x <= _arg or x <= -_arg
+            MipWrapper_Expression *or_cons = new MipWrapper_or(new MipWrapper_le(x, _arg), new MipWrapper_le(x, neg_var));
             or_cons->add(solver, true);
             return x;
         }

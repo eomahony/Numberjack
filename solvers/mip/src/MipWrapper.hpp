@@ -251,7 +251,7 @@ public:
 
 class MipWrapper_neg: public MipWrapper_Expression {
 private:
-    MipWrapper_Expression *_var;
+    MipWrapper_Expression *_arg;
 public:
     MipWrapper_neg(MipWrapper_Expression *arg);
     virtual ~MipWrapper_neg();
@@ -262,7 +262,7 @@ public:
 
 class MipWrapper_Abs: public MipWrapper_Expression {
 private:
-    MipWrapper_Expression *_var;
+    MipWrapper_Expression *_arg;
 public:
     MipWrapper_Abs(MipWrapper_Expression *arg);
     virtual ~MipWrapper_Abs();

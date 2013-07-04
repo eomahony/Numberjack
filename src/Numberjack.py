@@ -309,12 +309,17 @@ class Expression(object):
                 has_value = True
         value = None
 
-        if solver is not None:
-            var = self.var_list[solver.solver_id - 1]
-        else:
-            var = self.var_list[-1]
+        # In the case of a variable not being created in the interface, return lb as per the doc above.
+        if len(self.var_list) == 0 or (solver and ((solver.solver_id - 1) < len(self.var_list) or (solver.solver_id - 1) == 0)):
+            has_value = False
+            value = self.lb
 
         if has_value:
+            if solver is not None:
+                var = self.var_list[solver.solver_id - 1]
+            else:
+                var = self.var_list[-1]
+
             if self.is_str():
                 value = self.model.strings[var.get_value()]
             else:

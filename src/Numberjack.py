@@ -2875,6 +2875,14 @@ class NBJ_STD_Solver(object):
     def setVerbosity(self, degree):
         self.solver.setVerbosity(degree)
 
+    ## Sets the number of threads a solver should use.
+    def setThreadCount(self, num_threads):
+        f = getattr(self.solver, 'setThreadCount', None)
+        if f:
+            f(num_threads)
+        else:
+            print >> sys.stderr, "Warning: this solver does not support the ability to specify a thread count."
+
     ## Sets the initial random seed
     def setRandomSeed(self, seed):
         self.solver.setRandomSeed(seed)

@@ -121,6 +121,14 @@ void GurobiSolver::setTimeLimit(const int cutoff){
 void GurobiSolver::setNodeLimit(const int cutoff){
     model->getEnv().set(GRB_DoubleParam_NodeLimit, cutoff);
 }
+
+void GurobiSolver::setThreadCount(const int nr_threads){
+    if(nr_threads < 0){
+        std::cerr << "Warning: cannot specify a negative thread count, ignoring." << std::endl;
+    } else {
+        std::cout << "Setting thread count to " << nr_threads << std::endl;
+        model->getEnv().set(GRB_IntParam_Threads, nr_threads);
+    }
 }
  
 void GurobiSolver::setVerbosity(const int degree){

@@ -331,6 +331,10 @@ private:
     // return the index of 'value', or the next index if value is not in the domain
     int get_index_n(const int v) const {
         int lb = 0, ub = _size-1, x;
+        if(_values == NULL){
+            std::cerr << "Error get_index_n was called without a value list being set." << std::endl;
+            exit(1);
+        }
         while(lb < ub) {
             x = (lb+ub)/2;
             if(_values[x] == v) return x;
@@ -343,6 +347,10 @@ private:
     // return the index of 'value', or the prev index if value is not in the domain
     int get_index_p(const int v) const {
         int lb = 0, ub = _size-1, x;
+        if(_values == NULL){
+            std::cerr << "Error get_index_p was called without a value list being set." << std::endl;
+            exit(1);
+        }
         while(lb < ub) {
             x = (lb+ub)/2+((lb+ub)%2);
             if(_values[x] == v) return x;
@@ -559,6 +567,14 @@ public:
     SatWrapper_mul( SatWrapper_Expression* arg1, SatWrapper_Expression* arg2 );
     SatWrapper_mul( SatWrapper_Expression* arg1, const int arg2 );
     virtual ~SatWrapper_mul();
+    virtual SatWrapper_Expression* add(SatWrapperSolver *solver, bool top_level);
+};
+
+class SatWrapper_mod : public SatWrapper_binop {
+public:
+    SatWrapper_mod( SatWrapper_Expression* arg1, SatWrapper_Expression* arg2 );
+    SatWrapper_mod( SatWrapper_Expression* arg1, const int arg2 );
+    virtual ~SatWrapper_mod();
     virtual SatWrapper_Expression* add(SatWrapperSolver *solver, bool top_level);
 };
 

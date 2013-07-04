@@ -3,6 +3,7 @@
 #include <fstream>
 #include <set>
 #include <algorithm>
+#include <cmath>
 #include "SatWrapper.hpp"
 
 
@@ -186,10 +187,6 @@ int DomainEncoding::contain(const int value) const {
 
 int DomainEncoding::next(const int value, const int index) const {
     int nxt = value;
-
-//   std::cout << _lower << " < " << value << " < " << _upper << std::endl;
-//   std::cout << "size: " << _size << std::endl;
-
     if(nxt < _upper) {
         if(_size == 2) return _upper;
         if(_values) {
@@ -197,10 +194,6 @@ int DomainEncoding::next(const int value, const int index) const {
                 if(index < _size) return _values[index+1];
             } else {
                 int x = get_index_p(value);
-
-// 	std::cout << "index: " << x << std::endl;
-
-
                 if(x < _size) return _values[x+1];
             }
         } else return ++nxt;
@@ -365,14 +358,12 @@ Lit FactorDomain::less_or_equal(const int value, const int index) const {
         if(value < 0 && value%factor) --quotient;
 
         return _dom_ptr->less_or_equal(quotient,-1);
-        //return _dom_ptr->less_or_equal(value/factor,-1);
     } else {
 
         int quotient = (value/factor)-1;
         if(value < 0 && value%factor) ++quotient;
 
         return ~(_dom_ptr->less_or_equal(quotient,-1));
-        //return ~(_dom_ptr->less_or_equal((value/factor)-1+(value%factor != 0),-1));
     }
 }
 
@@ -653,6 +644,90 @@ void multiplicationEncoder(SatWrapper_Expression *X,
         }
     } else {
        std::cerr << "ERROR: multiplicationEncoder not implemented for this encoding, exiting." << std::endl;
+       exit(1);
+    }
+}
+
+
+// (X % Y) == Z
+void modulusEncoder(SatWrapper_Expression *X,
+                    SatWrapper_Expression *Y,
+                    SatWrapper_Expression *Z,
+                    SatWrapperSolver *solver,
+                    EncodingConfiguration *encoding) {    
+    int i, j, k, x, y, z, prev_x = NULL, prev_y = NULL;
+
+    if(encoding->direct) {
+        Lits conflict_lits, support_lits;
+        // Ensure Y does not take the value 0.
+        conflict_lits.clear();
+        conflict_lits.push_back(~(Y->equal(0)));
+        solver->addClause(conflict_lits);
+
+        for(k=0; k<Z->getsize(); k++){
+            z = Z->getval(k);
+            for(j=0;j<Y->getsize(); j++){
+                y = Y->getval(j);
+                if(y == 0) continue; // modulus zero is invalid.
+                support_lits.clear();
+                support_lits.push_back(~(Z->equal(z, k)));
+                support_lits.push_back(~(Y->equal(y, j)));
+                for(i=0; i<X->getsize(); i++) {
+                    x = X->getval(i);
+                    if(encoding->conflict){
+                        if(x % y != z){
+                            conflict_lits.clear();
+                            conflict_lits.push_back(~(Z->equal(z, k)));
+                            conflict_lits.push_back(~(Y->equal(y, j)));
+                            conflict_lits.push_back(~(X->equal(x, i)));
+                            solver->addClause(conflict_lits);
+                        }
+                    }
+                    if(encoding->support){
+                        if(x % y == z){
+                            support_lits.push_back(X->equal(x, i));
+                        }
+                    }
+                }
+                if(encoding->support) solver->addClause(support_lits);
+            }
+        }
+    } else if(encoding->order){
+        Lits lits;
+        // Ensure Y does not take the value 0.
+        lits.clear();
+        lits.push_back(Y->less_or_equal(-1));
+        lits.push_back(Y->greater_than(0));
+        solver->addClause(lits);
+
+        for(j=0;j<Y->getsize(); j++){
+            y = Y->getval(j);
+            if(y==0) continue; // modulus zero is invalid.
+            for(i=0; i<X->getsize(); i++) {
+                x = X->getval(i);
+                z = x % y;
+#ifdef _DEBUGWRAP
+                std::cout << "order modulusEncoder i:" << i << " x:" << x << " j:" << j << " y:" << y << " z:" << z << std::endl;
+#endif
+
+                lits.clear();
+                if(i) lits.push_back(X->less_or_equal(prev_x, i-1));
+                lits.push_back(~(X->less_or_equal(x, i)));
+                if(j) lits.push_back(Y->less_or_equal(prev_y, j-1));
+                lits.push_back(~(Y->less_or_equal(y, j)));
+
+                lits.push_back(Z->less_or_equal(z));
+                solver->addClause(lits);
+
+                lits.pop_back();
+                lits.push_back(~(Z->less_or_equal(z-1)));
+                solver->addClause(lits);
+                prev_x = x;
+            }
+            prev_y = y;
+        }
+    } else {
+       std::cerr << "ERROR: modulusEncoder not implemented for this encoding, exiting." << std::endl;
        exit(1);
     }
 }
@@ -1265,6 +1340,73 @@ SatWrapper_Expression* SatWrapper_mul::add(SatWrapperSolver *solver, bool top_le
 
 SatWrapper_mul::~SatWrapper_mul() {}
 
+SatWrapper_mod::SatWrapper_mod(SatWrapper_Expression *arg1, const int arg2)
+    : SatWrapper_binop(arg1, arg2) {
+    _rhs = std::abs(arg2);
+    if(_rhs == 0){
+        std::cerr << "Error cannot create expression with modulus zero." << std::endl;
+        exit(1);
+    }
+}
+
+SatWrapper_mod::SatWrapper_mod(SatWrapper_Expression *arg1, SatWrapper_Expression *arg2)
+    : SatWrapper_binop(arg1, arg2) {}
+
+SatWrapper_Expression* SatWrapper_mod::add(SatWrapperSolver *solver, bool top_level) {
+    if(!has_been_added()) {
+        _solver = solver;
+        _ident = _solver->declare(this, false);
+        
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
+
+#ifdef _DEBUGWRAP
+        std::cout << "creating mod expression x" << _ident << std::endl;
+#endif
+
+        if(top_level) {
+            std::cerr << "mod predicate at the top level not supported" << std::endl;
+            exit(1);
+        } else {
+            _vars[0] = _vars[0]->add(_solver, false);
+
+            if(_vars[1]) {
+#ifdef _DEBUGWRAP
+                std::cout << "mod encoding x" << _vars[0]->_ident << " mod x" << _vars[1]->_ident << std::endl;
+#endif
+                _vars[1] = _vars[1]->add(_solver, false);
+
+                int lb, ub, var0_min = _vars[0]->getmin();
+                lb = std::min(0, _vars[1]->getmin() + 1);
+                ub = _vars[1]->getmax() - 1;
+                if(var0_min < 0) lb = std::min(lb, -ub);
+                domain = new DomainEncoding(this, lb, ub);
+                domain->encode(_solver);
+                modulusEncoder(_vars[0], _vars[1], this, solver, encoding);
+
+            } else {
+#ifdef _DEBUGWRAP
+                std::cout << "mod encoding x" << _vars[0]->_ident << " mod " << _rhs << std::endl;
+#endif
+                int lb = 0, var0_min = _vars[0]->getmin();
+                if(var0_min < 0) lb = std::min(lb, -_rhs + 1);
+                domain = new DomainEncoding(this, lb, _rhs - 1);
+                domain->encode(_solver);
+                SatWrapper_ConstantInt *RHS = new SatWrapper_ConstantInt(_rhs);
+                RHS->encoding = encoding;
+                modulusEncoder(_vars[0], RHS, this, solver, encoding);
+                delete RHS;
+            }
+        }
+
+        _solver->validate();
+    }
+
+    return this;
+}
+
+SatWrapper_mod::~SatWrapper_mod() {}
+
 SatWrapper_Abs::SatWrapper_Abs(SatWrapper_Expression *arg1)
     : SatWrapper_Expression() {
     _var = arg1;
@@ -1401,22 +1543,16 @@ SatWrapper_Expression* SatWrapper_AllDiff::add(SatWrapperSolver *solver, bool to
                 }
 
                 _solver->validate();
-
             }
             if(!(encoding->alldiff_encoding & EncodingConfiguration::PairwiseDecomp || encoding->alldiff_encoding & EncodingConfiguration::LadderAMO)) {
                 std::cerr << "Error: AllDiff not implemented for this encoding. Please use either PairwiseDecomp or LadderAMO." << std::endl;
                 exit(1);
             }
-
-
         } else {
-
             std::cerr << "Alldiff not in top level insupported at the moment" << std::endl;
             exit(1);
-
         }
     }
-
     return NULL;
 }
 

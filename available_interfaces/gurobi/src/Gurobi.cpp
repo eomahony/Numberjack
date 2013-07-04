@@ -14,13 +14,13 @@ GurobiSolver::GurobiSolver(){
     var_counter = 0;
     _verbosity = 0;
     has_been_added = false;
+    optimstatus = -1;
 
+    /*  GRBModel takes a copy of env, so to change parameters of the env we
+        need to use model->getEnv() and modify that. */
     env = new GRBEnv();
     model = new GRBModel(*env);
     variables = new vector<GRBVar>;
-
-    // set the objective sense to maximize, default is minimize
-    // SCIP_CALL_EXC( SCIPsetObjsense(_scip, SCIP_OBJSENSE_MAXIMIZE) );
 }
 
 GurobiSolver::~GurobiSolver(){
@@ -115,18 +115,27 @@ int GurobiSolver::solve(){
 }
 
 void GurobiSolver::setTimeLimit(const int cutoff){
-    env->set(GRB_DoubleParam_TimeLimit, cutoff);
+    model->getEnv().set(GRB_DoubleParam_TimeLimit, cutoff);
 }
 
 void GurobiSolver::setNodeLimit(const int cutoff){
-    env->set(GRB_DoubleParam_NodeLimit, cutoff);
+    model->getEnv().set(GRB_DoubleParam_NodeLimit, cutoff);
+}
+
+void GurobiSolver::setThreadCount(const int nr_threads){
+    if(nr_threads < 0){
+        std::cerr << "Warning: cannot specify a negative thread count, ignoring." << std::endl;
+    } else {
+        std::cout << "Setting thread count to " << nr_threads << std::endl;
+        model->getEnv().set(GRB_IntParam_Threads, nr_threads);
+    }
 }
  
 void GurobiSolver::setVerbosity(const int degree){
     // Gurobi's verbosity should be either 0/1.
     if(degree >= 0)
         _verbosity = degree <= 1 ? degree : 1;
-    env->set(GRB_IntParam_OutputFlag, _verbosity);
+    model->getEnv().set(GRB_IntParam_OutputFlag, _verbosity);
 }
 
 bool GurobiSolver::is_sat(){
@@ -142,11 +151,7 @@ bool GurobiSolver::is_opt(){
 }
 
 void GurobiSolver::printStatistics(){
-    // std::cout << "\td Time: " << getTime() << "\tNodes:" << getNodes()
-	   //      << std::endl;
-    // if(_verbosity > 1){
-    //     SCIP_CALL_EXC(SCIPprintStatistics(_scip, NULL));
-    // }
+    std::cout << "\td Time: " << getTime() << "\tNodes:" << getNodes() << std::endl;
 }
 
 int GurobiSolver::getNodes(){

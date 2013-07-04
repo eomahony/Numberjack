@@ -36,6 +36,7 @@ public:
     // parameter tuning methods
     void setTimeLimit(const int cutoff);
     void setNodeLimit(const int cutoff);
+    void setThreadCount(const int nr_threads);
     void setVerbosity(const int degree);
 
     // statistics methods

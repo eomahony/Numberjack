@@ -298,7 +298,13 @@ class Expression(object):
     #    in the specified solver. Provided the solver has found a solution. If no solution
     #    has been found None is returned.
     #
-    #    If not solver is specified then the solver that has loaded the expression
+    #    In the case of variables, it may not be passed in to the solver if it
+    #    is not involved in a non-trivial constraint. For example, x <= 1, x
+    #    will not get added (by this constraint alone) if it has a upperbound
+    #    which is less or equal to 1. get_value() will return the variable's
+    #    lower bound as the value in this case.
+    #
+    #    If no solver is specified then the solver that has loaded the expression
     #    most recently is used.
     #
     def get_value(self, solver=None):
@@ -307,12 +313,17 @@ class Expression(object):
             if self.solver.is_sat():
                 has_value = True
         value = None
-        #SDG: do not ask for var if there is no value
+        # In the case of a variable not being created in the interface, return lb as per the doc above.
+        if len(self.var_list) == 0 or (solver and ((solver.solver_id - 1) < len(self.var_list) or (solver.solver_id - 1) == 0)):
+            has_value = False
+            value = self.lb
+
         if has_value:
             if solver is not None:
                 var = self.var_list[solver.solver_id - 1]
             else:
                 var = self.var_list[-1]
+
             if self.is_str():
                 value = self.model.strings[var.get_value()]
             else:
@@ -1432,16 +1443,18 @@ class Mul(BinPredicate):
 #   - Top-level: Can not be used as top-level Constraint
 #   - Nested: Equal to the modulo of the operands
 #
-# \warning Can not be used with all solvers
-#
 #    Mod expression can be used to modulo two expressions or an expression and
 #    a constraint.
+#
+#    For MIP and SAT, the constraint is encoded such that the remainder takes
+#    the sign of the numerator, as per the C standard. This differs from Python
+#    where the remainder takes the sign of the denominator.
 #
 # \code
 #    var1 = Variable(0, 10)
 #    var2 = Variable(0, 100)
 #
-#    modxp1 = var2 % var1
+#    modexp1 = var2 % var1
 #    modexp2 = var2 % 10
 # \endcode
 #
@@ -3014,6 +3027,14 @@ class NBJ_STD_Solver(object):
     ## Sets the verbosity level of the solver
     def setVerbosity(self, degree):
         self.solver.setVerbosity(degree)
+
+    ## Sets the number of threads a solver should use.
+    def setThreadCount(self, num_threads):
+        f = getattr(self.solver, 'setThreadCount', None)
+        if f:
+            f(num_threads)
+        else:
+            print >> sys.stderr, "Warning: this solver does not support the ability to specify a thread count."
 
     ## Sets the initial random seed
     def setRandomSeed(self, seed):

@@ -954,7 +954,12 @@ Toulbar2Solver::~Toulbar2Solver()
 
 void Toulbar2Solver::add(Toulbar2_Expression* arg)
 {
-  arg->add(this, true);
+  try {
+	arg->add(this, true);
+  } catch (Contradiction) {
+	wcsp->whenContradiction();
+	unsatisfiable = true;
+  }
 #ifdef _DEBUGWRAP    
   cout << "add top-level var: " << arg->_wcspIndex << " " << ((arg->_wcspIndex>=0)?wcsp->getName(arg->_wcspIndex):".") << " " << ((arg->_wcspIndex>=0)?wcsp->getDomainInitSize(arg->_wcspIndex):0) << endl;
 #endif
@@ -980,28 +985,29 @@ bool Toulbar2Solver::propagate()
 
 int Toulbar2Solver::solve()
 {
-  wcsp->sortConstraints();
-  wcsp->histogram();
-  unsatisfiable = false;
-  if (ToulBar2::dumpWCSP == 1) {
-	solver->dump_wcsp("problem_original.wcsp");
-  } else {
-	ToulBar2::timeOut = timeOut;
-	signal(SIGINT,  timeout);
-	try {
+  if (!unsatisfiable) {
+	wcsp->sortConstraints();
+	wcsp->histogram();
+	if (ToulBar2::dumpWCSP == 1) {
+	  solver->dump_wcsp("problem_original.wcsp");
+	} else {
+	  ToulBar2::timeOut = timeOut;
+	  signal(SIGINT,  timeout);
 	  try {
-		upperbound = wcsp->getUb();
-		unsatisfiable = !solver->solve();
-	  } catch (Contradiction) {
-		wcsp->whenContradiction();
-		unsatisfiable = true;
+		try {
+		  upperbound = wcsp->getUb();
+		  unsatisfiable = !solver->solve();
+		} catch (Contradiction) {
+		  wcsp->whenContradiction();
+		  unsatisfiable = true;
+		}
+	  } catch (TimeOut) {
+		interrupted = true;
 	  }
-	} catch (TimeOut) {
-	  interrupted = true;
-	}
-	timerStop();
-	if(wcsp->getUb() < upperbound) {
-	  optimum = solver->getSolution(solution) + costshift;
+	  timerStop();
+	  if(wcsp->getUb() < upperbound) {
+		optimum = solver->getSolution(solution) + costshift;
+	  }
 	}
   }
   return is_sat();

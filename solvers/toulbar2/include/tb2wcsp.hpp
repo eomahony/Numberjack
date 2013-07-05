@@ -6,7 +6,7 @@
 #ifndef TB2WCSP_HPP_
 #define TB2WCSP_HPP_
 
-#include "toulbar2.hpp"
+#include "toulbar2lib.hpp"
 #include "tb2variable.hpp"
 #include "tb2constraint.hpp"
 #include "tb2enumvar.hpp"

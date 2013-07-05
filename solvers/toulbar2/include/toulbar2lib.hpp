@@ -1,10 +1,10 @@
-/** \file toulbar2.hpp
+/** \file toulbar2lib.hpp
  *  \brief Main protocol class of a global soft constraint representing a weighted CSP and a generic WCSP complete tree-search-based solver
  *
  */
 
-#ifndef TOULBAR2_HPP_
-#define TOULBAR2_HPP_
+#ifndef TOULBAR2LIB_HPP_
+#define TOULBAR2LIB_HPP_
 
 #include "tb2types.hpp"
 
@@ -265,4 +265,4 @@ public:
     virtual set<int> getUnassignedVars() const =0; ///< \internal returns the set of unassigned variable indexes \warning not valid before the search (see WeightedCSPSolver::solve)
 };
 
-#endif /*TOULBAR2_HPP_*/
+#endif /*TOULBAR2LIB_HPP_*/

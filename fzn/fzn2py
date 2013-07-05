@@ -6,7 +6,7 @@
 
 # remove end of line (;), annotations (except variable output), predicate and comments.
 # replace a..b by range(a,1+b)
-# replace false by False and true by True
+# replace false by 0 and true by 1
 # replace array index a[i] by a[i-1]  # BUT a[var] STILL NOT TRANSFORMED!?!
 # after awk parsing, replace {} by []
 SED='sed -r'
@@ -35,4 +35,4 @@ if [[ "$uname" == "Darwin" ]]; then
 fi
 
 # sed 's/;$//' $1 | sed -r 's/:: output_[a-zA-Z0-9_]+([(].*[)])*/::_output_/g' | sed -r 's/:: [a-zA-Z0-9_]+([(].*[)])*//g' | sed 's/^predicate .*$//' | sed 's/%.*$//' | sed 's/false/0/g' | sed 's/true/1/g' | sed -r 's/([-]*[0-9]+)[.][.]([-]*[0-9]+)/range(\1,1+\2)/g' | sed -r 's/([a-zA-Z0-9_]+)[[]([0-9+]+)[]]/\1[\2-1]/g' | awk -f ./fzn2py.awk | sed 's/{/[/g' | sed 's/}/]/g'
-$SED 's/;$//' $INPUT | $SED 's/:: output_/::_output_/g' | $SED 's/:: [a-zA-Z0-9_]+([(].*[)])*//g' | $SED 's/^predicate .*$//' | $SED 's/%.*$//' | $SED 's/false/False/g' | $SED 's/true/True/g' | $SED 's/([-]*[0-9]+)[.][.]([-]*[0-9]+)/range(\1,1+\2)/g' | $SED 's/([a-zA-Z0-9_]+)[[]([0-9+]+)[]]/\1[\2-1]/g' | gawk -f $MZNNJ_DIR/fzn2py.awk --assign MZNNJ_DIR=$MZNNJ_DIR | $SED 's/\{/\[/g' | $SED 's/\}/\]/g'
+$SED 's/;$//' $INPUT | $SED 's/:: output_/::_output_/g' | $SED 's/:: [a-zA-Z0-9_]+([(].*[)])*//g' | $SED 's/^predicate .*$//' | $SED 's/%.*$//' | $SED 's/false/0/g' | $SED 's/true/1/g' | $SED 's/([-]*[0-9]+)[.][.]([-]*[0-9]+)/range(\1,1+\2)/g' | $SED 's/([a-zA-Z0-9_]+)[[]([0-9+]+)[]]/\1[\2-1]/g' | gawk -f $MZNNJ_DIR/fzn2py.awk --assign MZNNJ_DIR=$MZNNJ_DIR | $SED 's/\{/\[/g' | $SED 's/\}/\]/g'

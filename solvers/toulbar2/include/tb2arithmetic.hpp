@@ -41,7 +41,7 @@ public:
     bool verify();
     
     double  computeTightness() {
-    	tight = (double) penalty * abs(permitted.size() - x->getDomainSize()) / x->getDomainSize();
+    	tight = (double) penalty * abs((int) permitted.size() - (int) x->getDomainSize()) / x->getDomainSize();
     	return tight;
     }
     

@@ -30,11 +30,11 @@
 #include <set>
 using namespace std;
 
-template<class T>
-T abs(T x) {
-    if (x < 0) return -(x);
-    else return x;
-}
+// template<class T>
+// T abs(T x) {
+//     if (x < 0) return -(x);
+//     else return x;
+// }
 
 // Warning! Already defined in STL
 //template<class T>

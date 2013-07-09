@@ -3,16 +3,16 @@
 
 
 def array_bool_and(x,y):
-    if y == True:
-        return Sum(x) == len(x)
-    elif y == False:
-        return Sum(x) != len(x)
+    if ((type(y) is int) and y != 0):
+        return (Sum(x) == len(x))
+    elif ((type(y) is int) and y == 0):
+        return (Sum(x) != len(x))
     else:
         return (y == (Sum(x) == len(x)))
 
 
 def array_bool_or(x,y):
-    if y == True:
+    if ((type(y) is int) and y != 0):
         if len(x) == 2:
             return Or(x)
         else:
@@ -47,7 +47,7 @@ def bool2int(x, y):
     return (x == y)
 
 def bool_and(x, y, z):
-    return (And(x, y) if z == True else (z == And(x, y)))
+    return (And(x, y) if ((type(z) is int) and (z != 0)) else (z == And(x, y)))
 
 def bool_clause(x, y):
     return (Disjunction(x) | Disjunction([(e == 0) for e in y]))
@@ -104,14 +104,12 @@ def int_ne_reif(x,y,z):
     return [((x == y) | (z != 0)), ((x != y) | (z == 0))]
 
 def int_lin_eq(coef,vars,res):
-#    return (res == Sum(vars,coef))
-    return (Sum(vars,coef) == res)
+    return (res == Sum(vars,coef))
 
 def bool_lin_eq(coef,vars,res):
     return (int_lin_eq(coef,vars,res))
 
 def int_lin_eq_reif(coef,vars,res,z):
-#    return [((Sum(vars,coef) != res) | (z != 0)), ((Sum(vars,coef) == res) | (z == 0))]
     return (z == (res == Sum(vars, coef)))
 
 def int_lin_le(coef,vars,res):
@@ -121,21 +119,18 @@ def bool_lin_le(coef,vars,res):
     return (int_lin_le(coef,vars,res))
 
 def int_lin_le_reif(coef,vars,res,z):
-#    return [((Sum(vars,coef) > res) | (z != 0)), ((Sum(vars,coef) <= res) | (z == 0))]
     return (z == (res >= Sum(vars,coef)))
 
 def int_lin_lt(coef,vars,res):
     return (res > Sum(vars,coef))
 
 def int_lin_lt_reif(coef,vars,res,z):
-#    return [((Sum(vars,coef) >= res) | (z != 0)), ((Sum(vars,coef) < res) | (z == 0))]
     return (z == (res > Sum(vars,coef)))
 
 def int_lin_ne(coef,vars,res):
     return (res != Sum(vars,coef))
 
 def int_lin_ne_reif(coef,vars,res,z):
-#    return [((Sum(vars,coef) == res) | (z != 0)), ((Sum(vars,coef) != res) | (z == 0))]
     return (z == (res != Sum(vars,coef)))
 
 def int_abs(x,y):
@@ -160,8 +155,8 @@ def int_times(x,y,z):
     return (z == (x * y))
 
 def set_in(x,dom):
-    return [(x != v) for v in range(x.get_min(),1+x.get_max()) if (not(v in dom))]
 #    return (Disjunction([(x == v) for v in dom]))
+    return [(x != v) for v in range(x.get_min(),1+x.get_max()) if (not(v in dom))]
 
 def set_in_reif(x,dom,z):
     return (z == Disjunction([(x == v) for v in dom]))

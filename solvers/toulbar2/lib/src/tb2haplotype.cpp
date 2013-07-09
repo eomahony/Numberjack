@@ -3,7 +3,7 @@
  *
  */
 
-#include "toulbar2.hpp"
+#include "toulbar2lib.hpp"
 #include "tb2enumvar.hpp"
 #include "tb2haplotype.hpp"
 

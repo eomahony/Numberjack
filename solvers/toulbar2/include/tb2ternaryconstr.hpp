@@ -463,74 +463,7 @@ public:
             
     bool verify();
     
-    pair< pair<Cost,Cost>, pair<Cost,Cost> > getMaxCost(int varIndex, Value a, Value b) {
-    	Cost maxcosta = MIN_COST;
-    	Cost diffcosta = MIN_COST;
-    	Cost maxcostb = MIN_COST;
-    	Cost diffcostb = MIN_COST;
-    	if (varIndex == 0) {
-    		Cost ucosta = x->getCost(a);
-    		Cost ucostb = x->getCost(b);
-    		for (EnumeratedVariable::iterator iterY = y->begin(); iterY != y->end(); ++iterY) {
-    			Cost ucosty = y->getCost(*iterY);
-    			for (EnumeratedVariable::iterator iterZ = z->begin(); iterZ != z->end(); ++iterZ) {
-    				Cost costa = getCost(a, *iterY, *iterZ);
-    				Cost costb = getCost(b, *iterY, *iterZ);
-    				if (costa > maxcosta) maxcosta = costa;
-    				if (costb > maxcostb) maxcostb = costb;
-        			Cost ucostz = z->getCost(*iterZ);
-    				if (!CUT(ucostb + getCostWithBinaries(b, *iterY, *iterZ) + ucosty + ucostz + wcsp->getLb(), wcsp->getUb())) {
-    					if (costa-costb > diffcosta) diffcosta = costa-costb;
-    				}
-    				if (!CUT(ucosta + getCostWithBinaries(a, *iterY, *iterZ) + ucosty + ucostz + wcsp->getLb(), wcsp->getUb())) {
-    					if (costb-costa > diffcostb) diffcostb = costb-costa;
-    				}
-    			}
-    		}
-    	} else if (varIndex == 1) {
-    		Cost ucosta = y->getCost(a);
-    		Cost ucostb = y->getCost(b);
-    		for (EnumeratedVariable::iterator iterX = x->begin(); iterX != x->end(); ++iterX) {
-    			Cost ucostx = x->getCost(*iterX);
-    			for (EnumeratedVariable::iterator iterZ = z->begin(); iterZ != z->end(); ++iterZ) {
-    				Cost costa = getCost(*iterX, a, *iterZ);
-    				Cost costb = getCost(*iterX, b, *iterZ);
-    				if (costa > maxcosta) maxcosta = costa;
-    				if (costb > maxcostb) maxcostb = costb;
-        			Cost ucostz = z->getCost(*iterZ);
-    				if (!CUT(ucostb + getCostWithBinaries(*iterX, b, *iterZ) + ucostx + ucostz + wcsp->getLb(), wcsp->getUb())) {
-    					if (costa-costb > diffcosta) diffcosta = costa-costb;
-    				}
-    				if (!CUT(ucosta + getCostWithBinaries(*iterX, a, *iterZ) + ucostx + ucostz + wcsp->getLb(), wcsp->getUb())) {
-    					if (costb-costa > diffcostb) diffcostb = costb-costa;
-    				}
-    			}
-    		}
-    	} else {
-    		assert(varIndex == 2);
-    		Cost ucosta = z->getCost(a);
-    		Cost ucostb = z->getCost(b);
-    		for (EnumeratedVariable::iterator iterX = x->begin(); iterX != x->end(); ++iterX) {
-    			Cost ucostx = x->getCost(*iterX);
-        		for (EnumeratedVariable::iterator iterY = y->begin(); iterY != y->end(); ++iterY) {
-    				Cost costa = getCost(*iterX, *iterY, a);
-    				Cost costb = getCost(*iterX, *iterY, b);
-    				if (costa > maxcosta) maxcosta = costa;
-    				if (costb > maxcostb) maxcostb = costb;
-        			Cost ucosty = y->getCost(*iterY);
-    				if (!CUT(ucostb + getCostWithBinaries(*iterX, *iterY, b) + ucostx + ucosty + wcsp->getLb(), wcsp->getUb())) {
-    					if (costa-costb > diffcosta) diffcosta = costa-costb;
-    				}
-    				if (!CUT(ucosta + getCostWithBinaries(*iterX, *iterY, a) + ucostx + ucosty + wcsp->getLb(), wcsp->getUb())) {
-    					if (costb-costa > diffcostb) diffcostb = costb-costa;
-    				}
-    			}
-    		}
-    	}
-    	assert(maxcosta >= diffcosta);
-    	assert(maxcostb >= diffcostb);
-    	return make_pair(make_pair(maxcosta,diffcosta), make_pair(maxcostb,diffcostb));
-    }
+    pair< pair<Cost,Cost>, pair<Cost,Cost> > getMaxCost(int varIndex, Value a, Value b);
 
 	template <typename T1, typename T2, typename T3, typename T4> void projectTernaryBinary( T1 getCost, T2 getCostYZX, T3 addCostYZX, bool functionalX, T4 getFunctionX, EnumeratedVariable* xx, EnumeratedVariable* yy, EnumeratedVariable* zz, BinaryConstraint* yzin );
 

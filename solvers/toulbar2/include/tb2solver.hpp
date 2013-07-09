@@ -6,7 +6,7 @@
 #ifndef TB2SOLVER_HPP_
 #define TB2SOLVER_HPP_
 
-#include "toulbar2.hpp"
+#include "toulbar2lib.hpp"
 
 template <class T> struct DLink;
 template <class T> class BTList;

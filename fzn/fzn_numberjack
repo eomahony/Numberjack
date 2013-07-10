@@ -4,6 +4,7 @@
 from utils import Command
 import datetime
 import sys
+import os
 
 
 """
@@ -14,6 +15,7 @@ import sys
 
 usage_string = ("Usage: %s [-p num_threads] [-t timelimit] [-m memlimit] "
                 "fzn_filename" % sys.argv[0])
+fzn2py = os.path.join(os.path.dirname(os.path.realpath(__file__)), "fzn2py")
 
 
 def translate_fzn_to_nj(fznfilename, timelimit,
@@ -25,7 +27,7 @@ def translate_fzn_to_nj(fznfilename, timelimit,
         # TODO: check if we should temp_f.close() first.
 
     # launch subprocess to convert the file to python file
-    cmd = "./fzn2py %s > %s" % (fznfilename, njfilename)
+    cmd = "%s %s > %s" % (fzn2py, fznfilename, njfilename)
     c = Command(cmd, memlimit=memlimit)
     c.run(timelimit)
 

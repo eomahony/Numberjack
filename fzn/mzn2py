@@ -13,7 +13,13 @@ popd  > /dev/null
 
 MZNNJ_DIR=$SCRIPT_PATH
 
+SED='sed -r'
+if [[ "$(uname)" == "Darwin" ]]; then
+    # The version of sed on Mac has a different option to enable extended regular expressions
+    SED='sed -E'
+fi
+
 param1=${*##*.dzn}
 param=${param1##*.mzn}
-problem=`echo "$*" | sed -r 's/ -.*//'`
+problem=`echo "$*" | $SED 's/ -.*//'`
 mzn2fzn -I ${MZNNJ_DIR}/mznlib --output-to-stdout $problem | ${MZNNJ_DIR}/fzn2py - | tee problem.py | python - $param

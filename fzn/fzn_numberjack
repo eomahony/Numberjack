@@ -17,7 +17,7 @@ usage_string = ("Usage: %s [-p num_threads] [-t timelimit] [-m memlimit] "
                 "fzn_filename" % sys.argv[0])
 this_dir = os.path.dirname(os.path.realpath(__file__))
 fzn2py = os.path.join(this_dir, "fzn2py")
-pportfolio = os.path.join(this_dir, "pportfolio.py")
+njportfolio = os.path.join(this_dir, "njportfolio.py")
 MEMLIMIT = 2000000  # kbytes. 2 GB
 TIMEOUT = 900  # 15 minutes
 
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     timelimit -= translatetime
 
     runtime = datetime.datetime.now()
-    cmd = "python %s %s %d %.1f %d" % (pportfolio, njfilename, numthreads, timelimit, memlimit)
+    cmd = "python %s %s %d %.1f %d" % (njportfolio, njfilename, numthreads, timelimit, memlimit)
     print "%", cmd
     c = Command(cmd, memlimit=memlimit)
     c.run(timelimit)

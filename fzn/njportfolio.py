@@ -24,7 +24,7 @@ def run_cmd(process_name, pid_queue, result_queue, cmd, memlimit):
         result_queue.put([False, exitcode, process_name, stdout, stderr], True)
 
 
-def pportfolio(njfilename, cores, timeout, memlimit):
+def njportfolio(njfilename, cores, timeout, memlimit):
     from multiprocessing import Queue, cpu_count
     from Queue import Empty
 
@@ -81,7 +81,7 @@ def pportfolio(njfilename, cores, timeout, memlimit):
             pass
         except OSError:
             pass  # Process already finished.
-    print "%% Total time in pportfolio: %.1f" % (datetime.datetime.now() - start_time).total_seconds()
+    print "%% Total time in njportfolio: %.1f" % (datetime.datetime.now() - start_time).total_seconds()
 
 
 def print_commented(text):
@@ -92,4 +92,4 @@ def print_commented(text):
 if __name__ == '__main__':
     if len(sys.argv) != 5:
         print >> sys.stderr, "Usage: python %s njfilename cores timeout memlimit" % sys.argv[0]
-    pportfolio(sys.argv[1], int(sys.argv[2]), float(sys.argv[3]), int(sys.argv[4]))
+    njportfolio(sys.argv[1], int(sys.argv[2]), float(sys.argv[3]), int(sys.argv[4]))

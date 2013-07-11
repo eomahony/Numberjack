@@ -245,12 +245,14 @@ parameter {
 END {
 	if (!error) {
 	print "solvers = ['Mistral', 'SCIP', 'MiniSat', 'Toulbar2', 'Gurobi']";
-	print "default = dict([('solver', 'Mistral'), ('verbose', 0), ('tcutoff', 900), ('var', 'DomainOverWDegree'), ('val', 'Lex'), ('rand', 2)])";
+	print "default = dict([('solver', 'Mistral'), ('verbose', 0), ('tcutoff', 900), ('var', 'DomainOverWDegree'), ('val', 'Lex'), ('rand', 2), ('threads', 1)])";
 	print "param = input(default)";
 	print "solver = model.load(param['solver'])";
 	print "solver.setVerbosity(param['verbose'])";
 	print "solver.setTimeLimit(param['tcutoff'] - int(time.clock()+0.5))";
 	print "solver.setHeuristic(param['var'], param['val'], param['rand'])";
+	print "if param['solver'] == 'Gurobi':";
+	print "    solver.setThreadCount(param['threads'])";
 	print "if param['solver'] == 'Mistral':";
 	print "    solver.solveAndRestart(GEOMETRIC, 256, 1.3)";
 	print "else:";

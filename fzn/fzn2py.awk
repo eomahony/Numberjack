@@ -8,7 +8,8 @@ BEGIN {
 	print "from Numberjack import *"
 	system("cat " MZNNJ_DIR "/fzn2py.py");
 	print "";
-	print "model = Model()";	
+	print "def get_model():"
+	print "    model = Model()";	
 	parameter = 1;
 	error = 0;
 }
@@ -53,36 +54,36 @@ BEGIN {
 
 parameter {
 	sub(".*: ","");
-	if ($2 == "=") print $0; # it might be a predicate instead if no =
+	if ($2 == "=") print "    " $0; # it might be a predicate instead if no =
 }
 
 /^var bool:/{
-	print $3 " = Variable('" $3 "')";
+	print "    " $3 " = Variable('" $3 "')";
 	if (match($0,"::_output_")) output[$3] = 1;
-	if ($4 == "=") print "model.add(" $3 " == " $5 ")";
+	if ($4 == "=") print "    model.add(" $3 " == " $5 ")";
 }
 
 /^var int:/{
-	print $3 " = Variable(-" MAXINT "," MAXINT ",'" $3 "')";
+	print "    " $3 " = Variable(-" MAXINT "," MAXINT ",'" $3 "')";
 	if (match($0,"::_output_")) output[$3] = 1;
-	if ($4 == "=") print "model.add(" $3 " == " $5 ")";
+	if ($4 == "=") print "    model.add(" $3 " == " $5 ")";
 }
 
 /^var range[(][-]*[0-9]+,1[+][-]*[0-9]+[)]:/{
 	sub("range[(]","",$2);
 	sub("[)]:","",$2);
 	sub(",1[+]",",",$2);
-	print $3 " = Variable(" $2 ",'" $3 "')";
+	print "    " $3 " = Variable(" $2 ",'" $3 "')";
 	if (match($0,"::_output_")) output[$3] = 1;
-	if ($4 == "=") print "model.add(" $3 " == " $5 ")";
+	if ($4 == "=") print "    model.add(" $3 " == " $5 ")";
 }
 
 /^var {[-]*[0-9]+(,[-]*[0-9]+)*}:/{
 	sub("{","[",$2);
 	sub("}:","]",$2);
-	print $3 " = Variable(" $2 ",'" $3 "')";
+	print "    " $3 " = Variable(" $2 ",'" $3 "')";
 	if (match($0,"::_output_")) output[$3] = 1;
-	if ($4 == "=") print "model.add(" $3 " == " $5 ")";
+	if ($4 == "=") print "    model.add(" $3 " == " $5 ")";
 }
 
 /^array [[]range[(][-]*[0-9]+,1[+][-]*[0-9]+[)][]] of var bool:/{
@@ -104,7 +105,7 @@ parameter {
 		exit(2);
 	}
 	name = $6;
-	print name " = VarArray(" isup ",'" name "')";
+	print "    " name " = VarArray(" isup ",'" name "')";
 	if (match($0,"::_output_")) {
 		output[ name ] = isup;
 		outputstring[ name ] = substr($0, RSTART+RLENGTH);
@@ -114,7 +115,7 @@ parameter {
 		sub("::_output_.*","");
 		gsub(" ","");
 		for (i=0; i<isup; i++) {
-			print "model.add(" name "[" i "] == " $0 "[" i "])";
+			print "    model.add(" name "[" i "] == " $0 "[" i "])";
 		}
 	}
 }
@@ -138,7 +139,7 @@ parameter {
 		exit(2);
 	}
 	name = $6;
-	print name " = VarArray(" isup ",-" MAXINT "," MAXINT ",'" name "')";
+	print "    " name " = VarArray(" isup ",-" MAXINT "," MAXINT ",'" name "')";
 	if (match($0,"::_output_")) {
 		output[ name ] = isup;
 		outputstring[ name ] = substr($0, RSTART+RLENGTH);
@@ -148,7 +149,7 @@ parameter {
 		sub("::_output_.*","");
 		gsub(" ","");
 		for (i=0; i<isup; i++) {
-			print "model.add(" name "[" i "] == " $0 "[" i "])";
+			print "    model.add(" name "[" i "] == " $0 "[" i "])";
 		}
 	}
 }
@@ -175,7 +176,7 @@ parameter {
 	sub("[)]:","",$5);
 	sub(",1[+]",",",$5);
 	name = $6;
-	print name " = VarArray(" isup "," $5 ",'" name "')";
+	print "    " name " = VarArray(" isup "," $5 ",'" name "')";
 	if (match($0,"::_output_")) {
 		output[ name ] = isup;
 		outputstring[ name ] = substr($0, RSTART+RLENGTH);
@@ -185,7 +186,7 @@ parameter {
 		sub("::_output_.*","");
 		gsub(" ","");
 		for (i=0; i<isup; i++) {
-			print "model.add(" name "[" i "] == " $0 "[" i "])";
+			print "    model.add(" name "[" i "] == " $0 "[" i "])";
 		}
 	}
 }
@@ -211,7 +212,7 @@ parameter {
 	sub("{","[",$5);
 	sub("}:","]",$5);
 	name = $6;
-	print name " = [Variable(" $5 ",'" name "_" i "') for i in range(" isup ")]";
+	print "    " name " = [Variable(" $5 ",'" name "_" i "') for i in range(" isup ")]";
 	if (match($0,"::_output_")) {
 		output[ name ] = isup;
 		outputstring[ name ] = substr($0, RSTART+RLENGTH);
@@ -221,29 +222,48 @@ parameter {
 		sub("::_output_.*","");
 		gsub(" ","");
 		for (i=0; i<isup; i++) {
-			print "model.add(" name "[" i "] == " $0 "[" i "])";
+			print "    model.add(" name "[" i "] == " $0 "[" i "])";
 		}
 	}
 }
 
 /^constraint /{
-	$1 = "model.add(";
+	$1 = "    model.add(";
     	$NF = $NF " )";
 	print $0;
 }
 
 /^solve / && / minimize /{
-	print "model.add(Minimize(" $NF "))";
+	print "    model.add(Minimize(" $NF "))";
 	objective = $NF;
 }
 
 /^solve / && / maximize /{
-	print "model.add(Maximize(" $NF "))";
+	print "    model.add(Maximize(" $NF "))";
 	objective = $NF;
 }
 
 END {
 	if (!error) {
+	output_vars = "";
+	if(objective) output_vars = objective;
+
+	n = asorti(output,varnames);
+	for (i=1; i<=n; i++) {
+		e = varnames[i];
+		if (output[e]!=1) {
+			if(e != objective) {
+				if(length(output_vars) > 0) output_vars = output_vars ", ";
+				output_vars = output_vars e;
+			}
+		}
+	}
+	print "    output_vars = (" output_vars ",)";
+	print "    return model, output_vars";
+
+	print "";
+	print "model, output_vars = get_model()";
+	print output_vars " = output_vars";
 	print "solvers = ['Mistral', 'SCIP', 'MiniSat', 'Toulbar2', 'Gurobi']";
 	print "default = dict([('solver', 'Mistral'), ('verbose', 0), ('tcutoff', 900), ('var', 'DomainOverWDegree'), ('val', 'Lex'), ('rand', 2), ('threads', 1)])";
 	print "param = input(default)";
@@ -258,7 +278,6 @@ END {
 	print "else:";
 	print "    solver.solve()";
 	print "if solver.is_sat():"
-	n = asorti(output,varnames);
 	for (i=1; i<=n; i++) {
 		e = varnames[i];
 		if (output[e]==1) {

@@ -19,7 +19,10 @@ class Command(object):
 
     def run(self, timeout=None):
         def target():
-            self.process = sp.Popen(self.cmd,
+            cmd = self.cmd
+            if self.memlimit:
+                cmd = "ulimit -v %d; %s" % (self.memlimit, cmd)
+            self.process = sp.Popen(cmd,
                                     stdout=sp.PIPE, stderr=sp.PIPE,
                                     shell=True, preexec_fn=os.setpgrp)
             self.stdout, self.stderr = self.process.communicate()

@@ -15,7 +15,11 @@ import os
 
 usage_string = ("Usage: %s [-p num_threads] [-t timelimit] [-m memlimit] "
                 "fzn_filename" % sys.argv[0])
-fzn2py = os.path.join(os.path.dirname(os.path.realpath(__file__)), "fzn2py")
+this_dir = os.path.dirname(os.path.realpath(__file__))
+fzn2py = os.path.join(this_dir, "fzn2py")
+pportfolio = os.path.join(this_dir, "pportfolio.py")
+MEMLIMIT = 2000000  # kbytes. 2 GB
+TIMEOUT = 900  # 15 minutes
 
 
 def translate_fzn_to_nj(fznfilename, timelimit,
@@ -23,8 +27,8 @@ def translate_fzn_to_nj(fznfilename, timelimit,
     if not njfilename:
         import tempfile
         temp_f = tempfile.NamedTemporaryFile(delete=False)
+        temp_f.close()
         njfilename = temp_f.name
-        # TODO: check if we should temp_f.close() first.
 
     # launch subprocess to convert the file to python file
     cmd = "%s %s > %s" % (fzn2py, fznfilename, njfilename)
@@ -75,8 +79,8 @@ if __name__ == '__main__':
         sys.exit(1)
 
     numthreads = parse_arg_val(args, "-p", default=1)
-    timelimit = origtimelimit = float(parse_arg_val(args, "-t", default=900))
-    memlimit = parse_arg_val(args, "-m", default=1600000000)
+    timelimit = origtimelimit = float(parse_arg_val(args, "-t", default=TIMEOUT))
+    memlimit = parse_arg_val(args, "-m", default=MEMLIMIT)
     if len(args) != 1:
         print >> sys.stderr, "Unknown arguments found:", args
         print >> sys.stderr, usage_string
@@ -93,7 +97,8 @@ if __name__ == '__main__':
     timelimit -= translatetime
 
     runtime = datetime.datetime.now()
-    cmd = "python %s" % njfilename
+    cmd = "python %s %s %d %.1f %d" % (pportfolio, njfilename, numthreads, timelimit, memlimit)
+    print "%", cmd
     c = Command(cmd, memlimit=memlimit)
     c.run(timelimit)
     runtime = (datetime.datetime.now() - runtime).total_seconds()

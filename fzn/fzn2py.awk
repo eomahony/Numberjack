@@ -289,16 +289,15 @@ END {
 		}
 	}
 	print "    print '----------'";
-	print "if solver.is_unsat():"
-	print "    print '=====UNSATISFIABLE====='"
 	if (objective){
-		print "elif solver.is_opt():"
-		print "    print '=========='"
+		print "    if solver.is_opt():"
+		print "        print '=========='"
 	} else {
-		print "elif solver.is_sat():"
 		print "    print '=========='"
 	}
-        print "else:"
+	print "elif solver.is_unsat():"
+	print "    print '=====UNSATISFIABLE====='"
+    print "else:"
 	print "    print '=====UNKNOWN====='"
 	print "print '% SolveTime', solver.getTime()";
 	print "print '% Nodes', solver.getNodes()";

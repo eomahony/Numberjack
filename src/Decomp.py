@@ -381,20 +381,22 @@ def decompose_Element(self):
 
 #SDG: decompose LeqLex and LessLex
 def decompose_LessLex(self):
+    length = len(self.children) / 2
     def lexico(vars1,vars2,i):
         if (i == len(vars1)-1):
             return (vars1[i] < vars2[i])
         else:
             return (vars1[i] < vars2[i] | And([(vars1[i] == vars2[i]), lexico(vars1,vars2,i+1)]))
-    return [self.lexico(self.children[0], self.children[1], 0)]
+    return [lexico(self.children[:length], self.children[length:], 0)]
 
 def decompose_LeqLex(self):
+    length = len(self.children) / 2
     def lexico(vars1,vars2,i):
         if (i == len(vars1)-1):
             return (vars1[i] <= vars2[i])
         else:
             return (vars1[i] <= vars2[i] | And([(vars1[i] == vars2[i]), lexico(vars1,vars2,i+1)]))
-    return [self.lexico(self.children[0], self.children[1], 0)]
+    return [lexico(self.children[:length], self.children[length:], 0)]
 
 #SDG: automatic decompostion of any BinPredicate into a Table constraint with support tuples
 def decompose_BinPredicate(self):

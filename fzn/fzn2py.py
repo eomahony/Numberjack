@@ -164,6 +164,8 @@ def set_in_reif(x,dom,z):
 # specific global constraints for numberjack
 
 def all_different_int(x):
+    if len(x) < 2:  # Some models specified alldiff on 1 variable
+        return x
     return (AllDiff([Variable(e,e,str(e)) if type(e) is int else e for e in x]))
 
 def lex_less_int(x,y):

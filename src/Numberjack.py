@@ -1936,6 +1936,8 @@ class AllDiff(Predicate):
 
     def __init__(self, vars, type=None):
         Predicate.__init__(self, vars, "AllDiff")
+        if len(vars) < 2:
+            raise InvalidConstraintSpecification("AllDiff requires a list of at least 2 expressions.")
         if type != None:
             self.parameters = [type]
         self.lb = None  #SDG: initial lb/ub undefined
@@ -3362,6 +3364,15 @@ class InvalidEncodingException(exceptions.Exception):
 
     def __str__(self):
         return "ERROR: Invalid encoding configuration. %s" % self.msg
+
+
+class InvalidConstraintSpecification(exceptions.Exception):
+
+    def __init__(self, msg=""):
+        self.msg = msg
+
+    def __str__(self):
+        return "ERROR: Invalid constraint specification. %s" % self.msg
 
 
 class ModelSizeError(exceptions.Exception):

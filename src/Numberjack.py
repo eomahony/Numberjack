@@ -415,7 +415,13 @@ class Expression(object):
     def __and__(self, pred):
         return And([self, pred])
 
+    def __rand__(self, pred):
+        return And([self, pred])
+
     def __or__(self, pred):
+        return Or([self, pred])
+
+    def __ror__(self, pred):
         return Or([self, pred])
 
     def __add__(self, pred):

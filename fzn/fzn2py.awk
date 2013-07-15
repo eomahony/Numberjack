@@ -251,11 +251,9 @@ END {
 	n = asorti(output,varnames);
 	for (i=1; i<=n; i++) {
 		e = varnames[i];
-		if (output[e]!=1 || e == "objective") {
-			if(e != objective) {
-				if(length(output_vars) > 0) output_vars = output_vars ", ";
-				output_vars = output_vars e;
-			}
+		if(e != objective) {
+			if(length(output_vars) > 0) output_vars = output_vars ", ";
+			output_vars = output_vars e;
 		}
 	}
 	print "    output_vars = (" output_vars ",)";

@@ -256,12 +256,12 @@ END {
 			output_vars = output_vars e;
 		}
 	}
-	print "    output_vars = (" output_vars ",)";
+	print "    output_vars = (" output_vars ")";
 	print "    return model, output_vars";
 
 	print "";
 	print "model, output_vars = get_model()";
-	print output_vars " = output_vars";
+	if(output_vars) print output_vars " = output_vars";
 	print "solvers = ['Mistral', 'SCIP', 'MiniSat', 'Toulbar2', 'Gurobi']";
 	print "default = dict([('solver', 'Mistral'), ('verbose', 0), ('tcutoff', 900), ('var', 'DomainOverWDegree'), ('val', 'Lex'), ('rand', 2), ('threads', 1), ('restart', GEOMETRIC), ('base', 256), ('factor', 1.3)])";
 	print "param = input(default)";

@@ -31,7 +31,10 @@ install: $(TARGET_INSTALL)
 %_install: $(SOL)/%
 	cd $(SOL)/$(@:_install=); make install_python
 
-local_install: $(TARGET_LIB) $(TARGET_LOCAL)
+local_dir:
+	mkdir -p ./local_lib
+
+local_install: local_dir $(TARGET_LIB) $(TARGET_LOCAL)
 	cp src/*.py ./local_lib/
 	chmod +x ./local_lib/*.py*
 	chmod +x ./local_lib/*.so 

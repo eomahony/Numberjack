@@ -18,7 +18,7 @@ usage_string = ("Usage: %s [-p num_threads] [-t timelimit] [-m memlimit] "
 this_dir = os.path.dirname(os.path.realpath(__file__))
 fzn2py = os.path.join(this_dir, "fzn2py")
 njportfolio = os.path.join(this_dir, "njportfolio.py")
-MEMLIMIT = 2000000  # kbytes. 2 GB
+MEMLIMIT = 16000000  # kbytes. 16 GB
 TIMEOUT = 900  # 15 minutes
 
 

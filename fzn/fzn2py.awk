@@ -273,8 +273,6 @@ END {
 	print "    solver.setThreadCount(param['threads'])";
 	print "if param['solver'] == 'Mistral':";
 	print "    # LUBY, GEOMETRIC = 0, 1"
-	print "    print '%% running Mistral with restarts: %d %d %.1f' % (param['restart'], param['base'], param['factor'])";
-	#print "    solver.solveAndRestart(GEOMETRIC, 256, 1.3)";
 	print "    solver.solveAndRestart(param['restart'], param['base'], param['factor'])";
 	print "else:";
 	print "    solver.solve()";

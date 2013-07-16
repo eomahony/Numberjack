@@ -169,9 +169,13 @@ def all_different_int(x):
     return (AllDiff([Variable(e,e,str(e)) if type(e) is int else e for e in x]))
 
 def lex_less_int(x,y):
+    if len(x) == 1 and len(y) == 1:
+        return x[0] < y[0]
     return LessLex(x, y)
 
 def lex_lesseq_int(x,y):
+    if len(x) == 1 and len(y) == 1:
+        return x[0] <= y[0]
     return LeqLex(x, y)
 
 def lex_less_bool(x,y):

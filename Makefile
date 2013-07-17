@@ -39,6 +39,7 @@ local_install: $(TARGET_LIB) $(TARGET_LOCAL)
 
 
 %_local: $(SOL)/%
+	mkdir -p ./local_lib
 	cp $(SOL)/$(@:_local=)/python/*.py* ./local_lib/
 	cp $(SOL)/$(@:_local=)/python/_*.so* ./local_lib/
 

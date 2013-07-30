@@ -58,3 +58,7 @@ def print_commented_fzn(text, pipe=sys.stdout):
             if not line.startswith("% "):
                 print >> pipe, "%",
             print >> pipe, line
+
+
+def total_seconds(td):
+    return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 1e6) / 1e6

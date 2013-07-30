@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-from utils import Command, print_commented_fzn
+from utils import Command, print_commented_fzn, total_seconds
 import datetime
 import sys
 import os
@@ -91,7 +91,7 @@ if __name__ == '__main__':
            " memlimit:%d." % (fznfilename, numthreads, timelimit, memlimit))
     translatetime = datetime.datetime.now()
     njfilename = translate_fzn_to_nj(fznfilename, timelimit)
-    translatetime = (datetime.datetime.now() - translatetime).total_seconds()
+    translatetime = total_seconds(datetime.datetime.now() - translatetime)
 
     print "%% Translated Numberjack file at %s" % njfilename
     timelimit -= translatetime
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     print "%", cmd
     c = Command(cmd, memlimit=memlimit)
     c.run(timelimit)
-    runtime = (datetime.datetime.now() - runtime).total_seconds()
+    runtime = total_seconds(datetime.datetime.now() - runtime)
 
     if c.timed_out:
         print >> sys.stderr, \
@@ -112,7 +112,7 @@ if __name__ == '__main__':
         print >> sys.stderr, "%% Error exitcode %d" % c.exitcode
         print_commented_fzn(c.stdout, pipe=sys.stderr)
         print_commented_fzn(c.stderr, pipe=sys.stderr)
-    totaltime = (datetime.datetime.now() - totaltime).total_seconds()
+    totaltime = total_seconds(datetime.datetime.now() - totaltime)
     print "%% Translate time: %.1f" % translatetime
     print "%% Run time: %.1f" % runtime
     print "%% Took %.1f seconds in total." % totaltime

@@ -120,7 +120,7 @@ $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 	@echo "-> compiling $@"
-	@$(CXX) $(MIPFLAGS) $(NFLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) -I$(PYLIB) -fPIC -c $< $(CXX_o)$@
+	@$(CXX) $(MIPFLAGS) $(NFLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) $(PYLIB) -fPIC -c $< $(CXX_o)$@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	

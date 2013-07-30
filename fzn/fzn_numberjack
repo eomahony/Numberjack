@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-from utils import Command
+from utils import Command, print_commented_fzn
 import datetime
 import sys
 import os
@@ -109,8 +109,9 @@ if __name__ == '__main__':
     elif c.exitcode == 0:
         print c.stdout
     else:
-        print >> sys.stderr, "Error %d" % c.exitcode
-        print >> sys.stderr, c.stdout, "\n", c.stderr
+        print >> sys.stderr, "%% Error exitcode %d" % c.exitcode
+        print_commented_fzn(c.stdout, pipe=sys.stderr)
+        print_commented_fzn(c.stderr, pipe=sys.stderr)
     totaltime = (datetime.datetime.now() - totaltime).total_seconds()
     print "%% Translate time: %.1f" % translatetime
     print "%% Run time: %.1f" % runtime

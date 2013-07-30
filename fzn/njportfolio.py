@@ -1,3 +1,4 @@
+from utils import print_commented_fzn
 import subprocess as sp
 import datetime
 import signal
@@ -71,6 +72,22 @@ def njportfolio(njfilename, cores, timeout, memlimit):
         thread.start()
         print "% Launching:", cmd
 
+    def tidy_up(*args):
+        # Tidy up, kill all processes that did not finish.
+        num_pids_seen = 0
+        while not pid_queue.empty() and num_pids_seen < len(threads):
+            try:
+                pid = pid_queue.get()
+                num_pids_seen += 1
+                os.killpg(pid, signal.SIGKILL)
+            except Empty:
+                pass
+            except OSError:
+                pass  # Process already finished.
+
+    signal.signal(signal.SIGTERM, tidy_up)
+    signal.signal(signal.SIGINT, tidy_up)
+
     for i in xrange(cores):
         start_new()
 
@@ -91,35 +108,21 @@ def njportfolio(njfilename, cores, timeout, memlimit):
                 break
             else:
                 print "%% Failed: %s exitcode: %d" % (process_name, exitcode)
-                print_commented(stdout)
-                print_commented(stderr)
+                print_commented_fzn(stdout)
+                print_commented_fzn(stderr)
                 start_new()
 
             if num_finished == len(threads):
                 break
         except Empty:
-            # Nothing posted to the result_queue yet.
-            pass
+            pass  # Nothing posted to the result_queue yet.
+        except IOError:
+            break  # Can happen if sent term signal.
+        except KeyboardInterrupt:
+            break
 
-    # Tidy up, kill all processes that did not finish.
-    num_pids_seen = 0
-    while not pid_queue.empty() and num_pids_seen < len(threads):
-        try:
-            pid = pid_queue.get()
-            num_pids_seen += 1
-            os.killpg(pid, signal.SIGKILL)
-        except Empty:
-            pass
-        except OSError:
-            pass  # Process already finished.
+    tidy_up()
     print "%% Total time in njportfolio: %.1f" % (datetime.datetime.now() - start_time).total_seconds()
-
-
-def print_commented(text):
-    for line in text.split("\n"):
-        line = line.strip()
-        if line:
-            print "%", line
 
 
 if __name__ == '__main__':

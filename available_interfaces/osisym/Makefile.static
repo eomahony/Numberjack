@@ -100,7 +100,7 @@ $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp $(OBJDIR)/OsiSym.o $(SYMDIR)/SYMPHONY/src/.libs/l
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 		@echo "-> compiling $@"
-		$(CXX) $(CFLAGS) -I$(SRCDIR) -I$(PYLIB) -fPIC -c $< -o $@
+		$(CXX) $(CFLAGS) -I$(SRCDIR) $(PYLIB) -fPIC -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i $(OBJDIR)/OsiSym.o $(SYMDIR)/SYMPHONY/src/.libs/libSym.so
 	@echo "-> compiling $@"

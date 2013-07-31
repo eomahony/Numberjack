@@ -1,6 +1,7 @@
 import subprocess as sp
 import signal
 import threading
+import sys
 import os
 
 
@@ -28,12 +29,7 @@ class Command(object):
             self.stdout, self.stderr = self.process.communicate()
             self.exitcode = self.process.returncode
 
-        thread = threading.Thread(target=target)
-        thread.start()
-        thread.join(float(timeout))
-        if thread.is_alive():
-            self.timed_out = True
-
+        def tidy_up():
             # Send the TERM signal to all the process groups
             os.killpg(self.process.pid, signal.SIGTERM)
             thread.join(SIGTERM_TIMEOUT)
@@ -42,3 +38,27 @@ class Command(object):
                 os.killpg(self.process.pid, signal.SIGKILL)
                 self.process.kill()
                 thread.join()
+
+        thread = threading.Thread(target=target)
+        thread.start()
+        try:
+            thread.join(float(timeout))
+        except KeyboardInterrupt:
+            tidy_up()
+
+        if thread.is_alive():
+            self.timed_out = True
+            tidy_up()
+
+
+def print_commented_fzn(text, pipe=sys.stdout):
+    for line in text.split("\n"):
+        line = line.strip()
+        if line:
+            if not line.startswith("% "):
+                print >> pipe, "%",
+            print >> pipe, line
+
+
+def total_seconds(td):
+    return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 1e6) / 1e6

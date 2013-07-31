@@ -1,16 +1,11 @@
 #!/usr/bin/env python
 
 
-from utils import Command
+from utils import Command, print_commented_fzn, total_seconds
 import datetime
 import sys
 import os
 
-def total_seconds(td):
-    try:
-        return td.total_seconds()
-    except AttributeError:
-        return ((td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6)
 
 """
     The argument '-a' to print all solutions is ignored for now.
@@ -25,6 +20,7 @@ fzn2py = os.path.join(this_dir, "fzn2py")
 njportfolio = os.path.join(this_dir, "njportfolio.py")
 MEMLIMIT = 16000000  # kbytes. 16 GB
 TIMEOUT = 900  # 15 minutes
+
 
 def translate_fzn_to_nj(fznfilename, timelimit,
                         njfilename=None, memlimit=None):
@@ -95,7 +91,7 @@ if __name__ == '__main__':
            " memlimit:%d." % (fznfilename, numthreads, timelimit, memlimit))
     translatetime = datetime.datetime.now()
     njfilename = translate_fzn_to_nj(fznfilename, timelimit)
-    translatetime = total_seconds((datetime.datetime.now() - translatetime))
+    translatetime = total_seconds(datetime.datetime.now() - translatetime)
 
     print "%% Translated Numberjack file at %s" % njfilename
     timelimit -= translatetime
@@ -105,7 +101,7 @@ if __name__ == '__main__':
     print "%", cmd
     c = Command(cmd, memlimit=memlimit)
     c.run(timelimit)
-    runtime = total_seconds((datetime.datetime.now() - runtime))
+    runtime = total_seconds(datetime.datetime.now() - runtime)
 
     if c.timed_out:
         print >> sys.stderr, \
@@ -113,9 +109,10 @@ if __name__ == '__main__':
     elif c.exitcode == 0:
         print c.stdout
     else:
-        print >> sys.stderr, "Error %d" % c.exitcode
-        print >> sys.stderr, c.stdout, "\n", c.stderr
-    totaltime = total_seconds((datetime.datetime.now() - totaltime))
+        print >> sys.stderr, "%% Error exitcode %d" % c.exitcode
+        print_commented_fzn(c.stdout, pipe=sys.stderr)
+        print_commented_fzn(c.stderr, pipe=sys.stderr)
+    totaltime = total_seconds(datetime.datetime.now() - totaltime)
     print "%% Translate time: %.1f" % translatetime
     print "%% Run time: %.1f" % runtime
     print "%% Took %.1f seconds in total." % totaltime

@@ -126,7 +126,6 @@ void GurobiSolver::setThreadCount(const int nr_threads){
     if(nr_threads < 0){
         std::cerr << "Warning: cannot specify a negative thread count, ignoring." << std::endl;
     } else {
-        std::cout << "Setting thread count to " << nr_threads << std::endl;
         model->getEnv().set(GRB_IntParam_Threads, nr_threads);
     }
 }

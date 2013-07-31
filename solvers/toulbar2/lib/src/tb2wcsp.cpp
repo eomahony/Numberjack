@@ -1412,6 +1412,7 @@ void WCSP::propagateIncDec() {
 void WCSP::propagateAC() {
 	if (ToulBar2::verbose >= 2) cout << "ACQueue size: " << AC.getSize() << endl;
 	while (!AC.empty()) {
+	    if (ToulBar2::interrupted) throw TimeOut();
 		EnumeratedVariable *x = (EnumeratedVariable *) ((ToulBar2::QueueComplexity) ? AC.pop_min() : AC.pop());
 		if (x->unassigned()) x->propagateAC();
 		// Warning! propagateIncDec() necessary to transform inc/dec event into remove event
@@ -1422,6 +1423,7 @@ void WCSP::propagateAC() {
 void WCSP::propagateDAC() {
 	if (ToulBar2::verbose >= 2) cout << "DACQueue size: " << DAC.getSize() << endl;
 	while (!DAC.empty()) {
+	    if (ToulBar2::interrupted) throw TimeOut();
 		EnumeratedVariable *x = (EnumeratedVariable *) ((ToulBar2::QueueComplexity) ? DAC.pop_max() : DAC.pop());
 		if (x->unassigned()) x->propagateDAC();
 		propagateIncDec(); // always examine inc/dec events before projectFromZero events
@@ -1441,6 +1443,7 @@ void WCSP::propagateEAC() {
 	fillEAC2();
 	if (ToulBar2::verbose >= 2) cout << "EAC2Queue size: " << EAC2.getSize() << endl;
 	while (!EAC2.empty()) {
+	    if (ToulBar2::interrupted) throw TimeOut();
 		EnumeratedVariable *x = (EnumeratedVariable *) ((ToulBar2::QueueComplexity) ? EAC2.pop_min() : EAC2.pop());
 		if (x->unassigned()) x->propagateEAC();
 		propagateIncDec(); // always examine inc/dec events before projectFromZero events
@@ -1458,6 +1461,7 @@ void WCSP::propagateDEE() {
 	if (ToulBar2::verbose >= 2) cout << "DEEQueue size: " << DEE.getSize() << endl;
 	assert(NC.empty());
 	while (!DEE.empty()) {
+	    if (ToulBar2::interrupted) throw TimeOut();
 		EnumeratedVariable *x = (EnumeratedVariable *) DEE.pop();
 		if (x->unassigned()) {
 			if (ToulBar2::DEE>=3 || (ToulBar2::DEE==2 && getStore()->getDepth()==0)) {
@@ -1505,6 +1509,7 @@ void WCSP::propagateDEE() {
 
 void WCSP::eliminate() {
 	while (!Eliminate.empty()) {
+	    if (ToulBar2::interrupted) throw TimeOut();
 		EnumeratedVariable *x = (EnumeratedVariable *) Eliminate.pop();
 		if (x->unassigned()) {
 			if (td) {
@@ -1543,6 +1548,7 @@ void WCSP::eliminate() {
 /// In case of a contradiction, queues are explicitly emptied by WCSP::whenContradiction
 
 void WCSP::propagate() {
+    if (ToulBar2::interrupted) throw TimeOut();
 	revise(NULL);
 	if (ToulBar2::vac) vac->iniThreshold();
 
@@ -1580,6 +1586,7 @@ void WCSP::propagate() {
 							oldLb = getLb();
 							cont = false;
 							for (vector<GlobalConstraint*>::iterator it = globalconstrs.begin(); it != globalconstrs.end(); it++) {
+							    if (ToulBar2::interrupted) throw TimeOut();
 								(*(it))->propagate();
 								if (ToulBar2::LcLevel == LC_SNIC) if (!IncDec.empty()) cont = true; //For detecting value removal during SNIC enforcement
 								propagateIncDec();

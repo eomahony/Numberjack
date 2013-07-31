@@ -601,6 +601,7 @@ class Model(object):
         self.closed = len(self.__expressions)
 
     def close(self, solver=None):
+        #print self   #SDG: VERY USEFUL FOR DEBUGGING
         ## \internal - close() is used to fire up preprocessing requiring knowledge about the whole model AND THE SOLVER USED
         #SDG: check if it is an optimization problem
         if not any([issubclass(type(expr), Minimise) or issubclass(type(expr), Maximise) or issubclass(type(expr), CostFunction) for expr in self.__expressions]):
@@ -628,12 +629,12 @@ class Model(object):
             for expr in self.get_exprs():
                 expr.close()
              
-        #SDG: replace [Min/Maximise(obj),Eq(obj,Sum(vars,coefs))] by [Min/Maximise(Sum(vars,coefs))] 
-        #  and [Min/Maximise(obj),Eq(Sum([obj]+vars, [-1]+coefs),0)] by [Min/Maximise(Sum(vars,coefs))] 
+        #SDG: reformulate Minimize/Maximise(obj) in order to replace obj by its corresponding expression
         if (solver.Library is 'Toulbar2'):
             objexpr = filter(lambda expr: issubclass(type(expr), Minimise) or issubclass(type(expr), Maximise), self.__expressions)
             if (len(objexpr)==1 and objexpr[0].children[0].is_var()):
                 objvar = objexpr[0].children[0]
+                # replace [Min/Maximise(obj),Eq(Sum([obj]+vars, [-1]+coefs),0)] by [Min/Maximise(Sum(vars,coefs)),Eq(0,0)]
                 objconstr = filter(lambda expr: issubclass(type(expr), Eq) and issubclass(type(expr.children[0]), Sum) and expr.children[1]==0 and (objvar,-1) in zip(expr.children[0].children,expr.children[0].parameters[0]), self.__expressions)
                 if (len(objconstr)==1):
                     #print objvar,objexpr,objconstr
@@ -644,12 +645,18 @@ class Model(object):
                             break
                     objconstr[0].children[0] = Variable(0,0)
                 else:
+                    # replace [Min/Maximise(obj),Eq(obj,Sum(vars,coefs))] by [Min/Maximise(Sum(vars,coefs)),Eq(0,0)]
                     objconstr = filter(lambda expr: issubclass(type(expr), Eq) and issubclass(type(expr.children[1]), Sum) and expr.children[0]==objvar, self.__expressions)
                     if (len(objconstr)==1):
                         objexpr[0].children[0] = objconstr[0].children[1]
                         objconstr[0].children[0] = Variable(0,0)
                         objconstr[0].children[1] = 0
-
+                # replace Eq('objective',obj) by Eq(0,0)
+                objconstr = filter(lambda expr: issubclass(type(expr), Eq) and expr.children[0].is_var() and expr.children[0].name()=='objective' and expr.children[1]==objvar, self.__expressions)
+                if (len(objconstr)==1):
+                    objconstr[0].children[0] = Variable(0,0)
+                    objconstr[0].children[1] = 0
+                    
     def __str__(self):
         ## \internal - print
         mod = 'assign:\n  '

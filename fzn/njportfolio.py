@@ -5,6 +5,12 @@ import threading
 import os
 import sys
 
+def total_seconds(td):
+    try:
+        return td.total_seconds()
+    except AttributeError:
+        return ((td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6)
+
 
 result_poll_timeout = 0.5
 
@@ -45,6 +51,7 @@ def njportfolio(njfilename, cores, timeout, memlimit):
     configs.append({'solver': 'MiniSat'})
     configs.append({'solver': 'Mistral', 'var': 'DomainOverWDegree', 'val': 'Lex'})
     configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': 1, 'base': 256, 'factor': 1.5})
+    configs.append({'solver': 'Toulbar2', 'btd': 3, 'lcLevel': 1, 'rds': 1})
     configs.append({'solver': 'SCIP'})
     configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': 1, 'base': 512, 'factor': 2})
     configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': 0, 'base': 5000, 'factor': 1.5})
@@ -60,11 +67,11 @@ def njportfolio(njfilename, cores, timeout, memlimit):
         if not configs:
             return  # Could launch Mistral with different seeds if we run out of provided configs
         config = configs.pop()
-        remaining_time = int(timeout - (datetime.datetime.now() - start_time).total_seconds())
-        defaults = {'njfilename': njfilename, 'threads': 1, 'tcutoff': remaining_time, 'var': 'DomainOverWDegree', 'val': 'Lex'}
+        remaining_time = int(timeout - total_seconds((datetime.datetime.now() - start_time)))
+        defaults = {'njfilename': njfilename, 'threads': 1, 'tcutoff': remaining_time, 'var': 'DomainOverWDegree', 'val': 'Lex', 'verbose': 0, 'restart': 1, 'base': 256, 'factor': 1.3, 'lcLevel': 4, 'lds': 0, 'dee': 0, 'btd': 0, 'rds': 0}
         d = dict(defaults.items() + config.items())
         cmd = ("python %(njfilename)s -solver %(solver)s -tcutoff %(tcutoff)d "
-               "-threads %(threads)d -var %(var)s -val %(val)s" % d)
+               "-threads %(threads)d -var %(var)s -val %(val)s -restart %(restart)d -base %(base)d -factor %(factor)d -verbose %(verbose)d -lds %(lds)d -btd %(btd)d -rds %(rds)d -dee %(dee)d -lcLevel %(lcLevel)d" % d)
         args = (str(d), datetime.datetime.now(), pid_queue, result_queue, cmd, int(memlimit / cores))
         thread = threading.Thread(target=run_cmd, args=args)
         threads.append(thread)
@@ -83,8 +90,8 @@ def njportfolio(njfilename, cores, timeout, memlimit):
             num_finished += 1
             finished_names.append(process_name)
             if success:
-                started_after = (solversstartt - start_time).total_seconds()
-                timetaken = (datetime.datetime.now() - solversstartt).total_seconds()
+                started_after = total_seconds((solversstartt - start_time))
+                timetaken = total_seconds((datetime.datetime.now() - solversstartt))
                 print "%% Solver %s started after %.1f, finished %.1f" \
                     % (process_name, started_after, timetaken)
                 print stdout
@@ -112,7 +119,7 @@ def njportfolio(njfilename, cores, timeout, memlimit):
             pass
         except OSError:
             pass  # Process already finished.
-    print "%% Total time in njportfolio: %.1f" % (datetime.datetime.now() - start_time).total_seconds()
+    print "%% Total time in njportfolio: %.1f" % total_seconds((datetime.datetime.now() - start_time))
 
 
 def print_commented(text):

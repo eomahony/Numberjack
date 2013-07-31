@@ -260,46 +260,47 @@ END {
 	print "    return model, output_vars";
 
 	print "";
-	print "model, output_vars = get_model()";
-	if(output_vars) print output_vars " = output_vars";
-	print "solvers = ['Mistral', 'SCIP', 'MiniSat', 'Toulbar2', 'Gurobi']";
-	print "default = dict([('solver', 'Mistral'), ('verbose', 0), ('tcutoff', 900), ('var', 'DomainOverWDegree'), ('val', 'Lex'), ('rand', 2), ('threads', 1), ('restart', GEOMETRIC), ('base', 256), ('factor', 1.3)])";
-	print "param = input(default)";
-	print "solver = model.load(param['solver'])";
-	print "solver.setVerbosity(param['verbose'])";
-	print "solver.setTimeLimit(param['tcutoff'] - int(time.clock()+0.5))";
-	print "solver.setHeuristic(param['var'], param['val'], param['rand'])";
-	print "if param['solver'] == 'Gurobi':";
-	print "    solver.setThreadCount(param['threads'])";
-	print "if param['solver'] == 'Mistral':";
-	print "    # LUBY, GEOMETRIC = 0, 1"
-	print "    solver.solveAndRestart(param['restart'], param['base'], param['factor'])";
-	print "else:";
-	print "    solver.solve()";
-	print "if solver.is_sat():"
+	print "if __name__ == '__main__':";
+	print "    model, output_vars = get_model()";
+	if(output_vars) print "    " output_vars " = output_vars";
+	print "    solvers = ['Mistral', 'SCIP', 'MiniSat', 'Toulbar2', 'Gurobi']";
+	print "    default = dict([('solver', 'Mistral'), ('verbose', 0), ('tcutoff', 900), ('var', 'DomainOverWDegree'), ('val', 'Lex'), ('rand', 2), ('threads', 1), ('restart', GEOMETRIC), ('base', 256), ('factor', 1.3)])";
+	print "    param = input(default)";
+	print "    solver = model.load(param['solver'])";
+	print "    solver.setVerbosity(param['verbose'])";
+	print "    solver.setTimeLimit(param['tcutoff'] - int(time.clock()+0.5))";
+	print "    solver.setHeuristic(param['var'], param['val'], param['rand'])";
+	print "    if param['solver'] == 'Gurobi':";
+	print "        solver.setThreadCount(param['threads'])";
+	print "    if param['solver'] == 'Mistral':";
+	print "        # LUBY, GEOMETRIC = 0, 1"
+	print "        solver.solveAndRestart(param['restart'], param['base'], param['factor'])";
+	print "    else:";
+	print "        solver.solve()";
+	print "    if solver.is_sat():"
 	for (i=1; i<=n; i++) {
 		e = varnames[i];
 		if (output[e]==1) {
-			if (e != objective && e != "objective" && e != "obj") print "    print '" e " = '," e ".get_value(),';'";
-			else print "    print '" e " = ', (solver.getOptimum() if param['solver'] == 'Toulbar2' else " e ".get_value()),';'";
+			if (e != objective && e != "objective" && e != "obj") print "        print '" e " = '," e ".get_value(),';'";
+			else print "        print '" e " = ', (solver.getOptimum() if param['solver'] == 'Toulbar2' else " e ".get_value()),';'";
 		} else {
-			print "    print '" e " = " outputstring[e] ",',str(" e "),');'";
+			print "        print '" e " = " outputstring[e] ",',str(" e "),');'";
 		}
 	}
-	print "    print '----------'";
+	print "        print '----------'";
 	if (objective){
-		print "    if solver.is_opt():"
-		print "        print '=========='"
+		print "        if solver.is_opt():"
+		print "            print '=========='"
 	} else {
-		print "    print '=========='"
+		print "        print '=========='"
 	}
-	print "elif solver.is_unsat():"
-	print "    print '=====UNSATISFIABLE====='"
-    print "else:"
-	print "    print '=====UNKNOWN====='"
-	print "print '% SolveTime', solver.getTime()";
-	print "print '% Nodes', solver.getNodes()";
-	print "print '% Failures', solver.getFailures()";
-	if (objective) print "if solver.is_sat(): print '% Objective', (solver.getOptimum() if param['solver'] == 'Toulbar2' else " objective ".get_value())";
+	print "    elif solver.is_unsat():"
+	print "        print '=====UNSATISFIABLE====='"
+    print "    else:"
+	print "        print '=====UNKNOWN====='"
+	print "    print '% SolveTime', solver.getTime()";
+	print "    print '% Nodes', solver.getNodes()";
+	print "    print '% Failures', solver.getFailures()";
+	if (objective) print "    if solver.is_sat(): print '% Objective', (solver.getOptimum() if param['solver'] == 'Toulbar2' else " objective ".get_value())";
 	}
 }

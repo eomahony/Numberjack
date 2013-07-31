@@ -39,7 +39,8 @@ solvers/osivol/obj
 solvers/osivol/python
 solvers/sat/obj
 solvers/sat/python
-solvers/scip/obj
-solvers/scip/python
+solvers/scip
+solvers/toulbar2/obj
+solvers/toulbar2/python
 solvers/walksat/obj
 solvers/walksat/python

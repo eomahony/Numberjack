@@ -91,6 +91,7 @@ def njportfolio(njfilename, cores, timeout, memlimit):
     configs.append({'solver': 'MiniSat'})
     configs.append({'solver': 'Mistral', 'var': 'DomainOverWDegree', 'val': 'Lex'})
     configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': 1, 'base': 256, 'factor': 1.5})
+    configs.append({'solver': 'Toulbar2', 'btd': 3, 'lcLevel': 1, 'rds': 1})
     configs.append({'solver': 'SCIP'})
     configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': 1, 'base': 512, 'factor': 2})
     configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': 0, 'base': 5000, 'factor': 1.5})
@@ -107,11 +108,11 @@ def njportfolio(njfilename, cores, timeout, memlimit):
             return  # Could launch Mistral with different seeds if we run out of provided configs
         config = configs.pop()
         remaining_time = int(timeout - total_seconds(datetime.datetime.now() - start_time) - solver_buffer_time)
-        defaults = {'njfilename': njfilename, 'threads': 1, 'tcutoff': remaining_time, 'var': 'DomainOverWDegree', 'val': 'Lex', 'restart': 1, 'base': 256, 'factor': 1.3}
+        defaults = {'njfilename': njfilename, 'threads': 1, 'tcutoff': remaining_time, 'var': 'DomainOverWDegree', 'val': 'Lex', 'verbose': 0, 'restart': 1, 'base': 256, 'factor': 1.3, 'lcLevel': 4, 'lds': 0, 'dee': 0, 'btd': 0, 'rds': 0}
         d = dict(defaults.items() + config.items())
         cmd = ("python %(njfilename)s -solver %(solver)s -tcutoff %(tcutoff)d "
                "-threads %(threads)d -var %(var)s -val %(val)s "
-               "-restart %(restart)d -base %(base)d -factor %(factor).1f" % d)
+               "-restart %(restart)d -base %(base)d -factor %(factor).1f -verbose %(verbose)d -lds %(lds)d -btd %(btd)d -rds %(rds)d -dee %(dee)d -lcLevel %(lcLevel)d" % d)
         args = (str(config), datetime.datetime.now(), pid_queue, result_queue, cmd, int(memlimit / cores))
         thread = threading.Thread(target=run_cmd, args=args)
         threads.append(thread)

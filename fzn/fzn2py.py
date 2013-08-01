@@ -216,9 +216,11 @@ def time_remaining(tcutoff):
 
 
 def run_solve(model, output_vars, param):
+    load_time = datetime.datetime.now()
     solver = model.load(param['solver'])
     solver.setVerbosity(param['verbose'])
-    solver.setTimeLimit(int(param['tcutoff']))
+    time_limit = max(int(param['tcutoff'] - total_seconds(datetime.datetime.now() - load_time)), 1)
+    solver.setTimeLimit(time_limit)
     solver.setHeuristic(param['var'], param['val'], param['rand'])
     if param['solver'] == 'Gurobi':
         solver.setThreadCount(param['threads'])

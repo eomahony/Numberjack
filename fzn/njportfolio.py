@@ -143,9 +143,11 @@ def njportfolio(njfilename, cores, timeout, memlimit):
     num_finished = 0
     finished_names = []
     results = []
-    while True:
-        if total_seconds(datetime.datetime.now() - start_time) + result_poll_timeout + 0.1 >= timeout:
-            break
+    found_sol = False
+    should_continue = True
+    while should_continue:
+        if total_seconds(datetime.datetime.now() - start_time) + result_poll_timeout >= timeout:
+            should_continue = False
 
         try:
             success, exitcode, process_name, solversstartt, stdout, stderr = \
@@ -156,6 +158,7 @@ def njportfolio(njfilename, cores, timeout, memlimit):
                 started_after = total_seconds(solversstartt - start_time)
                 timetaken = total_seconds(datetime.datetime.now() - solversstartt)
                 res = SolverResult(stdout, objective_type)
+                found_sol = True
                 print "%% Solver %s started after %.1f, finished %.1f. objective: %d" \
                     % (process_name, started_after, timetaken, res.objective * objective_type)
                 if not objective_type:
@@ -183,6 +186,9 @@ def njportfolio(njfilename, cores, timeout, memlimit):
 
     if results:
         print min(results).stdout  # Print the best solution
+
+    if not found_sol:
+        print "=====UNKNOWN====="
 
     tidy_up()
     print "%% Total time in njportfolio: %.1f" % total_seconds(datetime.datetime.now() - start_time)

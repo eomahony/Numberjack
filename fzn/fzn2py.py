@@ -1,3 +1,7 @@
+#! /usr/bin/env python
+import datetime
+from Numberjack import *
+
 
 # library of flatzinc predicates translated into numberjack constraints
 
@@ -201,3 +205,30 @@ def table_int(x,t):
 
 def table_bool(x,t):
     return (table_int(x, t))
+
+
+def total_seconds(td):
+    return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 1e6) / 1e6
+
+
+def time_remaining(tcutoff):
+    return max(tcutoff - total_seconds(datetime.datetime.now() - start_time), 0.0)
+
+
+def run_solve(model, output_vars, param):
+    solver = model.load(param['solver'])
+    solver.setVerbosity(param['verbose'])
+    solver.setTimeLimit(int(param['tcutoff']))
+    solver.setHeuristic(param['var'], param['val'], param['rand'])
+    if param['solver'] == 'Gurobi':
+        solver.setThreadCount(param['threads'])
+    if param['solver'] == 'Mistral':
+        solver.solveAndRestart(param['restart'], param['base'], param['factor'])
+    else:
+        solver.solve()
+    return solver, output_vars
+
+
+def solve_main(param):
+    model, output_vars = get_model()
+    return run_solve(model, output_vars, param)

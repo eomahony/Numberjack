@@ -3,9 +3,7 @@
 
 BEGIN {
 	MAXINT = 10000000;
-	print "#! /usr/bin/env python"
-	print "import time"
-	print "from Numberjack import *"
+	objective_type = "";
 	system("cat " MZNNJ_DIR "/fzn2py.py");
 	print "";
 	print "def get_model():"
@@ -236,11 +234,13 @@ parameter {
 /^solve / && / minimize /{
 	print "    model.add(Minimize(" $NF "))";
 	objective = $NF;
+	objective_type = "Minimize";
 }
 
 /^solve / && / maximize /{
 	print "    model.add(Maximize(" $NF "))";
 	objective = $NF;
+	objective_type = "Maximize";
 }
 
 END {
@@ -258,31 +258,102 @@ END {
 	}
 	print "    output_vars = (" output_vars ")";
 	print "    return model, output_vars";
+	print "\n";
 
-	print "";
-	print "if __name__ == '__main__':";
+	print "def solve_dichotomic(param):";
 	print "    model, output_vars = get_model()";
 	if(output_vars) print "    " output_vars " = output_vars";
-	print "    solvers = ['Mistral', 'SCIP', 'MiniSat', 'Toulbar2', 'Gurobi']";
-	print "    default = dict([('solver', 'Mistral'), ('verbose', 0), ('tcutoff', 900), ('var', 'DomainOverWDegree'), ('val', 'Lex'), ('rand', 2), ('threads', 1), ('restart', GEOMETRIC), ('base', 256), ('factor', 1.3), ('lcLevel', 4), ('lds', 0), ('dee',0), ('btd',0), ('rds',0)])";
-	print "    param = input(default)";
-	print "    solver = model.load(param['solver'])";
-	print "    solver.setVerbosity(param['verbose'])";
-	print "    solver.setTimeLimit(param['tcutoff'] - int(time.clock()+0.5))";
-	print "    solver.setHeuristic(param['var'], param['val'], param['rand'])";
-	print "    if param['solver'] == 'Toulbar2':";
-	print "        solver.setOption('lcLevel',param['lcLevel'])";
-	print "        solver.setOption('lds',param['lds'])";
-	print "        solver.setOption('deadEndElimination',param['dee'])";
-	print "        solver.setOption('btdMode',param['btd'])";
-	print "        solver.setOption('splitClusterMaxSize',param['rds'])";
-	print "    if param['solver'] == 'Gurobi':";
-	print "        solver.setThreadCount(param['threads'])";
-	print "    if param['solver'] == 'Mistral':";
-	print "        # LUBY, GEOMETRIC = 0, 1"
-	print "        solver.solveAndRestart(param['restart'], param['base'], param['factor'])";
+	print "    lb = reallb = " objective ".lb";
+	print "    ub = realub = " objective ".ub";
+	print "    best_sol = (None, output_vars)";
+	print "    dichotomic_sat = dichotomic_opt = False";
+	print "    while lb < ub and time_remaining(param['tcutoff']) > param['dichtcutoff']:";
+	print "        newobj = (lb + ub) / 2";
+	print "        print lb, ub, newobj";
+	print "        dummymodel, output_vars = get_model()";
+	if(output_vars) print "        " output_vars " = output_vars";
+	if(objective_type == "Minimize"){
+		print "        dummymodel.add(" objective " > reallb)";
+		print "        dummymodel.add(" objective " <= newobj)";
+	} else if(objective_type == "Maximize"){
+		print "        dummymodel.add(" objective " <= realub)";
+		print "        dummymodel.add(" objective " > newobj)";
+	}
+	print "        dichparam = dict(param)";
+	print "        dichparam['tcutoff'] = param['dichtcutoff']";
+	print "        solver, output_vars = run_solve(dummymodel, output_vars, dichparam)";
+	print "";
+	if(objective_type == "Minimize"){
+		print "        if solver.is_opt():";
+		print "            lb = reallb = " objective ".get_value()";
+		print "        if solver.is_sat():";
+		print "            ub = " objective ".get_value()";
+		print "            best_sol = solver, output_vars";
+		print "            dichotomic_sat = True";
+		print "        elif solver.is_unsat():";
+		print "            lb = reallb = newobj";
+		print "        else:";
+		print "            lb = newobj";
+		print "    if reallb < ub:";
+	} else if(objective_type == "Maximize"){
+		print "        if solver.is_opt():";
+		print "            ub = realub = " objective ".get_value()";
+		print "        if solver.is_sat():";
+		print "            lb = " objective ".get_value()";
+		print "            best_sol = solver, output_vars";
+		print "            dichotomic_sat = True";
+		print "        elif solver.is_unsat():";
+		print "            ub = realub = newobj";
+		print "        else:";
+		print "            ub = newobj";print "";
+		print "    if realub > lb:";
+	}
+	print "        dummymodel, output_vars = get_model()";
+	if(output_vars) print "        " output_vars " = output_vars";
+	if(objective_type == "Minimize"){
+		print "        dummymodel.add(" objective " > reallb)";
+		print "        dummymodel.add(" objective " <= ub)";
+	} else if(objective_type == "Maximize"){
+		print "        dummymodel.add(" objective " <= realub)";
+		print "        dummymodel.add(" objective " > lb)";
+	}
+	print "        tcutoff = time_remaining(param['tcutoff'])";
+	print "        if tcutoff > 1.0:";
+	print "            dichparam = dict(param)";
+	print "            dichparam['tcutoff'] = tcutoff";
+	print "            solver, output_vars = run_solve(dummymodel, output_vars, dichparam)";
+	print "            if solver.is_sat():";
+    print "                best_sol = solver, output_vars";
 	print "    else:";
-	print "        solver.solve()";
+	print "        dichotomic_opt = True";
+	print "";
+	print "    if not solver.is_sat() and dichotomic_sat:";
+	print "        best_sol[0].is_sat = lambda: True";
+	print "        best_sol[0].is_unsat = lambda: False";
+	print "        if dichotomic_opt:";
+	print "            best_sol[0].is_opt = lambda: True";
+	print "    return best_sol";
+
+	print "\n";
+	print "start_time = datetime.datetime.now()\n\n";
+	print "if __name__ == '__main__':";
+	print "    solvers = ['Mistral', 'SCIP', 'MiniSat', 'Toulbar2', 'Gurobi']";
+	print "    default = dict([('solver', 'Mistral'), ('verbose', 0), ('tcutoff', 900), ('var', 'DomainOverWDegree'), ('val', 'Lex'), ('rand', 2), ('threads', 1), ('restart', GEOMETRIC), ('base', 256), ('factor', 1.3), ('lcLevel', 4), ('lds', 0), ('dee',0), ('btd',0), ('rds',0), ('dichotomic', 0), ('dichtcutoff', 3)])";
+	print "    param = input(default)";
+	if(objective){
+		print "    if param['dichotomic'] == 1:";
+	    print "        solver, output_vars = solve_dichotomic(param)";
+	    print "    else:";
+	    print "        solver, output_vars = solve_main(param)";
+	} else {
+		print "    solver, output_vars = solve_main(param)";
+	}
+	if(output_vars) print "    " output_vars " = output_vars";
+	print "";
+	print "    if not solver:";
+    print "        print '=====UNKNOWN====='";
+    print "        sys.exit(0)";
+    print "";
 	print "    if solver.is_sat():"
 	for (i=1; i<=n; i++) {
 		e = varnames[i];

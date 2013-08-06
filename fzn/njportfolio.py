@@ -8,9 +8,10 @@ import sys
 
 
 result_poll_timeout = 0.5
-solver_buffer_time = 0.5  # Tell each solver to finish this many seconds ahead of our actual timeout.
+solver_buffer_time = 1.5  # Tell each solver to finish this many seconds ahead of our actual timeout.
 SATISFACTION, MINIMIZE, MAXIMIZE = 0, 1, -1
 UNKNOWN, SAT, UNSAT = 0, 1, 2
+LUBY, GEOMETRIC = 0, 1
 
 
 class SolverResult(object):
@@ -84,20 +85,22 @@ def njportfolio(njfilename, cores, timeout, memlimit):
     threads = []
 
     configs = []
-    configs.append({'solver': 'Mistral', 'var': 'DomainOverWLDegree', 'val': 'Lex'})
+    configs.append({'solver': 'Mistral', 'var': 'DomainOverWDegree', 'val': 'Lex', 'restart': GEOMETRIC, 'base': 256, 'factor': 1.3})
     configs.append({'solver': 'Gurobi'})
-    configs.append({'solver': 'Toulbar2'})
-    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': 0, 'base': 10000, 'factor': 1.5})
-    configs.append({'solver': 'MiniSat'})
-    configs.append({'solver': 'Mistral', 'var': 'DomainOverWDegree', 'val': 'Lex'})
-    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': 1, 'base': 256, 'factor': 1.5})
+    configs.append({'solver': 'Toulbar2', 'lds': 1})
+    configs.append({'solver': 'Mistral', 'dichotomic': 1, 'dichtcutoff': 5, 'base': 10, 'restart': GEOMETRIC, 'base': 256, 'factor': 1.3})
     configs.append({'solver': 'Toulbar2', 'btd': 3, 'lcLevel': 1, 'rds': 1})
+    configs.append({'solver': 'MiniSat'})
+    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': LUBY, 'base': 10000})
+    configs.append({'solver': 'Mistral', 'var': 'DomainOverWDegree', 'val': 'Lex', 'restart': GEOMETRIC, 'base': 10, 'factor': 1.3})
+    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': GEOMETRIC, 'base': 256, 'factor': 1.5})
     configs.append({'solver': 'SCIP'})
-    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': 1, 'base': 512, 'factor': 2})
-    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': 0, 'base': 5000, 'factor': 1.5})
-    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': 1, 'base': 512, 'factor': 1.3})
-    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': 0, 'base': 1000, 'factor': 1.3})
-    configs.append({'solver': 'Mistral', 'var': 'DomainOverWDegree', 'val': 'Lex', 'restart': 1, 'base': 256, 'factor': 1.5})
+    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': GEOMETRIC, 'base': 512, 'factor': 2})
+    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': LUBY, 'base': 5000})
+    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': GEOMETRIC, 'base': 512, 'factor': 1.3})
+    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': LUBY, 'base': 1000})
+    configs.append({'solver': 'Mistral', 'var': 'DomainOverWDegree', 'val': 'Lex', 'restart': GEOMETRIC, 'base': 256, 'factor': 1.5})
+    configs.append({'solver': 'Mistral', 'var': 'DomainOverWLDegree', 'val': 'Lex', 'restart': GEOMETRIC, 'base': 256, 'factor': 1.3})
     configs.reverse()  # Reverse the list so we can just pop().
 
     if cores <= 0 or cores > cpu_count():
@@ -108,7 +111,9 @@ def njportfolio(njfilename, cores, timeout, memlimit):
             return  # Could launch Mistral with different seeds if we run out of provided configs
         config = configs.pop()
         remaining_time = int(timeout - total_seconds(datetime.datetime.now() - start_time) - solver_buffer_time)
-        defaults = {'njfilename': njfilename, 'threads': 1, 'tcutoff': remaining_time, 'var': 'DomainOverWDegree', 'val': 'Lex', 'verbose': 0, 'restart': 1, 'base': 256, 'factor': 1.3, 'lcLevel': 4, 'lds': 0, 'dee': 0, 'btd': 0, 'rds': 0}
+        if config['solver'] == "Mistral":  # Mistral's timing seems to consistently be longer than the specified timeout.
+            remaining_time = max(remaining_time - 1, 1)
+        defaults = {'njfilename': njfilename, 'threads': 1, 'tcutoff': remaining_time, 'var': 'DomainOverWDegree', 'val': 'Lex', 'verbose': 0, 'restart': GEOMETRIC, 'base': 256, 'factor': 1.3, 'lcLevel': 4, 'lds': 0, 'dee': 0, 'btd': 0, 'rds': 0}
         d = dict(defaults.items() + config.items())
         cmd = ("python %(njfilename)s -solver %(solver)s -tcutoff %(tcutoff)d "
                "-threads %(threads)d -var %(var)s -val %(val)s "
@@ -146,7 +151,7 @@ def njportfolio(njfilename, cores, timeout, memlimit):
     found_sol = False
     should_continue = True
     while should_continue:
-        if total_seconds(datetime.datetime.now() - start_time) + result_poll_timeout >= timeout:
+        if total_seconds(datetime.datetime.now() - start_time) + 2 * result_poll_timeout >= timeout:
             should_continue = False
 
         try:

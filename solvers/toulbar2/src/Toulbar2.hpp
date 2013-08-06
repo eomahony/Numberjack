@@ -272,7 +272,7 @@ public:
    *
    * @param cost : initial cost 
    */
-  Toulbar2_PostNullary(Cost cost);
+  Toulbar2_PostNullary(int cost);
 
   /**
    * Destructor

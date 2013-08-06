@@ -263,7 +263,7 @@ Toulbar2_Expression* Toulbar2_Gcc::add(Toulbar2Solver *solver, bool top_level)
   return this;
 }
 
-Toulbar2_PostNullary::Toulbar2_PostNullary(Cost cost)
+Toulbar2_PostNullary::Toulbar2_PostNullary(int cost)
   : Toulbar2_Expression() 
 {
   _cost = cost;
@@ -316,6 +316,18 @@ Toulbar2_Expression* Toulbar2_PostUnary::add(Toulbar2Solver *solver, bool top_le
 #ifdef _DEBUGWRAP    
 	  cout << "postUnary on varIndex " << _var->_wcspIndex << " with costs: " << _costs[0] << " " << _costs[1] << ".." << endl;
 #endif
+	  Cost mincost = 0;
+	  for (unsigned int i=0; i<_costs.size(); i++) {
+		if (_costs[i] < mincost) {
+		  mincost = _costs[i];
+		}
+	  }
+	  if (mincost < 0) {
+		for (unsigned int i=0; i<_costs.size(); i++) {
+		  _costs[i] -= mincost;
+		}
+		_solver->costshift += mincost;
+	  }
       _solver->wcsp->postUnary(_var->_wcspIndex,_costs);
     } 
   }
@@ -344,7 +356,19 @@ Toulbar2_Expression* Toulbar2_PostBinary::add(Toulbar2Solver *solver, bool top_l
     _var1->add(_solver,false);
     _var2->add(_solver,false);
     if(top_level) {
-	  _solver->wcsp->postBinaryConstraint(_var1->_wcspIndex, _var2->_wcspIndex, _costs);
+	  if (_solver->wcsp->getDomainInitSize(_var1->_wcspIndex) * _solver->wcsp->getDomainInitSize(_var2->_wcspIndex) != _costs.size()) {
+		vector<Cost> newcosts(_solver->wcsp->getDomainInitSize(_var1->_wcspIndex) * _solver->wcsp->getDomainInitSize(_var2->_wcspIndex), 0);
+		int id1 = 0;
+		for (Value v1 = _solver->wcsp->getInf(_var1->_wcspIndex); v1 <= _solver->wcsp->getSup(_var1->_wcspIndex) && id1 < _solver->wcsp->getDomainSize(_var1->_wcspIndex); id1++, v1 = _solver->wcsp->nextValue(_var1->_wcspIndex, v1)) {
+		  int id2 = 0;
+		  for (Value v2 = _solver->wcsp->getInf(_var2->_wcspIndex); v2 <= _solver->wcsp->getSup(_var2->_wcspIndex) && id2 < _solver->wcsp->getDomainSize(_var2->_wcspIndex); id2++, v2 = _solver->wcsp->nextValue(_var2->_wcspIndex, v2)) {
+			newcosts[_solver->wcsp->toIndex(_var1->_wcspIndex, v1) * _solver->wcsp->getDomainInitSize(_var2->_wcspIndex) + _solver->wcsp->toIndex(_var2->_wcspIndex, v2)] = _costs[id1 * _solver->wcsp->getDomainSize(_var2->_wcspIndex) + id2];
+		  }
+		}
+		_solver->wcsp->postBinaryConstraint(_var1->_wcspIndex, _var2->_wcspIndex, newcosts);
+	  } else {
+		_solver->wcsp->postBinaryConstraint(_var1->_wcspIndex, _var2->_wcspIndex, _costs);
+	  }
 	}
   }
   return this;
@@ -1006,7 +1030,7 @@ int Toulbar2Solver::solve()
 	  }
 	  timerStop();
 	  if(wcsp->getUb() < upperbound) {
-		optimum = solver->getSolution(solution) + costshift;
+		optimum = solver->getSolution(solution);
 	  }
 	}
   }
@@ -1026,8 +1050,8 @@ int Toulbar2Solver::solveAndRestart(const int policy,
 void Toulbar2Solver::printPython()
 {
   if (optimum < upperbound) {
-	if (interrupted) cout << "Toulbar2 best solution found: " << optimum << endl;
-	else cout << "Toulbar2 optimum found: " << optimum << endl;
+	if (interrupted) cout << "Toulbar2 best solution found: " << getOptimum() << endl;
+	else cout << "Toulbar2 optimum found: " << getOptimum() << endl;
 	for (unsigned int i=0; i < solution.size(); i++) {
 	  cout << "Variable with wcspIndex " << i << " has value " << solution[i] << endl;  
 	} 

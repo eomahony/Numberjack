@@ -32,6 +32,7 @@
 #  The authors can be contacted electronically at
 #  numberjack.support@gmail.com
 
+#CHECK_VAR_EQUALITY = [True]
 
 UNSAT, SAT, UNKNOWN, LIMITOUT = 0, 1, 2, 3
 LUBY, GEOMETRIC = 0, 1
@@ -73,6 +74,70 @@ def flatten(x):
         else:
             result.append(el)
     return result
+
+
+"""
+
+Numberjack exceptions:
+
+"""
+
+
+class ConstraintNotSupportedError(exceptions.Exception):
+
+    def __init__(self, value, solver=None):
+        self.value = value
+        self.solver = solver
+
+    def __str__(self):
+        return "ERROR: Constraint %s not supported by solver %s and no decomposition is available." % (self.value, self.solver)
+
+
+class UnsupportedSolverFunction(exceptions.Exception):
+
+    def __init__(self, solver, func_name, msg=""):
+        self.solver = solver
+        self.func_name = func_name
+        self.msg = msg
+
+    def __str__(self):
+        return "ERROR: The solver %s does not support the function '%s'. %s" % (self.solver, self.func_name, self.msg)
+
+
+class InvalidEncodingException(exceptions.Exception):
+
+    def __init__(self, msg=""):
+        self.msg = msg
+
+    def __str__(self):
+        return "ERROR: Invalid encoding configuration. %s" % self.msg
+
+
+class InvalidConstraintSpecification(exceptions.Exception):
+
+    def __init__(self, msg=""):
+        self.msg = msg
+
+    def __str__(self):
+        return "ERROR: Invalid constraint specification. %s" % self.msg
+
+
+class ModelSizeError(exceptions.Exception):
+
+    def __init__(self, value, solver=None):
+        self.value = value
+        self.solver = solver
+
+    def __str__(self):
+        return "ERROR: Model decomposition size too big %s for solver %s." % (self.value, self.solver)
+
+
+"""
+
+Numberjack domain and expressions:
+
+"""
+
 
 
 class Domain(list):
@@ -457,9 +522,13 @@ class Expression(object):
         return Mod([pred, self])
 
     def __eq__(self, pred):
+        #if CHECK_VAR_EQUALITY[0]:              #SGD: nasty bug when using the variable equality operator outside the model definition (condition replaced by a constraint!)
+        #     raise InvalidConstraintSpecification("use == outside the model definition!")
         return Eq([self, pred])
 
     def __ne__(self, pred):
+        #if CHECK_VAR_EQUALITY[0]:              #SGD: nasty bug when using the variable disequality operator outside the model definition (condition replaced by a constraint!)
+        #     raise InvalidConstraintSpecification("use != outside the model definition!")
         return Ne([self, pred])
 
     def __lt__(self, pred):
@@ -601,7 +670,6 @@ class Model(object):
         self.closed = len(self.__expressions)
 
     def close(self, solver=None):
-        #print self   #SDG: VERY USEFUL FOR DEBUGGING
         ## \internal - close() is used to fire up preprocessing requiring knowledge about the whole model AND THE SOLVER USED
         #SDG: check if it is an optimization problem
         if not any([issubclass(type(expr), Minimise) or issubclass(type(expr), Maximise) or issubclass(type(expr), CostFunction) for expr in self.__expressions]):
@@ -629,34 +697,91 @@ class Model(object):
             for expr in self.get_exprs():
                 expr.close()
              
-        #SDG: reformulate Minimize/Maximise(obj) in order to replace obj by its corresponding expression
         if (solver.Library is 'Toulbar2'):
-            objexpr = filter(lambda expr: issubclass(type(expr), Minimise) or issubclass(type(expr), Maximise), self.__expressions)
-            if (len(objexpr)==1 and objexpr[0].children[0].is_var()):
-                objvar = objexpr[0].children[0]
-                # replace [Min/Maximise(obj),Eq(Sum([obj]+vars, [-1]+coefs),0)] by [Min/Maximise(Sum(vars,coefs)),Eq(0,0)]
-                objconstr = filter(lambda expr: issubclass(type(expr), Eq) and issubclass(type(expr.children[0]), Sum) and expr.children[1]==0 and (objvar,-1) in zip(expr.children[0].children,expr.children[0].parameters[0]), self.__expressions)
-                if (len(objconstr)==1):
-                    #print objvar,objexpr,objconstr
-                    objexpr[0].children[0] = objconstr[0].children[0]
-                    for (i,var) in enumerate(objconstr[0].children[0].children):
-                        if (var == objvar): 
-                            objconstr[0].children[0].parameters[0][i] = 0
-                            break
-                    objconstr[0].children[0] = Variable(0,0)
-                else:
-                    # replace [Min/Maximise(obj),Eq(obj,Sum(vars,coefs))] by [Min/Maximise(Sum(vars,coefs)),Eq(0,0)]
-                    objconstr = filter(lambda expr: issubclass(type(expr), Eq) and issubclass(type(expr.children[1]), Sum) and expr.children[0]==objvar, self.__expressions)
+            #print self   #SDG: VERY USEFUL FOR DEBUGGING
+
+            def rec_functional(objexpr, objvar, j):
+                if not(issubclass(type(objvar), Expression)):
+                    return
+                if objvar.is_var():
+                    if not('____' in objvar.name()):  #SDG: VERY HUGLY!!! (avoid replacing non intermediate variables as defined by Minizinc)
+                        return
+                    #print "CHECK",objvar
+                    # replace [Predicate(obj,..),Eq(Sum([obj]+vars, [+-1]+coefs),expr)] by [Predicate(Sum(vars+[expr],[-+]coefs+[-1]),..),Eq(0,0)]
+                    # and [Predicate(obj,..),Eq(expr,Sum([obj]+vars, [+-1]+coefs))] by [Predicate(Sum(vars+[expr],[-+]coefs+[-1]),..),Eq(0,0)]
+                    objconstr = filter(lambda expr: issubclass(type(expr), Eq) and ((issubclass(type(expr.children[0]), Sum) and any(map(lambda u: expr.children[0].children[u] is objvar, xrange(len(expr.children[0].children))))) or (issubclass(type(expr.children[1]), Sum) and any(map(lambda u: expr.children[1].children[u] is objvar, xrange(len(expr.children[1].children)))))), self.__expressions)
                     if (len(objconstr)==1):
-                        objexpr[0].children[0] = objconstr[0].children[1]
-                        objconstr[0].children[0] = Variable(0,0)
+                        if issubclass(type(objconstr[0].children[0]), Sum):
+                            mysum = 0
+                        else:
+                            mysum = 1
+                        pos = filter(lambda u: objconstr[0].children[mysum].children[u] is objvar, xrange(len(objconstr[0].children[mysum].children)))[0]
+                        coefobj = objconstr[0].children[mysum].parameters[0][pos]
+                        if (coefobj != -1 and coefobj != 1):
+                            return
+                        del objconstr[0].children[mysum].children[pos]
+                        del objconstr[0].children[mysum].parameters[0][pos]
+                        coefeq = objconstr[0].children[1-mysum]
+                        if not issubclass(type(coefeq), int) or coefeq != 0:
+                            objconstr[0].children[mysum].children.append(Variable(coefeq,coefeq,str(coefeq)) if issubclass(type(coefeq), int) else coefeq)
+                            objconstr[0].children[mysum].parameters[0].append(-1)
+                        if (coefobj==1):
+                            for u in xrange(len(objconstr[0].children[mysum].children)):
+                                objconstr[0].children[mysum].parameters[0][u] = -objconstr[0].children[mysum].parameters[0][u]
+                        objexpr.children[j] = objconstr[0].children[mysum]
+                        #print "REPLACE",objvar,"by",objexpr.children[j],"in",objexpr
+                        objconstr[0].children[0] = Variable(0,0,'0')
                         objconstr[0].children[1] = 0
-                # replace Eq('objective',obj) by Eq(0,0)
-                objconstr = filter(lambda expr: issubclass(type(expr), Eq) and expr.children[0].is_var() and expr.children[0].name()=='objective' and expr.children[1]==objvar, self.__expressions)
+                        rec_functional(objexpr, objexpr.children[j], j)
+                        objexpr.children[j].close()
+                    else:
+                        # replace [Predicate(obj,..),Eq(obj,expr)] by [Predicate(expr,..),Eq(0,0)]
+                        # and [Predicate(obj,..),Eq(expr,obj)] by [Predicate(expr,..),Eq(0,0)]
+                        objconstr = filter(lambda expr: issubclass(type(expr), Eq) and ((expr.children[0] is objvar) or (expr.children[1] is objvar)), self.__expressions)
+                        if (len(objconstr)==1):
+                            if (objconstr[0].children[0] is objvar):
+                                objexpr.children[j] = objconstr[0].children[1]
+                            else:
+                                objexpr.children[j] = objconstr[0].children[0]
+                            #print "REPLACE",objvar,"by",objexpr.children[j],"in",objexpr
+                            objconstr[0].children[0] = Variable(0,0,'0')
+                            objconstr[0].children[1] = 0
+                            rec_functional(objexpr, objexpr.children[j], j)
+                            objexpr.children[j].close()
+                else:
+                    for (j,var) in enumerate(objvar.children):
+                        rec_functional(objvar, var, j)
+
+            objexpr = filter(lambda expr: issubclass(type(expr), Minimise) or issubclass(type(expr), Maximise), self.__expressions)
+            if (len(objexpr)==1 and issubclass(type(objexpr[0].children[0]), Expression) and objexpr[0].children[0].is_var()):
+                objvar = objexpr[0].children[0]
+                # remove first intermediate variables in the objective function
+                rec_functional(objexpr[0], objvar, 0)
+
+                # replace Eq('objective',obj) by Eq(0,0)  #SDG: VERY HUGLY!!! (avoid creating an objective variable just for Minizinc output purposes)
+                objconstr = filter(lambda expr: issubclass(type(expr), Eq) and expr.children[0].is_var() and expr.children[0].name()=='objective' and (expr.children[1] is objvar), self.__expressions)
                 if (len(objconstr)==1):
-                    objconstr[0].children[0] = Variable(0,0)
+                    objconstr[0].children[0] = Variable(0,0,'0')
                     objconstr[0].children[1] = 0
+            
+            # remove intermediate variables in the constraints if possible
+            for expr in self.__expressions:
+                if issubclass(type(expr), Predicate) and not(issubclass(type(expr), (Minimise, Maximise))):
+                    for (j,var) in enumerate(expr.children):
+                        if not( issubclass(type(expr), Eq) and (issubclass(type(var), Sum) or (issubclass(type(var), Expression) and var.is_var())) ):
+                            rec_functional(expr, var, j)
+
+            # remove dummy equations
+            pos = 0
+            while (pos < len(self.__expressions)):
+                expr = self.__expressions[pos]
+                if issubclass(type(expr), Eq) and issubclass(type(expr.children[0]), Variable) and issubclass(type(expr.children[1]), int) and expr.children[0].get_lb()==expr.children[0].get_ub()==expr.children[1]:
+                    del self.__expressions[pos]
+                else:
+                    pos += 1
                     
+            #print self   #SDG: VERY USEFUL FOR DEBUGGING
+
     def __str__(self):
         ## \internal - print
         mod = 'assign:\n  '
@@ -2384,6 +2509,8 @@ class Precedence(Predicate):
     def __init__(self, task_i, task_j, dur):
         Predicate.__init__(self, [task_i, task_j], "Precedence")
         self.parameters = [dur]
+        self.lb = None  #SDG: initial lb/ub undefined
+        self.ub = None
 
     def decompose(self):
         return [((self.children[0] + self.parameters[0]) <= self.children[1])]
@@ -2402,6 +2529,8 @@ class NoOverlap(Predicate):
             dur_j = task_j.duration
         Predicate.__init__(self, [task_i, task_j], "NoOverlap")
         self.parameters = [dur_i, dur_j]
+        self.lb = None  #SDG: initial lb/ub undefined
+        self.ub = None
 
     def decompose(self):
         return [(((self.children[0] + self.parameters[0]) <= (self.children[1])) |
@@ -3334,59 +3463,3 @@ class EncodingConfiguration(object):
             self.direct, self.order, self.conflict, self.support, self.amo_encoding, self.alldiff_encoding)
 
 ##  @}
-
-
-"""
-
-Numberjack exceptions:
-
-"""
-
-
-class ConstraintNotSupportedError(exceptions.Exception):
-
-    def __init__(self, value, solver):
-        self.value = value
-        self.solver = solver
-
-    def __str__(self):
-        return "ERROR: Constraint %s not supported by solver %s and no decomposition is available." % (self.value, self.solver)
-
-
-class UnsupportedSolverFunction(exceptions.Exception):
-
-    def __init__(self, solver, func_name, msg=""):
-        self.solver = solver
-        self.func_name = func_name
-        self.msg = msg
-
-    def __str__(self):
-        return "ERROR: The solver %s does not support the function '%s'. %s" % (self.solver, self.func_name, self.msg)
-
-
-class InvalidEncodingException(exceptions.Exception):
-
-    def __init__(self, msg=""):
-        self.msg = msg
-
-    def __str__(self):
-        return "ERROR: Invalid encoding configuration. %s" % self.msg
-
-
-class InvalidConstraintSpecification(exceptions.Exception):
-
-    def __init__(self, msg=""):
-        self.msg = msg
-
-    def __str__(self):
-        return "ERROR: Invalid constraint specification. %s" % self.msg
-
-
-class ModelSizeError(exceptions.Exception):
-
-    def __init__(self, value, solver):
-        self.value = value
-        self.solver = solver
-
-    def __str__(self):
-        return "ERROR: Model decomposition size too big %s for solver %s." % (self.value, self.solver)

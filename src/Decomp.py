@@ -104,6 +104,9 @@ class CostFunction(Predicate):
         self.lb = None
         self.ub = None
 
+    def __str__(self):
+        return super(CostFunction, self).__str__() + str(self.parameters)
+
 
 ## PostNullary Constraint
 #
@@ -398,73 +401,99 @@ def decompose_LeqLex(self):
             return (vars1[i] <= vars2[i] | And([(vars1[i] == vars2[i]), lexico(vars1,vars2,i+1)]))
     return [lexico(self.children[:length], self.children[length:], 0)]
 
+#SDG: util functions for automatic decomposition
+def cartesian_product(expr):
+    def prod( iterable ):
+        p= 1
+        for n in iterable:
+            p *= n
+        return p
+
+    if type(expr) in [int, long, float, bool, str]:
+        return 1
+    elif expr.is_var():
+        return expr.get_size()
+    else:
+        res = prod(cartesian_product(e) for e in expr.children)
+        if (res > MODELMAXSIZE):
+            raise ModelSizeError(res)
+        return res
+
+def get_arity(expr):
+    if type(expr) in [int, long, float, bool, str]:
+        return 0
+    elif expr.is_var():
+        if expr.get_lb() == expr.get_ub():
+            return 0
+        else:
+            return 1
+    else:
+        return sum(get_arity(e) for e in expr.children)
+
+def get_scope(expr):
+    if type(expr) in [int, long, float, bool, str]:
+        return []
+    elif expr.is_var():
+        if expr.get_lb() == expr.get_ub():
+            return []
+        else:
+            return [expr]
+    else:
+        res = []
+        for e in expr.children:
+            res.extend(get_scope(e))
+        return res
+
+def evaluate(expr, assignment):
+    if type(expr) in [int, long, float, bool, str]:
+        return expr
+    elif expr.is_var():
+        if (expr.get_lb()==expr.get_ub()):
+            return expr.get_lb()
+        else:
+            return assignment[expr]
+    elif issubclass(type(expr), BinPredicate):
+        return expr.eval(evaluate(expr.children[0],assignment),evaluate(expr.children[1],assignment))
+    elif issubclass(type(expr), Abs):
+        return abs(evaluate(expr.children[0],assignment))
+    elif issubclass(type(expr), Neg):
+        return -(evaluate(expr.children[0],assignment))
+    elif issubclass(type(expr), Max):
+        return max([evaluate(e,assignment) for e in expr.children])
+    elif issubclass(type(expr), Min):
+        return min([evaluate(e,assignment) for e in expr.children])
+    elif issubclass(type(expr), Sum):
+        return sum([evaluate(e,assignment) * expr.parameters[0][i] for (i,e) in enumerate(expr.children)])
+    else:    #SDG: Element is missing from the previous list!!!
+        raise ConstraintNotSupportedError(type(expr))
+
 #SDG: automatic decompostion of any BinPredicate into a Table constraint with support tuples
 def decompose_BinPredicate(self):
-    tuples = [(self.eval(val1, val2), val1, val2) for val1 in range(self.get_lb(0), self.get_ub(0)+1) for val2 in range(self.get_lb(1), self.get_ub(1)+1)]
-#    res = Variable(min(t[0] for t in tuples), max(t[0] for t in tuples))
+    arity = get_arity(self)
+    scope = get_scope(self)
     res = Variable(self.get_lb(),self.get_ub())
-    return ([res, Table([res, self.children[0] if issubclass(type(self.children[0]), Expression) else Variable(self.children[0],self.children[0],str(self.children[0])), self.children[1] if issubclass(type(self.children[1]), Expression) else Variable(self.children[1],self.children[1],str(self.children[1]))], tuples)])
+    if arity is 0:
+        return [res, Table([res], [(evaluate(self, dict([])))])]
+    elif arity is 1:
+        return [res, Table([res, scope[0]], [(evaluate(self, dict([(scope[0],val0)])), val0) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else xrange(scope[0].get_lb(), scope[0].get_ub()+1))])]
+    elif arity is 2:
+        product = cartesian_product(self)  # check if decomposition is feasible in size
+        return [res, Table([res, scope[0], scope[1]], [(evaluate(self, dict([(scope[0],val0), (scope[1],val1)])), val0, val1) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else xrange(scope[0].get_lb(), scope[0].get_ub()+1)) for val1 in (scope[1].domain_ if scope[1].domain_ is not None else xrange(scope[1].get_lb(), scope[1].get_ub()+1))])]
+    else:
+        size = (self.get_ub(0)+1-self.get_lb(0)) * (self.get_ub(1)+1-self.get_lb(1))
+        if (size > MODELMAXSIZE):
+            raise ModelSizeError(size)
+        tuples = [(self.eval(val0, val1), val0, val1) for val0 in (self.children[0].domain_ if issubclass(type(self.children[0]), Expression) and self.children[0].is_var() and self.children[0].domain_ is not None else xrange(self.get_lb(0), self.get_ub(0)+1)) for val1 in (self.children[1].domain_ if issubclass(type(self.children[1]), Expression) and self.children[1].is_var() and self.children[1].domain_ is not None else xrange(self.get_lb(1), self.get_ub(1)+1))]
+        return [res, Table([res, self.children[0] if issubclass(type(self.children[0]), Expression) else Variable(self.children[0],self.children[0],str(self.children[0])), self.children[1] if issubclass(type(self.children[1]), Expression) else Variable(self.children[1],self.children[1],str(self.children[1]))], tuples)]
 
 #SDG: decompose maximise into minimise
 def decompose_Maximise(self):
     return [Minimise(Neg([self.children[0]]))]
 
 #SDG: decompose minimise into cost functions
-def decompose_Minimise(self):
-    def cartesian_product(expr):
-        def prod( iterable ):
-            p= 1
-            for n in iterable:
-                p *= n
-            return p
-
-        if type(expr) in [int, long, float, bool, str]:
-            return 1
-        elif expr.is_var():
-            return expr.get_size()
-        else:
-            res = prod(cartesian_product(e) for e in expr.children)
-            if (res > MODELMAXSIZE):
-                raise ModelSizeError("Memory limit exceeded: cannot decompose this expression!")
-            return res
-        
-    def get_arity(expr):
-        if type(expr) in [int, long, float, bool, str]:
-            return 0
-        elif expr.is_var():
-            if expr.get_lb() == expr.get_ub():
-                return 0
-            else:
-                return 1
-        else:
-            return sum(get_arity(e) for e in expr.children)
-        
-    def get_scope(expr):
-        if type(expr) in [int, long, float, bool, str]:
-            return []
-        elif expr.is_var():
-            if expr.get_lb() == expr.get_ub():
-                return []
-            else:
-                return [expr]
-        else:
-            res = []
-            for e in expr.children:
-                res.extend(get_scope(e))
-            return res
-        
-    def evaluate(expr, assignment):
-        if type(expr) in [int, long, float, bool, str]:
-            return expr
-        elif expr.is_var():
-            return assignment[expr]
-        elif issubclass(type(expr), BinPredicate):
-            return expr.eval(evaluate(expr.children[0],assignment),evaluate(expr.children[1],assignment))
-        else:
-            raise ModelSizeError("Unknown predicate: cannot decompose this expression!")
-        
+def decompose_Minimise(self):       
     if type(self.children[0]) is int:
-        return [PostNullary(self)]
+        return [PostNullary(self.children[0])]
     elif self.children[0].is_var():
         return [PostUnary(self.children[0], [c for c in range(self.children[0].get_lb(), self.children[0].get_ub()+1)])]
     elif issubclass(type(self.children[0]), Sum):
@@ -476,11 +505,14 @@ def decompose_Minimise(self):
         product = cartesian_product(self.children[0])  # check if decomposition is feasible in size
         arity = get_arity(self.children[0])
         scope = get_scope(self.children[0])
-#        print "decompose ", self.children[0], " size: ", product, " arity: ", arity, " scope: ", scope
+        #print "decompose ", self.children[0], " size: ", product, " arity: ", arity, " scope: ", scope
         if arity is 0:
-            return [PostNullary(self.children[0])]
+            return [PostNullary(evaluate(self.children[0], dict([])))]
         elif arity is 1:
-            costs = [evaluate(self.children[0], dict([(scope[0],val1)])) for val1 in range(scope[0].get_lb(), scope[0].get_ub()+1)]
+            costs = [evaluate(self.children[0], dict([(scope[0],val0)])) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else xrange(scope[0].get_lb(), scope[0].get_ub()+1))]
             return [PostUnary(scope[0], costs)]
+        elif arity is 2:
+            costs = [evaluate(self.children[0], dict([(scope[0],val0), (scope[1],val1)])) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else xrange(scope[0].get_lb(), scope[0].get_ub()+1)) for val1 in (scope[1].domain_ if scope[1].domain_ is not None else xrange(scope[1].get_lb(), scope[1].get_ub()+1))]
+            return [PostBinary(scope[0], scope[1], costs)]
         else:
-            raise ModelSizeError("Arity too large: cannot decompose this expression!")
+            raise ConstraintNotSupportedError("of arity " + str(arity))

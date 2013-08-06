@@ -93,7 +93,7 @@ def int_le(x,y):
     return (x <= y)
 
 def int_le_reif(x,y,z):
-    return [((x > y) | (z != 0)), ((x <= y) | (z == 0))]
+    return [(z == (x <= y))]
 
 def int_lt(x,y):
     return (x < y)
@@ -160,7 +160,17 @@ def int_times(x,y,z):
 
 def set_in(x,dom):
 #    return (Disjunction([(x == v) for v in dom]))
-    return [(x != v) for v in range(x.get_min(),1+x.get_max()) if (not(v in dom))]
+#    return [(x != v) for v in range(x.get_min(),1+x.get_max()) if (not(v in dom))]
+    if (x.domain_ is not None):
+        olddom = set(x.domain_)
+        newdom = set(dom)
+        x.domain_ = list(newdom & olddom)
+    else:
+        x.domain_ = [e for e in dom if e >= x.lb and e <= x.ub]
+    x.domain_.sort()
+    x.lb = x.domain_[0]
+    x.ub = x.domain_[-1]
+    return []
 
 def set_in_reif(x,dom,z):
     return (z == Disjunction([(x == v) for v in dom]))

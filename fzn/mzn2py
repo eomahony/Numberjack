@@ -22,4 +22,4 @@ fi
 param1=${*##*.dzn}
 param=${param1##*.mzn}
 problem=`echo "$*" | $SED 's/ -.*//'`
-mzn2fzn -I ${MZNNJ_DIR}/mznlib --output-to-stdout $problem | ${MZNNJ_DIR}/fzn2py - | tee problem.py | python - $param
+mzn2fzn -I ${MZNNJ_DIR}/mznlib --output-to-stdout $problem | ${MZNNJ_DIR}/fzn2py -

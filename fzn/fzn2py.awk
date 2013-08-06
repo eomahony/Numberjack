@@ -260,79 +260,85 @@ END {
 	print "    return model, output_vars";
 	print "\n";
 
-	print "def solve_dichotomic(param):";
-	print "    model, output_vars = get_model()";
-	if(output_vars) print "    " output_vars " = output_vars";
-	print "    lb = reallb = " objective ".lb";
-	print "    ub = realub = " objective ".ub";
-	print "    best_sol = (None, output_vars)";
-	print "    dichotomic_sat = dichotomic_opt = False";
-	print "    while lb < ub and time_remaining(param['tcutoff']) > param['dichtcutoff']:";
-	print "        newobj = (lb + ub) / 2";
-	print "        print lb, ub, newobj";
-	print "        dummymodel, output_vars = get_model()";
-	if(output_vars) print "        " output_vars " = output_vars";
-	if(objective_type == "Minimize"){
-		print "        dummymodel.add(" objective " > reallb)";
-		print "        dummymodel.add(" objective " <= newobj)";
-	} else if(objective_type == "Maximize"){
-		print "        dummymodel.add(" objective " <= realub)";
-		print "        dummymodel.add(" objective " > newobj)";
+	if(objective){
+		print "def solve_dichotomic(param):";
+		print "    model, output_vars = get_model()";
+		if(output_vars) print "    " output_vars " = output_vars";
+		print "    lb = reallb = " objective ".lb";
+		print "    ub = realub = " objective ".ub";
+		print "    best_sol = (None, output_vars)";
+		print "    dichotomic_sat = dichotomic_opt = False";
+		if(objective_type == "Minimize"){
+			print "    while lb < ub - 1 and time_remaining(param['tcutoff']) > param['dichtcutoff']:";
+		} else if(objective_type == "Maximize"){
+			print "    while lb + 1 < ub and time_remaining(param['tcutoff']) > param['dichtcutoff']:";
+		}
+		print "        newobj = (lb + ub) / 2";
+		print "        # print lb, ub, newobj";
+		print "        dummymodel, output_vars = get_model()";
+		if(output_vars) print "        " output_vars " = output_vars";
+		if(objective_type == "Minimize"){
+			print "        dummymodel.add(" objective " > reallb)";
+			print "        dummymodel.add(" objective " <= newobj)";
+		} else if(objective_type == "Maximize"){
+			print "        dummymodel.add(" objective " <= realub)";
+			print "        dummymodel.add(" objective " > newobj)";
+		}
+		print "        dichparam = dict(param)";
+		print "        dichparam['tcutoff'] = param['dichtcutoff']";
+		print "        solver, output_vars = run_solve(dummymodel, output_vars, dichparam)";
+		print "";
+		if(objective_type == "Minimize"){
+			print "        if solver.is_opt():";
+			print "            lb = reallb = " objective ".get_value() - 1";
+			print "        if solver.is_sat():";
+			print "            ub = " objective ".get_value()";
+			print "            best_sol = solver, output_vars";
+			print "            dichotomic_sat = True";
+			print "        elif solver.is_unsat():";
+			print "            lb = reallb = newobj";
+			print "        else:";
+			print "            lb = newobj";
+			print "    if reallb < ub - 1:";
+		} else if(objective_type == "Maximize"){
+			print "        if solver.is_opt():";
+			print "            ub = realub = " objective ".get_value() + 1";
+			print "        if solver.is_sat():";
+			print "            lb = " objective ".get_value()";
+			print "            best_sol = solver, output_vars";
+			print "            dichotomic_sat = True";
+			print "        elif solver.is_unsat():";
+			print "            ub = realub = newobj";
+			print "        else:";
+			print "            ub = newobj";print "";
+			print "    if realub > lb + 1:";
+		}
+		print "        dummymodel, output_vars = get_model()";
+		if(output_vars) print "        " output_vars " = output_vars";
+		if(objective_type == "Minimize"){
+			print "        dummymodel.add(" objective " > reallb)";
+			print "        dummymodel.add(" objective " <= ub)";
+		} else if(objective_type == "Maximize"){
+			print "        dummymodel.add(" objective " <= realub)";
+			print "        dummymodel.add(" objective " > lb)";
+		}
+		print "        tcutoff = time_remaining(param['tcutoff'])";
+		print "        if tcutoff > 1.0:";
+		print "            dichparam = dict(param)";
+		print "            dichparam['tcutoff'] = tcutoff";
+		print "            solver, output_vars = run_solve(dummymodel, output_vars, dichparam)";
+		print "            if solver.is_sat():";
+	    print "                best_sol = solver, output_vars";
+		print "    else:";
+		print "        dichotomic_opt = True";
+		print "";
+		print "    if not solver.is_sat() and dichotomic_sat:";
+		print "        best_sol[0].is_sat = lambda: True";
+		print "        best_sol[0].is_unsat = lambda: False";
+		print "        if dichotomic_opt:";
+		print "            best_sol[0].is_opt = lambda: True";
+		print "    return best_sol";
 	}
-	print "        dichparam = dict(param)";
-	print "        dichparam['tcutoff'] = param['dichtcutoff']";
-	print "        solver, output_vars = run_solve(dummymodel, output_vars, dichparam)";
-	print "";
-	if(objective_type == "Minimize"){
-		print "        if solver.is_opt():";
-		print "            lb = reallb = " objective ".get_value()";
-		print "        if solver.is_sat():";
-		print "            ub = " objective ".get_value()";
-		print "            best_sol = solver, output_vars";
-		print "            dichotomic_sat = True";
-		print "        elif solver.is_unsat():";
-		print "            lb = reallb = newobj";
-		print "        else:";
-		print "            lb = newobj";
-		print "    if reallb < ub:";
-	} else if(objective_type == "Maximize"){
-		print "        if solver.is_opt():";
-		print "            ub = realub = " objective ".get_value()";
-		print "        if solver.is_sat():";
-		print "            lb = " objective ".get_value()";
-		print "            best_sol = solver, output_vars";
-		print "            dichotomic_sat = True";
-		print "        elif solver.is_unsat():";
-		print "            ub = realub = newobj";
-		print "        else:";
-		print "            ub = newobj";print "";
-		print "    if realub > lb:";
-	}
-	print "        dummymodel, output_vars = get_model()";
-	if(output_vars) print "        " output_vars " = output_vars";
-	if(objective_type == "Minimize"){
-		print "        dummymodel.add(" objective " > reallb)";
-		print "        dummymodel.add(" objective " <= ub)";
-	} else if(objective_type == "Maximize"){
-		print "        dummymodel.add(" objective " <= realub)";
-		print "        dummymodel.add(" objective " > lb)";
-	}
-	print "        tcutoff = time_remaining(param['tcutoff'])";
-	print "        if tcutoff > 1.0:";
-	print "            dichparam = dict(param)";
-	print "            dichparam['tcutoff'] = tcutoff";
-	print "            solver, output_vars = run_solve(dummymodel, output_vars, dichparam)";
-	print "            if solver.is_sat():";
-    print "                best_sol = solver, output_vars";
-	print "    else:";
-	print "        dichotomic_opt = True";
-	print "";
-	print "    if not solver.is_sat() and dichotomic_sat:";
-	print "        best_sol[0].is_sat = lambda: True";
-	print "        best_sol[0].is_unsat = lambda: False";
-	print "        if dichotomic_opt:";
-	print "            best_sol[0].is_opt = lambda: True";
-	print "    return best_sol";
 
 	print "\n";
 	print "start_time = datetime.datetime.now()\n\n";

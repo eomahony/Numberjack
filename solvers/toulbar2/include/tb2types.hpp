@@ -153,6 +153,8 @@ const int STORE_SIZE = 16;
 
 const int MAX_ELIM_BIN = 1000000000;
 const int MAX_ARITY = 1000;
+/// Maximum number of tuples in n-ary cost functions
+const int MAX_NB_TUPLES = 1000000;
 
 typedef map<int, int> TSCOPE;
 typedef map<int, Value> TAssign;
@@ -298,7 +300,7 @@ public:
 	static int Berge_Dec; // flag for berge acyclic decomposition
 	static int nbvar; // initial number of variable (read in the file) 
 	static externalfunc timeOut;
-    static bool interrupted;
+	static bool interrupted;
 };
 
 /*

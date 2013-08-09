@@ -1096,14 +1096,15 @@ ValueCost *EnumeratedVariable::sortDomain(vector<Cost> &costs)
   return sorted;
 }
 
-bool EnumeratedVariable::canbeMerged()
+bool EnumeratedVariable::canbeMerged(EnumeratedVariable *x)
 {
   if (ToulBar2::nbDecisionVars>0 && wcspIndex < ToulBar2::nbDecisionVars) return false;
   if (ToulBar2::allSolutions && wcspIndex < ToulBar2::nbvar && (ToulBar2::elimDegree >= 0 || ToulBar2::elimDegree_preprocessing >= 0)) return false;
-
+  double mult = (1.0 * x->getDomainSize()) / getDomainSize();
   for(ConstraintList::iterator iter=constrs.begin(); iter != constrs.end(); ++iter) {
 	Constraint* ctr = (*iter).constr;
 	if (!ctr->extension() || ctr->isSep()) return false;
+	if (mult>1.1 && ctr->extension() && (ctr->arity() >= 4) && (mult * ((NaryConstraintMap *) ctr)->size() > MAX_NB_TUPLES)) return false;
   }
   return true;
 }
@@ -1139,7 +1140,6 @@ void EnumeratedVariable::mergeTo(BinaryConstraint *xy, map<Value, Value> &functi
 		scopeIndex[scopeSize++] = ctr->getVar(i)->wcspIndex;
 	  }
 	}
-	Constraint *newctr = NULL;
 	switch (scopeSize) {
 	case 0: {
 	  cerr << "Error: empty scope from " << *ctr << " when merging functional variable " << *this << " to variable " << *x << endl;
@@ -1223,36 +1223,98 @@ void EnumeratedVariable::mergeTo(BinaryConstraint *xy, map<Value, Value> &functi
 	  if (!empty) wcsp->postTernaryConstraint(scopeIndex[0], scopeIndex[1], scopeIndex[2], costs);
 	  break; }
 	default: {
-	  int res = wcsp->postNaryConstraintBegin(scopeIndex, scopeSize, MIN_COST);
-	  newctr = wcsp->getCtr(res);
+//	  int res = wcsp->postNaryConstraintBegin(scopeIndex, scopeSize, MIN_COST);
+//	  NaryConstraintMap *newctrok = (NaryConstraintMap*) wcsp->getCtr(res);
+//	  assert(newctrok->arity() == scopeSize);
+//	  bool empty = true;
+//	  String oldtuple(ctr->arity(),CHAR_FIRST);
+//	  EnumeratedVariable* scopeNewCtr[newctrok->arity()];
+//	  for(int i=0;i<newctrok->arity();i++) {
+//		scopeNewCtr[i] = (EnumeratedVariable*) newctrok->getVar(i);
+//	  }
+//	  String tuple;
+//	  Cost cost;
+//	  newctrok->firstlex();
+//	  while (newctrok->nextlex(tuple,cost)) {
+//		for(int i=0;i<ctr->arity();i++) {
+//		  if (ctr->getVar(i) == this) {
+//			assert(newctrok->getIndex(x)>=0);
+//			oldtuple[i] = toIndex(functional[x->toValue(tuple[newctrok->getIndex(x)] - CHAR_FIRST)]) + CHAR_FIRST;
+//		  } else {
+//			assert(newctrok->getIndex(ctr->getVar(i))>=0);
+//			oldtuple[i] = tuple[newctrok->getIndex(ctr->getVar(i))];
+//		  }
+//		}
+//		cost = ctr->evalsubstr(oldtuple, ctr);
+//		if (cost > MIN_COST) {
+//		  empty = false;
+//		  newctrok->addtoTuple(tuple,cost,scopeNewCtr);
+//		}
+//	  }
+
+	  assert(ctr->arity() >= 4);
+	  NaryConstraintMap *oldctr = (NaryConstraintMap*) ctr;
+	  Cost defcost = oldctr->getDefCost();
+	  int res = wcsp->postNaryConstraintBegin(scopeIndex, scopeSize, defcost);
+	  NaryConstraintMap *newctr = (NaryConstraintMap*) wcsp->getCtr(res);
 	  assert(newctr->arity() == scopeSize);
-	  bool empty = true;
-	  String oldtuple(ctr->arity(),CHAR_FIRST);
-	  EnumeratedVariable* scopeNewCtr[newctr->arity()];
-	  for(int i=0;i<newctr->arity();i++) {
+	  String newtuple(scopeSize,CHAR_FIRST);
+	  EnumeratedVariable* scopeNewCtr[scopeSize];
+	  for(int i=0;i<scopeSize;i++) {
 		scopeNewCtr[i] = (EnumeratedVariable*) newctr->getVar(i);
 	  }
+	  int posx = newctr->getIndex(x);
+	  assert(posx >= 0);
+	  int posold = oldctr->getIndex(this);
+	  assert(posold >= 0);
+	  int posxold = oldctr->getIndex(x); // check if x is already in the scope of the old cost function
 	  String tuple;
 	  Cost cost;
-	  newctr->firstlex();
-	  while (newctr->nextlex(tuple,cost)) {
-		for(int i=0;i<ctr->arity();i++) {
-		  if (ctr->getVar(i) == this) {
-			assert(newctr->getIndex(x)>=0);
-			oldtuple[i] = toIndex(functional[x->toValue(tuple[newctr->getIndex(x)] - CHAR_FIRST)]) + CHAR_FIRST;
-		  } else {
-			assert(newctr->getIndex(ctr->getVar(i))>=0);
-			oldtuple[i] = tuple[newctr->getIndex(ctr->getVar(i))];
+	  oldctr->first();
+	  while (oldctr->next(tuple,cost)) {
+		  if (cost != defcost) {
+			  for(int i=0;i<scopeSize;i++) {
+				  if (i != posx || posxold>=0) {
+					  assert(oldctr->getIndex(scopeNewCtr[i])>=0);
+					  newtuple[i] = tuple[oldctr->getIndex(scopeNewCtr[i])];
+				  }
+			  }
+			  if (posxold>=0) {
+				  if (functional[x->toValue(tuple[posxold] - CHAR_FIRST)]==toValue(tuple[posold] - CHAR_FIRST)) {
+					  newctr->addtoTuple(newtuple,cost,scopeNewCtr);
+				  }
+			  } else {
+				  for(EnumeratedVariable::iterator iterX = x->begin(); iterX != x->end(); ++iterX) {
+					  if (functional[*iterX]==toValue(tuple[posold] - CHAR_FIRST)) {
+						  newtuple[posx] = x->toIndex(*iterX) + CHAR_FIRST;
+						  newctr->addtoTuple(newtuple,cost,scopeNewCtr);
+					  }
+				  }
+			  }
 		  }
-		}
-		cost = ctr->evalsubstr(oldtuple, ctr);
-		if (cost > MIN_COST) {
-		  empty = false;
-		  newctr->addtoTuple(tuple,cost,scopeNewCtr);
-		}
 	  }
+
+//	  newctrok->firstlex();
+//	  while (newctrok->nextlex(tuple,cost)) {
+//		  Cost newcost = newctr->evalsubstr(tuple, newctr);
+//		  if (cost != newcost) {
+//				  int tmpv = ToulBar2::verbose;
+//				  ToulBar2::verbose = 7;
+//				  cout << "BUG: " << cost << " " << newcost << " (" << defcost << ")" << endl;
+//				  for(unsigned int i=0;i<tuple.size();i++) {
+//					  cout << tuple[i] - CHAR_FIRST;
+//				  }
+//				  cout << endl;
+//				  cout << *oldctr << endl;
+//				  cout << *newctrok << endl;
+//				  cout << *newctr << endl;
+//				  ToulBar2::verbose = tmpv;
+//		  }
+//	  }
+//	  newctrok->deconnect(true);
+
 	  assert(newctr->connected());
-	  if (empty && newctr->universal()) newctr->deconnect(true);
+	  if (newctr->universal()) newctr->deconnect(true);
 	  else newctr->propagate();
 	  break; }
 	}

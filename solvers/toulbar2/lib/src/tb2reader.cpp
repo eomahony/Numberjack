@@ -134,10 +134,14 @@ typedef struct {
 
  *     - "wamong"  global constraint restrains the number of variables of its scope to take a bounded number of times a value from a given set. The global cost function associated to Among is WeightedAmong. This global cost function can be decomposed into a set of ternary constraints with an additionnal set of variables. This decomposition uses the new variables as counters and does a cumulative sum all along the set of ternary cost functions.
 
+ *     - "wvaramong"  hard global constraint restrains the number of variables of its scope, except the last variable, to take a value from a given set to be equal to the last variable.
+
  *     - "woverlap" The Overlap global constraint limits the overlaps between two sequence of variables X, Y (i.e. set the fact that Xi and Yi take the same value (not equal to zero)). The global cost function associated to Overlap is WeightedOverlap. This global cost function can be decomposed into a set of ternary constraints with an additionnal set of variables. This decomposition uses two sets of new variables : the first as an overlap flag and a second one as a cumulative sum. Finally, an unary cost function ensures that the overlap respects a given value.
 
 
- *  - "wsum" The Sum global constraint tests if the sum of a set of variables match with an comparator (for example = 4). The global cost function associated to Sum is WeightedSum. This global cost function can be decomposed into a set of ternary constraints with an additionnal set of variables. This decomposition uses the new variables as counter and does a cumulative sum all along the set of ternary cost functions. Finally, an unary cost function ensures the comparator.
+ *  - "wsum" The Sum global constraint tests if the sum of a set of variables match with a comparator and a right-handside value (for example == 4). The global cost function associated to Sum is WeightedSum. This global cost function can be decomposed into a set of ternary constraints with an additionnal set of variables. This decomposition uses the new variables as counter and does a cumulative sum all along the set of ternary cost functions. Finally, an unary cost function ensures the comparator.
+
+ *  - "wvarsum" The Sum global constraint tests if the sum of a set of variables match with a comparator and a given variable. The global cost function associated to Sum is WeightedSum. This global cost function can be decomposed into a set of ternary constraints with an additionnal set of variables. This decomposition uses the new variables as counter and does a cumulative sum all along the set of ternary cost functions. Finally, a binary cost function compares the last counter variable with the last variable in the scope.
 
  * Note : This decomposition can use an exponential size (domains of counter variables).
  * Let us note <> the comparator, K the value associated to the comparator, and Sum the result of the sum over the variables. For each comparator, the gap is defined according to the distance as follows:
@@ -155,13 +159,16 @@ typedef struct {
  * - simple arithmetic hard constraint \f$x1 < x2\f$: \code 2 1 2 -1 < 0 0 \endcode
  * - hard temporal disjunction\f$x1 \geq x2 + 2 \vee x2 \geq x1 + 1\f$: \code 2 1 2 -1 disj 1 2 UB \endcode
  * - soft_alldifferent({x0,x1,x2,x3}): \code 4 0 1 2 3 -1 salldiff var 1 \endcode
- * - soft_gcc({x1,x2,x3,x4} with each value \e v from 1 to 4 only appearing at least v-1 and at most v+1 times: \code 4 1 2 3 4 -1 sgcc var 1 4 1 0 2 2 1 3 3 2 4 4 3 5 \endcode
+ * - soft_gcc({x1,x2,x3,x4}) with each value \e v from 1 to 4 only appearing at least v-1 and at most v+1 times: \code 4 1 2 3 4 -1 sgcc var 1 4 1 0 2 2 1 3 3 2 4 4 3 5 \endcode
  * - soft_same({x0,x1,x2,x3},{x4,x5,x6,x7}): \code 8 0 1 2 3 4 5 6 7 -1 ssame 1 4 4 0 1 2 3 4 5 6 7 \endcode
  * - soft_regular({x1,x2,x3,x4}) with DFA (3*)+(4*): \code 4 1 2 3 4 -1 sregular var 1 2 1 0 2 0 1 3 0 3 0 0 4 1 1 4 1 \endcode
 
- * - wsum ({x1,x2,x3,x4} with hard cost (1000) if sum not  == 4 : \code 4 0 1 2 3 -1 wsum hard 1000 == 4 \endcode
- * - wamong ({x1,x2,x3,x4} with hard cost (1000) if sum not  == 4 :
+ * - wsum ({x1,x2,x3,x4}) with hard cost (1000) if \f$\sum_{i=1}^4(x_i) \neq 4\f$ : \code 4 0 1 2 3 -1 wsum hard 1000 == 4 \endcode
+ * - wvarsum ({x1,x2,x3,x4}) with hard cost (1000) if \f$\sum_{i=1}^3(x_i) \neq x_4\f$ : \code 4 0 1 2 3 -1 wvarsum hard 1000 == \endcode
+ * - wamong ({x1,x2,x3,x4}) with hard cost (1000) if \f$\sum_{i=1}^4(x_i \in \{1,2\}) < 1\f$ or \f$\sum_{i=1}^4(x_i \in \{1,2\}) > 3\f$:
 The previous example represents a WCSP with 4 variables. These variables are in the scope of a WeightedAmong which limits the number of times they take the values 1 and 2 to be bounded between 1 and 3. In this case, the semantics is hard and the associated cost is 1000 (i.e. in these case the WeightedAmong is a hard constraint).  \code 4 0 1 2 3 -1 wamong hard 1000 2 1 2 1 3 \endcode
+ * - wvaramong ({x1,x2,x3,x4}) with hard cost (1000) if \f$\sum_{i=1}^3(x_i \in \{1,2\}) \neq x_4\f$:
+The previous example represents a WCSP with 4 variables. The number of variables in {x1,x2,x3} taking values 1 and 2 must be equal to x4. The semantics is always hard and the associated cost is 1000.  \code 4 0 1 2 3 -1 wvaramong hard 1000 2 1 2 \endcode
  * - wregular({x0,x1,x2,x3}) with DFA (a(ba)*c*): \code 4 0 1 2 3 -1 wregular 3 1 0 0 1 2 0 9 0 0 1 0 0 1 1 1 0 2 1 1 1 1 0 0 1 0 0 1 1 2 0 1 1 2 2 0 1 0 2 1 1 1 2 1 \endcode
  * - woverlap({x1,x2,x3,x4}) with hard cost (1000)  4 variables : X = { 0, 1 }, Y = { 2, 3 }. And, the overlap between X and Y must less than 1. In this case the semantics is hard and the associated cost is 1000 (i.e. in these case the WeightedOverlap is a hard constraint). \code  4 0 1 2 3 -1 woverlap hard 1000 \endcode
  *
@@ -406,6 +413,9 @@ void WCSP::read_wcsp(const char *fileName)
                     file >> cost;
 					Cost tmpcost = cost*K;
 					if(CUT(tmpcost, getUb()) && (tmpcost < MEDIUM_COST*getUb()) && getUb()<(MAX_COST / MEDIUM_COST)) tmpcost *= MEDIUM_COST;
+					assert(a>= 0 && a < x->getDomainInitSize());
+					assert(b>= 0 && b < y->getDomainInitSize());
+					assert(c>= 0 && c < z->getDomainInitSize());
                     costs[a * y->getDomainInitSize() * z->getDomainInitSize() + b * z->getDomainInitSize() + c] = tmpcost;                    
                 }
 				if (shared) {
@@ -464,6 +474,8 @@ void WCSP::read_wcsp(const char *fileName)
                     file >> cost;
 					Cost tmpcost = cost*K;
 					if(CUT(tmpcost, getUb()) && (tmpcost < MEDIUM_COST*getUb()) && getUb()<(MAX_COST / MEDIUM_COST)) tmpcost *= MEDIUM_COST;
+					assert(a>= 0 && a < x->getDomainInitSize());
+					assert(b>= 0 && b < y->getDomainInitSize());
                     costs[a * y->getDomainInitSize() + b] = tmpcost;
                 }
 				if (shared) {
@@ -550,6 +562,7 @@ void WCSP::read_wcsp(const char *fileName)
                 file >> cost;
 				Cost tmpcost = cost*K;
  	 	    	if(CUT(tmpcost, getUb()) && (tmpcost < MEDIUM_COST*getUb()) && getUb()<(MAX_COST / MEDIUM_COST)) tmpcost *= MEDIUM_COST;
+				assert(a>= 0 && a < x->getDomainInitSize());
                 unaryconstr.costs[a] = tmpcost;
 			  }
 			  if (shared) {

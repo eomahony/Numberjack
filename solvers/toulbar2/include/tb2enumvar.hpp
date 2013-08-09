@@ -113,7 +113,7 @@ public:
 
     // merge current cost functions to x's list by replacing current variable y by x thanks to functional constraint xy (i.e., y := functional[x])
     void mergeTo( BinaryConstraint *xy, map<Value, Value> &functional);
-    bool canbeMerged();
+    bool canbeMerged(EnumeratedVariable *x);
 
     class iterator;
     friend class iterator;

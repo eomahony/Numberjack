@@ -896,11 +896,11 @@ void WCSP::preprocessing() {
 				EnumeratedVariable *x = (EnumeratedVariable*) xy->getVar(0);
 				EnumeratedVariable *y = (EnumeratedVariable*) xy->getVar(1);
 				map<Value, Value> functional;
-				if (xy->isFunctional(x, y, functional) && y->canbeMerged()) {
+				if (xy->isFunctional(x, y, functional) && y->canbeMerged(x)) {
 					y->mergeTo(xy, functional);
 					merged = true;
 					propagate();
-				} else if (xy->isFunctional(y, x, functional) && x->canbeMerged()) {
+				} else if (xy->isFunctional(y, x, functional) && x->canbeMerged(y)) {
 					x->mergeTo(xy, functional);
 					merged = true;
 					propagate();
@@ -915,11 +915,11 @@ void WCSP::preprocessing() {
 				EnumeratedVariable *x = (EnumeratedVariable*) xy->getVar(0);
 				EnumeratedVariable *y = (EnumeratedVariable*) xy->getVar(1);
 				map<Value, Value> functional;
-				if (xy->isFunctional(x, y, functional) && y->canbeMerged()) {
+				if (xy->isFunctional(x, y, functional) && y->canbeMerged(x)) {
 					y->mergeTo(xy, functional);
 					merged = true;
 					propagate();
-				} else if (xy->isFunctional(y, x, functional) && x->canbeMerged()) {
+				} else if (xy->isFunctional(y, x, functional) && x->canbeMerged(y)) {
 					x->mergeTo(xy, functional);
 					merged = true;
 					propagate();
@@ -1412,7 +1412,6 @@ void WCSP::propagateIncDec() {
 void WCSP::propagateAC() {
 	if (ToulBar2::verbose >= 2) cout << "ACQueue size: " << AC.getSize() << endl;
 	while (!AC.empty()) {
-	    if (ToulBar2::interrupted) throw TimeOut();
 		EnumeratedVariable *x = (EnumeratedVariable *) ((ToulBar2::QueueComplexity) ? AC.pop_min() : AC.pop());
 		if (x->unassigned()) x->propagateAC();
 		// Warning! propagateIncDec() necessary to transform inc/dec event into remove event
@@ -2230,21 +2229,22 @@ bool WCSP::kconsistency(int xIndex, int yIndex, int zIndex, BinaryConstraint* xy
 }
 
 void WCSP::ternaryCompletion() {
-    if (numberOfUnassignedVariables()<3) return;
+    if (numberOfUnassignedVariables() < 3) return;
+    
 	Double nbunvars  = numberOfUnassignedVariables();
 	Double connectivity = 2. * numberOfConnectedBinaryConstraints() / (nbunvars * (nbunvars-1));
 	Double domsize =  medianDomainSize();
 	Double size =  domsize;
-	size = sizeof(StoreCost) * size * size * size * nbunvars * (nbunvars-1) * (nbunvars-2) * connectivity * connectivity * connectivity;
-	if (ToulBar2::debug>=2) cout << "MAX ESTIMATED RPC SIZE: " << size << " (" << nbunvars << "," << connectivity <<")" << endl;
-	if (size > 1024. * 1024. * ToulBar2::preprocessTernaryRPC) {
-	  cout << "Restricted path consistency disabled (" << size/1024./1024. << " >= " << ToulBar2::preprocessTernaryRPC << " MB)" << endl;
-	  ToulBar2::preprocessTernaryRPC = 0;
-	  return;
-	}
-	Double totalsize = 0.;
-	Double maxsize = 1024. * 1024. * ToulBar2::preprocessTernaryRPC;
-	int ntern = 0;
+	size = sizeof(StoreCost) * size * size * size * nbunvars * (nbunvars-1) * (nbunvars-2) * connectivity * connectivity * connectivity / 6 ;
+
+	//if (ToulBar2::debug>=2) cout << "MAX ESTIMATED RPC SIZE: " << size << " (" << nbunvars << "," << connectivity <<")" << endl;
+	//if (size > 1024. * 1024. * ToulBar2::preprocessTernaryRPC) {
+	  //cout << "Restricted path consistency disabled (" << size/1024./1024. << " >= " << ToulBar2::preprocessTernaryRPC << " MB)" << endl;
+	  //ToulBar2::preprocessTernaryRPC = 0;
+	  //return;
+	//}
+
+	vector<TripleVarCostSize> triplelist;
 	for (unsigned int i = 0; i < vars.size(); i++) {
 		EnumeratedVariable* x = (EnumeratedVariable*) vars[i];
 		for (ConstraintList::iterator it = x->getConstrs()->begin(); it != x->getConstrs()->end(); ++it) {
@@ -2252,48 +2252,53 @@ void WCSP::ternaryCompletion() {
 			if (ctr->arity() == 2) {
 				BinaryConstraint* bctr = (BinaryConstraint*) ctr;
 				EnumeratedVariable* y = (EnumeratedVariable*) bctr->getVarDiffFrom(x);
-				if (y->wcspIndex > x->wcspIndex) for (ConstraintList::iterator it2 = y->getConstrs()->begin(); it2
-						!= y->getConstrs()->end(); ++it2) {
-					Constraint* ctr2 = (*it2).constr;
-					if (ctr != ctr2 && ctr2->arity() == 2) {
-						BinaryConstraint* bctr2 = (BinaryConstraint*) ctr2;
-						EnumeratedVariable* z = (EnumeratedVariable*) bctr2->getVarDiffFrom(y);
-						if (z->wcspIndex > y->wcspIndex) for (ConstraintList::iterator it3 = z->getConstrs()->begin(); it3
-								!= z->getConstrs()->end(); ++it3) {
-							Constraint* ctr3 = (*it3).constr;
-							if (ctr2 != ctr3 && ctr3->arity() == 2) {
-								BinaryConstraint* bctr3 = (BinaryConstraint*) ctr3;
-								EnumeratedVariable * xx = (EnumeratedVariable*) bctr3->getVarDiffFrom(z);
-								if (x == xx) {
-									// bool added = kconsistency(x->wcspIndex,
-									// 		y->wcspIndex, z->wcspIndex, bctr,
-									// 		bctr2, bctr3);
-									// if (added)
-								    int xsize = x->getDomainInitSize();
-									int ysize = y->getDomainInitSize();
-									int zsize = z->getDomainInitSize();
-									totalsize += (Double) sizeof(StoreCost) * xsize * ysize * zsize;
-									if (totalsize > maxsize) {
-									  cout << "Restricted path consistency stopped (" << totalsize/1024./1024. << " >= " << ToulBar2::preprocessTernaryRPC << " MB)" << endl;
-									  cout << "add " << ntern << " ternary ctrs." << endl;
-									  ToulBar2::preprocessTernaryRPC = 0;
-									  return;
+				if (y->wcspIndex > x->wcspIndex) 
+					for (ConstraintList::iterator it2 = y->getConstrs()->begin(); it2 != y->getConstrs()->end(); ++it2) {
+						Constraint* ctr2 = (*it2).constr;
+						if (ctr != ctr2 && ctr2->arity() == 2) {
+							BinaryConstraint* bctr2 = (BinaryConstraint*) ctr2;
+							EnumeratedVariable* z = (EnumeratedVariable*) bctr2->getVarDiffFrom(y);
+							if (z->wcspIndex > y->wcspIndex) 
+								for (ConstraintList::iterator it3 = z->getConstrs()->begin(); it3 != z->getConstrs()->end(); ++it3) {
+									Constraint* ctr3 = (*it3).constr;
+									if (ctr2 != ctr3 && ctr3->arity() == 2) {
+										BinaryConstraint* bctr3 = (BinaryConstraint*) ctr3;
+										EnumeratedVariable * xx = (EnumeratedVariable*) bctr3->getVarDiffFrom(z);
+										if (x == xx) {
+										// bool added = kconsistency(x->wcspIndex,
+										// 		y->wcspIndex, z->wcspIndex, bctr,
+										// 		bctr2, bctr3);
+										// if (added)
+										float tight = bctr->computeTightness() + bctr2->computeTightness() + bctr3->computeTightness();
+										int xsize = x->getDomainInitSize();
+										int ysize = y->getDomainInitSize();
+										int zsize = z->getDomainInitSize();
+										TripleVarCostSize tvcs = { x , y , z, tight, xsize * ysize * zsize };
+										triplelist.push_back(tvcs);
 									}
-									vector<Cost> costs(xsize * ysize * zsize, MIN_COST);
-									//									cout << x->wcspIndex << y->wcspIndex << z->wcspIndex << endl;
-									postTernaryConstraint(x->wcspIndex, y->wcspIndex, z->wcspIndex, costs);
-									ntern++;
 								}
 							}
 						}
 					}
 				}
 			}
-
+		}
+		
+	Double totalsize = 0.;
+	Double maxsize = 1024. * 1024. * ToulBar2::preprocessTernaryRPC;
+	int ntern = 0;
+	
+	sort(triplelist.begin(), triplelist.end());
+	for (vector<TripleVarCostSize>::iterator it = triplelist.begin(); it != triplelist.end(); ++it) {
+		if (totalsize + (Double) sizeof(StoreCost) * it->size <= maxsize) {
+			totalsize += (Double) sizeof(StoreCost) * it->size;
+			vector<Cost> costs(it->size, MIN_COST);
+			postTernaryConstraint(it->x->wcspIndex, it->y->wcspIndex, it->z->wcspIndex, costs);
+			ntern++;
 		}
 	}
-	//	cout << "total ctrs: " << numberOfConnectedConstraints() << endl;
-	cout << "add " << ntern << " ternary ctrs." << endl;
+	cout << "Added " << ntern << "/" << triplelist.size() << " zero-cost ternary cost functions." << endl;
+
 }
 
 // -----------------------------------------------------------

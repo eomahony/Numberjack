@@ -699,14 +699,25 @@ class Model(object):
              
         if (solver.Library is 'Toulbar2'):
             #print self   #SDG: VERY USEFUL FOR DEBUGGING
+            occur = {}
+            def rec_occur(expr):
+                if not(issubclass(type(expr), Expression)):
+                    return
+                if expr.is_var():
+                    occur[expr] = occur.get(expr, 0) + 1
+                else:
+                    for j,subexpr in enumerate(expr.children):
+                        rec_occur(subexpr)
 
-            def rec_functional(objexpr, objvar, j):
+            for expr in self.__expressions:
+                rec_occur(expr)
+
+            def rec_functional(objexpr, objvar, j, minimization):
                 if not(issubclass(type(objvar), Expression)):
                     return
                 if objvar.is_var():
-                    if not('____' in objvar.name()):  #SDG: VERY HUGLY!!! (avoid replacing non intermediate variables as defined by Minizinc)
+                    if objvar.lb==objvar.ub or occur[objvar] != 2:  # avoid replacing non intermediate variables
                         return
-                    #print "CHECK",objvar
                     # replace [Predicate(obj,..),Eq(Sum([obj]+vars, [+-1]+coefs),expr)] by [Predicate(Sum(vars+[expr],[-+]coefs+[-1]),..),Eq(0,0)]
                     # and [Predicate(obj,..),Eq(expr,Sum([obj]+vars, [+-1]+coefs))] by [Predicate(Sum(vars+[expr],[-+]coefs+[-1]),..),Eq(0,0)]
                     objconstr = filter(lambda expr: issubclass(type(expr), Eq) and ((issubclass(type(expr.children[0]), Sum) and any(map(lambda u: expr.children[0].children[u] is objvar, xrange(len(expr.children[0].children))))) or (issubclass(type(expr.children[1]), Sum) and any(map(lambda u: expr.children[1].children[u] is objvar, xrange(len(expr.children[1].children)))))), self.__expressions)
@@ -732,8 +743,9 @@ class Model(object):
                         #print "REPLACE",objvar,"by",objexpr.children[j],"in",objexpr
                         objconstr[0].children[0] = Variable(0,0,'0')
                         objconstr[0].children[1] = 0
-                        rec_functional(objexpr, objexpr.children[j], j)
-                        objexpr.children[j].close()
+                        occur[objvar] -= 2
+                        rec_functional(objexpr, objexpr.children[j], j, minimization)
+                        if issubclass(type(objexpr.children[j]), Expression): objexpr.children[j].close()
                     else:
                         # replace [Predicate(obj,..),Eq(obj,expr)] by [Predicate(expr,..),Eq(0,0)]
                         # and [Predicate(obj,..),Eq(expr,obj)] by [Predicate(expr,..),Eq(0,0)]
@@ -746,36 +758,58 @@ class Model(object):
                             #print "REPLACE",objvar,"by",objexpr.children[j],"in",objexpr
                             objconstr[0].children[0] = Variable(0,0,'0')
                             objconstr[0].children[1] = 0
-                            rec_functional(objexpr, objexpr.children[j], j)
-                            objexpr.children[j].close()
+                            occur[objvar] -= 2
+                            rec_functional(objexpr, objexpr.children[j], j, minimization)
+                            if issubclass(type(objexpr.children[j]), Expression): objexpr.children[j].close()
+                        elif minimization is not None:
+                            # ONLY in the objective function: replace [Predicate(obj,..),Table([obj]+vars,tuples,'support')] by [Predicate(Function(vars,dict),..), Table([],[],'support')]
+                            objconstr = filter(lambda expr: issubclass(type(expr), Table) and any(map(lambda u: expr.children[u] is objvar, xrange(len(expr.children)))) and (expr.parameters[1] == 'support'), self.__expressions)
+                            if (len(objconstr)==1):
+                                pos = filter(lambda u: objconstr[0].children[u] is objvar, xrange(len(objconstr[0].children)))[0]
+                                dictionary = {}
+                                for t in objconstr[0].parameters[0]:
+                                    mytuple = t[:pos]+t[pos+1:]
+                                    if minimization:
+                                        dictionary[mytuple] = min(dictionary.get(mytuple, MAXCOST), t[pos])
+                                    else:
+                                        dictionary[mytuple] = max(dictionary.get(mytuple, -MAXCOST), t[pos])
+                                objexpr.children[j] = Function(objconstr[0].children[:pos] + objconstr[0].children[pos+1:], dictionary, MAXCOST if minimization else -MAXCOST)
+                                objconstr[0].children = []
+                                objconstr[0].parameters = [[],0]
+                                occur[objvar] -= 2
+                                rec_functional(objexpr, objexpr.children[j], j, minimization)
+                                if issubclass(type(objexpr.children[j]), Expression): objexpr.children[j].close()
                 else:
-                    for (j,var) in enumerate(objvar.children):
-                        rec_functional(objvar, var, j)
+                    for j,var in enumerate(objvar.children):
+                        rec_functional(objvar, var, j, minimization)
 
             objexpr = filter(lambda expr: issubclass(type(expr), Minimise) or issubclass(type(expr), Maximise), self.__expressions)
             if (len(objexpr)==1 and issubclass(type(objexpr[0].children[0]), Expression) and objexpr[0].children[0].is_var()):
                 objvar = objexpr[0].children[0]
-                # remove first intermediate variables in the objective function
-                rec_functional(objexpr[0], objvar, 0)
 
-                # replace Eq('objective',obj) by Eq(0,0)  #SDG: VERY HUGLY!!! (avoid creating an objective variable just for Minizinc output purposes)
-                objconstr = filter(lambda expr: issubclass(type(expr), Eq) and expr.children[0].is_var() and expr.children[0].name()=='objective' and (expr.children[1] is objvar), self.__expressions)
+                # replace Eq('objective',obj) or Eq('obj',obj) by Eq(0,0)  #SDG: VERY HUGLY!!! (avoid creating an objective variable just for Minizinc output purposes)
+                objconstr = filter(lambda expr: issubclass(type(expr), Eq) and expr.children[0].is_var() and (expr.children[0].name()=='objective' or expr.children[0].name()=='obj') and (expr.children[1] is objvar), self.__expressions)
                 if (len(objconstr)==1):
                     objconstr[0].children[0] = Variable(0,0,'0')
                     objconstr[0].children[1] = 0
+                    occur[objvar] -= 1
+
+                # remove first intermediate variables in the objective function
+                rec_functional(objexpr[0], objvar, 0, issubclass(type(objexpr[0]), Minimise))
+
             
             # remove intermediate variables in the constraints if possible
             for expr in self.__expressions:
                 if issubclass(type(expr), Predicate) and not(issubclass(type(expr), (Minimise, Maximise))):
                     for (j,var) in enumerate(expr.children):
                         if not( issubclass(type(expr), Eq) and (issubclass(type(var), Sum) or (issubclass(type(var), Expression) and var.is_var())) ):
-                            rec_functional(expr, var, j)
+                            rec_functional(expr, var, j, None)
 
-            # remove dummy equations
+            # remove dummy equations or dummy Table
             pos = 0
             while (pos < len(self.__expressions)):
                 expr = self.__expressions[pos]
-                if issubclass(type(expr), Eq) and issubclass(type(expr.children[0]), Variable) and issubclass(type(expr.children[1]), int) and expr.children[0].get_lb()==expr.children[0].get_ub()==expr.children[1]:
+                if (issubclass(type(expr), Eq) and issubclass(type(expr.children[0]), Variable) and issubclass(type(expr.children[1]), int) and expr.children[0].get_lb()==expr.children[0].get_ub()==expr.children[1]) or (issubclass(type(expr), Table) and len(expr.children)==0):
                     del self.__expressions[pos]
                 else:
                     pos += 1

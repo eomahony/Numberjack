@@ -94,6 +94,41 @@ class Add(BinPredicate):
     def get_symbol(self):
         return '+'
 
+# SDG: new Predicate for expressing arbitrary functions
+## Function 
+#
+# \note
+#   - Top-level: Cannot be used as a top level constraint
+#   - Nested: Expression representing an arbitrary function
+#
+#    Function predicate expressed by a dictionary.
+#
+class Function(Predicate):
+
+    ## Function predicate constructor
+    # @param vars variables involved by the predicate
+    # @param dictionary a dictionary of tuples (keys) with their associated results (set of "(value_var1,value_var2,...):result")
+    # @param defval default result value (0 by default)
+    def __init__(self, vars, dictionary={}, defval=0):
+        Predicate.__init__(self, vars, "Function")
+        d = []
+        self.lb = defval
+        self.ub = defval
+        for t,res in dictionary.iteritems():
+            d.append((t,res))
+            if (res < self.lb):
+                self.lb = res
+            if (res > self.ub):
+                self.ub = res
+        self.parameters = [dict(d), defval]
+
+    def decompose(self):
+        #SDG: Warning! It assumes the default value is never used (dict entries = cartesian product of self.children)
+        res = Variable(min(e for e in self.parameters[0].itervalues()), max(e for e in self.parameters[0].itervalues()))
+        tuples = []
+        for key,val in self.parameters[0].iteritems():
+            tuples.append(tuple([val] + list(key)))
+        return [res, Table([res] + self.children, tuples, 'support')]
 
 # SDG: new Predicate for expressing cost functions
 ## Base class of cost functions
@@ -380,7 +415,7 @@ def decompose_Element(self):
     for e in self.children[:-1]:
         u = u | set([e] if type(e) is int else range(e.lb, e.ub + 1))
     res = Variable(list(u))
-    return ([res, (self.children[-1] >= 0), (self.children[-1] < len(self.children)-1)] + [((res == (Variable(e,e,str(e)) if type(e) is int else e)) | (self.children[-1] != i)) for i, e in enumerate(self.children[:-1])])
+    return ([res, (self.children[-1] >= 0), (self.children[-1] < len(self.children)-1)] + [((res == e) | (self.children[-1] != i)) for i, e in enumerate(self.children[:-1])])
 
 #SDG: decompose LeqLex and LessLex
 def decompose_LessLex(self):
@@ -464,7 +499,15 @@ def evaluate(expr, assignment):
         return min([evaluate(e,assignment) for e in expr.children])
     elif issubclass(type(expr), Sum):
         return sum([evaluate(e,assignment) * expr.parameters[0][i] for (i,e) in enumerate(expr.children)])
-    else:    #SDG: Element is missing from the previous list!!!
+    elif issubclass(type(expr), Function):
+        return expr.parameters[0].get(tuple([evaluate(e,assignment) for e in expr.children]), expr.parameters[1])
+    elif issubclass(type(expr), Disjunction):
+        return (sum([evaluate(e,assignment) for e in expr.children])>0)
+    elif issubclass(type(expr), Conjunction):
+        return (sum([evaluate(e,assignment) for e in expr.children])==len(expr.children))
+    elif issubclass(type(expr), Element):
+        return evaluate(expr.children[evaluate(expr.children[-1],assignment)],assignment)
+    else:
         raise ConstraintNotSupportedError(type(expr))
 
 #SDG: automatic decompostion of any BinPredicate into a Table constraint with support tuples
@@ -473,7 +516,9 @@ def decompose_BinPredicate(self):
     scope = get_scope(self)
     res = Variable(self.get_lb(),self.get_ub())
     if arity is 0:
-        return [res, Table([res], [(evaluate(self, dict([])))])]
+        val = evaluate(self, dict([]))
+        res2 = Variable(val,val)
+        return [res2]
     elif arity is 1:
         return [res, Table([res, scope[0]], [(evaluate(self, dict([(scope[0],val0)])), val0) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else xrange(scope[0].get_lb(), scope[0].get_ub()+1))])]
     elif arity is 2:
@@ -515,4 +560,5 @@ def decompose_Minimise(self):
             costs = [evaluate(self.children[0], dict([(scope[0],val0), (scope[1],val1)])) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else xrange(scope[0].get_lb(), scope[0].get_ub()+1)) for val1 in (scope[1].domain_ if scope[1].domain_ is not None else xrange(scope[1].get_lb(), scope[1].get_ub()+1))]
             return [PostBinary(scope[0], scope[1], costs)]
         else:
-            raise ConstraintNotSupportedError("of arity " + str(arity))
+            obj = Variable(self.children[0].get_lb(), self.children[0].get_ub())
+            return decompose_Minimise(Minimise(obj)) + [obj == self.children[0]]

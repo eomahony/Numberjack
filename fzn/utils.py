@@ -53,8 +53,7 @@ class Command(object):
 
 def print_commented_fzn(text, pipe=sys.stdout):
     for line in text.split("\n"):
-        line = line.strip()
-        if line:
+        if line.strip():
             if not line.startswith("% "):
                 print >> pipe, "%",
             print >> pipe, line

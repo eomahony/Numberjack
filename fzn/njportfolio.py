@@ -113,7 +113,7 @@ def njportfolio(njfilename, cores, timeout, memlimit):
         remaining_time = int(timeout - total_seconds(datetime.datetime.now() - start_time) - solver_buffer_time)
         if config['solver'] == "Mistral":  # Mistral's timing seems to consistently be longer than the specified timeout.
             remaining_time = max(remaining_time - 1, 1)
-        defaults = {'njfilename': njfilename, 'threads': 1, 'tcutoff': remaining_time, 'var': 'DomainOverWDegree', 'val': 'Lex', 'verbose': 0, 'restart': GEOMETRIC, 'base': 256, 'factor': 1.3, 'lcLevel': 4, 'lds': 0, 'dee': 0, 'btd': 0, 'rds': 0}
+        defaults = {'njfilename': njfilename, 'threads': 1, 'tcutoff': remaining_time, 'var': 'DomainOverWDegree', 'val': 'Lex', 'verbose': 0, 'restart': GEOMETRIC, 'base': 256, 'factor': 1.3, 'lcLevel': 4, 'lds': 0, 'dee': 1, 'btd': 0, 'rds': 0}
         d = dict(defaults.items() + config.items())
         cmd = ("python %(njfilename)s -solver %(solver)s -tcutoff %(tcutoff)d "
                "-threads %(threads)d -var %(var)s -val %(val)s "

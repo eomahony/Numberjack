@@ -112,6 +112,7 @@ if __name__ == '__main__':
         print >> sys.stderr, "%% Error exitcode %d" % c.exitcode
         print_commented_fzn(c.stdout, pipe=sys.stderr)
         print_commented_fzn(c.stderr, pipe=sys.stderr)
+    os.remove(njfilename)
     totaltime = total_seconds(datetime.datetime.now() - totaltime)
     print "%% Translate time: %.1f" % translatetime
     print "%% Run time: %.1f" % runtime

@@ -512,6 +512,7 @@ public:
 
     // statistics methods
     virtual bool is_sat();
+    virtual bool is_opt();
     virtual bool is_unsat();
     virtual void printStatistics();
     virtual int getBacktracks();

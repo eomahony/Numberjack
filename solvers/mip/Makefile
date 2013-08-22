@@ -43,10 +43,10 @@ CFLAGS    += -Wall -ffloat-store -O3
 CXX = g++ 
 
 
-wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/MipWrapper.o 
+wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/MipWrapper.o
 
 debug: CFLAGS += -D_DEBUGWRAP -g
-debug: wrapper
+debug: wrapper $(MAINOBJFILES) $(WOBFILE)
 
 $(OBJDIR):
 	@mkdir -p $(OBJDIR)

@@ -356,6 +356,18 @@ Toulbar2_Expression* Toulbar2_PostBinary::add(Toulbar2Solver *solver, bool top_l
     _var1->add(_solver,false);
     _var2->add(_solver,false);
     if(top_level) {
+	  Cost mincost = 0;
+	  for (unsigned int i=0; i<_costs.size(); i++) {
+		if (_costs[i] < mincost) {
+		  mincost = _costs[i];
+		}
+	  }
+	  if (mincost < 0) {
+		for (unsigned int i=0; i<_costs.size(); i++) {
+		  _costs[i] -= mincost;
+		}
+		_solver->costshift += mincost;
+	  }
 	  if (_solver->wcsp->getDomainInitSize(_var1->_wcspIndex) * _solver->wcsp->getDomainInitSize(_var2->_wcspIndex) != _costs.size()) {
 		vector<Cost> newcosts(_solver->wcsp->getDomainInitSize(_var1->_wcspIndex) * _solver->wcsp->getDomainInitSize(_var2->_wcspIndex), 0);
 		int id1 = 0;
@@ -398,7 +410,34 @@ Toulbar2_Expression* Toulbar2_PostTernary::add(Toulbar2Solver *solver, bool top_
     _var2->add(_solver,false);
     _var3->add(_solver,false);
     if(top_level) {
-      _solver->wcsp->postTernaryConstraint(_var1->_wcspIndex, _var2->_wcspIndex, _var3->_wcspIndex, _costs);
+	  Cost mincost = 0;
+	  for (unsigned int i=0; i<_costs.size(); i++) {
+		if (_costs[i] < mincost) {
+		  mincost = _costs[i];
+		}
+	  }
+	  if (mincost < 0) {
+		for (unsigned int i=0; i<_costs.size(); i++) {
+		  _costs[i] -= mincost;
+		}
+		_solver->costshift += mincost;
+	  }
+	  if (_solver->wcsp->getDomainInitSize(_var1->_wcspIndex) * _solver->wcsp->getDomainInitSize(_var2->_wcspIndex) * _solver->wcsp->getDomainInitSize(_var3->_wcspIndex) != _costs.size()) {
+		vector<Cost> newcosts(_solver->wcsp->getDomainInitSize(_var1->_wcspIndex) * _solver->wcsp->getDomainInitSize(_var2->_wcspIndex) * _solver->wcsp->getDomainInitSize(_var3->_wcspIndex), 0);
+		int id1 = 0;
+		for (Value v1 = _solver->wcsp->getInf(_var1->_wcspIndex); v1 <= _solver->wcsp->getSup(_var1->_wcspIndex) && id1 < _solver->wcsp->getDomainSize(_var1->_wcspIndex); id1++, v1 = _solver->wcsp->nextValue(_var1->_wcspIndex, v1)) {
+		  int id2 = 0;
+		  for (Value v2 = _solver->wcsp->getInf(_var2->_wcspIndex); v2 <= _solver->wcsp->getSup(_var2->_wcspIndex) && id2 < _solver->wcsp->getDomainSize(_var2->_wcspIndex); id2++, v2 = _solver->wcsp->nextValue(_var2->_wcspIndex, v2)) {
+			int id3 = 0;
+			for (Value v3 = _solver->wcsp->getInf(_var3->_wcspIndex); v3 <= _solver->wcsp->getSup(_var3->_wcspIndex) && id3 < _solver->wcsp->getDomainSize(_var3->_wcspIndex); id3++, v3 = _solver->wcsp->nextValue(_var3->_wcspIndex, v3)) {
+			  newcosts[_solver->wcsp->toIndex(_var1->_wcspIndex, v1) * _solver->wcsp->getDomainInitSize(_var2->_wcspIndex) * _solver->wcsp->getDomainInitSize(_var3->_wcspIndex) + _solver->wcsp->toIndex(_var2->_wcspIndex, v2) * _solver->wcsp->getDomainInitSize(_var3->_wcspIndex) + _solver->wcsp->toIndex(_var3->_wcspIndex, v3)] = _costs[id1 * _solver->wcsp->getDomainSize(_var2->_wcspIndex) * _solver->wcsp->getDomainSize(_var3->_wcspIndex) + id2 * _solver->wcsp->getDomainSize(_var3->_wcspIndex) + id3];
+			}
+		  }
+		}
+		_solver->wcsp->postTernaryConstraint(_var1->_wcspIndex, _var2->_wcspIndex, _var3->_wcspIndex, newcosts);
+	  } else {
+		_solver->wcsp->postTernaryConstraint(_var1->_wcspIndex, _var2->_wcspIndex, _var3->_wcspIndex, _costs);
+	  }
 	} 
   }
   return this;
@@ -429,6 +468,19 @@ Toulbar2_Expression* Toulbar2_PostNary::add(Toulbar2Solver *solver, bool top_lev
       _scope[i] = _vars.get_item(i)->_wcspIndex;  
     }
     if(top_level) {
+	  Cost mincost = _defcost;
+	  for (unsigned int i=0; i<_costs.size(); i++) {
+		if (_costs.get_item(i) < mincost) {
+		  mincost = _costs.get_item(i);
+		}
+	  }
+	  if (mincost < 0) {
+		_defcost -= mincost;
+		for (unsigned int i=0; i<_costs.size(); i++) {
+		  _costs.set_item(i, _costs.get_item(i) - mincost);
+		}
+		_solver->costshift += mincost;
+	  }	  
 	  int ctrIndex = _solver->wcsp->postNaryConstraintBegin(_scope,_arity,_defcost);
 	  if(_costs.size() != 0) { 
 		for(int i = 0; i < _costs.size(); i++) {

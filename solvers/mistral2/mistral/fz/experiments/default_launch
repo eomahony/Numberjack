@@ -1,0 +1,1 @@
+tools/launch.py -key test -solverdir solvers -file data/filters_fzn.txt -timelimit 1000 -j2 -seed 100 1001 200

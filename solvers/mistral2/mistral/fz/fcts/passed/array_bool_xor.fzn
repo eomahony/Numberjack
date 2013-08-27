@@ -1,0 +1,29 @@
+% RUNS ON fzn_fd_canon
+
+var bool: x1 :: output_var;
+var bool: x2 :: output_var;
+var bool: x3 :: output_var;
+var bool: x4 :: output_var;
+
+constraint array_bool_xor([true]);
+
+constraint array_bool_xor([false, true]);
+constraint array_bool_xor([true, false]);
+
+constraint array_bool_xor([false, false, true]);
+constraint array_bool_xor([false, true, false]);
+constraint array_bool_xor([true, false, false]);
+constraint array_bool_xor([true, true, true]);
+
+constraint array_bool_xor([false, false, false, true]);
+constraint array_bool_xor([false, false, true, false]);
+constraint array_bool_xor([false, true, false, false]);
+constraint array_bool_xor([false, true, true, true]);
+constraint array_bool_xor([true, false, false, false]);
+constraint array_bool_xor([true, false, true, true]);
+constraint array_bool_xor([true, true, false, true]);
+constraint array_bool_xor([true, true, true, false]);
+
+constraint array_bool_xor([x1, x2, x3, x4]);
+
+solve satisfy;

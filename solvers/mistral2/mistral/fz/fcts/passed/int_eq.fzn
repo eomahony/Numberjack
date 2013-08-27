@@ -1,0 +1,12 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd_canon
+% RUNS ON fzn_fdlp_canon
+% RUNS ON fzn_lazyfd_canon
+% RUNS ON fzn_lp_canon
+
+var -1..1: x1 :: output_var;
+var -2..2: x2 :: output_var;
+constraint int_eq(3, 3);
+constraint int_eq(-3, -3);
+constraint int_eq(x1, x2);
+solve satisfy;

@@ -70,7 +70,7 @@ void SCIPSolver::add_in_constraint(LinearConstraint *con, double coef){
 				  "SCIP_Var",
 				  con->_variables[i]->_lower, // LB
 				  con->_variables[i]->_upper, // UB
-				  coef, // ective
+				  coef * con->_coefficients[i], // ective
 				  type,
 				  TRUE, FALSE, NULL, NULL, NULL, NULL, NULL) );
       SCIP_CALL_EXC( SCIPaddVar(_scip, var_ptr) );
@@ -104,8 +104,8 @@ int SCIPSolver::solve(){
   if(_verbosity > 0 && _verbosity < 3){
     // Do nothing extra
   } else if(_verbosity >= 3){
-    //SCIP_CALL_EXC(SCIPwriteOrigProblem(_scip, "scip_model", NULL, TRUE));
     SCIP_CALL_EXC(SCIPprintOrigProblem(_scip, NULL, NULL, FALSE));
+    // SCIP_CALL_EXC(SCIPwriteOrigProblem(_scip, "scip.lp", "lp", TRUE));
   } else {
       // disable scip output to stdout
     SCIP_CALL_EXC( SCIPsetMessagehdlr(_scip, NULL) );

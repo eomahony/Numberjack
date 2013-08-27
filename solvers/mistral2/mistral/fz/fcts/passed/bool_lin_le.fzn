@@ -1,0 +1,29 @@
+% RUNS ON fzn_fd_canon
+
+var bool: x1 :: output_var;
+var bool: x2 :: output_var;
+var bool: x3 :: output_var;
+var bool: x4 :: output_var;
+var bool: x5 :: output_var;
+var bool: x6 :: output_var;
+
+% Trivially satisfiable
+constraint bool_lin_le([], [], 0);
+constraint bool_lin_le([0], [true], 0);
+constraint bool_lin_le([1], [true], 2);
+constraint bool_lin_le([3], [false], 0);
+constraint bool_lin_le([1, 2, 3], [true, false, true], 4);
+
+% x1 = true
+constraint bool_lin_le([-1], [x1], -1);
+
+% x2 = false
+constraint bool_lin_le([2], [x2], 0);
+
+% x3 or x4
+constraint bool_lin_le([1, 1], [x3, x4], 1);
+
+% x5 = false, x6 = false
+constraint bool_lin_le([1, 2, 3], [x5, x6, true], 3);
+
+solve satisfy;

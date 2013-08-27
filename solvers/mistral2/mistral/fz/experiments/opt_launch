@@ -1,0 +1,1 @@
+tools/launch.py -key test_opt -solverdir solvers -file data/all_opt.txt -timelimit 20 -j1 -seed 100 501 200

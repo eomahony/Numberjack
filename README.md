@@ -66,6 +66,28 @@ Numberjack provides an interface to the mathematical programming solver,
 [gurobiqs]: http://www.gurobi.com/documentation/current/quick-start-guide/
 
 
+### CPLEX
+
+Numberjack provides an interface to [IBM ILOG CPLEX Optimizer][cplex]. If you
+have it installed on your system, follow these steps to use in in Numberjack:
+
+1. If the executable `cplex` is in the PATH Numberjack will be able to find the
+   location of CPLEX on your system. If not, you should set the environment
+   variable `CPLEXDIR` to the location where CPLEX is installed, for example:
+
+    ```bash
+    export CPLEXDIR="/opt/ibm/ILOG/CPLEX_Studio1251/cplex"
+    export CPLEXDIR="/Applications/IBM/ILOG/CPLEX_Studio1251/cplex"
+    ```
+
+2. In the Numberjack directory, move the folder `available_interfaces/cplex` to
+   `solvers/cplex`.
+
+3. Run `make` from the Numberjack directory.
+
+[cplex]: http://www.ibm.com/software/commerce/optimization/cplex-optimizer/
+
+
 ### SCIP
 Due to licensing restrictions Numberjack cannot include the sources for SCIP.
 The SCIP source code is available from:

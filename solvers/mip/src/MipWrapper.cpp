@@ -238,8 +238,7 @@ int MipWrapper_IntVar::get_value() {
     }
     double res = 0;
     for (int i = _lower; i <= _upper; ++i)
-        if (_expr_encoding[i] != NULL
-           )
+        if (_expr_encoding[i] != NULL)
             res += i * _expr_encoding[i]->get_whatever_value();
     return res;
 }
@@ -1844,6 +1843,10 @@ void MipWrapperSolver::setRandomSeed(const int seed) {
 }
 
 bool MipWrapperSolver::is_sat() {
+    return true;
+}
+
+bool MipWrapperSolver::is_opt() {
     return true;
 }
 

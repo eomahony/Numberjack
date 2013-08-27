@@ -22,19 +22,12 @@ def solve(param):
     solver.setVerbosity(param['verbose'])
     solver.setTimeLimit(param['tcutoff'])
     solver.solve()
-    
-    #solver.propagate()
-    #print str(grid)
-    #out = ""
 
-#    solver.startNewSearch();
-    
-#    while solver.getNextSolution(): 
     out = ''
     if solver.is_sat():
         out = str(grid)
     out += ('\nNodes: ' + str(solver.getNodes()))
-#        out += '\n'
+    out += '\n'
 
     return out  
 

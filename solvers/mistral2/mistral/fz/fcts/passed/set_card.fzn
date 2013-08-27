@@ -1,0 +1,11 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd_canon
+% RUNS ON fzn_fdlp_canon
+% RUNS ON fzn_lazyfd_canon
+
+var set of 0..1: x1 :: output_var;
+var -3..3: x2 :: output_var;
+constraint set_card({1, 2, 3}, 3);
+constraint set_card({}, 0);
+constraint set_card(x1, x2);
+solve satisfy;

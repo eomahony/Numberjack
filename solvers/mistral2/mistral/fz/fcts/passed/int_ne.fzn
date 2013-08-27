@@ -1,0 +1,11 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd_canon
+% RUNS ON fzn_fdlp_canon
+% RUNS ON fzn_lazyfd_canon
+
+var -1..1: x1 :: output_var;
+var -1..1: x2 :: output_var;
+constraint int_ne(3, 4);
+constraint int_ne(-3, -4);
+constraint int_ne(x1, x2);
+solve satisfy;

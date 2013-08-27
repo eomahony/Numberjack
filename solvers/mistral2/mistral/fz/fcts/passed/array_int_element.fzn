@@ -1,0 +1,10 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd_canon
+% RUNS ON fzn_fdlp_canon
+% RUNS ON fzn_lazyfd_canon
+
+var 0..3: x1 :: output_var;
+var 0..3: x2 :: output_var;
+constraint array_int_element(2, [1, 2, 3], 2);
+constraint array_int_element(x1, [1, 2], x2);
+solve satisfy;

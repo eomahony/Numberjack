@@ -35,7 +35,7 @@ def solve(param):
 
     solver = lib.Solver(model)
     solver.setNodeLimit(cutoff)
-    solver.setHeuristic('Impact')
+    solver.setHeuristic('DomainOverWDegree', 'Guided')
     solver.setVerbosity(param['verbose'])
     solver.setTimeLimit(param['tcutoff'])
     solver.solveAndRestart()
@@ -66,7 +66,7 @@ class WareHouseParser:
     
 
 solvers = ['Mistral', 'SCIP', 'Toulbar2']
-default = {'solver':'Mistral', 'data':'data/warehouse0.txt', 'cutoff':5000, 'verbose':1, 'tcutoff':3}
+default = {'solver':'Mistral', 'data':'data/warehouse0.txt', 'cutoff':50000, 'verbose':3, 'tcutoff':5}
 
 if __name__ == '__main__':
     param = input(default) 

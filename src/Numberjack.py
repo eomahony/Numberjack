@@ -46,7 +46,7 @@ sys.setrecursionlimit(10000)
 #SDG: needed by the default eval method in BinPredicate
 import operator
 
-val_heuristics = ['Lex', 'AntiLex', 'Random', 'RandomMinMax', 'DomainSplit', 'RandomSplit', 'Promise', 'Impact', 'No']
+val_heuristics = ['Lex', 'AntiLex', 'Random', 'RandomMinMax', 'DomainSplit', 'RandomSplit', 'Promise', 'Impact', 'No', 'Guided']
 var_heuristics = ['No', 'MinDomain', 'Lex', 'AntiLex', 'MaxDegree', 'MinDomainMinVal', 'Random', 'MinDomainMaxDegree', 'DomainOverDegree', 'DomainOverWDegree', 'DomainOverWLDegree', 'Neighbour', 'Impact', 'ImpactOverDegree', 'ImpactOverWDegree', 'ImpactOverWLDegree', 'Scheduling']
 
 solver_names = ['Mistral', 'SCIP', 'MiniSat', 'Walksat', 'OsiClp', 'OsiCbc',

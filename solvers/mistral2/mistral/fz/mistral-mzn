@@ -1,0 +1,178 @@
+#!/bin/sh
+# mzn
+# vim: ft=sh ts=4 sw=4 et
+# Ralph Becket <rafe@csse.unimelb.edu.au>
+# Tue Dec  1 12:31:10 EST 2009
+#
+# mzn [FLAGS] model.mzn [data.dzn]
+# - model.mzn and data.dzn are flattened into model.fzn and model.o.mzn
+#   using mzn2fzn;
+# - model.fzn is evaluated using flatzinc, giving results in model.ozn;
+# - each solution in model.ozn is split off into a temporary file model.o.dzn
+#   and formatted output is produced by invoking minizinc model.o.mzn $$.dzn.
+#
+# These temporary files are cleaned up after use, but are created in the
+# current working directory.  This means you need permission to create
+# files in the directory where you run this script.
+#
+# The default mzn2fzn and flatzinc programs can be overridden by setting the
+# environment variables MZN2FZN and FLATZINC.
+
+THISPROG=`basename "$0"`
+
+usage () {
+    cat <<EOF
+usage: $THISPROG [flags] model.mzn [data.dzn]
+    Supported flags are
+
+    -q|--quiet
+        Do not print progress messages.
+    -v|--verbose
+        Print progress messages during flattening and evaluation.
+
+    [Canonicalization]
+    -c
+        Pipe the model output through 'solns2dzn -c'.
+
+    [Inline data provision]
+    -D "x=42;..."
+        Specify model parameter values on the command line.
+
+    [Flattening - passed through to 'mzn2fzn']
+    -I|--search-dir dir
+    --flags-file file
+    --no-output-pred-decls
+    --stdlib-dir dir
+    --mzn-stdlib-dir dir
+    --minizinc-stdlib-dir dir
+    -G dir
+    --globals-dir dir
+    --mzn-globals-dir dir
+    --minizinc-globals-dir dir
+    --target-flatzinc-version ver
+    --fzn-version ver
+    --statistics
+    --ignore-stdlib
+
+    [Evaluation - passed through to 'flatzinc']
+    -b backend
+    --backend backend
+    --solver-backend backend
+    --mip-solver solver
+    --sat-solver solver
+    -n|--num-solutions n
+    --fd-default-int-lb lb
+    --fd-default-int-ub ub
+    -a
+    --all
+    --all-solutions
+    --no-*
+    -S
+    --solver-stats
+    --solver-statistics
+EOF
+}
+
+cleanup () {
+    rm -f $FZN $AWK $TMPDZN
+}
+
+# Defaults.
+
+#MISTRAL_DIR=${MISTRAL_DIR:-.}
+
+MISTRAL_DIR=.
+
+MZN2FZN=${MZN2FZN:-mzn2fzn}
+FLATZINC=$MISTRAL_DIR/mistral-fz
+CANONICALIZE="cat"
+QUIET=echo
+TMPDZN=$$.dzn
+DZN=$TMPDZN
+touch $TMPDZN   # Ensure this file exists.
+
+# Parse flags.
+
+MZN2FZN_FLAGS="-I $MISTRAL_DIR/mznlib"
+FZNBASE=mistral-fzn
+
+while test $# -gt 0
+do
+    ARG=$1
+    shift
+    case $ARG in
+    -h|--help)              usage; exit 0;;
+    -q|--quiet)             QUIET=true;;
+    -I|--search-dir)        MZN2FZN_FLAGS="$MZN2FZN_FLAGS $ARG $1"; shift;;
+    --flags-file)           MZN2FZN_FLAGS="$MZN2FZN_FLAGS $ARG $1"; shift;;
+    --no-output-pred-decls) MZN2FZN_FLAGS="$MZN2FZN_FLAGS $ARG";;
+    --stdlib-dir)           MZN2FZN_FLAGS="$MZN2FZN_FLAGS $ARG $1"; shift;;
+    --mzn-stdlib-dir)       MZN2FZN_FLAGS="$MZN2FZN_FLAGS $ARG $1"; shift;;
+    --minizinc-stdlib-dir)  MZN2FZN_FLAGS="$MZN2FZN_FLAGS $ARG $1"; shift;;
+    -G)                     MZN2FZN_FLAGS="$MZN2FZN_FLAGS $ARG $1"; shift;;
+    --globals-dir)          MZN2FZN_FLAGS="$MZN2FZN_FLAGS $ARG $1"; shift;;
+    --mzn-globals-dir)      MZN2FZN_FLAGS="$MZN2FZN_FLAGS $ARG $1"; shift;;
+    --minizinc-globals-dir) MZN2FZN_FLAGS="$MZN2FZN_FLAGS $ARG $1"; shift;;
+    --target-flatzinc-version) MZN2FZN_FLAGS="$MZN2FZN_FLAGS $ARG $1"; shift;;
+    --fzn-version)          MZN2FZN_FLAGS="$MZN2FZN_FLAGS $ARG $1"; shift;;
+    --statistics)           MZN2FZN_FLAGS="$MZN2FZN_FLAGS $ARG";;
+    --ignore-stdlib)        MZN2FZN_FLAGS="$MZN2FZN_FLAGS $ARG";;
+#    --fd-default-int-lb)    FLATZINC_FLAGS="$FLATZINC_FLAGS $ARG $1"; shift;;
+#    --fd-default-int-ub)    FLATZINC_FLAGS="$FLATZINC_FLAGS $ARG $1"; shift;;
+    -a)                     FLATZINC_FLAGS="$FLATZINC_FLAGS $ARG";;
+    --all)                  FLATZINC_FLAGS="$FLATZINC_FLAGS $ARG";;
+    --all-solutions)        FLATZINC_FLAGS="$FLATZINC_FLAGS $ARG";;
+    -v|--verbose)           MZN2FZN_FLAGS="$MZN2FZN_FLAGS $ARG";;
+    -c)                     CANONICALIZE="solns2dzn -c";;
+    -D)                     echo "$1;" | sed 's/;;/;/g' >> $TMPDZN; shift;;
+    *.mzn)                  MZN=$ARG
+	                    FZNBASE=$FZNBASE-`basename $ARG .mzn`;;
+    *.dzn)                  DZN=$DZN" "$ARG
+	                    FZNBASE=$FZNBASE-`basename $ARG .dzn`;;
+    *)                      FLATZINC_FLAGS="$FLATZINC_FLAGS $ARG";;
+    esac
+done
+
+# Work out the file names involved.
+
+if test "$MZN" = ""
+then
+    echo "usage: $THISPROG [FLAGS] model.mzn [data.dzn]" >&2
+    cleanup
+    exit 1
+fi
+
+MODEL=`basename $MZN .mzn`
+MODELDIR=`dirname $MZN`
+FZN=$FZNBASE.fzn
+
+# Flatten the model and create the model.o.mzn file.
+CMD="$MZN2FZN -o $FZN $MZN2FZN_FLAGS -I $MODELDIR $MZN $DZN"
+$QUIET "$THISPROG: $CMD"
+if ! $CMD
+then
+    echo "$THISPROG: flattening failed" >&2
+    cleanup
+    exit 1
+fi
+
+if ! test -r $FZN
+then
+    echo "$THISPROG: flattening did not produce $FZN"
+    cleanup
+    exit 1
+fi
+
+# Evaluate the model, split out each solution and produce
+# formatted output.
+
+CMD="$FLATZINC $FLATZINC_FLAGS $FZN"
+$QUIET "$THISPROG: $CMD"
+if ! $CMD | $CANONICALIZE 
+then
+    echo "$THISPROG: evaluation terminated abnormally" >&2
+fi
+
+# Tidy up.
+
+cleanup

@@ -1,0 +1,14 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_bdd_canon
+% RUNS ON fzn_fd_canon
+% RUNS ON fzn_fdlp_canon
+% RUNS ON fzn_lazyfd_canon
+% RUNS ON fzn_lp_canon
+% RUNS ON fzn_sat_canon
+
+var bool: x1 :: output_var;
+var bool: x2 :: output_var;
+constraint bool_eq(true, true);
+constraint bool_eq(false, false);
+constraint bool_eq(x1, x2);
+solve satisfy;

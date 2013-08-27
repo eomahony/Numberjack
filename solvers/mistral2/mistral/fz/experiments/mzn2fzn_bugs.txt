@@ -1,0 +1,24 @@
+All instances : 
+	carseq
+	nsp
+	QCP
+symbol error: `channel_fd_int_to_lp_float' undeclared: 
+latin-squares-hybrid2.mzn
+latin-squares-hybrid.mzn
+
+
+Killed process:
+  	debruijn_binary_03_08.fzn
+  	debruijn_binary_04_06.fzn
+  	debruijn_binary_04_07.fzn
+	golfers2_golfers_8_8_9.fzn
+	cc_base_mzn_rnd_test.08.fzn
+	cc_base_mzn_rnd_test.10.fzn
+	cc_base_mzn_rnd_test.20.fzn
+	golfers_8_8_9
+	debruijn_binary_03_08.fzn
+	golfers2_golfers_7_7_7
+
+Too much space/time: rcpsp, rcpsp-max & evilshop
+
+Empty file : cc_base_mzn_rnd_test.09.fzn

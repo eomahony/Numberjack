@@ -1,0 +1,18 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd_canon
+% RUNS ON fzn_fdlp_canon
+% RUNS ON fzn_lazyfd_canon
+% RUNS ON fzn_sat_canon
+
+var bool: x1 :: output_var;
+var bool: x2 :: output_var;
+var bool: x3 :: output_var;
+constraint array_bool_and([], true);
+constraint array_bool_and([false], false);
+constraint array_bool_and([true], true);
+constraint array_bool_and([false, true],  false);
+constraint array_bool_and([false, false], false);
+constraint array_bool_and([true,  false], false);
+constraint array_bool_and([true,  true],  true);
+constraint array_bool_and([x1, x2], x3);
+solve satisfy;

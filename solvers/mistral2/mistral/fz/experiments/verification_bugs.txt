@@ -1,0 +1,1357 @@
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_a280_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_a280_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_a280_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_att48_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_att48_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_att48_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_rat99_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_rat99_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_rat99_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_st70_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_st70_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_st70_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_ts225_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_ts225_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_ts225_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_u159_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_u159_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_u159_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_ulysses16_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_ulysses16_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_ulysses16_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_ulysses22_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_ulysses22_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_depot_placement_ulysses22_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ghoulomb_3-3-3.fzn:73: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ghoulomb_3-4-5.fzn:355: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ghoulomb_3-4-6.fzn:640: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_golomb_03.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_golomb_04.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_golomb_05.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_golomb_06.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_golomb_07.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_golomb_08.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_golomb_09.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_golomb_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_golomb_11.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_golomb_12.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_nwrsSmaller4_1.fzn:201: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_problem_10_10_1.fzn:101: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_problem_10_20_1.fzn:201: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_problem_15_15_1.fzn:226: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_problem_15_15.fzn:226: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_problem_15_30_1.fzn:451: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_problem_20_10_1.fzn:201: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_problem_20_20_1.fzn:401: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_problem_30_10_1.fzn:301: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_problem_30_15_1.fzn:451: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_problem_30_15.fzn:451: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_ShawInstances_1.fzn:401: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_tiny.fzn:46: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbo_10_10_1.fzn:101: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbo_10_20_1.fzn:201: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbo_10_30_1.fzn:301: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbo_15_15_1.fzn:226: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbo_15_30_1.fzn:451: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbo_20_10_1.fzn:201: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbo_20_20_1.fzn:401: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbo_30_10_1.fzn:301: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbo_30_15_1.fzn:451: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbop_10_10_1.fzn:101: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbop_10_20_1.fzn:201: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbop_10_30_1.fzn:301: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbop_15_15_1.fzn:226: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbop_15_30_1.fzn:451: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbop_20_10_1.fzn:201: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbop_20_20_1.fzn:401: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbop_30_10_1.fzn:301: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbop_30_15_1.fzn:451: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbp_10_10_1.fzn:101: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbp_10_20_1.fzn:201: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbp_10_30_1.fzn:301: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbp_15_15_1.fzn:226: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbp_15_30_1.fzn:451: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbp_20_10_1.fzn:201: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbp_20_20_1.fzn:401: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbp_30_10_1.fzn:301: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_open_stacks_01_wbp_30_15_1.fzn:451: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_p1f_10.fzn:161: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_p1f_11.fzn:199: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_p1f_12.fzn:241: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_p1f_3.fzn:7: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_p1f_4.fzn:17: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_p1f_5.fzn:31: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_p1f_6.fzn:49: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_p1f_7.fzn:71: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_p1f_8.fzn:97: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_p1f_9.fzn:127: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_rcmsp_easy_1.fzn:5199: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_rcmsp_easy_2.fzn:1624: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_rcmsp_easy_3.fzn:2149: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_rcmsp_easy_4.fzn:637: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_rcmsp_easy_5.fzn:2482: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_rcmsp_easy_6.fzn:1262: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_rcmsp_hard_11.fzn:4762: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_rcmsp_hard_5.fzn:1001: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_rcmsp_hard_6.fzn:1659: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_rcmsp_hard_7.fzn:5607: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_rcmsp_hard_8.fzn:2656: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_rcmsp_hard_9.fzn:4421: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_rcmsp_medium_1.fzn:638: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_rcmsp_medium_2.fzn:559: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_rcmsp_medium_3.fzn:3536: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.cp_3ShipsMixed.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.cp_3ShipsMixedUnconst.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.cp_4ShipsMixed.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.cp_4ShipsMixedUnconst.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.cp_5ShipsMixed.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.cp_5ShipsMixedUnconst.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.cp_6ShipsMixed.fzn:1679: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.cp_6ShipsMixedUnconst.fzn:1679: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.cp_7ShipsMixed.fzn:1969: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.cp_7ShipsMixedUnconst.fzn:1969: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.cp_8ShipsMixed.fzn:2286: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.cp_8ShipsMixedUnconstr.fzn:2286: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_3Ships.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_3ShipsMixed.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_3ShipsMixedUnconst.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_3ShipsUnconst.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_4Ships.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_4ShipsMixed.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_4ShipsMixedUnconst.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_4ShipsUnconst.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_5Ships.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_5ShipsMixed.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_5ShipsMixedUnconst.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_5ShipsUnconst.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_6Ships.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_6ShipsMixed.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_6ShipsMixedUnconst.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_6ShipsUnconst.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_7Ships.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_7ShipsMixed.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_7ShipsMixedUnconst.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_7ShipsUnconst.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_8Ships.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_8ShipsMixed.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_8ShipsMixedUnconstr.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_ship-schedule.mip_8ShipsUnconst.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_steiner-triples_07.fzn:51: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_steiner-triples_09.fzn:145: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_2x3.fzn:61: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_2x4.fzn:73: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_3x3.fzn:76: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_3x8.fzn:151: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_4x4.fzn:109: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_5x5.fzn:148: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_6x6.fzn:193: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_7x7.fzn:244: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_8x8.fzn:301: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_9x9.fzn:364: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_full_border_2x3.fzn:19: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_full_border_2x4.fzn:25: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_full_border_3x3.fzn:28: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_full_border_3x8.fzn:73: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_full_border_4x4.fzn:49: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_full_border_5x5.fzn:76: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_full_border_6x6.fzn:109: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_full_border_7x7.fzn:148: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_full_border_8x8.fzn:193: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_full_border_9x9.fzn:244: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_no_border_2x3.fzn:19: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_no_border_2x4.fzn:25: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_no_border_3x3.fzn:28: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_no_border_3x8.fzn:73: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_no_border_4x4.fzn:49: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_no_border_5x5.fzn:76: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_no_border_6x6.fzn:109: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_no_border_7x7.fzn:148: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_no_border_8x8.fzn:193: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_still_life_no_border_9x9.fzn:244: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_sugiyama2_g3_7_7_7.fzn:189: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_sugiyama2_g4_7_7_7_3.fzn:207: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_sugiyama2_g4_7_7_7_7.fzn:267: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_sugiyama2_g5_7_7_7_7_2.fzn:277: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_sugiyama2_g5_7_7_7_7_3.fzn:287: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_100_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_100_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_100_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_100_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_100_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_100_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_100_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_100_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_100_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_100_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_20_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_20_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_20_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_20_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_20_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_20_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_20_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_20_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_20_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_20_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_40_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_40_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_40_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_40_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_40_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_40_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_40_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_40_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_40_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_40_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_60_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_60_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_60_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_60_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_60_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_60_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_60_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_60_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_60_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_60_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_80_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_80_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_80_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_80_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_80_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_80_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_80_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_80_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_80_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class10_80_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_100_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_100_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_100_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_100_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_100_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_100_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_100_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_100_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_100_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_100_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_20_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_20_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_20_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_20_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_20_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_20_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_20_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_20_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_20_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_20_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_40_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_40_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_40_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_40_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_40_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_40_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_40_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_40_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_40_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_40_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_60_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_60_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_60_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_60_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_60_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_60_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_60_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_60_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_60_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_60_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_80_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_80_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_80_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_80_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_80_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_80_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_80_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_80_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_80_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class1_80_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_100_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_100_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_100_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_100_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_100_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_100_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_100_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_100_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_100_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_100_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_20_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_20_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_20_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_20_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_20_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_20_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_20_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_20_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_20_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_20_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_40_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_40_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_40_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_40_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_40_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_40_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_40_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_40_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_40_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_40_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_60_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_60_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_60_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_60_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_60_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_60_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_60_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_60_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_60_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_60_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_80_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_80_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_80_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_80_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_80_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_80_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_80_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_80_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_80_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class2_80_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_100_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_100_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_100_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_100_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_100_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_100_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_100_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_100_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_100_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_100_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_20_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_20_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_20_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_20_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_20_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_20_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_20_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_20_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_20_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_20_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_40_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_40_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_40_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_40_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_40_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_40_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_40_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_40_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_40_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_40_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_60_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_60_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_60_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_60_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_60_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_60_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_60_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_60_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_60_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_60_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_80_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_80_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_80_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_80_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_80_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_80_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_80_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_80_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_80_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class3_80_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_100_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_100_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_100_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_100_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_100_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_100_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_100_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_100_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_100_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_100_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_20_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_20_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_20_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_20_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_20_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_20_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_20_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_20_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_20_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_20_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_40_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_40_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_40_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_40_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_40_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_40_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_40_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_40_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_40_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_40_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_60_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_60_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_60_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_60_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_60_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_60_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_60_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_60_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_60_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_60_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_80_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_80_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_80_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_80_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_80_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_80_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_80_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_80_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_80_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class4_80_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_100_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_100_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_100_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_100_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_100_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_100_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_100_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_100_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_100_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_100_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_20_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_20_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_20_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_20_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_20_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_20_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_20_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_20_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_20_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_20_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_40_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_40_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_40_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_40_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_40_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_40_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_40_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_40_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_40_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_40_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_60_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_60_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_60_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_60_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_60_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_60_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_60_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_60_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_60_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_60_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_80_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_80_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_80_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_80_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_80_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_80_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_80_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_80_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_80_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class5_80_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_100_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_100_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_100_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_100_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_100_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_100_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_100_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_100_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_100_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_100_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_20_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_20_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_20_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_20_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_20_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_20_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_20_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_20_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_20_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_20_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_40_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_40_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_40_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_40_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_40_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_40_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_40_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_40_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_40_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_40_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_60_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_60_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_60_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_60_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_60_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_60_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_60_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_60_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_60_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_60_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_80_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_80_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_80_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_80_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_80_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_80_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_80_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_80_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_80_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class6_80_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_100_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_100_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_100_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_100_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_100_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_100_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_100_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_100_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_100_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_100_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_20_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_20_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_20_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_20_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_20_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_20_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_20_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_20_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_20_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_20_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_40_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_40_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_40_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_40_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_40_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_40_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_40_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_40_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_40_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_40_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_60_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_60_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_60_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_60_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_60_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_60_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_60_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_60_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_60_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_60_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_80_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_80_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_80_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_80_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_80_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_80_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_80_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_80_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_80_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class7_80_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_100_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_100_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_100_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_100_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_100_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_100_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_100_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_100_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_100_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_100_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_20_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_20_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_20_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_20_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_20_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_20_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_20_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_20_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_20_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_20_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_40_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_40_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_40_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_40_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_40_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_40_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_40_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_40_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_40_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_40_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_60_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_60_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_60_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_60_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_60_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_60_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_60_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_60_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_60_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_60_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_80_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_80_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_80_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_80_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_80_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_80_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_80_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_80_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_80_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class8_80_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_100_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_100_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_100_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_100_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_100_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_100_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_100_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_100_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_100_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_100_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_20_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_20_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_20_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_20_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_20_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_20_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_20_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_20_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_20_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_20_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_40_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_40_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_40_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_40_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_40_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_40_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_40_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_40_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_40_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_40_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_60_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_60_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_60_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_60_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_60_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_60_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_60_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_60_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_60_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_60_9.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_80_10.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_80_1.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_80_2.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_80_3.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_80_4.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_80_5.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_80_6.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_80_7.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_80_8.fzn:1: warning: model inconsistency detected before search.
+=====UNSATISFIABLE=====
+% verif/sol_2DLevelPacking_Class9_80_9.fzn:1: warning: model inconsistency detected before search.
+verif/sol_golfers3_golfers_2_2_3.fzn:49:
+  syntax error at `,'; expected `}'
+verif/sol_golfers3_golfers_2_2_3.fzn:50:
+  syntax error at `,'; expected `}'
+verif/sol_golfers3_golfers_2_2_3.fzn:51:
+  syntax error at `,'; expected `}'
+

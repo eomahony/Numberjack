@@ -1,0 +1,13 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd_canon
+% RUNS ON fzn_fdlp_canon
+% RUNS ON fzn_lazyfd_canon
+
+var set of 1..2: x1 :: output_var;
+var set of 0..1: x2 :: output_var;
+constraint set_subset({1, 2}, {1, 2, 3});
+constraint set_subset({1, 2, 3}, {1, 2, 3});
+constraint set_subset({}, {1, 2, 3});
+constraint set_subset({}, {});
+constraint set_subset(x1, x2);
+solve satisfy;

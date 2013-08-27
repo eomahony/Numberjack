@@ -23,13 +23,12 @@ def solve(param):
     solver.setVerbosity(param['verbose'])
     solver.setTimeLimit(param['tcutoff'])
 
-    #solver.solve()
+    solver.solve()
     
-    #solver.propagate()
-    #print str(grid)
-    #out = ""
+    solver.propagate()
+    out = str(grid)
 
-
+    """
     solver.startNewSearch();
     
     while solver.getNextSolution(): 
@@ -38,7 +37,7 @@ def solve(param):
             out = str(grid)
         out += ('\nNodes: ' + str(solver.getNodes()))
         out += '\n'
-
+    """
 
     return out  
 

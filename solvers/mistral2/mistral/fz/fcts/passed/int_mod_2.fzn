@@ -1,0 +1,13 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd_canon
+% RUNS ON fzn_fdlp_canon
+
+var 0..10: a :: output_var;
+var 0..10: b :: output_var;
+
+% This tests what happens when the domain of the divisor starts or
+% ends at zero.
+%
+constraint int_mod(a, b, 3);
+
+solve satisfy;

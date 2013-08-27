@@ -64,7 +64,7 @@ check-env:
 	fi
 
 install_python: wrapper
-	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
+	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install
 
 $(OBJDIR):
 	@-mkdir -p $(OBJDIR)

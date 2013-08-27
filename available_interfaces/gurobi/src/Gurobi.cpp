@@ -9,9 +9,6 @@ using namespace std;
  **************************************************************/
 
 GurobiSolver::GurobiSolver(){
-    // DBG("Create a Gurobi solver %s\n", "");
-
-    var_counter = 0;
     _verbosity = 0;
     has_been_added = false;
     optimstatus = -1;
@@ -126,7 +123,6 @@ void GurobiSolver::setThreadCount(const int nr_threads){
     if(nr_threads < 0){
         std::cerr << "Warning: cannot specify a negative thread count, ignoring." << std::endl;
     } else {
-        std::cout << "Setting thread count to " << nr_threads << std::endl;
         model->getEnv().set(GRB_IntParam_Threads, nr_threads);
     }
 }
@@ -164,7 +160,7 @@ double GurobiSolver::getTime(){
 
 double GurobiSolver::get_value(void *ptr){
     int index = *(int*)(ptr);
-    if(index >= 0 and index < variables->size()){
+    if(index >= 0 && index < variables->size()){
         GRBVar v = variables->at(index);
         return v.get(GRB_DoubleAttr_X);
     }

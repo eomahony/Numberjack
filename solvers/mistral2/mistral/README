@@ -1,0 +1,11 @@
+--test 
+From within the folder Mistral-2.0:
+
+To build (i.e., generate the executable fzn-mistral):
+$ make
+
+Options: 
+1- fzn-mistral does not use parallel threads so the option -p has no use (yet). 
+2- Search annotations are not yet supported. However, we need to mention the -f option to ignore these annotations.
+
+

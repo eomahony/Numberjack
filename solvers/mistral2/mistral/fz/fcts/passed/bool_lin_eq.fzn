@@ -1,0 +1,31 @@
+% RUNS ON fzn_fd_canon
+
+var bool: b1 :: output_var;
+var bool: b2 :: output_var;
+var bool: b3 :: output_var;
+var bool: b4 :: output_var;
+var bool: b5 :: output_var;
+var bool: b6 :: output_var;
+
+var int: i1 :: output_var;
+
+% Trivially satisfiable
+constraint bool_lin_eq([], [], 0);
+constraint bool_lin_eq([0], [true], 0);
+constraint bool_lin_eq([1], [true], 1);
+constraint bool_lin_eq([3], [false], 0);
+constraint bool_lin_eq([1, 2, 3], [true, false, true], 4);
+
+% b1 = true
+constraint bool_lin_eq([-1], [b1], -1);
+
+% b2 = false
+constraint bool_lin_eq([2], [b2], 0);
+
+% b3 xor b4
+constraint bool_lin_eq([1, 1], [b3, b4], 1);
+
+% i1 ranges from 3 up to 6, depending on the values of b5 and b6.
+constraint bool_lin_eq([1, 2, 3], [b5, b6, true], i1);
+
+solve satisfy;

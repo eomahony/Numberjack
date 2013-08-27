@@ -1,5 +1,4 @@
 from Numberjack import *
-import Mistral, MiniSat
 
 def get_model():
     # Create the model

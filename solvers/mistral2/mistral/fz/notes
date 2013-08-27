@@ -1,0 +1,13 @@
+TODO list:
+
+1-the output[] doesn't work with mzn files. e.g. 
+ 
+int: nc = 3;
+var 1..nc: wa;
+constraint wa != 2;
+solve satisfy;
+output ["wa=", show(wa), "\n"];
+
+2- How to verify OPTIMAL solutions?
+
+3-Verification bugs

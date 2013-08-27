@@ -1,0 +1,5 @@
+data/opt/2DPacking.fzn
+data/opt/golomb.fzn
+data/opt/jobshop.fzn
+data/opt/radiation.fzn
+data/opt/sat.fzn

@@ -1,0 +1,1 @@
+tools/parse.py -key test_opt -sample TIME avg OBJECTIVE avg min PROPAGATIONS avg min -precision PROPAGATIONS 0

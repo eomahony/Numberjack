@@ -1,0 +1,1 @@
+tools/parse.py -key test -sample TIME avg NODES avg min PROPAGATIONS avg min -precision NODES 0 PROPAGATIONS 0

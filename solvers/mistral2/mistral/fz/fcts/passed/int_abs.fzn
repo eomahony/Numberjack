@@ -1,0 +1,11 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd_canon
+% RUNS ON fzn_fdlp_canon
+
+var -1..1: x1 :: output_var;
+var -2..2: x2 :: output_var;
+constraint int_abs(-1, 1);
+constraint int_abs(1, 1);
+constraint int_abs(0, 0);
+constraint int_abs(x1, x2);
+solve satisfy;

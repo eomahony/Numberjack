@@ -1,0 +1,9 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd_canon
+% RUNS ON fzn_fdlp_canon
+
+var 0..3: x1 :: output_var;
+var bool: x2 :: output_var;
+constraint array_bool_element(1, [true, false], true);
+constraint array_bool_element(x1, [false, true], x2);
+solve satisfy;

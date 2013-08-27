@@ -1,0 +1,17 @@
+x1 = false;
+x2 = false;
+x3 = true;
+----------
+x1 = false;
+x2 = true;
+x3 = true;
+----------
+x1 = true;
+x2 = false;
+x3 = false;
+----------
+x1 = true;
+x2 = true;
+x3 = true;
+----------
+==========

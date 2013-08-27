@@ -76,7 +76,7 @@ have it installed on your system, follow these steps to use in in Numberjack:
    variable `CPLEXDIR` to the location where CPLEX is installed, for example:
 
     ```bash
-    export CPLEXDIR="/opt/ibm/ILOG/CPLEX_Studio1251"
+    export CPLEXDIR="/opt/ibm/ILOG/CPLEX_Studio1251/cplex"
     export CPLEXDIR="/Applications/IBM/ILOG/CPLEX_Studio1251/cplex"
     ```
 

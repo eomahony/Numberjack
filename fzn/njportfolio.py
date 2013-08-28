@@ -140,9 +140,11 @@ def njportfolio(njfilename, cores, timeout, memlimit):
             except OSError:
                 pass  # Process already finished.
 
+    # Set handlers for term and interupt signals
     signal.signal(signal.SIGTERM, tidy_up)
     signal.signal(signal.SIGINT, tidy_up)
 
+    # Initially start 'cores' number of subprocesses.
     for i in xrange(cores):
         start_new()
 

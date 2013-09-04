@@ -2673,8 +2673,13 @@ class NBJ_STD_Solver(object):
                                 arguments.append(w_array)
                         else:
                             arguments.append(param)
+                try:
+                    var = factory(*arguments)
+                except NotImplementedError as e:
+                    print >> sys.stderr, "Error the solver does not support this expression:", str(expr)
+                    print >> sys.stderr, "Type:", type(expr), "Children:", str(expr.children), "Params:", str(getattr(expr, 'parameters', None))
+                    raise e
 
-                var = factory(*arguments)
                 if expr.encoding:
                     var.encoding = self.getEncodingConfiguration(expr.encoding)
                 expr.setVar(self.solver_id, self.Library, var, self)

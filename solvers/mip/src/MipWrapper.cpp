@@ -745,7 +745,7 @@ MipWrapper_Expression* MipWrapper_Flow::add(MipWrapperSolver *solver,
 }
 
 MipWrapper_Sum::MipWrapper_Sum(MipWrapperExpArray& vars,
-                               MipWrapperIntArray& weights, const int offset) :
+                               MipWrapperIntArray& weights, const double offset) :
     MipWrapper_FloatVar() {
     _offset = offset;
     _vars = vars;
@@ -755,7 +755,7 @@ MipWrapper_Sum::MipWrapper_Sum(MipWrapperExpArray& vars,
 }
 
 MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg1,
-                               MipWrapper_Expression *arg2, MipWrapperIntArray& w, const int offset) :
+                               MipWrapper_Expression *arg2, MipWrapperIntArray& w, const double offset) :
     MipWrapper_FloatVar() {
     _offset = offset;
     _vars.add(arg1);
@@ -766,7 +766,7 @@ MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg1,
 }
 
 MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg,
-                               MipWrapperIntArray& w, const int offset) :
+                               MipWrapperIntArray& w, const double offset) :
     MipWrapper_FloatVar() {
     _offset = offset;
     _vars.add(arg);
@@ -776,7 +776,7 @@ MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg,
 }
 
 MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg,
-                               double w, const int offset) :
+                               double w, const double offset) :
     MipWrapper_FloatVar() {
     _offset = offset;
     _vars.add(arg);
@@ -785,7 +785,7 @@ MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg,
 }
 
 MipWrapper_Sum::MipWrapper_Sum(MipWrapperExpArray& vars,
-                               MipWrapperDoubleArray& weights, const int offset) :
+                               MipWrapperDoubleArray& weights, const double offset) :
     MipWrapper_FloatVar() {
     _offset = offset;
     _vars = vars;
@@ -794,7 +794,7 @@ MipWrapper_Sum::MipWrapper_Sum(MipWrapperExpArray& vars,
 }
 
 MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg1,
-                               MipWrapper_Expression *arg2, MipWrapperDoubleArray& w, const int offset) :
+                               MipWrapper_Expression *arg2, MipWrapperDoubleArray& w, const double offset) :
     MipWrapper_FloatVar() {
     _offset = offset;
     _vars.add(arg1);
@@ -804,7 +804,7 @@ MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg1,
 }
 
 MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg,
-                               MipWrapperDoubleArray& w, const int offset) :
+                               MipWrapperDoubleArray& w, const double offset) :
     MipWrapper_FloatVar() {
     _offset = offset;
     _vars.add(arg);

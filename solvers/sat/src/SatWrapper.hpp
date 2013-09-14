@@ -87,7 +87,8 @@ public:
     // All Different encoding.
     enum AllDiffEncoding {
         PairwiseDecomp=1,
-        LadderAMO=2};
+        LadderAMO=2,
+        PigeonHole=4};
     AllDiffEncoding alldiff_encoding;
 
     virtual std::ostream& display(std::ostream& o) {

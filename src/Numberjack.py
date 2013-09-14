@@ -1,20 +1,21 @@
-##@mainpage Numberjack  @authors Eoin O'Mahony, Emmanuel Hebrard & Barry O'Sullivan
+##@mainpage Numberjack
+# @authors Eoin O'Mahony, Emmanuel Hebrard, Barry O'Sullivan, Barry Hurley, Kevin Leo, & Simon Degivry
 #
-# \section intro_sec What is numberjack?
+# \section intro_sec What is Numberjack?
 #
 # Numberjack is a modelling package written in Python for constraint
-# programming. Python benefits from a large and active programming
-# community, Numberjack is therefore a perfect tool to embed CP
-# technology into larger applications. It is designed to support a
-# number of underlying C/C++ solvers as egg files, that is, seamlessly
-# and efficiently. Currently, there are four available back-ends: a MIP
-# solver (SCIP), a SAT solver (MiniSat) and two CP solvers (Mistral and
-# Gecode).
+# programming. Python benefits from a large and active programming community,
+# Numberjack is therefore a perfect tool to embed CP technology into larger
+# applications. It is designed to support a number of underlying C/C++ solvers
+# seamlessly and efficiently. Currently, there are six available back-ends:
+# three mixed integer programming solvers (Gurobi, CPLEX, and SCIP), two
+# satisfiability solvers (MiniSat and Walksat), and a constraint programming
+# solver (Mistral).
 #
 # \section license_sec License:
 #
 #  Numberjack is a constraint satisfaction and optimisation library
-#  Copyright (C) 2009 Cork Constraint Computation Center, UCC
+#  Copyright (C) 2009-2013 Cork Constraint Computation Center, UCC
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU Lesser General Public License as published by

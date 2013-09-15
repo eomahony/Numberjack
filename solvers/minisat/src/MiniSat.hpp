@@ -36,7 +36,7 @@ class MiniSatSolver : public SatWrapperSolver, public SimpSolver
 
 private:
   ////////////// MiniSat Specific ////////////////
-  double STARTTIME;
+  double starttime, endtime;
   lbool result;
   int nbSolutions;
 

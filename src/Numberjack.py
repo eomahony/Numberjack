@@ -3109,7 +3109,7 @@ def enum(*sequential):
 # This enum ordering must be the same as that specified in the enums
 # EncodingConfiguration::AMOEncoding and AllDiffEncoding in SatWrapper.hpp
 AMOEncoding = enum('Pairwise', 'Ladder')
-AllDiffEncoding = enum('PairwiseDecomp', 'LadderAMO')
+AllDiffEncoding = enum('PairwiseDecomp', 'LadderAMO', 'PigeonHole')
 
 
 ## Generic Solver Class

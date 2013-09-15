@@ -20,7 +20,7 @@ private:
   ////////////// Walksat Specific ////////////////
   WalksatAlgorithm wsat;
 
-  double STARTTIME;
+  double starttime, endtime;
   int nbSolutions;
   ////////////// Walksat Specific ////////////////
 

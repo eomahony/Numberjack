@@ -2158,14 +2158,23 @@ class Job(VarArray):
 '''
 
 
-## Task specific Variable
+## A special class for simple representations of scheduling tasks.
+#
+#    The Task class allows for simplified modeling of tasks in scheduling
+#    applications. It encapsulates the earliest start time, latest end time
+#    (makespan), and duration.
+#
+#    There are various ways of declaring a Task:
+#
+#    - M = Task() creates a Task with an earliest start time of 0, latest end time of 1, and duration 1
+#    - M = Task(ub) creates a Task with an earliest start time of 0, latest end time of 'ub', and duration 1
+#    - M = Task(ub, dur) creates a Task with an earliest start time of 0, latest end time of 'ub', and duration 'dur'
+#    - M = Task(lb, ub, dur) creates a Task with an earliest start time of 0, latest end time of 'ub', and duration 'dur'
+#
+#    When the model is solved, @get_value() returns the start
+#    time of the task.
+#
 class Task(Expression):
-# arg1: lower bound
-# arg2: upper bound
-# arg3: duration
-
-# arg1: upper bound
-# arg2: duration
 
     def __init__(self, arg1=None, arg2=None, arg3=None):
 

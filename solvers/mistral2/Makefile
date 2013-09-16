@@ -129,7 +129,7 @@ $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 		@echo "-> compiling $@"
-		$(CCC) $(CFLAGS) $(MCFLAGS) -I$(SRCDIR) -I$(PYLIB)  -c $< -o $@
+		$(CCC) $(CFLAGS) $(MCFLAGS) -I$(SRCDIR) $(PYLIB)  -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	

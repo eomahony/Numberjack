@@ -71,6 +71,11 @@ def flatten(x):
     return result
 
 
+def numeric(x):
+    tx = type(x)
+    return tx is int or tx is float
+
+
 class Domain(list):
     def __init__(self, arg1, arg2=None):
         """
@@ -231,7 +236,9 @@ class Expression(object):
             return self.domain()
 
     def is_str(self):
-        return hasattr(self, 'model')
+        if hasattr(self, 'lb'):
+            return not numeric(self.lb)
+        return False
 
     def getVar(self, solver_id):
         return self.var_list[solver_id - 1]
@@ -285,6 +292,9 @@ class Expression(object):
             return Domain(self.domain_)
         else:
             return Domain(self.lb, self.ub)
+
+    def get_name(self):
+        return self.operator
 
     ## Current value of the expression
     # @param solver solver reference for solver from which current value will be sourced
@@ -588,7 +598,7 @@ class Model(object):
         if self.closed == len(self.__expressions):
             tmp_strings = []
             for var in self.variables:
-                if var.get_lb() is None:
+                if var.is_str():
                     var.model = self
                     for value in var.domain_:
                         tmp_strings.append(value)
@@ -671,10 +681,6 @@ class Variable(Expression):
          Variable(list) :- Variable with domain specified as a list
          Variable(list, 'x') :- Variable with domain specified as a list called 'x'
         '''
-
-        def numeric(x):
-            tx = type(x)
-            return tx is int or tx is float
 
         domain = None
         lb = 0

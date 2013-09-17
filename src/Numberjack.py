@@ -46,7 +46,7 @@ var_heuristics = ['No', 'MinDomain', 'Lex', 'AntiLex', 'MaxDegree', 'MinDomainMi
 
 solver_names = ['Mistral', 'SCIP', 'MiniSat', 'Walksat', 'OsiClp', 'OsiCbc',
                 'OsiGlpk', 'OsiVol', 'OsiDylp', 'OsiSpx', 'OsiSym',
-                'OsiGrb']  # , 'OsiCpx', 'OsiMsk', 'OsiXpr']
+                'OsiGrb', 'Toulbar2', 'Gurobi', 'CPLEX']  # , 'OsiCpx', 'OsiMsk', 'OsiXpr']
 available = []
 
 

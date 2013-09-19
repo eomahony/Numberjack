@@ -1825,6 +1825,25 @@ class AllDiff(Predicate):
     #    return " AllDiff(" + " ".join(map(str, self.children)) + " ) "
 
 
+## All-Different Except 0 Constraint
+#
+# \note
+#   - Top-level: Enforces that each expression take a different value, except
+#     those which take the value 0.
+#   - Nested: Cannot be used as a nested predicate
+#
+#    All-Different Constraint on a list of Expressions
+#
+class AllDiffExcept0(Predicate):
+
+    def __init__(self, vs):
+        Predicate.__init__(self, vs, "AllDiffExcept0")
+
+    def decompose(self):
+        from itertools import combinations
+        return [Disjunction([x == 0, y == 0, x != y]) for x, y in combinations(self.children, 2)]
+
+
 ## Global Cardinality Constraint
 #
 # \note

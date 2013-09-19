@@ -1499,10 +1499,25 @@ SatWrapper_Expression* SatWrapper_AllDiff::add(SatWrapperSolver *solver, bool to
         if(top_level) {
             int i, j, n=_vars.size(), v;
             SatWrapper_Expression *exp;
+            std::set<int> values_set;
+            Lits lits;
 
             for(i=0; i<n; ++i)
                 _vars.set_item(i, (_vars.get_item(i))->add(_solver,false));
 
+            /*  The LadderAMO needs to know the set of unique values.
+                Pigeon Hole constraints will need to know the max and min value. */
+            if((encoding->alldiff_encoding & EncodingConfiguration::LadderAMO) ||
+               (encoding->alldiff_encoding & EncodingConfiguration::PigeonHole)) {
+                for(i=0; i<n; i++){
+                    exp = _vars.get_item(i);
+                    for(j=0; j<exp->getsize(); j++){
+                        values_set.insert(exp->getval(j));
+                    }
+                }
+            }
+
+            /* ---------- Pairwise Decomposition into cliques of inequalities ---------- */
             if(encoding->alldiff_encoding & EncodingConfiguration::PairwiseDecomp){
                 for(i=1; i<n; ++i)
                     for(j=0; j<i; ++j) {
@@ -1512,6 +1527,8 @@ SatWrapper_Expression* SatWrapper_AllDiff::add(SatWrapperSolver *solver, bool to
                     }
 
             }
+
+            /* ---------- Ladder Encoding of a AMO accross the literals representing the values ---------- */
             if(encoding->alldiff_encoding & EncodingConfiguration::LadderAMO){
                 if(!encoding->direct){
                     std::cerr << "Error: The ladder at-most-one encoding of Alldiff requires the direct encoding to be enabled." << std::endl;
@@ -1519,18 +1536,8 @@ SatWrapper_Expression* SatWrapper_AllDiff::add(SatWrapperSolver *solver, bool to
                 }
 
                 /*  Encode an at most one on the literals representing each
-                    value shared across the domains of _vars. First gather
-                    all unique values into a set, then post an AMO for each.
+                    value shared across the domains of _vars.
                 */
-                std::set<int> values_set;
-                Lits lits;
-
-                for(i=0; i<n; i++){
-                    exp = _vars.get_item(i);
-                    for(j=0; j<exp->getsize(); j++){
-                        values_set.insert(exp->getval(j));
-                    }
-                }
                 
                 for(std::set<int>::iterator it=values_set.begin(); it!=values_set.end(); it++){
                     v = *it;
@@ -1541,13 +1548,40 @@ SatWrapper_Expression* SatWrapper_AllDiff::add(SatWrapperSolver *solver, bool to
                     }
                     addAMOClauses(lits, solver, EncodingConfiguration::Ladder);
                 }
-
-                _solver->validate();
             }
+
+            /* ---------- Pigeon hole constraints ---------- */
+            if(encoding->alldiff_encoding & EncodingConfiguration::PigeonHole){
+                int lb, ub;
+                if(!encoding->order){
+                    std::cerr << "Error: The pigeon hole constraints Alldiff requires the order encoding to be enabled." << std::endl;
+                    exit(1);
+                }
+                lb = *std::min_element(values_set.begin(), values_set.end());
+                ub = *std::max_element(values_set.begin(), values_set.end());
+
+                // ~(x_i < lb + n - 1 /\ ...)
+                v = lb + n - 1;
+                lits.clear();
+                for(i=0; i<n; i++){
+                    lits.push_back(~(_vars.get_item(i)->less_or_equal(v - 1)));
+                }
+                solver->addClause(lits);
+
+                // ~(x_i > ub - n + 1 /\ ...)
+                v = ub - n + 1;
+                lits.clear();
+                for(i=0; i<n; i++){
+                    lits.push_back(~(_vars.get_item(i)->greater_than(v)));
+                }
+                solver->addClause(lits);
+            }
+
             if(!(encoding->alldiff_encoding & EncodingConfiguration::PairwiseDecomp || encoding->alldiff_encoding & EncodingConfiguration::LadderAMO)) {
                 std::cerr << "Error: AllDiff not implemented for this encoding. Please use either PairwiseDecomp or LadderAMO." << std::endl;
                 exit(1);
             }
+            _solver->validate();
         } else {
             std::cerr << "Alldiff not in top level insupported at the moment" << std::endl;
             exit(1);

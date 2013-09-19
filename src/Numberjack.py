@@ -1,20 +1,21 @@
-##@mainpage Numberjack  @authors Eoin O'Mahony, Emmanuel Hebrard & Barry O'Sullivan
+##@mainpage Numberjack
+# @authors Eoin O'Mahony, Emmanuel Hebrard, Barry O'Sullivan, Barry Hurley, Kevin Leo, & Simon Degivry
 #
-# \section intro_sec What is numberjack?
+# \section intro_sec What is Numberjack?
 #
 # Numberjack is a modelling package written in Python for constraint
-# programming. Python benefits from a large and active programming
-# community, Numberjack is therefore a perfect tool to embed CP
-# technology into larger applications. It is designed to support a
-# number of underlying C/C++ solvers as egg files, that is, seamlessly
-# and efficiently. Currently, there are four available back-ends: a MIP
-# solver (SCIP), a SAT solver (MiniSat) and two CP solvers (Mistral and
-# Gecode).
+# programming. Python benefits from a large and active programming community,
+# Numberjack is therefore a perfect tool to embed CP technology into larger
+# applications. It is designed to support a number of underlying C/C++ solvers
+# seamlessly and efficiently. Currently, there are six available back-ends:
+# three mixed integer programming solvers (Gurobi, CPLEX, and SCIP), two
+# satisfiability solvers (MiniSat and Walksat), and a constraint programming
+# solver (Mistral).
 #
 # \section license_sec License:
 #
 #  Numberjack is a constraint satisfaction and optimisation library
-#  Copyright (C) 2009 Cork Constraint Computation Center, UCC
+#  Copyright (C) 2009-2013 Cork Constraint Computation Center, UCC
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU Lesser General Public License as published by
@@ -51,7 +52,7 @@ var_heuristics = ['No', 'MinDomain', 'Lex', 'AntiLex', 'MaxDegree', 'MinDomainMi
 
 solver_names = ['Mistral', 'SCIP', 'MiniSat', 'Walksat', 'OsiClp', 'OsiCbc',
                 'OsiGlpk', 'OsiVol', 'OsiDylp', 'OsiSpx', 'OsiSym',
-                'OsiGrb', 'Toulbar2']  # , 'OsiCpx', 'OsiMsk', 'OsiXpr']
+                'OsiGrb', 'Toulbar2', 'Gurobi', 'CPLEX']  # , 'OsiCpx', 'OsiMsk', 'OsiXpr']
 available = []
 
 
@@ -75,6 +76,9 @@ def flatten(x):
             result.append(el)
     return result
 
+def numeric(x):
+    tx = type(x)
+    return tx is int or tx is float
 
 """
 
@@ -300,7 +304,9 @@ class Expression(object):
             return self.domain()
 
     def is_str(self):
-        return hasattr(self, 'model')
+        if hasattr(self, 'lb'):
+            return not numeric(self.lb)
+        return False
 
     def getVar(self, solver_id):
         return self.var_list[solver_id - 1]
@@ -354,6 +360,9 @@ class Expression(object):
             return Domain(self.domain_)
         else:
             return Domain(self.lb, self.ub)
+
+    def get_name(self):
+        return self.operator
 
     ## Current value of the expression
     # @param solver solver reference for solver from which current value will be sourced
@@ -680,7 +689,7 @@ class Model(object):
         if self.closed == len(self.__expressions):
             tmp_strings = []
             for var in self.variables:
-                if var.get_lb() is None:
+                if var.is_str():
                     var.model = self
                     for value in var.domain_:
                         tmp_strings.append(value)
@@ -893,10 +902,6 @@ class Variable(Expression):
          Variable(list) :- Variable with domain specified as a list
          Variable(list, 'x') :- Variable with domain specified as a list called 'x'
         '''
-
-        def numeric(x):
-            tx = type(x)
-            return tx is int or tx is float
 
         domain = None
         lb = 0
@@ -2113,6 +2118,25 @@ class AllDiff(Predicate):
     #    return " AllDiff(" + " ".join(map(str, self.children)) + " ) "
 
 
+## All-Different Except 0 Constraint
+#
+# \note
+#   - Top-level: Enforces that each expression take a different value, except
+#     those which take the value 0.
+#   - Nested: Cannot be used as a nested predicate
+#
+#    All-Different Constraint on a list of Expressions
+#
+class AllDiffExcept0(Predicate):
+
+    def __init__(self, vs):
+        Predicate.__init__(self, vs, "AllDiffExcept0")
+
+    def decompose(self):
+        from itertools import combinations
+        return [Disjunction([x == 0, y == 0, x != y]) for x, y in combinations(self.children, 2)]
+
+
 ## Global Cardinality Constraint
 #
 # \note
@@ -2482,14 +2506,23 @@ class Job(VarArray):
 '''
 
 
-## Task specific Variable
+## A special class for simple representations of scheduling tasks.
+#
+#    The Task class allows for simplified modeling of tasks in scheduling
+#    applications. It encapsulates the earliest start time, latest end time
+#    (makespan), and duration.
+#
+#    There are various ways of declaring a Task:
+#
+#    - M = Task() creates a Task with an earliest start time of 0, latest end time of 1, and duration 1
+#    - M = Task(ub) creates a Task with an earliest start time of 0, latest end time of 'ub', and duration 1
+#    - M = Task(ub, dur) creates a Task with an earliest start time of 0, latest end time of 'ub', and duration 'dur'
+#    - M = Task(lb, ub, dur) creates a Task with an earliest start time of 0, latest end time of 'ub', and duration 'dur'
+#
+#    When the model is solved, @get_value() returns the start
+#    time of the task.
+#
 class Task(Expression):
-# arg1: lower bound
-# arg2: upper bound
-# arg3: duration
-
-# arg1: upper bound
-# arg2: duration
 
     def __init__(self, arg1=None, arg2=None, arg3=None):
 
@@ -3002,8 +3035,13 @@ class NBJ_STD_Solver(object):
                                 arguments.append(w_array)
                         else:
                             arguments.append(param)
+                try:
+                    var = factory(*arguments)
+                except NotImplementedError as e:
+                    print >> sys.stderr, "Error the solver does not support this expression:", str(expr)
+                    print >> sys.stderr, "Type:", type(expr), "Children:", str(expr.children), "Params:", str(getattr(expr, 'parameters', None))
+                    raise e
 
-                var = factory(*arguments)
                 if expr.encoding:
                     var.encoding = self.getEncodingConfiguration(expr.encoding)
                 expr.setVar(self.solver_id, self.Library, var, self)
@@ -3441,7 +3479,7 @@ def enum(*sequential):
 # This enum ordering must be the same as that specified in the enums
 # EncodingConfiguration::AMOEncoding and AllDiffEncoding in SatWrapper.hpp
 AMOEncoding = enum('Pairwise', 'Ladder')
-AllDiffEncoding = enum('PairwiseDecomp', 'LadderAMO')
+AllDiffEncoding = enum('PairwiseDecomp', 'LadderAMO', 'PigeonHole')
 
 
 ## Generic Solver Class

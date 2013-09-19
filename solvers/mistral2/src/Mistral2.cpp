@@ -1707,7 +1707,7 @@ void Mistral2Solver::setVerbosity(const int degree)
   std::cout << "setting verbosity to " << degree <<std::endl;
 #endif
 
-  solver->parameters.verbosity = degree-1;
+  solver->parameters.verbosity = degree;
 
 }
 

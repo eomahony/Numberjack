@@ -26,7 +26,6 @@ WalksatSolver::WalksatSolver() : SatWrapperSolver()
 #endif
 
   ////////////// Walksat Specific ////////////////
-  STARTTIME = cpuTime();
   nbSolutions = 0;
   ////////////// Walksat Specific ////////////////
 
@@ -192,11 +191,12 @@ int WalksatSolver::solve()
   std::cout << "solve!" << std::endl;  
 #endif 
 
-  STARTTIME = cpuTime();
+  starttime = cpuTime();
 
   wsat.initialize_statistics();
   if(wsat.verbosity) wsat.print_statistics_header();
   wsat.walk_solve();
+  endtime = cpuTime();
 
   return is_sat();
 }
@@ -243,7 +243,7 @@ void WalksatSolver::printStatistics()
 
 double WalksatSolver::getTime()
 {
-  return cpuTime() - STARTTIME;
+  return endtime - starttime;
 }
 
 

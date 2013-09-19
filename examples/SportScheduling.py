@@ -1,33 +1,37 @@
 from Numberjack import *
 
+
 def get_model(nbTeams):
-    Teams   = range(nbTeams)
-    Weeks   = range(nbTeams-1)
-    EWeeks  = range(nbTeams)
+    Teams = range(nbTeams)
+    Weeks = range(nbTeams-1)
+    EWeeks = range(nbTeams)
     Periods = range(nbTeams/2)
-    Games   = range(nbTeams*nbTeams)
-    Slots   = ('home', 'away')
+    Games = range(nbTeams*nbTeams)
+    Slots = ('home', 'away')
 
-    occur = dict([(i,(2,2)) for i in range(nbTeams)])
+    occur = dict([(i, (2, 2)) for i in range(nbTeams)])
 
-    team = [[dict([(s,Variable(Teams, 'T' + str(w) + '_' + str(p) + '_' + str(s))) for s in Slots]) for p in Periods] for w in EWeeks]
-    game = Matrix(nbTeams-1,nbTeams/2,nbTeams*nbTeams,'G')
+    team = [[dict([(s, Variable(Teams)) for s in Slots]) for p in Periods] for w in EWeeks]
+    game = [[Variable(Games) for p in Periods] for w in Weeks]
 
     model = Model(
-        AllDiff( [game[w][p] for w in Weeks for p in Periods] ), # each game is played once
-        [AllDiff( [team[w][p][s] for p in Periods for s in Slots] ) for w in EWeeks], # each team play at most once a week
-        [Gcc( [team[w][p][s] for s in Slots for w in EWeeks], occur ) for p in Periods ], # each team play twice per period
-        [team[w][p]['home']*nbTeams + team[w][p]['away'] == game[w][p] for w in Weeks for p in Periods] #channelling teams & games
-        )
+        AllDiff([game[w][p] for p in Periods for w in Weeks]),  # each game is played once
+        [AllDiff([team[w][p][s] for s in Slots for p in Periods]) for w in EWeeks],  # each team play at most once a week
+        [Gcc([team[w][p][s] for s in Slots for w in EWeeks], occur) for p in Periods],  # each team play twice per period
 
-    return (team, game, EWeeks, Weeks, Periods, Slots, model)
+        [team[w][p]['home'] * nbTeams + team[w][p]['away'] == game[w][p] for w in Weeks for p in Periods]  # channelling teams & games
+    )
+
+    return team, Weeks, Periods, model
+
 
 def solve(param):
-    (team, game, EWeeks, Weeks, Periods, Slots, model) = get_model(param['teams'])
+    (team, Weeks, Periods, model) = get_model(param['teams'])
     solver = model.load(param['solver'])
     solver.setVerbosity(param['verbose'])
     solver.setTimeLimit(param['tcutoff'])
     solver.solve()
+
     out = ''
     if solver.is_sat():
         out = str(print_schedule(team, Weeks, Periods))
@@ -42,9 +46,9 @@ def print_schedule(team, Weeks, Periods):
     return out
 
 
-solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat', 'Toulbar2']
-default = {'solver':'Mistral', 'teams':8, 'verbose':1, 'tcutoff':6}
+default = {'solver': 'Mistral', 'teams': 8, 'verbose': 0, 'tcutoff': 30}
+
 
 if __name__ == '__main__':
-    param = input(default) 
+    param = input(default)
     print solve(param)

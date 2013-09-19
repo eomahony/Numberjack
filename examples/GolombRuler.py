@@ -1,11 +1,16 @@
-#! /usr/bin/env python
-
 from Numberjack import *
+
+
+# Golomb Ruler --- CSPLib prob006
+
+# A Golomb ruler may be defined as a set of m marks/integers 0 = a_1 < ... < a_m
+# such that the pairwise differences between marks are distinct. The objective
+# is to find optimal (minimum length) rulers.
 
 
 def get_model(param):
     m = param['marks']
-    n = 2**(m-1)
+    n = 2 ** (m - 1)
 
     marks = VarArray(m, n, 'm')
     distance = [marks[i] - marks[j] for i in range(1, m) for j in range(i)]
@@ -40,45 +45,10 @@ def solve(param):
     return out
 
 
-def multi_solver():
-    marks, model = get_model(input(default))
-
-    import SCIP
-    lp = SCIP.Solver(model)
-    lp.setVerbosity(2)
-    lp.solve()
-    print marks
-    print '\n'
-
-    import Mistral
-    cp = Mistral.Solver(model)
-    cp.setVerbosity(2)
-    cp.solve()
-    print marks
-    print '\n'
-
-    import MiniSat
-    ms = MiniSat.Solver(model)
-    ms.setVerbosity(2)
-    ms.solve()
-    print marks
-    print '\n'
-
-    import Walksat
-    ws = Walksat.Solver(model)
-    ws.setVerbosity(2)
-    ws.solve()
-    print marks
-    print '\n'
-
-
 ruler = (0, 1, 3, 6, 11, 17, 25, 34, 44, 55, 72, 85, 106, 127)
-solvers = ['Mistral', 'MiniSat', 'SCIP', 'Toulbar2']
-default = {'solver': 'Mistral', 'marks': 6, 'heuristic': 'Impact', 'verbose': 1, 'tcutoff': 3}
+default = {'solver': 'Mistral', 'marks': 6, 'heuristic': 'Impact', 'verbose': 0, 'tcutoff': 60}
 
 
 if __name__ == '__main__':
     param = input(default)
     print solve(param)
-
-    # multi_solver()

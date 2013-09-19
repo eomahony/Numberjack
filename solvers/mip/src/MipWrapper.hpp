@@ -172,20 +172,13 @@ public:
     MipWrapperExpArray _vars;
     MipWrapperDoubleArray _weights;
 
-    MipWrapper_Sum(MipWrapperExpArray& vars, MipWrapperIntArray& weights,
-                   const int offset = 0);
-    MipWrapper_Sum(MipWrapper_Expression* arg1, MipWrapper_Expression* arg2,
-                   MipWrapperIntArray& weights, const int offset = 0);
-    MipWrapper_Sum(MipWrapper_Expression* arg, MipWrapperIntArray& weights,
-                   const int offset = 0);
-
-    MipWrapper_Sum(MipWrapperExpArray& vars, MipWrapperDoubleArray& weights,
-                   const int offset = 0);
-    MipWrapper_Sum(MipWrapper_Expression* arg1, MipWrapper_Expression* arg2,
-                   MipWrapperDoubleArray& weights, const int offset = 0);
-    MipWrapper_Sum(MipWrapper_Expression *arg, double w, const int offset = 0);
-    MipWrapper_Sum(MipWrapper_Expression* arg, MipWrapperDoubleArray& weights,
-                   const int offset = 0);
+    MipWrapper_Sum(MipWrapperExpArray& vars, MipWrapperIntArray& weights, const double offset = 0);
+    MipWrapper_Sum(MipWrapper_Expression* arg1, MipWrapper_Expression* arg2, MipWrapperIntArray& weights, const double offset = 0);
+    MipWrapper_Sum(MipWrapper_Expression* arg, MipWrapperIntArray& weights, const double offset = 0);
+    MipWrapper_Sum(MipWrapperExpArray& vars, MipWrapperDoubleArray& weights, const double offset = 0);
+    MipWrapper_Sum(MipWrapper_Expression* arg1, MipWrapper_Expression* arg2, MipWrapperDoubleArray& weights, const double offset = 0);
+    MipWrapper_Sum(MipWrapper_Expression *arg, double w, const double offset = 0);
+    MipWrapper_Sum(MipWrapper_Expression* arg, MipWrapperDoubleArray& weights, const double offset = 0);
 
     MipWrapper_Sum();
 

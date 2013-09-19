@@ -18,25 +18,27 @@ class LinearBinTest:
 
     def set_up(self):
         self.model = Model()
-        #print self.model
         self.variables = [Variable(l, u) for l, u in self.domains]
-        self.model.add(getattr(getattr(self.variables[0], self.art_op)(self.variables[1]),
+        self.model.add(getattr(getattr(self.variables[0], self.art_op)(self.variables[1]) + self.offset,
                                self.comp_op)(self.rhs))
 
     def test_assign(self):
-        #print self.model
-        return getattr(getattr(self.variables[0].get_value(),
-                               self.art_op)(self.variables[1].get_value()),
-                       "__cmp__")(self.rhs) in self.functs[self.comp_op]
+        res = getattr(self.variables[0].get_value(), self.art_op)(self.variables[1].get_value()) + self.offset
+
+        # cmp requires that both datatypes be the same
+        if type(res) is float or type(self.rhs) is float:
+            return cmp(float(res), float(self.rhs)) in self.functs[self.comp_op]
+        return cmp(res, self.rhs) in self.functs[self.comp_op]
 
 
 class NJIntermediateTest(LinearBinTest):
-    def __init__(self, name, comp, art, rhs=20, domains=[(0, 10), (0, 10)]):
+    def __init__(self, name, comp, art, rhs=20, domains=[(0, 10), (0, 10)], offset=0):
         LinearBinTest.__init__(self)
         self.test_name = name
         self.comp_op = comp
         self.art_op = art
         self.domains = domains
+        self.offset = offset
         self.rhs = rhs
         self.set_up()
 
@@ -52,6 +54,7 @@ TestSuccess = [
     ["Test Ge 2", "__gt__", "__sub__", 4],
     ["Test Geq 1", "__ge__", "__add__"],
     ["Test Geq 2", "__ge__", "__sub__", 5],
+    ["Test Eq 3", "__ge__", "__add__", 20.5, [(0, 10), (0, 10)], 0.5],
 ]
 
 # Test for failure
@@ -152,6 +155,14 @@ class LinearTest(unittest.TestCase):
 
     def testSuccess10(self):
         te = NJIntermediateTest(*TestSuccess[9])
+        solver = LinearTest.solver(te.model)
+        solver.setVerbosity(0)
+        self.assertTrue(solver.solve())
+        self.assertTrue(te.test_assign())
+
+    def testSuccess11(self):
+        te = NJIntermediateTest(*TestSuccess[10])
+        print te.model
         solver = LinearTest.solver(te.model)
         solver.setVerbosity(0)
         self.assertTrue(solver.solve())

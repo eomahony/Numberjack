@@ -1071,7 +1071,8 @@ MipWrapper_Expression* MipWrapper_eq::add(MipWrapperSolver *solver,
         } else {
             _vars[0]->encode(solver);
             if (_is_proper_coef) {
-                if (_vars[0]->_expr_encoding[(int) _rhs] != NULL) {
+                if (_rhs >= _vars[0]->_lower && _rhs <= _vars[0]->_upper && 
+                    _vars[0]->_expr_encoding[(int) _rhs] != NULL) {
                     _repr = _vars[0]->_expr_encoding[(int) _rhs];
                     return _vars[0]->_expr_encoding[(int) _rhs];
                 } else
@@ -1177,7 +1178,8 @@ MipWrapper_Expression* MipWrapper_ne::add(MipWrapperSolver *solver,
             DBG("Reifing not equal constraint %s\n", "");
 
             if (_is_proper_coef) {
-                if (_vars[0]->_expr_encoding[(int) _rhs] != NULL) {
+                if (_rhs <= _vars[0]->_upper && _rhs >= _vars[0]->_lower &&
+                    _vars[0]->_expr_encoding[(int) _rhs] != NULL) {
                     MipWrapper_Expression *bvar = new MipWrapper_IntVar(0, 1);
                     bvar = bvar->add(solver, false);
 

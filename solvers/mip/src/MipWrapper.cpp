@@ -407,11 +407,13 @@ MipWrapper_Expression* MipWrapper_mul::add(MipWrapperSolver *solver,
 
                 for (int i = (int)vars[0]->_lower; i <= (int)vars[0]->_upper; i++) {
                     for (int j = (int)vars[1]->_lower; j <= (int)vars[1]->_upper; j++) {
-                        LinearConstraint *con = new LinearConstraint(-1, 1);
-                        con->add_coef(vars[0]->_expr_encoding[i], 1);
-                        con->add_coef(vars[1]->_expr_encoding[j], 1);
-                        con->add_coef(_expr_encoding[i * j], -1);
-                        solver->_constraints.push_back(con);
+                        if(i * j >= _lower && i * j <= _upper){
+                            LinearConstraint *con = new LinearConstraint(-1, 1);
+                            con->add_coef(vars[0]->_expr_encoding[i], 1);
+                            con->add_coef(vars[1]->_expr_encoding[j], 1);
+                            con->add_coef(_expr_encoding[i * j], -1);
+                            solver->_constraints.push_back(con);
+                        }
                     }
                 }
             } else {

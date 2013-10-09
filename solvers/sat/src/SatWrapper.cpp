@@ -4,6 +4,7 @@
 #include <set>
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include "SatWrapper.hpp"
 
 
@@ -1726,6 +1727,201 @@ SatWrapper_Expression* SatWrapper_Sum::add(SatWrapperSolver *solver, bool top_le
             domain = new OffsetDomain(this,_vars.get_item(_vars.size()-1)->domain, _offset);
         } else {
             std::cout << "Warning SUM constraint on top level not supported" << std::endl;
+        }
+
+        _solver->validate();
+    }
+
+    return this;
+}
+
+SatWrapper_Table::SatWrapper_Table(SatWrapperExpArray& vars, SatWrapperIntArray& tuples, const char* type)
+    : SatWrapper_Expression() {
+#ifdef _DEBUGWRAP
+    std::cout << "creating table constraint." << std::endl;
+#endif
+
+    _vars = vars;
+    _tuples = tuples;
+    support = (!strcmp(type,"support"));
+}
+
+SatWrapper_Table::SatWrapper_Table(SatWrapper_Expression *var1, SatWrapper_Expression *var2, SatWrapperIntArray& tuples, const char* type)
+    : SatWrapper_Expression() {
+#ifdef _DEBUGWRAP
+    std::cout << "creating binary table constraint." << std::endl;
+#endif
+
+    _vars.add(var1);
+    _vars.add(var2); 
+    _tuples = tuples;
+    support = (!strcmp(type,"support"));
+}
+
+SatWrapper_Table::~SatWrapper_Table() {
+#ifdef _DEBUGWRAP
+    std::cout << "delete table constraint" << std::endl;
+#endif
+}
+
+
+void supportTableEncoder(SatWrapperSolver *solver, EncodingConfiguration *encoding, SatWrapperExpArray& vars, std::vector< std::vector<int>* > &tuples, Lits *lits, int *assignments, unsigned int tuples_start, unsigned int tuples_end, unsigned int support_var_index, unsigned int var_index){
+    // Helper function for supportTableEncoder, call that.
+    SatWrapper_Expression *exp;
+    int i, j, n = vars.size(), m=tuples.size(), v;
+    std::set<int> value_set;
+
+#ifdef _DEBUGWRAP
+    std::cout << "supportTableEncoder support_var_index:" << support_var_index << " var_index:" << var_index << " n:" << n << " tuples_start:" << tuples_start << " tuples_end:" << tuples_end << std::endl;
+#endif
+
+    if(!encoding->direct){
+        std::cerr << "Error supportTableEncoder not implemented for this encoding." << std::endl;
+        exit(1);
+    }
+
+    if(var_index == support_var_index){
+        supportTableEncoder(solver, encoding, vars, tuples, lits, assignments, tuples_start, tuples_end, support_var_index, var_index + 1);
+        return;
+    }
+
+    if(var_index >= n) {
+        /* If var_index is greater than or equal to n, then we have added the
+        /* literals for the partial assignment to the other variables, now we
+        /* add the support values for the support variable. If the variable has
+        /* no support for the current partial assignment, then a no-good will be
+        /* added. */
+
+        unsigned int nr_lits_added = 0;
+        exp = vars.get_item(support_var_index);
+
+        for(i=tuples_start; i<tuples_end; i++, nr_lits_added++){
+            lits->push_back(exp->equal(tuples.at(i)->at(support_var_index)));
+        }
+
+        // If all of the variable's values are supported by this partial assignment,
+        // then we do not need to add the clause, it is subsumed by the ALO for the variable.
+        if(nr_lits_added < exp->getsize())
+            solver->addClause(*lits);
+
+        // Remove the literals we just added for the support variable.
+        while(nr_lits_added-- > 0) lits->pop_back();
+        return;
+    }
+
+    exp = vars.get_item(var_index);
+    for(i=tuples_start; i<tuples_end; i++){
+        v = tuples.at(i)->at(var_index);
+        if(value_set.count(v) != 0) continue;
+
+        assignments[var_index] = v;
+        value_set.insert(v);
+
+        // Find the index of the tuple with a value (at index var_index) different from the current value.
+        unsigned int sub_tuples_end = i + 1;
+        while(sub_tuples_end < tuples_end && tuples.at(sub_tuples_end)->at(var_index) == v) sub_tuples_end++;
+
+        lits->push_back(~(exp->equal(v)));
+        supportTableEncoder(solver, encoding, vars, tuples, lits, assignments, i, sub_tuples_end, support_var_index, var_index + 1);
+        lits->pop_back();
+    }
+}
+
+class TupleComparitor {
+    /*  Comparitor for lexicographically ordering tuples but where we want to
+        skip one of the indices in the comparison.
+    */
+public:
+    unsigned int skip_index = 0;
+
+    bool operator()(const std::vector<int> *a, const std::vector<int> *b) const {
+        for(unsigned int i=0; i<a->size() && i<b->size(); i++){
+            if(i != skip_index && a->at(i) < b->at(i)) return true;
+        }
+        return false;
+    }
+};
+
+void supportTableEncoder(SatWrapperSolver *solver, EncodingConfiguration *encoding, SatWrapperExpArray& vars, SatWrapperIntArray& tuples){
+    /*
+    *  This function will encode a table of support tuples into CNF support clauses.
+    *  Each of the variables takes its turn as the support variable 's'. For each
+    *  partial assignment to the other variables we list the support values for
+    *  s which are supported by that partial assignment.
+    */
+    Lits *lits = new Lits;
+    int n = vars.size();
+    int *assignments = new int[n];
+    std::vector< std::vector<int>* > sorted_tuples;
+
+    for(unsigned int i=0; i < tuples.size(); i+=n){
+        std::vector<int> *vs = new std::vector<int>;
+        for(unsigned int j=i; j<i+n; j++) vs->push_back(tuples.get_item(j));
+        sorted_tuples.push_back(vs);
+    }
+
+    TupleComparitor comp;
+    for(unsigned int i=0; i<vars.size(); i++){
+        comp.skip_index = i;
+        std::stable_sort(sorted_tuples.begin(), sorted_tuples.end(), comp);
+
+        lits->clear();
+        supportTableEncoder(solver, encoding, vars, sorted_tuples, lits, assignments, 0, sorted_tuples.size(), i, i==0 ? 1 : 0);
+        if(lits->size() > 0){
+            std::cerr << "Error lits not empty after supportTableEncoder for variable " << i << " size:" << lits->size() << std::endl;
+        }
+    }
+
+    // Delete sorted tuple vectors
+    for(std::vector< std::vector<int>* >::iterator it=sorted_tuples.begin(); it!=sorted_tuples.end(); it++){
+        delete *it;
+    }
+}
+
+SatWrapper_Expression* SatWrapper_Table::add(SatWrapperSolver *solver, bool top_level) {
+    if(!has_been_added()) {
+        _solver = solver;
+        _ident = _solver->declare(this, false);
+
+        // If the encoding hasn't been overwritten for this expression, then we take the default for the solver.
+        if(!encoding) encoding = solver->encoding;
+
+#ifdef _DEBUGWRAP
+        std::cout << "add table constraint x" << _ident << std::endl;
+#endif
+
+        if(top_level) {
+            int i, j, n=_vars.size(), v;
+            SatWrapper_Expression *exp;
+            Lits lits;
+
+            for(i=0; i<n; ++i)
+                _vars.set_item(i, (_vars.get_item(i))->add(_solver,false));
+
+
+            if(!encoding->direct){
+                std::cerr << "Error conflict table constraint not implemented for this encoding yet." << std::endl;
+                exit(1);
+            }
+
+            if(!support){
+                for(i=0; i<_tuples.size(); i+=n){
+                    lits.clear();
+                    for(j=0; j<n; j++){
+                        exp = _vars.get_item(j);
+                        v = _tuples.get_item(i + j);
+                        if(encoding->direct)
+                            lits.push_back(~(exp->equal(v)));
+                    }
+                    solver->addClause(lits);
+                }
+
+            } else {
+                supportTableEncoder(solver, encoding, _vars, _tuples);
+            }
+
+        } else {
+            std::cerr << "Error Table constraint not at top level is not supported." << std::endl;
         }
 
         _solver->validate();

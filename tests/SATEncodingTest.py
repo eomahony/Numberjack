@@ -388,15 +388,23 @@ class SATEncodingTest(unittest.TestCase):
         self.assertTrue(c.get_value())
         self.assertEqual(a.get_value(), b.get_value())
 
-    # FIXME Encoding of Table constraint is not supported yet.
-    # def testTable(self):
-    #     v1, v2 = VarArray(2, 1, 3)
-    #     t = Table([v1, v2], [[1, 1], [2, 2], [3, 3]])
-    #     m = Model(t)
-    #     s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
-    #     s.solve()
-    #     self.assertTrue(s.is_sat())
-    #     self.assertNotEqual(v1.get_value(), v2.get_value())
+    def testTableConflict(self):
+        v1, v2 = VarArray(2, 1, 3)
+        t = Table([v1, v2], [[1, 1], [2, 2], [3, 3]], type="conflict")
+        m = Model(t)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertNotEqual(v1.get_value(), v2.get_value())
+
+    def testTableSupport(self):
+        v1, v2 = VarArray(2, 1, 3)
+        t = Table([v1, v2], [[1, 1], [2, 2], [3, 3]], type="support")
+        m = Model(t)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), v2.get_value())
 
     def testMax(self):
         v1 = Variable(5)

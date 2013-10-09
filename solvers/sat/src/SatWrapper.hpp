@@ -537,6 +537,21 @@ public:
     virtual SatWrapper_Expression* add(SatWrapperSolver *solver, bool top_level);
 };
 
+class SatWrapper_Table : public SatWrapper_Expression {
+private:
+    SatWrapperExpArray _vars;
+    SatWrapperIntArray _tuples;
+    int support;
+
+public:
+    SatWrapper_Table(SatWrapperExpArray& vars, SatWrapperIntArray& tuples, const char* type); 
+    SatWrapper_Table(SatWrapper_Expression *var1, SatWrapper_Expression *var2, SatWrapperIntArray& tuples, const char* type);
+    virtual ~SatWrapper_Table();
+
+    // virtual void add(SatWrapperIntArray& tuple);
+    virtual SatWrapper_Expression* add(SatWrapperSolver *solver, bool top_level);
+};
+
 
 class SatWrapper_binop: public SatWrapper_Expression {
 protected:

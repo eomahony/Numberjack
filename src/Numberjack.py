@@ -705,8 +705,8 @@ class Model(object):
         if self.closed == len(self.__expressions) + 1:
             for expr in self.get_exprs():
                 expr.close()
-             
-        if (solver.Library is 'Toulbar2'):
+
+        if getattr(solver, "Library", None) == 'Toulbar2':
             #print self   #SDG: VERY USEFUL FOR DEBUGGING
             occur = {}
             def rec_occur(expr):

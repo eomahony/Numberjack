@@ -2849,23 +2849,6 @@ class NBJ_STD_Solver(object):
         self.Library = Library
         self.Wrapper = Wrapper
 
-        """
-        self.ExpArray = getattr(sys.modules[Library],
-                                Library+"ExpArray", None)
-
-        self.IntArray = getattr(sys.modules[Library],
-                                Library+"IntArray", None)
-
-        self.DoubleArray = getattr(sys.modules[Library],
-                                   Library+"DoubleArray", None)
-
-        self.IntVar = getattr(sys.modules[Library],
-                              Library+"_IntVar", None)
-
-        self.FloatVar = getattr(sys.modules[Library],
-                                Library+"_FloatVar", None)
-        """
-
         self.ExpArray = getattr(sys.modules[Wrapper],
                                 Wrapper + "ExpArray", None)
 
@@ -2884,14 +2867,15 @@ class NBJ_STD_Solver(object):
         self.EncodingConfiguration = getattr(sys.modules[Wrapper],
                                              "EncodingConfiguration", None)
 
-        self.free_memory = getattr(sys.modules["_" + Library],
-                                   "delete_" + Library + "Solver", None)
+        if "_" + Library in sys.modules:
+            self.free_memory = getattr(sys.modules["_" + Library],
+                                       "delete_" + Library + "Solver", None)
 
         self.variables = None
-        self.solver_id = model.getSolverId()
 
-        if model != None:
+        if model is not None:
             var_array = None
+            self.solver_id = model.getSolverId()
             self.model = model
             self.model.close(self)   #SDG: needs to know for which solver the model is built
             if self.EncodingConfiguration:

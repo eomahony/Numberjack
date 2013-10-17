@@ -1904,14 +1904,13 @@ SatWrapper_Expression* SatWrapper_Table::add(SatWrapperSolver *solver, bool top_
                 exit(1);
             }
 
-            if(!support){
+            if(!support){  // Is the table specifying conflicts?
                 for(i=0; i<_tuples.size(); i+=n){
                     lits.clear();
                     for(j=0; j<n; j++){
                         exp = _vars.get_item(j);
                         v = _tuples.get_item(i + j);
-                        if(encoding->direct)
-                            lits.push_back(~(exp->equal(v)));
+                        lits.push_back(~(exp->equal(v)));
                     }
                     solver->addClause(lits);
                 }

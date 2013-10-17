@@ -1,5 +1,5 @@
 # Numberjack
-## A python constraint programming platform 
+## A Python constraint programming platform 
 
 ## What is Numberjack?
 
@@ -7,9 +7,9 @@ Numberjack is a modelling package written in Python for constraint programming.
 Python benefits from a large and active programming community, Numberjack is
 therefore a perfect tool to embed CP technology into larger applications. It is
 designed to support a number of underlying C/C++ solvers seamlessly and
-efficiently. Currently, there are five available back-ends: two mixed integer
-programming solvers ([Gurobi][gurobiopt] and [SCIP][scipopt]), two
-satisfiability solvers ([MiniSat][minisat] and [Walksat][walksat]), and a
+efficiently. Currently, there are six available back-ends: three mixed integer
+programming solvers ([Gurobi][gurobiopt], [CPLEX][cplex], and [SCIP][scipopt]),
+two satisfiability solvers ([MiniSat][minisat] and [Walksat][walksat]), and a
 constraint programming solver (Mistral).
 
 * Numberjack offers a high level constraint programming language
@@ -76,7 +76,7 @@ have it installed on your system, follow these steps to use in in Numberjack:
    variable `CPLEXDIR` to the location where CPLEX is installed, for example:
 
     ```bash
-    export CPLEXDIR="/opt/ibm/ILOG/CPLEX_Studio1251"
+    export CPLEXDIR="/opt/ibm/ILOG/CPLEX_Studio1251/cplex"
     export CPLEXDIR="/Applications/IBM/ILOG/CPLEX_Studio1251/cplex"
     ```
 

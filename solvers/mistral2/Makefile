@@ -105,7 +105,7 @@ PLIBOBJ = $(patsubst $(SRC)/%, $(OBJ)/%, $(PLIBAUX))
 
 
 
-wrapper: $(IFILE) $(WXXFILE) $(SOFILE) 
+wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) 
 
 # ------------------------------------------------------------
 clean_swig: 
@@ -113,6 +113,12 @@ clean_swig:
 
 clean : 
 	rm -rf $(OBJ)/*.o $(OBJ)/*.a $(SRC)/*~ $(MOD)/obj/*.o $(MOD)/src/*~ $(MOD)/src/*/*~ $(INC)/*~ *~ $(BIN)/* 
+
+$(OBJDIR):
+	@-mkdir -p $(OBJDIR)
+
+$(PYTHON):
+	@mkdir -p $(PYTHON)
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
@@ -123,7 +129,7 @@ $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 		@echo "-> compiling $@"
-		$(CCC) $(CFLAGS) $(MCFLAGS) -I$(SRCDIR) -I$(PYLIB)  -c $< -o $@
+		$(CCC) $(CFLAGS) $(MCFLAGS) -I$(SRCDIR) $(PYLIB)  -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	

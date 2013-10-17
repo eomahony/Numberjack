@@ -21,7 +21,6 @@ private:
     void add_in_constraint(LinearConstraint *con, double coef=0);
 
 public:
-    int var_counter;
 
     GurobiSolver();
     virtual ~GurobiSolver();

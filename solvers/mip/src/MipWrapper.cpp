@@ -238,8 +238,7 @@ int MipWrapper_IntVar::get_value() {
     }
     double res = 0;
     for (int i = _lower; i <= _upper; ++i)
-        if (_expr_encoding[i] != NULL
-           )
+        if (_expr_encoding[i] != NULL)
             res += i * _expr_encoding[i]->get_whatever_value();
     return res;
 }
@@ -746,7 +745,7 @@ MipWrapper_Expression* MipWrapper_Flow::add(MipWrapperSolver *solver,
 }
 
 MipWrapper_Sum::MipWrapper_Sum(MipWrapperExpArray& vars,
-                               MipWrapperIntArray& weights, const int offset) :
+                               MipWrapperIntArray& weights, const double offset) :
     MipWrapper_FloatVar() {
     _offset = offset;
     _vars = vars;
@@ -756,7 +755,7 @@ MipWrapper_Sum::MipWrapper_Sum(MipWrapperExpArray& vars,
 }
 
 MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg1,
-                               MipWrapper_Expression *arg2, MipWrapperIntArray& w, const int offset) :
+                               MipWrapper_Expression *arg2, MipWrapperIntArray& w, const double offset) :
     MipWrapper_FloatVar() {
     _offset = offset;
     _vars.add(arg1);
@@ -767,7 +766,7 @@ MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg1,
 }
 
 MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg,
-                               MipWrapperIntArray& w, const int offset) :
+                               MipWrapperIntArray& w, const double offset) :
     MipWrapper_FloatVar() {
     _offset = offset;
     _vars.add(arg);
@@ -777,7 +776,7 @@ MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg,
 }
 
 MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg,
-                               double w, const int offset) :
+                               double w, const double offset) :
     MipWrapper_FloatVar() {
     _offset = offset;
     _vars.add(arg);
@@ -786,7 +785,7 @@ MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg,
 }
 
 MipWrapper_Sum::MipWrapper_Sum(MipWrapperExpArray& vars,
-                               MipWrapperDoubleArray& weights, const int offset) :
+                               MipWrapperDoubleArray& weights, const double offset) :
     MipWrapper_FloatVar() {
     _offset = offset;
     _vars = vars;
@@ -795,7 +794,7 @@ MipWrapper_Sum::MipWrapper_Sum(MipWrapperExpArray& vars,
 }
 
 MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg1,
-                               MipWrapper_Expression *arg2, MipWrapperDoubleArray& w, const int offset) :
+                               MipWrapper_Expression *arg2, MipWrapperDoubleArray& w, const double offset) :
     MipWrapper_FloatVar() {
     _offset = offset;
     _vars.add(arg1);
@@ -805,7 +804,7 @@ MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg1,
 }
 
 MipWrapper_Sum::MipWrapper_Sum(MipWrapper_Expression *arg,
-                               MipWrapperDoubleArray& w, const int offset) :
+                               MipWrapperDoubleArray& w, const double offset) :
     MipWrapper_FloatVar() {
     _offset = offset;
     _vars.add(arg);
@@ -1844,6 +1843,10 @@ void MipWrapperSolver::setRandomSeed(const int seed) {
 }
 
 bool MipWrapperSolver::is_sat() {
+    return true;
+}
+
+bool MipWrapperSolver::is_opt() {
     return true;
 }
 

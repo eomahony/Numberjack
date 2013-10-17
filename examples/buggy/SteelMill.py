@@ -1,10 +1,11 @@
 from Numberjack import *
 
+
 def get_model(data):
     orders = Matrix(data.get("Orders"), data.get("Orders"))
     colours = Matrix(data.get("Colours"), data.get("Orders"))
     slabs = VarArray(data.get("Orders"), data.get("SlabSizes"))
-    
+
     model = Model(
         # Objective
         Minimise(Sum(slabs)),
@@ -19,14 +20,13 @@ def get_model(data):
             for (col_order, row_colour) in zip(orders, colours.col)],
     )
 
-    print model
-
     return (orders, colours, slabs, model)
+
 
 def solve(param):
     data = SteelMillData()
 
-    (orders, colours, slabs, model) = get_model(data)
+    orders, colours, slabs, model = get_model(data)
     if param['solver'] == 'Mistral':
         # Break symmetries
         model.add([slabs[i] <= slabs[i+1] for i in range(0, data.get("Orders")-1)])
@@ -40,16 +40,17 @@ def solve(param):
     print "Slabs:\n", slabs
     print 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
 
+
 class SteelMillData:
-    
+
     def __init__(self):
-        self.SlabSizes = [0,1,3,4]
+        self.SlabSizes = [0, 1, 3, 4]
         self.Orders = 9
         self.Colours = 6
-        self.OrderWeights = [2,3,1,1,1,1,1,2,1]
-        self.OrderColours = [0,1,1,3,4,4,4,5,5]
+        self.OrderWeights = [2, 3, 1, 1, 1, 1, 1, 2, 1]
+        self.OrderColours = [0, 1, 1, 3, 4, 4, 4, 5, 5]
         self.p = 2
-    
+
     def get(self, name):
         if hasattr(self, name):
             return getattr(self, name)
@@ -57,11 +58,9 @@ class SteelMillData:
         return None
 
 
-solvers = ['Mistral', 'MiniSat', 'SCIP', 'Walksat']
-default = {'solver':'Mistral', 'verbose':1, 'tcutoff':3}
+default = {'solver': 'Mistral', 'verbose': 1, 'tcutoff': 3}
 
 
 if __name__ == '__main__':
-    param = input(default) 
+    param = input(default)
     solve(param)
-

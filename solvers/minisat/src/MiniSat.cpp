@@ -158,7 +158,6 @@ MiniSatSolver::MiniSatSolver() : SatWrapperSolver(), SimpSolver()
 #endif
 
   ////////////// MiniSat Specific ////////////////
-  STARTTIME = cpuTime();
   result = l_Undef;
   nbSolutions = 0;
   
@@ -248,7 +247,7 @@ int MiniSatSolver::solve()
 #ifdef _DEBUGWRAP
   std::cout << "call solve" << std::endl;  
 #endif 
-
+  starttime = cpuTime();
   start_time = getRunTime();
   saved_level = init_level;
   if(init_level < decisionLevel())
@@ -352,6 +351,8 @@ int MiniSatSolver::solve()
       store_solution();
     }
   }
+
+  endtime = cpuTime();
 
 #ifdef _DEBUGWRAP
   std::cout << "print results" << std::endl; 
@@ -591,7 +592,7 @@ int MiniSatSolver::getPropags()
 
 double MiniSatSolver::getTime()
 {
-  return cpuTime() - STARTTIME;
+  return endtime - starttime;
 }
 
 

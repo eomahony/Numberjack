@@ -6527,7 +6527,7 @@ Mistral::PropagationOutcome Mistral::PredicateMul::prune(const int lb_neg,
 }
 
 
-
+#define  _DEBUG_MUL true
 
 Mistral::PropagationOutcome Mistral::PredicateMul::propagate() {      
   Mistral::PropagationOutcome wiped = CONSISTENT;

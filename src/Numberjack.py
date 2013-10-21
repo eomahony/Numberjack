@@ -2839,6 +2839,7 @@ class NBJ_STD_Solver(object):
                  clause_limit=-1, encoding=None):
         self.decomposition_store = []
         self.enc_config_cache = {}
+        self.free_memory = None
 
         self.solver = getattr(sys.modules[Library],
                               Library + "Solver", None)()
@@ -3445,7 +3446,8 @@ class NBJ_STD_Solver(object):
         return ' '
 
     def delete(self):
-        self.free_memory(self.solver)
+        if self.free_memory:
+            self.free_memory(self.solver)
 
 ##  @}
 

@@ -2147,6 +2147,13 @@ inline bool ConstraintLex::rule2backward()
 
 bool ConstraintLex::propagate(const int changedIdx, const int e)
 { 
+
+  /*
+  std::cout << "\npropagate " ;
+  print(std::cout);
+  std::cout << " (change on " << scope[changedIdx]->id << ")\n";
+  */
+
   bool consistent = true;
 
   // prunes B[i+1]
@@ -2157,11 +2164,18 @@ bool ConstraintLex::propagate(const int changedIdx, const int e)
       ) 
     consistent = false;
 
+
+  // B[i] == B[i+1] == 0 => x[i] == y[i]
   //if(consistent && !scope[2]->max() && !scope[3]->max()) {
   if(consistent && !(domain_b1 >> 1) && !(domain_b2 >> 1)) {
     consistent = (scope[0]->setDomain(scope[1]) &&
 		  scope[1]->setDomain(scope[0]));
   }
+
+  // // B[i] == 0 => x[i] <= y[i]
+  // if(consistent && !(domain_b1 >> 1)) {
+  //   consistent = (scope[0]->setMax())
+  // }
 
   // irrelevant part of the vectors
   if( consistent && !scope[2]->min() /*&& scope[3]->min()*/ ) {
@@ -2218,6 +2232,9 @@ bool ConstraintLex::propagate(const int changedIdx, const int e)
       }
     }
   }
+
+  // std::cout << "end propagate ";
+  // print(std::cout);
 
 
   return consistent;

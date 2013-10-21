@@ -1803,6 +1803,7 @@ Mistral::Outcome Mistral::Solver::restart_search(const int root, const bool _res
   // std::cout << "[" << std::right << std::setw(33) << "]";
   // std::cout.flush();
 
+
   while(satisfiability == UNKNOWN) {
 
     statistics.num_constraints = posted_constraints.size;
@@ -4952,7 +4953,13 @@ void Mistral::Solver::branch_left() {
 
   save();
 
+  std::cout << sequence << std::endl;
+
+
   Mistral::Decision decision = heuristic->branch();
+
+  
+  std::cout << decision << " in " << decision.var.get_domain() << std::endl;
 
   reason_for[decision.var.id()] = NULL;
 

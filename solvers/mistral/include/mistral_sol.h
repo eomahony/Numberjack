@@ -1879,7 +1879,7 @@ namespace Mistral {
     }
     void print(std::ostream& o) const;
     void printPython() const;
-    void printXML(std::ostream& o) const;
+    // void printXML(std::ostream& o) const;
     void printWeightProfile(std::ostream& o, int limit, int t) const;
     double getGiniVarCoef() const;
     double getGiniConCoef() const;

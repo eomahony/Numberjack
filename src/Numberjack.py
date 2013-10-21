@@ -1,5 +1,5 @@
 ##@mainpage Numberjack
-# @authors Eoin O'Mahony, Emmanuel Hebrard, Barry O'Sullivan, Barry Hurley, Kevin Leo, & Simon Degivry
+# @authors Eoin O'Mahony, Emmanuel Hebrard, Barry O'Sullivan, Barry Hurley, Kevin Leo, & Simon de Givry
 #
 # \section intro_sec What is Numberjack?
 #

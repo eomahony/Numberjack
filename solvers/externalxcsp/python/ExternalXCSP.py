@@ -14,10 +14,10 @@ class ExternalXCSPIntVariable(object):
         return self.value
 
 
-class ExternalXCSP(ExternalSolver):
+class ExternalXCSPSolver(ExternalSolver):
 
     def __init__(self):
-        super(ExternalXCSP, self).__init__()
+        super(ExternalXCSPSolver, self).__init__()
 
     def set_model(self, model, solver_id, solver_name, solver):
         self.model = model
@@ -90,7 +90,7 @@ class Solver(Numberjack.NBJ_STD_Solver):
 
         # We pass an empty model to NBJ_STD_Solver to prevent it from loading
         # and trying to decompse each expression.
-        Numberjack.NBJ_STD_Solver.__init__(self, "ExternalSolver", "ExternalSolver", None, None, FD, clause_limit, encoding)
+        Numberjack.NBJ_STD_Solver.__init__(self, "ExternalXCSP", "ExternalXCSP", None, None, FD, clause_limit, encoding)
         self.solver_id = model.getSolverId()
         self.model = model
         self.solver.set_model(model, self.solver_id, self.Library, solver=self)

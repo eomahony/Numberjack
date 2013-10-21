@@ -2,6 +2,7 @@ import Numberjack
 import subprocess as sp
 import threading
 import signal
+import atexit
 import os
 
 
@@ -17,6 +18,8 @@ class Command(object):
         self.exitcode = None
         self.timed_out = False
         self.timing = {}
+        self.stdout = ""
+        self.stderr = ""
 
     def parse_timing(self):
         import re
@@ -40,31 +43,42 @@ class Command(object):
             self.parse_timing()
 
         thread = threading.Thread(target=target)
+
+        def tidy_up(*args, **kwargs):
+            if thread.is_alive():
+                self.timed_out = True
+                # Send the TERM signal to the process group
+                os.killpg(self.process.pid, signal.SIGTERM)
+                thread.join(3.0)
+                if thread.is_alive():
+                    # Thread is still alive after TERM signal, send KILL signal.
+                    os.killpg(self.process.pid, signal.SIGKILL)
+                    self.process.kill()
+                    thread.join()
+
+        # Set handlers for term and interupt signals
+        signal.signal(signal.SIGTERM, tidy_up)
+        signal.signal(signal.SIGINT, tidy_up)
+
         thread.start()
         if timelimit > 0:
             thread.join(float(timelimit))
         else:
             thread.join()
-
-        if thread.is_alive():
-            self.timed_out = True
-            # Send the TERM signal to the process group
-            os.killpg(self.process.pid, signal.SIGTERM)
-            thread.join(3.0)
-            if thread.is_alive():
-                # Thread is still alive after TERM signal, send KILL signal.
-                os.killpg(self.process.pid, signal.SIGKILL)
-                self.process.kill()
-                thread.join()
+        tidy_up()
 
 
-def print_commented(blob):
+def print_commented(blob, comment_prefix="c"):
     for line in blob.split("\n"):
-        if not line.startswith("c "):
-            print "c",
+        if not line.startswith("%s " % comment_prefix):
+            print comment_prefix,
         print line
 
 
+## Base class for using an external solver binary that doesn't have a native interface.
+#
+#  Provides common functions that are used during 
+#  See also ExternalCNF and ExternalXCSP which subclass this.
 class ExternalSolver(object):
 
     def __init__(self):
@@ -82,36 +96,49 @@ class ExternalSolver(object):
         self.checks = -1
         self.propags = -1
         self.time = -1
+        self.threads = 1
         self.verbosity = 0  # Currently not passed down to external solvers
         self.var_heuristic = None  # Currently not passed down to external solvers
         self.val_heuristic = None  # Currently not passed down to external solvers
         self.randomization = None  # Currently not passed down to external solvers
+
+        # info_regexps should be a dictionary containing the attributes to parse
+        # from the solver's output. The dictionary key is the attribute name,
+        # the value for that key should be a tuple of two items: a regular
+        # expression and a function which takes a string as parameter and
+        # returns the data you would like to store. The regular expression
+        # should have a symbolic group name matching the key of the dictionary
+        # entry and will be stored as a property on self, i.e. it is equivalent
+        # to self.key = cast_func(group_match_str)
+        self.info_regexps = {}
+
+        # Register the clean_up function to be run when python is exiting, there may be a better time for this...
+        atexit.register(ExternalSolver.clean_up, self)
 
     def generate_filename(self):
         import tempfile
         tf = tempfile.NamedTemporaryFile(delete=False)
         return tf.name
 
+    def clean_up(self):
+        if self.filename:
+            try:
+                os.remove(self.filename)
+            except Exception:
+                pass  # shhh
+
     def set_model(self, model, solver_id, solver_name, solver):
         pass
-        # self.model = model
-        # self.output_model()
-
-        # for nj_var, i in sorted(self.out_object.njvar_mapping.iteritems(), key=lambda (k, v): v):
-        #     my_var = ExternalSolverIntVariable(nj_var)
-        #     nj_var.setVar(solver_id, solver_name, my_var, new_solver=solver)
-        #     nj_var.solver = solver
-        #     self.variables.append(my_var)
 
     def build_solver_cmd(self):
         pass
 
     def solve(self, *args, **kwargs):
         cmd = self.build_solver_cmd()
-        print "Will run cmd:", cmd
+        print "c Running:", cmd
         c = Command(cmd)
         c.run(timelimit=self.timelimit)
-        print "Job finished"
+        print "c External solver finished."
         print_commented(c.stdout)
         print_commented(c.stderr)
         self.parse_output(c.stdout)
@@ -120,59 +147,19 @@ class ExternalSolver(object):
     def solveAndRestart(self, *args, **kwargs):
         return self.solve(*args, **kwargs)
 
-    def output_model(self):
-        from XCSPOut import XCSPOutput
-        self.out_object = XCSPOutput(self.model)
-        self.out_object.output(self.filename)
-
     def parse_output(self, output):
         pass
-        # values = []
-        # for line in output.split("\n"):
-        #     line = line.strip()
-        #     first_two = line[:2]
-        #     if len(line) == 0:
-        #         continue
 
-        #     if first_two == "s ":
-        #         print line
-        #         if "UNSATISFIABLE" in line or "UNSAT" in line:
-        #             self.sat = Numberjack.UNSAT
-        #         elif "SATISFIABLE" in line or "SAT" in line:
-        #             self.sat = Numberjack.SAT
-        #     elif first_two == "v ":
-        #         print "Valued:", line
-        #         values.extend(map(int, line[2:].split()))
-        #     elif first_two == "d " or first_two == "c ":
-        #         self.parse_solver_info_line(line[2:])
-
-        # if self.sat == Numberjack.SAT:
-        #     for i, variable in enumerate(self.variables):
-        #         print "Setting", variable, "equal to:", values[i]
-        #         variable.value = values[i]
-
-    # def parse_solver_info_line(self, line):
-    #     bits = [a.strip() for a in line.split() if len(a.strip()) > 0]  # Strip additional whitespace
-    #     for i in xrange(0, len(bits), 2):
-    #         try:
-    #             name, value = bits[i], bits[i + 1]
-    #             print name, value
-    #             if name == "NODES" or name == "NDS":
-    #                 self.nodes = int(value)
-    #             elif name == "BACKTRACKS":
-    #                 self.backtracks = int(value)
-    #             elif name == "CHECKS":
-    #                 self.checks = int(value)
-    #             elif name == "FAILURES":
-    #                 self.failures = int(value)
-    #         except Exception as e:
-    #             print >> sys.stderr, str(e)
-    #             pass
+    def parse_solver_info_line(self, line):
+        for key, (regexp, cast_func) in self.info_regexps.iteritems():
+            match = regexp.match(line)
+            if match:
+                setattr(self, key, cast_func(match.groupdict()[key]))
 
     def is_sat(self):
         return self.sat == Numberjack.SAT
 
-    ## Returns True iff the solver proved unsatisfiability
+    # Returns True iff the solver proved unsatisfiability, not if no solution was found.
     def is_unsat(self):
         return self.sat == Numberjack.UNSAT
 
@@ -189,6 +176,10 @@ class ExternalSolver(object):
 
     def setTimeLimit(self, timelimit):
         self.timelimit = timelimit
+
+    def setThreadCount(self, num_threads):
+        if num_threads >= 1:
+            self.threads = num_threads
 
     def getBacktracks(self):
         return self.backtracks
@@ -211,16 +202,3 @@ class ExternalSolver(object):
     def printPython(self):
         return repr(self)
 
-
-# class Solver(Numberjack.NBJ_STD_Solver):
-#     def __init__(self, model=None, X=None, FD=False, clause_limit=-1, encoding=None):
-#         # if X:
-#         #     import sys
-#         #     print >> sys.stderr, "Warning explicitly specifying the decision variables for an external CSP solver is currently not supported."
-
-#         # We pass an empty model to NBJ_STD_Solver to prevent it from loading
-#         # and trying to decompse each expression.
-#         Numberjack.NBJ_STD_Solver.__init__(self, "ExternalSolver", "ExternalSolver", None, None, FD, clause_limit, encoding)
-#         self.solver_id = model.getSolverId()
-#         self.model = model
-#         self.solver.set_model(model, self.solver_id, self.Library, solver=self)

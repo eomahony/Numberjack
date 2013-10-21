@@ -2876,11 +2876,30 @@ void SatWrapperSolver::validate() {
 }
 
 void SatWrapperSolver::store_solution() {
-
 #ifdef _DEBUGWRAP
     std::cout << "store a new solution" << std::endl;
 #endif
+}
 
+void SatWrapperSolver::store_solution(SatWrapperIntArray& literals) {
+#ifdef _DEBUGWRAP
+    std::cout << "store a provided solution" << std::endl;
+#endif
+
+    // Set all variables in sat_model to l_Undef first, then assign according to
+    // their respective signs in literals. This allows us to accept a list of
+    // literals that is not necessarily sorted by variable id.
+    sat_model.clear();
+    sat_model.reserve(_atom_to_domain.size());
+
+    // SAT var ids start from 1 bu _atom_to_domain.size() includes a dummy var at 0 too.
+    for(unsigned int i=0; i<_atom_to_domain.size(); i++) sat_model.push_back(l_Undef);
+
+    for(unsigned int i=0; i<literals.size(); i++) {
+        int v = literals.get_item(i);
+        if(v > 0) sat_model[abs(v)] = l_True;
+        else sat_model[abs(v)] = l_False;
+    }
 }
 
 void SatWrapperSolver::add(SatWrapper_Expression* arg) {
@@ -2894,6 +2913,8 @@ void SatWrapperSolver::add(SatWrapper_Expression* arg) {
 }
 
 lbool SatWrapperSolver::truth_value(Lit x) {
+    if(sat_model.size() > 0 && var(x) < sat_model.size())
+        return sat_model[var(x)] ^ sign(x);
     return l_Undef;
 }
 

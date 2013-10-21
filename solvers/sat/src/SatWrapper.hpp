@@ -715,7 +715,8 @@ public:
 
     int clause_limit;
 
-    int *cp_model;
+    int *cp_model;  // Values for the CSP expressions
+    std::vector<lbool> sat_model;  // SAT model solution
 
     SatWrapperSolver();
     virtual ~SatWrapperSolver();
@@ -760,6 +761,7 @@ public:
     virtual bool branch_right();
 
     virtual void store_solution();
+    virtual void store_solution(SatWrapperIntArray& literals);
 
     virtual void setClauseLimit(int limit);
 

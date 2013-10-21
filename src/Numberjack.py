@@ -2834,6 +2834,7 @@ class Nogood(object):
 #
 
 ## Generic Solver Class
+keep_alive = []
 class NBJ_STD_Solver(object):
     def __init__(self, Library, Wrapper, model=None, X=None, FD=False,
                  clause_limit=-1, encoding=None):
@@ -3013,7 +3014,9 @@ class NBJ_STD_Solver(object):
                 else:
                     var_array = self.ExpArray()
                     for child in expr.get_children():
-                        var_array.add(self.load_expr(child))
+                        myarg = self.load_expr(child)
+                        var_array.add(myarg)
+                        keep_alive.append(myarg)
                     arguments = [var_array]
                 if expr.has_parameters():  # != None: # assumes an array of integers
                     for param in expr.parameters:

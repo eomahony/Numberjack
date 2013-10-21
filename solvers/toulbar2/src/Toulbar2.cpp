@@ -3,6 +3,8 @@
     \brief Solver interface for PYTHON Wrapper.
 */
 
+//#define _DEBUGWRAP 1
+
 #include "Toulbar2.hpp"
 
 static Toulbar2Solver* MyWCSPSolver = NULL;
@@ -116,11 +118,6 @@ bool Toulbar2_Expression::contain(const int v) const
   return _solver->wcsp->canbe(_wcspIndex, v);
 }
 
-Toulbar2_Expression::~Toulbar2_Expression()
-{
-  // delete[] _domain;
-}
-
 bool Toulbar2_Expression::has_been_added() const
 {
     return (_solver != NULL);
@@ -136,6 +133,13 @@ Toulbar2_Expression* Toulbar2_Expression::add(Toulbar2Solver *solver, bool top_l
 	} else {
 	  _wcspIndex = _solver->wcsp->makeEnumeratedVariable(index,_iinf,_isup);
 	}
+#ifdef _DEBUGWRAP    
+	cout << "CREATE " << _wcspIndex << endl;
+#endif
+  } else {
+#ifdef _DEBUGWRAP    
+	cout << "REUSE "  << _wcspIndex << endl;
+#endif
   }
   if(top_level) {
 #ifdef _DEBUGWRAP    
@@ -165,11 +169,6 @@ Toulbar2_AllDiff::Toulbar2_AllDiff( Toulbar2_Expression *var1, Toulbar2_Expressi
   _vars.add(var1);
   _vars.add(var2);
   _scope = new int[2];
-}
-
-Toulbar2_AllDiff::~Toulbar2_AllDiff()
-{ 
-  // delete[] _scope;
 }
 
 Toulbar2_Expression* Toulbar2_AllDiff::add(Toulbar2Solver *solver, bool top_level)
@@ -229,14 +228,6 @@ Toulbar2_Gcc::Toulbar2_Gcc(Toulbar2ExpArray& vars, Toulbar2IntArray& vals, Toulb
   }  
 }
 
-Toulbar2_Gcc::~Toulbar2_Gcc()
-{
-  // delete[] _scope;
-  // delete[] _values;
-  // delete[] _lb;
-  // delete[] _ub;
-}
-
 Toulbar2_Expression* Toulbar2_Gcc::add(Toulbar2Solver *solver, bool top_level)
 {
   if (!has_been_added()) {
@@ -269,10 +260,6 @@ Toulbar2_PostNullary::Toulbar2_PostNullary(int cost)
   _cost = cost;
 }
 
-Toulbar2_PostNullary::~Toulbar2_PostNullary()
-{
-}
-
 Toulbar2_Expression* Toulbar2_PostNullary::add(Toulbar2Solver *solver, bool top_level)
 {
   if(!has_been_added()) 
@@ -300,10 +287,6 @@ Toulbar2_PostUnary::Toulbar2_PostUnary(Toulbar2_Expression* var, Toulbar2IntArra
   {
     _costs.push_back(costs.get_item(i));
   }
-}
-
-Toulbar2_PostUnary::~Toulbar2_PostUnary()
-{
 }
 
 Toulbar2_Expression* Toulbar2_PostUnary::add(Toulbar2Solver *solver, bool top_level)
@@ -343,10 +326,6 @@ Toulbar2_PostBinary::Toulbar2_PostBinary(Toulbar2_Expression* var1, Toulbar2_Exp
   {
     _costs.push_back(costs.get_item(i));
   }
-}
-
-Toulbar2_PostBinary::~Toulbar2_PostBinary()
-{
 }
 
 Toulbar2_Expression* Toulbar2_PostBinary::add(Toulbar2Solver *solver, bool top_level)
@@ -396,10 +375,6 @@ Toulbar2_PostTernary::Toulbar2_PostTernary(Toulbar2ExpArray& vars, Toulbar2IntAr
   {
     _costs.push_back(costs.get_item(i));
   }
-}
-
-Toulbar2_PostTernary::~Toulbar2_PostTernary()
-{
 }
 
 Toulbar2_Expression* Toulbar2_PostTernary::add(Toulbar2Solver *solver, bool top_level)
@@ -454,11 +429,6 @@ Toulbar2_PostNary::Toulbar2_PostNary(Toulbar2ExpArray& vars, int arity, int defa
   _scope = new int[arity];
 }
 
-Toulbar2_PostNary::~Toulbar2_PostNary()
-{
-  // delete[] _scope;
-}
-
 Toulbar2_Expression* Toulbar2_PostNary::add(Toulbar2Solver *solver, bool top_level)
 {
   if(!has_been_added()) {
@@ -510,11 +480,6 @@ Toulbar2_PostWSum::Toulbar2_PostWSum(Toulbar2ExpArray& vars, int arity, const ch
   _scope = new int[_vars.size()];
 }
 
-Toulbar2_PostWSum::~Toulbar2_PostWSum()
-{
-  // delete[] _scope;
-}
-
 Toulbar2_Expression* Toulbar2_PostWSum::add(Toulbar2Solver *solver, bool top_level)
 {
   if(!has_been_added()) {
@@ -540,11 +505,6 @@ Toulbar2_PostWVarSum::Toulbar2_PostWVarSum(Toulbar2ExpArray& vars, int arity, co
   string comp(comparator); 
   _comparator = comp;
   _scope = new int[_vars.size()];
-}
-
-Toulbar2_PostWVarSum::~Toulbar2_PostWVarSum()
-{
-  // delete[] _scope;
 }
 
 Toulbar2_Expression* Toulbar2_PostWVarSum::add(Toulbar2Solver *solver, bool top_level)
@@ -595,12 +555,6 @@ Toulbar2_PostWAmong::Toulbar2_PostWAmong(Toulbar2ExpArray& vars, int arity, cons
   _lb = -1;
   _ub = -1;
   _scope = new int[_vars.size()];
-}
-
-Toulbar2_PostWAmong::~Toulbar2_PostWAmong()
-{
-  // delete[] _scope;
-  // delete[] _values;
 }
 
 Toulbar2_Expression* Toulbar2_PostWAmong::add(Toulbar2Solver *solver, bool top_level)
@@ -672,15 +626,6 @@ const char* type, const char* measureCost,  const char* baseCost): Toulbar2_Expr
   _baseCost = tempVal;     
 }
 
-Toulbar2_Regular::~Toulbar2_Regular()
-{
-  // delete[] _scope;
-  for(int i = 0; i < _transitionsV.size(); i++) {
-    // delete[] _transitions[i];
-  }
-  // delete[] _transitions;
-}
-
 Toulbar2_Expression* Toulbar2_Regular::add(Toulbar2Solver *solver, bool top_level)
 {
   if(!has_been_added()) {
@@ -746,11 +691,6 @@ Toulbar2_Same::Toulbar2_Same(Toulbar2ExpArray& vars, const char* type, const cha
   _baseCost = string2Cost(baseCost);  
 }
 
-Toulbar2_Same::~Toulbar2_Same()
-{
-  // delete[] _scope;
-}
-
 Toulbar2_Expression* Toulbar2_Same::add(Toulbar2Solver *solver, bool top_level)
 {
   if(!has_been_added()) {
@@ -813,14 +753,6 @@ Toulbar2_PostWSameGcc::Toulbar2_PostWSameGcc(Toulbar2ExpArray& vars, Toulbar2Int
   _baseCost = string2Cost(baseCost);  
 }
 
-Toulbar2_PostWSameGcc::~Toulbar2_PostWSameGcc()
-{
-  // delete[] _scope;
-  // delete[] _values;
-  // delete[] _lb;
-  // delete[] _ub;
-}
-
 Toulbar2_Expression* Toulbar2_PostWSameGcc::add(Toulbar2Solver *solver, bool top_level)
 {
   if(!has_been_added()) {
@@ -849,11 +781,6 @@ Toulbar2_PostWOverlap::Toulbar2_PostWOverlap(Toulbar2ExpArray& vars, int arity, 
   _scope = new int[_vars.size()];
 }
 
-Toulbar2_PostWOverlap::~Toulbar2_PostWOverlap()
-{
-  // delete[] _scope;
-}
-
 Toulbar2_Expression* Toulbar2_PostWOverlap::add(Toulbar2Solver *solver, bool top_level)
 {
   if(!has_been_added()) {
@@ -874,6 +801,14 @@ Toulbar2_Expression* Toulbar2_PostWOverlap::add(Toulbar2Solver *solver, bool top
 Toulbar2_Table::Toulbar2_Table( Toulbar2ExpArray& vars, Toulbar2IntArray& tuples, const char* type ) 
   : Toulbar2_Expression() 
 {
+#ifdef _DEBUGWRAP
+  cout << "Table scope:";
+  for(int i=0; i<vars.size(); i++) cout << " " << vars.get_item(i)->_wcspIndex;
+  cout << endl;
+#endif
+#ifndef NDEBUG
+  for(int i=0; i<vars.size(); i++) for (int j=i+1; j<vars.size(); j++) assert(vars.get_item(i) != vars.get_item(j));
+#endif
   _vars = vars;
   _tuples = tuples;
   _arity = _vars.size();
@@ -903,11 +838,6 @@ Toulbar2_Table::Toulbar2_Table( Toulbar2_Expression *var1, Toulbar2_Expression *
     _spin = 0;
     cout << "Warning: only \"support\" or \"conflict\" are allowed as Table constraint type (set to \"support\" by default)!" << endl;     
   }
-}
-
-Toulbar2_Table::~Toulbar2_Table()
-{
-  // delete[] _scope;
 }
 
 Toulbar2_Expression* Toulbar2_Table::add(Toulbar2Solver *solver, bool top_level) 
@@ -954,8 +884,8 @@ Toulbar2_Expression* Toulbar2_Table::add(Toulbar2Solver *solver, bool top_level)
             Value val[_arity];  
             for(int j = 0; j < _arity; j++) {
               val[j] = _tuples.get_item(i);
-			  assert(_solver->wcsp->toIndex(_scope[i], val[j]) >= 0);
-			  assert(_solver->wcsp->toIndex(_scope[i], val[j]) < _solver->wcsp->getDomainInitSize(_scope[i]));
+			  assert(_solver->wcsp->toIndex(_scope[j], val[j]) >= 0);
+			  assert(_solver->wcsp->toIndex(_scope[j], val[j]) < _solver->wcsp->getDomainInitSize(_scope[j]));
               i++;
             }
             _solver->wcsp->postNaryConstraintTuple(ctrIndex,val,_arity, (_spin == 0)?0:top);
@@ -977,10 +907,6 @@ Toulbar2_Expression* Toulbar2_Table::add(Toulbar2Solver *solver, bool top_level)
 //   : Toulbar2_Expression()
 // {
 //   _exp = var;
-// }
-
-// Toulbar2_Minimise::~Toulbar2_Minimise()
-// {
 // }
 
 // Toulbar2_Expression* Toulbar2_Minimise::add(Toulbar2Solver *solver, bool top_level)
@@ -1021,11 +947,6 @@ Toulbar2Solver::Toulbar2Solver()
   unsatisfiable = false;
   interrupted = false;
   MyWCSPSolver = this;
-}
-
-Toulbar2Solver::~Toulbar2Solver()
-{
-  // delete solver;
 }
 
 void Toulbar2Solver::add(Toulbar2_Expression* arg)

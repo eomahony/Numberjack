@@ -23,6 +23,7 @@ def solve(param):
     solver.setTimeLimit(param['tcutoff'])
 
     solver.solve()
+    out = ""
     if solver.is_sat():
         out = str(grid)
 

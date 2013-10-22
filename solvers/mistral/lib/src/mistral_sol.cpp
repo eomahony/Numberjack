@@ -2976,7 +2976,7 @@ void Solver::print(std::ostream& o) const
   o << endl;
 }
 
-void Solver::printXML(std::ostream& o) const
+/*void Solver::printXML(std::ostream& o) const
 {
   int i,j;
 
@@ -3021,7 +3021,7 @@ void Solver::printXML(std::ostream& o) const
     }
   cout << "</domains>" << endl << endl;
 
-}
+}*/
 
 
 

@@ -88,7 +88,7 @@ public:
   /**
    * Destructor
    */
-  virtual ~Toulbar2_Expression();
+  virtual ~Toulbar2_Expression() {}
 
   /**
    * Returns the identifier of this expression
@@ -154,31 +154,56 @@ typedef Toulbar2Array< Toulbar2_Expression* > Toulbar2ExpArray;
 /**
  * This is the Integer varibale class
  */
+#ifdef _DEBUGWRAP
+int globalcounter = 0;
+#endif
 class Toulbar2_IntVar : public Toulbar2_Expression
 {
+  int counter;
 public: 
   /**
    * Creates a binary integer variable
    */
-  Toulbar2_IntVar() : Toulbar2_Expression() {nbj_ident = -1;}
+  Toulbar2_IntVar() : Toulbar2_Expression() {
+#ifdef _DEBUGWRAP
+	globalcounter++;
+	counter=globalcounter;
+	cout << "INTVAR " << counter << endl; 
+#endif
+	nbj_ident = -1;
+  }
   
   /**
    * Creates an integer variable object
    * whose domain is [lb, ub] with identifier 1
    */
-  Toulbar2_IntVar(const int nval, const int ident) : Toulbar2_Expression(nval) {nbj_ident = ident;}
-  
-  /**
-   * Creates an integer variable object
-   * whose domain is [lb, ub] with identifier 1
-   */
-  Toulbar2_IntVar(const int lb, const int ub, const int ident) : Toulbar2_Expression(lb, ub) {nbj_ident = ident;}
+  Toulbar2_IntVar(const int lb, const int ub, const int ident) : Toulbar2_Expression(lb, ub) {
+#ifdef _DEBUGWRAP
+	globalcounter++;
+	counter=globalcounter;
+	cout << "INTVAR " << counter << endl; 
+#endif
+	nbj_ident = ident;
+  }
   
   /**
    * Creates an integer variable object whose domain is specified by
    * a list of integers and whose identifier is one
    */
-  Toulbar2_IntVar(Toulbar2IntArray& vals, const int ident) : Toulbar2_Expression(vals) {nbj_ident = ident;}
+  Toulbar2_IntVar(Toulbar2IntArray& vals, const int ident) : Toulbar2_Expression(vals) {
+#ifdef _DEBUGWRAP
+	globalcounter++;
+	counter=globalcounter;
+	cout << "INTVAR " << counter << endl; 
+#endif
+	nbj_ident = ident;
+  }
+
+  virtual ~Toulbar2_IntVar() {
+#ifdef _DEBUGWRAP
+	cout << "KILL INTVAR " << counter << endl;
+#endif
+  }
 };
 
 
@@ -209,11 +234,6 @@ public:
    * All Different constraint on two expressions, equivalent to a not equal 
    */
   Toulbar2_AllDiff(Toulbar2_Expression *var1, Toulbar2_Expression *var2);
-    
-  /**
-   * Destructor
-   */
-  virtual ~Toulbar2_AllDiff();
 
   /**
    * Add the all different constraint to the solver
@@ -247,11 +267,6 @@ public:
   Toulbar2_Gcc(Toulbar2ExpArray& vars, Toulbar2IntArray& vals, Toulbar2IntArray& lb_card, Toulbar2IntArray& ub_card);
 
   /**
-   * Destructor
-   */
-  virtual ~Toulbar2_Gcc();
-
-  /**
    * Adds the constraint into the solver
    *
    * see Expression::add()
@@ -273,11 +288,6 @@ public:
    * @param cost : initial cost 
    */
   Toulbar2_PostNullary(int cost);
-
-  /**
-   * Destructor
-   */
-  virtual ~Toulbar2_PostNullary();
 
   /**
    * Adds the constraint into the underlying solver
@@ -307,11 +317,6 @@ public:
   Toulbar2_PostUnary(Toulbar2_Expression* var, Toulbar2IntArray& costs);
 
   /**
-   * Destructor
-   */
-  virtual ~Toulbar2_PostUnary();
-
-  /**
    * Adds the constraint into the underlying solver
    *
    * see Expression::add()
@@ -338,11 +343,6 @@ public:
    * @param vars :- 
    */
   Toulbar2_PostBinary(Toulbar2_Expression* var1, Toulbar2_Expression* var2, Toulbar2IntArray& costs);
-  
-  /**
-   * Destructor
-   */
-  virtual ~Toulbar2_PostBinary();
 
   /**
    * Adds the constraint into the underlying solver
@@ -372,11 +372,6 @@ public:
    * @param vars :- 
    */
   Toulbar2_PostTernary(Toulbar2ExpArray& vars, Toulbar2IntArray& costs);
-  
-  /**
-   * Destructor
-   */
-  virtual ~Toulbar2_PostTernary();
 
   /**
    * Adds the constraint into the underlying solver
@@ -408,11 +403,6 @@ public:
    * @param vars :-
    */
   Toulbar2_PostNary(Toulbar2ExpArray& vars, int arity, int _defcost, Toulbar2IntMultiArray& values, Toulbar2IntArray& costs);
-  
-  /**
-   * Destructor
-   */
-  virtual ~Toulbar2_PostNary();
 
   /**
    * Adds the constraint into the underlying solver
@@ -447,11 +437,6 @@ public:
     //Example of parameter type conversion to Numberjack 
     //virtual void postWSum(int* scopeIndex, int arity, string semantics, Cost baseCost, string comparator, int rightRes) =0;
   Toulbar2_PostWSum(Toulbar2ExpArray& vars, int arity, const char* semantics, const char* baseCost, const char* comparator, int rightRes);
-  
-  /**
-   * Destructor
-   */
-  virtual ~Toulbar2_PostWSum();
 
   /**
    * Adds the constraint into the underlying solver
@@ -483,11 +468,6 @@ public:
    * @param vars :-
    */
   Toulbar2_PostWVarSum(Toulbar2ExpArray& vars, int arity, const char* semantics, const char* baseCost, const char* comparator);
-  
-  /**
-   * Destructor
-   */
-  virtual ~Toulbar2_PostWVarSum();
 
   /**
    * Adds the constraint into the underlying solver
@@ -525,11 +505,6 @@ public:
     //virtual void postWAmong(int* scopeIndex, int arity, string semantics, Cost baseCost, string comparator, int rightRes) =0;
   Toulbar2_PostWAmong(Toulbar2ExpArray& vars, int arity, const char* semantics, const char* baseCost, Toulbar2IntArray& values);
   Toulbar2_PostWAmong(Toulbar2ExpArray& vars, int arity, const char* semantics, const char* baseCost, Toulbar2IntArray& values, int lb, int ub);
-  
-  /**
-   * Destructor
-   */
-  virtual ~Toulbar2_PostWAmong();
 
   /**
    * Adds the constraint into the underlying solver
@@ -575,11 +550,6 @@ public:
   
   Toulbar2_Regular(Toulbar2ExpArray& vars, int arity, int nbStates, Toulbar2IntArray& initialStates, Toulbar2IntArray& acceptingStates, Toulbar2IntMultiArray& transitions, const char* type,
   const char* measureCost, const char* baseCost);
-  
-  /**
-   * Destructor
-   */
-  virtual ~Toulbar2_Regular();
 
   /**
    * Adds the constraint into the underlying solver
@@ -614,11 +584,6 @@ public:
   Toulbar2_Same(Toulbar2ExpArray& vars);
   Toulbar2_Same(Toulbar2ExpArray& vars, const char* type, const char* costValue);
   Toulbar2_Same(Toulbar2ExpArray& vars, const char* type, const char* semantics, const char* baseCost);
-  
-  /**
-   * Destructor
-  */
-  virtual ~Toulbar2_Same();
 
   /**
    * Adds the constraint into the underlying solver
@@ -655,11 +620,6 @@ private:
 
 public:
   Toulbar2_PostWSameGcc(Toulbar2ExpArray& vars, Toulbar2IntArray& vals, Toulbar2IntArray& lb_card, Toulbar2IntArray& ub_card, const char* type, const char* semantics, const char* baseCost);
-  
-  /**
-   * Destructor
-   */
-  virtual ~Toulbar2_PostWSameGcc();
 
   /**
    * Adds the constraint into the solver
@@ -694,11 +654,6 @@ public:
     //Example of parameter type conversion to Numberjack 
     //virtual void postWOverlap(int* scopeIndex, int arity, string semantics, Cost baseCost, string comparator, int rightRes) =0;
   Toulbar2_PostWOverlap(Toulbar2ExpArray& vars, int arity, const char* semantics, const char* baseCost, const char* comparator, int rightRes);
-  
-  /**
-   * Destructor
-   */
-  virtual ~Toulbar2_PostWOverlap();
 
   /**
    * Adds the constraint into the underlying solver
@@ -721,7 +676,6 @@ private:
 public:
   Toulbar2_Table(Toulbar2ExpArray& vars, Toulbar2IntArray& tuples, const char* type); 
   Toulbar2_Table(Toulbar2_Expression *var1, Toulbar2_Expression *var2, Toulbar2IntArray& tuples, const char* type);
-  virtual ~Toulbar2_Table();
   
   //virtual void add(Toulbar2IntArray& tuple);
   virtual Toulbar2_Expression* add(Toulbar2Solver *solver, bool top_level);
@@ -734,7 +688,6 @@ public:
 
 // public:
 //   Toulbar2_Minimise(Toulbar2_Expression *var);
-//   virtual ~Toulbar2_Minimise();
 //   virtual Toulbar2_Expression* add(Toulbar2Solver *solver, bool top_level);
 // };
 
@@ -755,7 +708,7 @@ public:
   vector<Value> solution;
 
   Toulbar2Solver();
-  virtual ~Toulbar2Solver();
+  virtual ~Toulbar2Solver() {}
 
   // add an expression, in the case of a tree of expressions,
   // each node of the tree is added separately, depth first.

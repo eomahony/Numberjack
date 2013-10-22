@@ -215,6 +215,7 @@ class WeightedGcc : public DecomposableGlobalCostFunction{
 		void setBounds(Value value, unsigned int lb, unsigned int ub);
 
 		Cost evaluate(int* tuple) { cerr << "Not yet implemented" << endl; return 0; }
+		void rec_sum_counters(WCSP *wcsp, int *scope, int arity, int totlb, int totub, int *counters, int *lb, int *ub, int nb, int rec);
 		void addToCostFunctionNetwork(WCSP* wcsp);
 		void display(); 
 };

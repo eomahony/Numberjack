@@ -685,7 +685,7 @@ Mistral_Expression* Mistral_LeqLex::add(MistralSolver *solver, bool top_level) {
       scope[i] = _vars.get_item(i)->_self;
     }
 
-    _self = CSP::_LexOrder(scope, n, 1);
+    _self = CSP::_LexOrder(scope, n, 0);
 
     if( top_level )
       _solver->model->add( _self );
@@ -730,7 +730,7 @@ Mistral_Expression* Mistral_LessLex::add(MistralSolver *solver, bool top_level) 
       scope[i] = _vars.get_item(i)->_self;
     }
 
-    _self = CSP::_LexOrder(scope, n, 0);
+    _self = CSP::_LexOrder(scope, n, 1);
 
     if( top_level )
       _solver->model->add( _self );

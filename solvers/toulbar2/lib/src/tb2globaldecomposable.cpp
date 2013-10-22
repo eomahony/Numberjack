@@ -1082,19 +1082,70 @@ WeightedGcc::setBounds(Value value, unsigned int lb, unsigned int ub) {
 
 void 
 WeightedGcc::addToCostFunctionNetwork(WCSP* wcsp) {
+	int nbcounters = bounds.size();
+	int counter = 0;
+	int counters[nbcounters];
+	int clb[nbcounters];
+	int cub[nbcounters];
+	int cscope[nbcounters];
 	for (map<Value,pair <unsigned int,unsigned int> >::iterator it = bounds.begin(); it != bounds.end() ; ++it) {
 		pair<Value,pair <unsigned int,unsigned int> > bound = *it;
 		
 		//Adding a wamong
 		Value value = bound.first;
 		unsigned int lb = (bound.second).first;
+		clb[counter] = lb;
 		unsigned int ub = (bound.second).second;
+		cub[counter] = ub;
 		WeightedAmong* wamong = new WeightedAmong(arity,scope);
 		wamong->setSemantics(semantics);
 		wamong->setBaseCost(baseCost);
 		wamong->addValue(value);
 		wamong->setBounds(lb,ub);
 		wamong->addToCostFunctionNetwork(wcsp);	
+		counters[counter] = wcsp->numberOfVariables() - 1;
+		counter++;
+	}
+//	if (semantics == "hard") rec_sum_counters(wcsp, cscope, 0, 0, 0, counters, clb, cub, nbcounters, 0);
+}
+
+// Special additional constraint propagation for hard decomposed GCC
+// add constraints on end-counters of wamong's decomposed GCC to enforce LB and UB for any subset of values
+void WeightedGcc::rec_sum_counters(WCSP *wcsp, int *cscope, int carity, int totlb, int totub, int *counters, int *clb, int *cub, int nb, int rec)
+{
+	if (rec==nb) {
+		if (carity==2) {
+			vector<Cost> costs(wcsp->getDomainInitSize(cscope[0]) * wcsp->getDomainInitSize(cscope[1]), wcsp->getUb());
+			for (int u=wcsp->getInf(cscope[0]); u<=wcsp->getSup(cscope[0]); u++) {
+				for (int v=wcsp->getInf(cscope[1]); v<=wcsp->getSup(cscope[1]); v++) {
+					if (u+v >= totlb && u+v <= min(totub,arity)) {
+						costs[wcsp->toIndex(cscope[0],u) * wcsp->getDomainInitSize(cscope[1]) + wcsp->toIndex(cscope[1],v)] = MIN_COST;
+					}
+				}
+			}
+			wcsp->postBinaryConstraint(cscope[0], cscope[1], costs);
+		} else if (carity==3) {
+			vector<Cost> costs(wcsp->getDomainInitSize(cscope[0]) * wcsp->getDomainInitSize(cscope[1]) * wcsp->getDomainInitSize(cscope[2]), wcsp->getUb());
+			for (int u=wcsp->getInf(cscope[0]); u<=wcsp->getSup(cscope[0]); u++) {
+				for (int v=wcsp->getInf(cscope[1]); v<=wcsp->getSup(cscope[1]); v++) {
+					for (int w=wcsp->getInf(cscope[2]); w<=wcsp->getSup(cscope[2]); w++) {
+						if (u+v+w >= totlb && u+v+w <= min(totub,arity)) {
+							costs[wcsp->toIndex(cscope[0],u) * wcsp->getDomainInitSize(cscope[1]) * wcsp->getDomainInitSize(cscope[2]) + wcsp->toIndex(cscope[1],v) * wcsp->getDomainInitSize(cscope[2]) + wcsp->toIndex(cscope[2],w)] = MIN_COST;
+						}
+					}
+				}
+			}
+			wcsp->postTernaryConstraint(cscope[0], cscope[1], cscope[2], costs);
+		} else if (carity>3) {
+			wcsp->postWSum(cscope,carity,"hard",wcsp->getUb(),">=",totlb);
+			wcsp->postWSum(cscope,carity,"hard",wcsp->getUb(),"<=",min(totub,arity));
+		}
+	} else {
+		// try without variable at position rec
+		rec_sum_counters(wcsp,cscope,carity,totlb,totub,counters,clb,cub,nb,rec+1);
+		// try with variable at position rec
+		cscope[carity]=counters[rec];
+		rec_sum_counters(wcsp,cscope,carity+1,totlb+clb[rec],totub+cub[rec],counters,clb,cub,nb,rec+1);
 	}
 }
 

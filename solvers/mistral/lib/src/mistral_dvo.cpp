@@ -1483,7 +1483,7 @@ DVO::DVO(Solver *s, const int l)
 PredicateDisjunctive** DVO::get_disjuncts(Solver *s) { return _garbage_disjuncts; }
 PredicateGenDisjunctive** DVO::get_gen_disjuncts(Solver *s) { return _garbage_gen_disjuncts; }
 
-inline VariableInt* DVONoOrder::select() 
+VariableInt* DVONoOrder::select() 
 {
   return *first;
 }

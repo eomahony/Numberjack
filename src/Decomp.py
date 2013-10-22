@@ -84,12 +84,8 @@ class Add(BinPredicate):
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "add")
-        lb0 = self.children[0] if type(self.children[0]) is int else self.children[0].lb
-        ub0 = self.children[0] if type(self.children[0]) is int else self.children[0].ub
-        lb1 = self.children[1] if type(self.children[1]) is int else self.children[1].lb
-        ub1 = self.children[1] if type(self.children[1]) is int else self.children[1].ub
-        self.lb = lb0 + lb1
-        self.ub = ub0 + ub1
+        self.lb = self.get_lb(0) + self.get_lb(1)
+        self.ub = self.get_ub(0) + self.get_ub(1)
 
     def get_symbol(self):
         return '+'
@@ -444,26 +440,13 @@ def cartesian_product(expr):
             p *= n
         return p
 
-    if type(expr) in [int, long, float, bool, str]:
-        return 1
-    elif expr.is_var():
-        return expr.get_size()
-    else:
-        res = prod(cartesian_product(e) for e in expr.children)
-        if (res > MODELMAXSIZE):
-            raise ModelSizeError(res)
-        return res
+    res = prod(e.get_size() for e in get_scope(expr))
+    if (res > MODELMAXSIZE):
+        raise ModelSizeError(res)
+    return res
 
 def get_arity(expr):
-    if type(expr) in [int, long, float, bool, str]:
-        return 0
-    elif expr.is_var():
-        if expr.get_lb() == expr.get_ub():
-            return 0
-        else:
-            return 1
-    else:
-        return sum(get_arity(e) for e in expr.children)
+    return len(get_scope(expr))
 
 def get_scope(expr):
     if type(expr) in [int, long, float, bool, str]:
@@ -477,7 +460,7 @@ def get_scope(expr):
         res = []
         for e in expr.children:
             res.extend(get_scope(e))
-        return res
+        return list(set(res))
 
 def evaluate(expr, assignment):
     if type(expr) in [int, long, float, bool, str]:
@@ -517,13 +500,19 @@ def decompose_BinPredicate(self):
     res = Variable(self.get_lb(),self.get_ub())
     if arity is 0:
         val = evaluate(self, dict([]))
-        res2 = Variable(val,val)
+        res2 = Variable(val,val,str(val))
         return [res2]
     elif arity is 1:
         return [res, Table([res, scope[0]], [(evaluate(self, dict([(scope[0],val0)])), val0) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else xrange(scope[0].get_lb(), scope[0].get_ub()+1))])]
     elif arity is 2:
         product = cartesian_product(self)  # check if decomposition is feasible in size
         return [res, Table([res, scope[0], scope[1]], [(evaluate(self, dict([(scope[0],val0), (scope[1],val1)])), val0, val1) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else xrange(scope[0].get_lb(), scope[0].get_ub()+1)) for val1 in (scope[1].domain_ if scope[1].domain_ is not None else xrange(scope[1].get_lb(), scope[1].get_ub()+1))])]
+    elif arity is 3:
+        product = cartesian_product(self)  # check if decomposition is feasible in size
+        return [res, Table([res, scope[0], scope[1], scope[2]], [(evaluate(self, dict([(scope[0],val0), (scope[1],val1), (scope[2],val2)])), val0, val1, val2) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else xrange(scope[0].get_lb(), scope[0].get_ub()+1)) for val1 in (scope[1].domain_ if scope[1].domain_ is not None else xrange(scope[1].get_lb(), scope[1].get_ub()+1)) for val2 in (scope[2].domain_ if scope[2].domain_ is not None else xrange(scope[2].get_lb(), scope[2].get_ub()+1))])]
+#    elif arity is 4:
+#        product = cartesian_product(self)  # check if decomposition is feasible in size
+#        return [res, Table([res, scope[0], scope[1], scope[2], scope[3]], [(evaluate(self, dict([(scope[0],val0), (scope[1],val1), (scope[2],val2), (scope[3],val3)])), val0, val1, val2, val3) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else xrange(scope[0].get_lb(), scope[0].get_ub()+1)) for val1 in (scope[1].domain_ if scope[1].domain_ is not None else xrange(scope[1].get_lb(), scope[1].get_ub()+1)) for val2 in (scope[2].domain_ if scope[2].domain_ is not None else xrange(scope[2].get_lb(), scope[2].get_ub()+1)) for val3 in (scope[3].domain_ if scope[3].domain_ is not None else xrange(scope[3].get_lb(), scope[3].get_ub()+1))])]
     else:
         size = (self.get_ub(0)+1-self.get_lb(0)) * (self.get_ub(1)+1-self.get_lb(1))
         if (size > MODELMAXSIZE):

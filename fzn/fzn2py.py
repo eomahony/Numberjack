@@ -30,13 +30,13 @@ def array_bool_xor(x):
 
 def array_int_element(x, y, z):
     # Buggy Workaround, produces invalid values in some optimization cases.
-    # aux = Variable(x.lb-1, x.ub-1, "somevar_minus1")
-    # return [(z == Element([Variable(e,e,str(e)) if type(e) is int else e for e in y], aux)), (x >= 1), (x <= len(y)), (aux == x - 1)]
-
+    #aux = Variable(x.lb-1, x.ub-1, "somevar_minus1")
+    #return [(z == Element([Variable(e,e,str(e)) if type(e) is int else e for e in y], aux)), (x >= 1), (x <= len(y)), (aux == x - 1)]
+    #return [(z == Element([Variable(e,e,str(e)) if type(e) is int else e for e in y], x - 1)), int_le(1,x), int_le(x,len(y))]
     u = set()
     for e in y:
         u = u | set([e] if type(e) is int else range(e.lb, e.ub + 1))
-    return [(x >= 1), (x <= len(y)), set_in(z, u)] + [((z == e) | (x != i+1)) for i, e in enumerate(y)]
+    return [int_le(1,x), int_le(x,len(y)), set_in(z, u)] + [((z == e) | (x != i+1)) for i, e in enumerate(y)]
 
 def array_var_int_element(x,y,z):
     return (array_int_element(x,y,z))
@@ -85,15 +85,15 @@ def bool_xor(x, y, z):
     return (z == (x != y))
 
 def int_eq(x,y):
-    return (x == y)
-'''
+        '''
     if (type(y) is int) and issubclass(type(x), Expression) and x.is_var() and y >= x.lb and y <= x.ub:
         x.domain_ = None
         x.lb = y
         x.ub = y
         return []
     else:
-'''
+        '''
+        return (x == y)
 
 def int_eq_reif(x,y,z):
     return (z == (x == y))
@@ -105,13 +105,31 @@ def bool_eq_reif(x, y, z):
     return (int_eq_reif(x, y, z))
 
 def int_le(x,y):
-    return (x <= y)
+        '''
+    if (type(y) is int) and issubclass(type(x), Expression) and x.is_var() and y >= x.lb: # and (x.domain_ is None)
+        x.ub = min(x.ub, y)
+        return []
+    elif (type(x) is int) and issubclass(type(y), Expression) and y.is_var() and x <= y.ub: # and (y.domain_ is None)
+        y.lb = max(y.lb, x)
+        return []
+    else:
+        '''
+        return (x <= y)
 
 def int_le_reif(x,y,z):
     return (z == (x <= y))
 
 def int_lt(x,y):
-    return (x < y)
+        '''
+    if (type(y) is int) and issubclass(type(x), Expression) and x.is_var() and y > x.lb: # and (x.domain_ is None)
+        x.ub = min(x.ub, y-1)
+        return []
+    elif (type(x) is int) and issubclass(type(y), Expression) and y.is_var() and x < y.ub: # and (y.domain_ is None)
+        y.lb = max(y.lb, x+1)
+        return []
+    else:
+        '''
+        return (x < y)
 
 def int_lt_reif(x,y,z):
     return (z == (x < y))
@@ -123,34 +141,58 @@ def int_ne_reif(x,y,z):
     return (z == (x != y))
 
 def int_lin_eq(coef,vars,res):
-    return (res == Sum(vars,coef))
+    if ((len(coef) == 1) and (coef[0] == 1)):
+       return int_eq(vars[0],res)
+    else:
+       return (res == Sum(vars,coef))
 
 def bool_lin_eq(coef,vars,res):
     return (int_lin_eq(coef,vars,res))
 
 def int_lin_eq_reif(coef,vars,res,z):
-    return (z == (res == Sum(vars, coef)))
+    if ((len(coef) == 1) and (coef[0] == 1)):
+       return int_eq_reif(vars[0],res,z)
+    else:
+       return (z == (res == Sum(vars, coef)))
 
 def int_lin_le(coef,vars,res):
-    return (res >= Sum(vars,coef))
+    if ((len(coef) == 1) and (coef[0] == 1)):
+       return int_le(vars[0],res)
+    else:
+       return (res >= Sum(vars,coef))
 
 def bool_lin_le(coef,vars,res):
     return (int_lin_le(coef,vars,res))
 
 def int_lin_le_reif(coef,vars,res,z):
-    return (z == (res >= Sum(vars,coef)))
+    if ((len(coef) == 1) and (coef[0] == 1)):
+       return int_le_reif(vars[0],res,z)
+    else:
+       return (z == (res >= Sum(vars,coef)))
 
 def int_lin_lt(coef,vars,res):
-    return (res > Sum(vars,coef))
+    if ((len(coef) == 1) and (coef[0] == 1)):
+       return int_lt(vars[0],res)
+    else:
+       return (res > Sum(vars,coef))
 
 def int_lin_lt_reif(coef,vars,res,z):
-    return (z == (res > Sum(vars,coef)))
+    if ((len(coef) == 1) and (coef[0] == 1)):
+       return int_lt_reif(vars[0],res,z)
+    else:
+       return (z == (res > Sum(vars,coef)))
 
 def int_lin_ne(coef,vars,res):
-    return (res != Sum(vars,coef))
+    if ((len(coef) == 1) and (coef[0] == 1)):
+       return int_ne(vars[0],res)
+    else:
+       return (res != Sum(vars,coef))
 
 def int_lin_ne_reif(coef,vars,res,z):
-    return (z == (res != Sum(vars,coef)))
+    if ((len(coef) == 1) and (coef[0] == 1)):
+       return int_ne_reif(vars[0],res,z)
+    else:
+       return (z == (res != Sum(vars,coef)))
 
 def int_abs(x,y):
     return (y == Abs(x))
@@ -178,6 +220,11 @@ def int_times(x,y,z):
     return (z == (x * y))
 
 def set_in(x,dom):
+    if (type(x) is int):
+        if (not(x in dom)):
+            return [Variable(x,x,str(x)) != x]
+        else:
+            return []
 #    return (Disjunction([(x == v) for v in dom]))
     return [(x != v) for v in range(x.get_min(),1+x.get_max()) if (not(v in dom))]
 '''
@@ -264,6 +311,10 @@ def run_solve(model, output_vars, param):
         solver.setOption('deadEndElimination',param['dee'])
         solver.setOption('btdMode',param['btd'])
         solver.setOption('splitClusterMaxSize',param['rds'])
+##        uncomment the following lines to save the problem in wcsp format
+#        solver.setOption('nopre')
+#        solver.setOption('lcLevel',0)
+#        solver.setOption("dumpWCSP",2)
     if param['solver'] == 'Mistral':
         solver.solveAndRestart(param['restart'], param['base'], param['factor'])
     else:

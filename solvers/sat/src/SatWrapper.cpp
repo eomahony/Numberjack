@@ -1832,7 +1832,8 @@ class TupleComparitor {
         skip one of the indices in the comparison.
     */
 public:
-    unsigned int skip_index = 0;
+    unsigned int skip_index;
+    TupleComparitor() : skip_index(0) {}
 
     bool operator()(const std::vector<int> *a, const std::vector<int> *b) const {
         for(unsigned int i=0; i<a->size() && i<b->size(); i++){

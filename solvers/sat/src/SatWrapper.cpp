@@ -2782,7 +2782,7 @@ SatWrapper_Expression* SatWrapper_Maximise::add(SatWrapperSolver *solver, bool t
         if(top_level) {
 
 #ifdef _DEBUGWRAP
-            std::cout << "Adding minimise objective" << std::endl;
+            std::cout << "Adding maximise objective" << std::endl;
 #endif
 
             _solver->maximise_obj = _obj;

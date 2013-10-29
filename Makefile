@@ -3,7 +3,7 @@ SRC = ./src
 SOL = ./solvers
 
 # List of wrappers that need to be compiled before the solver interfaces.
-WRAPPERS = sat mip externalcnf externalxcsp
+WRAPPERS = sat mip
 
 SOLVERS = $(wildcard $(SOL)/*)
 TEMPTARGETS = $(patsubst $(SOL)/%, %, $(SOLVERS))

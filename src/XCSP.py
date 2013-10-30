@@ -117,6 +117,12 @@ class XCSPRelation(object):
         self.tuples = []
 
     def get_expr(self, args):
+        if len(args) == 1:  # Benchmarks like si2-BVG define a Table over one variable, for some reason.
+            x = args[0]
+            if self.semantics == "conflict":
+                return [x != t[0] for t in self.tuples]
+            else:
+                return Disjunction([x == t[0] for t in self.tuples])
         return Table(args, self.tuples, type=self.semantics)
 
 

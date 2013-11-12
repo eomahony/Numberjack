@@ -1,6 +1,8 @@
+#! /usr/bin/env python
+
 '''
   Numberjack is a constraint satisfaction and optimisation library
-  Copyright (C) 2009 Emmanuel Hebrard, Eoin O'Mahony
+  Copyright (C) 2009-2013 Cork Constraint Computation Center, UCC
   
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published by
@@ -20,29 +22,18 @@
 '''
 
 
-#! /usr/bin/env python
-
 from distutils.core import setup
 setup(name='Numberjack',
       version='1.0',
       author="Numberjack Team",
       author_email="numberjack.support@gmail.com",
       url="http://numberjack.ucc.ie/",
-      py_modules=['Numberjack', 'MIPParser'],
+      py_modules=['Numberjack', 'MIPParser', 'ExternalSolver', 'XCSP', 'XCSPOut', 'Decomp'],
+      license="License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
+      description="A Python platform for combinatorial optimization.",
+      long_description="""Numberjack is a modelling package written in Python
+for constraint programming and combinatorial optimization. Python benefits from
+a large and active programming community, Numberjack is therefore a perfect tool
+to embed CP technology into larger applications. It is designed to support a
+number of efficient underlying C/C++ solvers seamlessly and efficiently.""",
       )
-setup(name='Decomp',
-      version='1.0',
-      author="Numberjack Team",
-      author_email="numberjack.support@gmail.com",
-      url="http://numberjack.ucc.ie/",
-      py_modules=['Decomp'],
-      )
-
-#setup(name="ThreadSolver",
-#      version='1.0',
-#      py_modules=['ThreadSolver'])
-#setup(name='NumberjackSolver',
-#      version='1.0',
-#      package_dir={'NumberjackSolver': 'NumberjackSolver'},
-#      packages=['NumberjackSolver']
-#      )

@@ -54,7 +54,7 @@ class XCSPPredicate(object):
         pred_name = bits[0]
         remaining = bits[1][:-1]
         if pred_name not in functional_map:
-            raise XCSPParserError("Unknown predicate name %s" % pred_name)
+            raise XCSPParserUnsupportedError("Unknown predicate name %s" % pred_name)
 
         self.pred_name = pred_name
         self.predicate = functional_map[pred_name]
@@ -135,6 +135,15 @@ class XCSPParserError(exceptions.Exception):
         return "Error: %s" % self.msg
 
 
+class XCSPParserUnsupportedError(XCSPParserError):
+
+    def __init__(self, msg="Unsupported constraint."):
+        self.msg = msg
+
+    def __str__(self):
+        return "Error: %s" % self.msg
+
+
 class XCSPParser(object):
 
     def __init__(self, filename):
@@ -195,7 +204,7 @@ class XCSPParser(object):
 
                 relation = XCSPRelation(semantics)
                 if len(list(r)) > 0:
-                    raise XCSPParserError("Only abridged notation for relations is supported for now.")
+                    raise XCSPParserUnsupportedError("Only abridged notation for relations is supported for now.")
                 if r.text is not None and len(r.text.strip()) > 0:
                     for t_str in r.text.split("|"):
                         bits = [s.strip() for s in t_str.split(" ") if len(s.strip()) > 0]
@@ -213,7 +222,7 @@ class XCSPParser(object):
                 expression = p.find('expression')
                 functional = expression.find('functional')
                 if functional is None:
-                    raise XCSPParserError("Only functional predicate definitions are currently supported.")
+                    raise XCSPParserUnsupportedError("Only functional predicate definitions are currently supported.")
                 self.pred_and_rel[name] = XCSPPredicate(param_order, functional.text)
 
     def parse_constraints(self):
@@ -263,7 +272,7 @@ class XCSPParser(object):
 
             elif "global:" in reference:
                 if reference not in global_map:
-                    raise XCSPParserError("Unknown global %s" % reference)
+                    raise XCSPParserUnsupportedError("Unknown global %s" % reference)
 
                 if reference == "global:allDifferent":
                     parameters = c.find('parameters')
@@ -292,10 +301,10 @@ class XCSPParser(object):
                     constraint = functional_map[op_str]([Sum(X, W), rhs])
 
                 else:
-                    raise XCSPParserError("Unknown global constraint %s" % reference)
+                    raise XCSPParserUnsupportedError("Unknown global constraint %s" % reference)
 
             else:
-                raise XCSPParserError("Unknown constraint predicate/relation: %s" % reference)
+                raise XCSPParserUnsupportedError("Unknown constraint predicate/relation: %s" % reference)
 
             self.model += constraint
 
@@ -310,15 +319,16 @@ def isnumeric(s):
 
 if __name__ == '__main__':
     import datetime
+    import time
     import os
 
     def usage():
         print >> sys.stderr, "Usage: python %s -solver Mistral|MiniSat|... -xcsp xcspfilename.xml" % sys.argv[0]
         sys.exit(1)
 
-    default = {'solver': '', 'verbose': 0, 'tcutoff': 60, 'xcsp': '', 'encoding': ''}
+    default = {'solver': '', 'verbose': 0, 'tcutoff': 3600, 'xcsp': '', 'encoding': ''}
     param = input(default)
-    filename = param['xcsp']
+    filename = os.path.abspath(param['xcsp'])
     encoding = NJEncodings[param['encoding']] if param['encoding'] else None
 
     if not os.path.isfile(filename):
@@ -327,23 +337,30 @@ if __name__ == '__main__':
     if not param['solver']:
         print >> sys.stderr, "Error: Please sepcify a solver."
         usage()
-    
+
     t = datetime.datetime.now()
+    c = time.clock()
     parser = XCSPParser(filename)
-    print "c Time to parse: %.2f" % (datetime.datetime.now() - t).total_seconds()
+    print "c Time to parse: %.2f %.2f" % ((datetime.datetime.now() - t).total_seconds(), (time.clock() - c))
     model, variables = parser.model, parser.variables
     # print "\n".join(str(v) for v in variables)
     # print model
     # sys.exit(0)
+    # t = datetime.datetime.now()
     # model.preprocess()
+    # print "c Time to preprocess: %.2f" % (datetime.datetime.now() - t).total_seconds()
     print "c Loading model"
     t = datetime.datetime.now()
+    c = time.clock()
     s = model.load(param['solver'], encoding=encoding)
-    print "c Time to load model: %.2f" % (datetime.datetime.now() - t).total_seconds()
+    print "c Time to load model: %.2f %.2f" % ((datetime.datetime.now() - t).total_seconds(), (time.clock() - c))
     s.setVerbosity(param['verbose'])
-    s.setTimeLimit(param['tcutoff'])
+    s.setTimeLimit(int(param['tcutoff'] - time.clock()))
     print "c Solve"
+    t = datetime.datetime.now()
+    c = time.clock()
     s.solve()
+    print "c Time to solve: %.2f %.2f" % ((datetime.datetime.now() - t).total_seconds(), (time.clock() - c))
     print "c Nodes %d" % s.getNodes()
     print "c Failures %d" % s.getFailures()
     print "c SolveTime %.4f" % s.getTime()

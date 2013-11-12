@@ -48,7 +48,7 @@ LFLAGS = -L$(GUROBI_HOME)/lib -lgurobi_c++ -l$(GUROBILIB)
 # Rules
 #-----------------------------------------------------------------------------
 
-CXX = g++
+CXX ?= g++
 
 
 wrapper: check-env $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/Gurobi.o $(PYTHON)/Gurobi_wrap.o

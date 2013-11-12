@@ -3362,6 +3362,13 @@ class NBJ_STD_Solver(object):
     def getOptimum(self):
         return self.solver.getOptimum()
 
+    def getOptimalityGap(self):
+        if hasattr(self.solver, 'getOptimalityGap'):
+            return self.solver.getOptimalityGap()
+        else:
+            raise UnsupportedSolverFunction(self.Library, "getOptimalityGap", "This solver does not support getting the optimility gap.")
+        return None
+
     ## Returns the number of backtracks performed during the last search
     def getBacktracks(self):
         return self.solver.getBacktracks()

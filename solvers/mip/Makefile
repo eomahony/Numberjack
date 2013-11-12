@@ -40,7 +40,7 @@ CFLAGS    += -Wall -ffloat-store -O3
 # Rules
 #-----------------------------------------------------------------------------
 
-CXX = g++ 
+CXX ?= g++ 
 
 
 wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/MipWrapper.o

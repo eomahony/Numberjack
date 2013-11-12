@@ -822,6 +822,7 @@ namespace CSPXMLParser
       }
     };
 
+    class ParametersTagAction;
     class PredicateTagAction : public TagAction
     {
     public:

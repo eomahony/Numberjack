@@ -166,6 +166,10 @@ double CPLEXSolver::getTime() {
     return cplextime;
 }
 
+double CPLEXSolver::getOptimalityGap(){
+    return cplex->getMIPRelativeGap();
+}
+
 double CPLEXSolver::get_value(void *ptr){
     int index = *(int*)(ptr);
     if(index >= 0 && index < variables->getSize()){

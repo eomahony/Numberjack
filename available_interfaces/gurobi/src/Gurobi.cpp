@@ -94,7 +94,14 @@ void GurobiSolver::add_in_constraint(LinearConstraint *con, double coef){
         model->set(GRB_IntAttr_ModelSense, -1 * (int)coef);
         model->setObjective(lin_expr);
     } else {
-        model->addRange(lin_expr, con->_lhs, con->_rhs);
+        if(con->_lhs > -INFINITY && con->_rhs < INFINITY){
+            if(con->_lhs == con->_rhs) {
+                model->addConstr(lin_expr, GRB_EQUAL, con->_lhs);
+            } else {
+                model->addRange(lin_expr, con->_lhs, con->_rhs);
+            }
+        } else if(con->_lhs > -INFINITY) model->addConstr(lin_expr, GRB_GREATER_EQUAL, con->_lhs);
+        else if(con->_rhs < INFINITY) model->addConstr(lin_expr, GRB_LESS_EQUAL, con->_rhs);
     }
 }
 
@@ -158,6 +165,13 @@ double GurobiSolver::getTime(){
     return model->get(GRB_DoubleAttr_Runtime);
 }
 
+double GurobiSolver::getOptimalityGap(){
+    if ((model->get(GRB_IntAttr_SolCount) == 0) || (fabs(model->get(GRB_DoubleAttr_ObjVal)) < 1e-6)) {
+        return GRB_INFINITY;
+    }
+    return fabs(model->get(GRB_DoubleAttr_ObjBound) - model->get(GRB_DoubleAttr_ObjVal)) / fabs(model->get(GRB_DoubleAttr_ObjVal));
+}
+
 double GurobiSolver::get_value(void *ptr){
     int index = *(int*)(ptr);
     if(index >= 0 && index < variables->size()){
@@ -166,17 +180,3 @@ double GurobiSolver::get_value(void *ptr){
     }
     return 0.0;
 }
-
-
-// Simple function to determine the MIP gap
-// double gap(GRBModel *model) throw(GRBException)
-// {
-//   if ((model->get(GRB_IntAttr_SolCount) == 0) ||
-//       (fabs(model->get(GRB_DoubleAttr_ObjVal)) < 1e-6))
-//   {
-//     return GRB_INFINITY;
-//   }
-//   return fabs(model->get(GRB_DoubleAttr_ObjBound) -
-//               model->get(GRB_DoubleAttr_ObjVal)) /
-//          fabs(model->get(GRB_DoubleAttr_ObjVal));
-// }

@@ -21,7 +21,7 @@ CPLEXLDFLAGS = `python $(MAINDIR)/tools/solverconfig.py CPLEX lflags`
 OPTFLAGS = -O3
 COMPILFLAGS = -Wall -D_UNIX -fPIC -I$(MIPDIR)/src/ $(CPLEXCCFLAGS)
 
-CCC = g++ $(OPTFLAGS) $(COMPILFLAGS)
+CCC ?= g++
 
 
 #-----------------------------------------------------------------------------
@@ -75,11 +75,11 @@ install_python: wrapper
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 	@echo "-> compiling $@"
-	@$(CCC) $(CFLAGS) $(CCFLAGS) -c -o $@ $< 
+	@$(CCC) $(OPTFLAGS) $(COMPILFLAGS) $(CFLAGS) $(CCFLAGS) -c -o $@ $< 
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 	@echo "-> compiling $@"
-	@$(CCC) $(CFLAGS) $(PYLIB) -I$(SRCDIR) -c $< -o $@
+	@$(CCC) $(OPTFLAGS) $(COMPILFLAGS) $(CFLAGS) $(PYLIB) -I$(SRCDIR) -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	
@@ -92,4 +92,4 @@ $(PYTHON)/%.i: $(SRCDIR)/%.hpp
 
 $(PYTHON)/_%.so: $(OBJDIR)/%.o $(MIPDIR)/obj/MipWrapper.o $(PYTHON)/%_wrap.o
 	@echo "-> linking $@"
-	@$(CCC) $(BUNDLE) -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(LFLAGS) $(MIPDIR)/obj/MipWrapper.o python/$(MAINNAME)_wrap.o -o $@ $(CPLEXLDFLAGS)
+	@$(CCC) $(OPTFLAGS) $(COMPILFLAGS) $(BUNDLE) -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(LFLAGS) $(MIPDIR)/obj/MipWrapper.o python/$(MAINNAME)_wrap.o -o $@ $(CPLEXLDFLAGS)

@@ -45,6 +45,7 @@ public:
     bool is_opt();
     void printStatistics();
     double getTime();
+    double getOptimalityGap();
     
     // Value stuff
     virtual double get_value(void *ptr);

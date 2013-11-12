@@ -514,6 +514,7 @@ public:
     virtual int getChecks();
     virtual int getPropags();
     virtual double getTime();
+    virtual double getOptimalityGap();
 
     // Value pass back stuff
     virtual double get_value(void *ptr);

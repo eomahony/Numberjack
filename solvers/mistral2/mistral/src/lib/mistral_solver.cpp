@@ -1605,7 +1605,10 @@ Mistral::Outcome Mistral::Solver::sequence_search(Vector< Vector< Variable > >& 
   Vector< int > phase_level;
 
   
-  VarStack < Variable, ReversibleNum<int> >  copy_sequences[sequences.size];
+  // This doesn't work with clang! Check this out (section Variable-length arrays) http://clang.llvm.org/compatibility.html
+  //  VarStack < Variable, ReversibleNum<int> >  copy_sequences[sequences.size];
+  VarStack < Variable, ReversibleNum<int> > * copy_sequences;
+  copy_sequences = new VarStack < Variable, ReversibleNum<int> > [sequences.size];
 
   for(unsigned int i=0; i<sequences.size; ++i) {
     copy_sequences[i].initialise(this);
@@ -1761,7 +1764,7 @@ Mistral::Outcome Mistral::Solver::sequence_search(Vector< Vector< Variable > >& 
   }
 
   //std::cout << outcome2str(satisfiability) << std::endl;
-
+  delete [] copy_sequences;
   return satisfiability;
 }
 

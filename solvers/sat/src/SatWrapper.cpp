@@ -2898,8 +2898,13 @@ void SatWrapperSolver::store_solution(SatWrapperIntArray& literals) {
 
     for(unsigned int i=0; i<literals.size(); i++) {
         int v = literals.get_item(i);
-        if(v > 0) sat_model[abs(v)] = l_True;
-        else sat_model[abs(v)] = l_False;
+        int var_index = abs(v);
+        if(var_index >= sat_model.size()){
+            std::cerr << "c Ignoring invalid SAT variable " << var_index << ". sat_model.size: " << sat_model.size() << std::endl;
+            continue;  // ignore for now.
+        }
+        if(v > 0) sat_model[var_index] = l_True;
+        else sat_model[var_index] = l_False;
     }
 }
 

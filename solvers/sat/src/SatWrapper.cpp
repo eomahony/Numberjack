@@ -814,22 +814,73 @@ void absoluteEncoder(SatWrapper_Expression *X,
             }
         }
     } else if(encoding->order) {
-        for(i=0; i<X->getsize(); i++){
-            x = X->getval(i);
-            for(j=0; j<Y->getsize(); j++){
-                y = Y->getval(j);
-                if(x != abs(y)) {
-                    lits.clear();
-                    if(i>0) lits.push_back(X->less_or_equal(prev_x, i-1));
-                    if(j>0) lits.push_back(Y->less_or_equal(prev_y, j-1));
-                    lits.push_back(~(X->less_or_equal(x,i)));
-                    lits.push_back(~(Y->less_or_equal(y,j)));
-                    solver->addClause(lits);
-                }
-                prev_y = y;
-            }
-            prev_x = x;
-        }
+        std::cerr << "ERROR: order encoding of absolute not implemented yet." << std::endl;
+        exit(1);
+        // int largest_neg = std::numeric_limits<int>::min();
+        // Lit largest_neg_lit;
+        // SatWrapper_Expression *is_neg = new SatWrapper_Expression();
+        // is_neg->encoding = encoding;
+        // is_neg->add(solver, true);
+
+        // for(j=0; j<Y->getsize(); j++){
+        //     y = Y->getval(j);
+        //     if(y >= 0) break;
+        //     if(y < 0 and y > largest_neg){
+        //         largest_neg = y;
+        //         largest_neg_lit = Y->less_or_equal(y,j);
+        //     }
+        // }
+        // if(largest_neg > std::numeric_limits<int>::min()){
+        //     lits.clear();
+        //     lits.push_back();
+        // }
+
+        // for(j=0; j<Y->getsize(); j++){
+        //     y = Y->getval(j);
+        //     lits.clear();
+        //     // if(j == Y->getsize() - 1)
+        //     lits.push_back(~(Y->less_or_equal(y,j)));
+        //     if(y < 0){
+        //         x = abs(y);
+        //         lits.push_back(X->greater_than(x - 1));
+        //         // lits.push_back(is_neg->equal(0));
+        //         lits.push_back(~largest_neg_lit);
+        //     } else {
+        //         x = y;
+        //         lits.push_back(X->less_or_equal(x));
+        //         // lits.push_back(is_neg->equal(1));
+        //         lits.push_back(largest_neg_lit);
+        //     }
+        //     solver->addClause(lits);
+        // }
+        // for(i=0; i<X->getsize(); i++){
+        //     x = X->getval(i);
+        //     for(j=0; j<Y->getsize(); j++){
+        //         y = Y->getval(j);
+        //         if(x != abs(y)) {
+        //             lits.clear();
+        //             if(i>0) lits.push_back(X->less_or_equal(prev_x, i-1));
+        //             if(j>0) lits.push_back(Y->less_or_equal(prev_y, j-1));
+        //             lits.push_back(~(X->less_or_equal(x,i)));
+        //             lits.push_back(~(Y->less_or_equal(y,j)));
+        //             solver->addClause(lits);
+        //         }
+        //         prev_y = y;
+        //     }
+        //     prev_x = x;
+        // }
+
+        // SatWrapper_Expression *negY = new SatWrapper_mul(Y, -1);
+        // SatWrapper_Expression *ge1 = new SatWrapper_ge(X, Y);
+        // ge1->add(solver, true);
+        // SatWrapper_Expression *ge2 = new SatWrapper_ge(X, negY);
+        // ge2->add(solver, true);
+        
+        // SatWrapper_Expression *le1 = new SatWrapper_le(X, Y);
+        // SatWrapper_Expression *le2 = new SatWrapper_le(X, negY);
+        // SatWrapper_Expression *or1 = new SatWrapper_or(le1, le2);
+        // or1->add(solver, true);
+
     } else if(encoding->direct && encoding->support) {
         // Encode support clauses (x_1 \/ x_2 \/ !y_3)
         supportClauseEncoder(X, Y, 0, solver, encoding, &equal_abs_second);

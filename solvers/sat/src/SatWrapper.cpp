@@ -1483,6 +1483,14 @@ SatWrapper_Expression* SatWrapper_Abs::add(SatWrapperSolver *solver, bool top_le
 
         } else {
             _var = _var->add(solver, false);
+
+            if(_var->getmin() >=0){
+                return _var;
+            } else if(_var->getmax() <= 0){
+                SatWrapper_Expression *neg_var = new SatWrapper_mul(_var, -1);
+                neg_var = neg_var->add(solver, false);
+                return neg_var;
+            }
             
             // Need to extract just the set of absolute values from arg1's domain.
             std::set<int> values_set;
@@ -1498,8 +1506,8 @@ SatWrapper_Expression* SatWrapper_Abs::add(SatWrapperSolver *solver, bool top_le
             domain->encode(solver);
 
 #ifdef _DEBUGWRAP
-            std::cout << "encode abs predicate Abs(x" << _ident << ") == x"
-                      << _var->_ident << std::endl;
+            std::cout << "encode abs predicate Abs(x" << _var->_ident << ") == x"
+                      << _ident << std::endl;
 #endif
 
             absoluteEncoder(this, _var, solver, encoding);

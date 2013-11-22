@@ -3523,4 +3523,20 @@ class EncodingConfiguration(object):
         return "EncodingConfig<direct:%r, order:%r, conflict:%r, support:%r, amo:%r, alldiff:%r>" % (
             self.direct, self.order, self.conflict, self.support, self.amo_encoding, self.alldiff_encoding)
 
+
+NJEncodings = {
+    # "directsupport": EncodingConfiguration(direct=True, order=False, conflict=True, support=True, amo_encoding=AMOEncoding.Pairwise),
+    "direct": EncodingConfiguration(direct=True, order=False, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise, alldiff_encoding=AllDiffEncoding.PairwiseDecomp),
+    "support": EncodingConfiguration(direct=True, order=False, conflict=False, support=True, amo_encoding=AMOEncoding.Pairwise, alldiff_encoding=AllDiffEncoding.PairwiseDecomp),
+    "order": EncodingConfiguration(direct=False, order=True, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise, alldiff_encoding=AllDiffEncoding.PairwiseDecomp),
+    "directorder": EncodingConfiguration(direct=True, order=True, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise, alldiff_encoding=AllDiffEncoding.PairwiseDecomp),
+    "ladder_direct": EncodingConfiguration(direct=True, order=False, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise, alldiff_encoding=AllDiffEncoding.LadderAMO),
+    "ladder_support": EncodingConfiguration(direct=True, order=False, conflict=False, support=True, amo_encoding=AMOEncoding.Pairwise, alldiff_encoding=AllDiffEncoding.LadderAMO),
+    "ladder_directorder": EncodingConfiguration(direct=True, order=True, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise, alldiff_encoding=AllDiffEncoding.LadderAMO),
+    "pairwise_and_ladder_direct": EncodingConfiguration(direct=True, order=False, conflict=True, support=False, alldiff_encoding=AllDiffEncoding.PairwiseDecomp | AllDiffEncoding.LadderAMO),
+    "pairwise_order_pigeon": EncodingConfiguration(direct=False, order=True, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise, alldiff_encoding=AllDiffEncoding.PairwiseDecomp | AllDiffEncoding.PigeonHole),
+    "pairwise_directorder_pigeon": EncodingConfiguration(direct=True, order=True, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise, alldiff_encoding=AllDiffEncoding.PairwiseDecomp | AllDiffEncoding.PigeonHole),
+    "ladder_directorder_pigeon": EncodingConfiguration(direct=True, order=True, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise, alldiff_encoding=AllDiffEncoding.LadderAMO | AllDiffEncoding.PigeonHole),
+}
+
 ##  @}

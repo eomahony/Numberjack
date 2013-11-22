@@ -2136,7 +2136,7 @@ SatWrapper_and::SatWrapper_and(SatWrapper_Expression *var1, SatWrapper_Expressio
     : SatWrapper_binop(var1,var2) {
 
 #ifdef _DEBUGWRAP
-    std::cout << "creating or predicate" << std::endl;
+    std::cout << "creating and predicate" << std::endl;
 #endif
 
     domain = new DomainEncoding(this);
@@ -2157,7 +2157,7 @@ SatWrapper_and::SatWrapper_and(SatWrapper_Expression *var1, int rhs)
 SatWrapper_and::~SatWrapper_and() {
 
 #ifdef _DEBUGWRAP
-    std::cout << "delete or" << std::endl;
+    std::cout << "delete and" << std::endl;
 #endif
 
 }
@@ -2176,47 +2176,21 @@ SatWrapper_Expression* SatWrapper_and::add(SatWrapperSolver *solver, bool top_le
 
             if(_vars[1]) {
 
-                ///////////// OLD BUGGY?? VERSION ///////////////
-                // 	_vars[0] = _vars[0]->add(_solver, false);
-                // 	_vars[1] = _vars[1]->add(_solver, false);
-
-                // #ifdef _DEBUGWRAP
-                // 	std::cout << "add and constraint" << std::endl;
-                // #endif
-
-                // 	for(int i=0; i<2; ++i) {
-                // 	  lits.clear();
-                // 	  lits.push_back(~(_vars[i]->equal(0)));
-                // 	  _solver->addClause(lits);
-                // 	}
+#ifdef _DEBUGWRAP
+                std::cout << "add and constraint" << std::endl;
+#endif
 
                 _vars[0] = _vars[0]->add(_solver, true);
                 _vars[1] = _vars[1]->add(_solver, true);
 
-#ifdef _DEBUGWRAP
-                std::cout << "add and constraint" << std::endl;
-#endif
-
-
             } else if(_rhs != 0) {
 
-                ///////////// NEW VERSION ///////////////
-                _vars[0] = _vars[0]->add(_solver, true);
-
 #ifdef _DEBUGWRAP
                 std::cout << "add and constraint" << std::endl;
 #endif
 
-                ///////////// OLD BUGGY?? VERSION ///////////////
-                // 	_vars[0] = _vars[0]->add(_solver, false);
+                _vars[0] = _vars[0]->add(_solver, true);
 
-                // #ifdef _DEBUGWRAP
-                // 	std::cout << "add and constraint" << std::endl;
-                // #endif
-
-                // 	lits.clear();
-                // 	lits.push_back(~(_vars[0]->equal(0)));
-                // 	_solver->addClause(lits);
             }
 
         } else {

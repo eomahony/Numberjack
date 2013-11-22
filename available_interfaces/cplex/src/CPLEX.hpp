@@ -43,6 +43,7 @@ public:
     void printStatistics();
     int getNodes();
     double getTime();
+    double getOptimalityGap();
     virtual double get_value(void *ptr);
 };
 

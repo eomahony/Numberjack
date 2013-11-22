@@ -149,6 +149,10 @@ double SCIPSolver::getTime(){
   return SCIPclockGetTime(_scip->stat->solvingtime);
 }
 
+double SCIPSolver::getOptimalityGap(){
+  return SCIPgetGap(_scip);;
+}
+
 double SCIPSolver::get_value(void *ptr){
   return SCIPgetSolVal(_scip, SCIPgetBestSol(_scip), (SCIP_VAR*) ptr);
 }

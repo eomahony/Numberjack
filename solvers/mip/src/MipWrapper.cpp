@@ -1900,6 +1900,10 @@ double MipWrapperSolver::getTime() {
     return 0;
 }
 
+double MipWrapperSolver::getOptimalityGap(){
+    return INFINITY;
+}
+
 double MipWrapperSolver::get_value(void *ptr) {
     return 0;
 }

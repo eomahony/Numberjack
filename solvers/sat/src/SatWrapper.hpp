@@ -91,7 +91,7 @@ public:
         PigeonHole=4};
     AllDiffEncoding alldiff_encoding;
 
-    virtual std::ostream& display(std::ostream& o) {
+    std::ostream& display(std::ostream& o) {
         o << "EncodingConfiguration<direct:" << direct \
           << " order:" << order << " conflict:" << conflict \
           << " support:" << support << " amo_encoding:" << amo_encoding \
@@ -117,6 +117,7 @@ public:
     AbstractDomain(SatWrapper_Expression *o) {
         owner = o;
     }
+    virtual ~AbstractDomain() {}
 
     virtual int getval(int idx) const = 0;
     virtual int getmin() const = 0;

@@ -504,7 +504,7 @@ void additionEncoder(SatWrapper_Expression *X,
                      SatWrapperSolver *solver,
                      EncodingConfiguration *encoding) {
     Lits lits;
-    int i, j, x, y, z, prev_x = NULL, prev_y = NULL, prev_z = NULL;
+    int i, j, x, y, z, prev_x, prev_y, prev_z;
 
     if(encoding->direct) {
         for(i=0; i<X->getsize(); ++i) {
@@ -583,7 +583,7 @@ void multiplicationEncoder(SatWrapper_Expression *X,
                      SatWrapperSolver *solver,
                      EncodingConfiguration *encoding) {
     Lits lits;
-    int i, j, x, y, z, prev_x = NULL, prev_y = NULL, prev_z = NULL;
+    int i, j, x, y, z, prev_x, prev_y, prev_z;
 
     if(encoding->direct) {
         for(i=0; i<X->getsize(); ++i) {
@@ -656,7 +656,7 @@ void modulusEncoder(SatWrapper_Expression *X,
                     SatWrapper_Expression *Z,
                     SatWrapperSolver *solver,
                     EncodingConfiguration *encoding) {    
-    int i, j, k, x, y, z, prev_x = NULL, prev_y = NULL;
+    int i, j, k, x, y, z, prev_x, prev_y;
 
     if(encoding->direct) {
         Lits conflict_lits, support_lits;
@@ -739,7 +739,7 @@ void disequalityEncoder(SatWrapper_Expression *X,
                         SatWrapperSolver *solver,
                         EncodingConfiguration *encoding) {
     Lits lits;
-    int i=0, j=0, x, y, prev_x = NULL, prev_y = NULL;
+    int i=0, j=0, x, y, prev_x, prev_y;
 
     if(encoding->direct && encoding->conflict) {
         while( i<X->getsize() && j<Y->getsize() ) {
@@ -797,7 +797,7 @@ void absoluteEncoder(SatWrapper_Expression *X,
                      SatWrapperSolver *solver,
                      EncodingConfiguration *encoding) {
     Lits lits;
-    int i=0, j=0, x, y, prev_x = NULL, prev_y = NULL;
+    int i=0, j=0, x, y;
 
     if(encoding->direct && encoding->conflict) {
         for(i=0; i<X->getsize(); i++){
@@ -816,6 +816,7 @@ void absoluteEncoder(SatWrapper_Expression *X,
     } else if(encoding->order) {
         std::cerr << "ERROR: order encoding of absolute not implemented yet." << std::endl;
         exit(1);
+        // int prev_x, prev_y;
         // int largest_neg = std::numeric_limits<int>::min();
         // Lit largest_neg_lit;
         // SatWrapper_Expression *is_neg = new SatWrapper_Expression();
@@ -1827,7 +1828,7 @@ SatWrapper_Table::~SatWrapper_Table() {
 void supportTableEncoder(SatWrapperSolver *solver, EncodingConfiguration *encoding, SatWrapperExpArray& vars, std::vector< std::vector<int>* > &tuples, Lits *lits, int *assignments, unsigned int tuples_start, unsigned int tuples_end, unsigned int support_var_index, unsigned int var_index){
     // Helper function for supportTableEncoder, call that.
     SatWrapper_Expression *exp;
-    int i, j, n = vars.size(), m=tuples.size(), v;
+    int i, n = vars.size(), v;
     std::set<int> value_set;
 
 #ifdef _DEBUGWRAP
@@ -1846,10 +1847,10 @@ void supportTableEncoder(SatWrapperSolver *solver, EncodingConfiguration *encodi
 
     if(var_index >= n) {
         /* If var_index is greater than or equal to n, then we have added the
-        /* literals for the partial assignment to the other variables, now we
-        /* add the support values for the support variable. If the variable has
-        /* no support for the current partial assignment, then a no-good will be
-        /* added. */
+         * literals for the partial assignment to the other variables, now we
+         * add the support values for the support variable. If the variable has
+         * no support for the current partial assignment, then a no-good will be
+         * added. */
 
         unsigned int nr_lits_added = 0;
         exp = vars.get_item(support_var_index);

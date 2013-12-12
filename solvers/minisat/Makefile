@@ -51,7 +51,7 @@ SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 SATDIR    = $(MAINDIR)/solvers/sat
 MTL       = $(SATDIR)/minisat_src/mtl
 CORE      = $(SATDIR)/minisat_src/core
-CFLAGS    += -I$(SATDIR)/src/ -I$(MTL) $(HACK) -I$(CORE) -Wall -ffloat-store -O3 # -DNDEBUG
+CFLAGS    += -I$(SATDIR)/src/ -I$(MTL) $(HACK) -I$(CORE) -ffloat-store -O3 # -DNDEBUG
 #LFLAGS    = -lz
 
 
@@ -64,7 +64,7 @@ CXX = g++ #-g -D_DEBUGWRAP
 
 wrapper: $(OBJDIR) $(PYTHON) $(SATDIR)/$(OBJDIR) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/MiniSat.o
 
-debug: CFLAGS += -D_DEBUGWRAP -g
+debug: CFLAGS += -D_DEBUGWRAP -g -Wall
 debug: wrapper
 
 $(OBJDIR):
@@ -106,7 +106,7 @@ $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 	@echo "-> compiling $@"
-	@$(CXX) $(CFLAGS) -I$(SRCDIR) $(PYLIB) -fPIC -c $< -o $@
+	@$(CXX) $(PYLIB) $(CFLAGS) -I$(SRCDIR) -fPIC -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	

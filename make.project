@@ -28,6 +28,10 @@ PYVERSION	:=	$(shell python -V 2>&1 | \
 ifeq ($(OSTYPE),darwin)
 BUNDLE = -bundle -undefined suppress
 CFLAGS += -flat_namespace
+CFLAGS += -stdlib=libstdc++
+CFLAGS += -Wno-self-assign -Wno-shadow  # ignore warnings about swig generated code
+CFLAGS += -Qunused-arguments  # tell clang to ignore some gcc flags we use
+
 else
 BUNDLE = -shared 
 endif

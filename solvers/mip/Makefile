@@ -34,7 +34,7 @@ WOBFILE		= 	$(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 
 
-CFLAGS    += -Wall -ffloat-store -O3
+CFLAGS    += -ffloat-store -O3
 
 #-----------------------------------------------------------------------------
 # Rules
@@ -45,7 +45,7 @@ CXX ?= g++
 
 wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/MipWrapper.o
 
-debug: CFLAGS += -D_DEBUGWRAP -g
+debug: CFLAGS += -D_DEBUGWRAP -g -Wall
 debug: wrapper $(MAINOBJFILES) $(WOBFILE)
 
 $(OBJDIR):
@@ -73,7 +73,7 @@ $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 	@echo "-> compiling $@"
-	@$(CXX) $(CFLAGS) -I$(SRCDIR) $(PYLIB) -fPIC -c $< -o $@
+	@$(CXX) $(PYLIB) $(CFLAGS) -I$(SRCDIR) -fPIC -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	

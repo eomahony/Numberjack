@@ -109,47 +109,50 @@ $(PYTHON):
 	@mkdir -p $(PYTHON)
 
 # ------------------------------------------------------------
-clean_swig: 
-	rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
+clean_swig:
+	@echo "-> cleaning swig interface"
+	@rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
 
-clean : 
-	rm -rf $(OBJ)/*.o $(OBJ)/*.a $(SRC)/*~ $(MOD)/obj/*.o $(MOD)/src/*~ $(MOD)/src/*/*~ $(INC)/*~ *~ $(BIN)/* 
+clean:
+	@echo "-> cleaning"
+	@rm -rf $(OBJ)/*.o $(OBJ)/*.a $(SRC)/*~ $(MOD)/obj/*.o $(MOD)/src/*~ $(MOD)/src/*/*~ $(INC)/*~ *~ $(BIN)/* 
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
-		@echo "-> compiling $@"
-		$(CCC) $(CFLAGS) -c -o $@ $< 
+	@echo "-> compiling $@"
+	@$(CCC) $(CFLAGS) -c -o $@ $< 
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
-		@echo "-> compiling $@"
-		$(CCC) $(CFLAGS) -I$(SRCDIR) $(PYLIB)  -c $< -o $@
+	@echo "-> compiling $@"
+	@$(CCC) $(CFLAGS) -I$(SRCDIR) $(PYLIB)  -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	
-	$(SWIG) -c++ -python $<
-	python $(MAINDIR)/tools/finalize.py $(<:.i=.py)
+	@$(SWIG) -c++ -python $<
+	@python $(MAINDIR)/tools/finalize.py $(<:.i=.py)
 
 $(PYTHON)/%.i: $(SRCDIR)/%.hpp
-	python $(MAINDIR)/tools/mk_interface.py $<
+	@echo "-> creating interface $@"
+	@python $(MAINDIR)/tools/mk_interface.py $<
 
 $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(PLIBOBJ)
 	@echo "-> linking $@"
-	$(CCC) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LFLAGS) $(AUXOBJFILES) $(MAINOBJFILES) $(PLIBOBJ) python/$(MAINNAME)_wrap.o -o $@
+	@$(CCC) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LFLAGS) $(AUXOBJFILES) $(MAINOBJFILES) $(PLIBOBJ) python/$(MAINNAME)_wrap.o -o $@
 
 
 # The library
 lib: $(PLIBOBJ)
 $(OBJ)/%.o:  $(SRC)/%.cpp $(INC)/%.h
-	$(CCC) $(CFLAGS) -c   $< -o $@ 
+	@$(CCC) $(CFLAGS) -c   $< -o $@ 
 
 # The examples
 $(BIN)/%: $(MOD)/obj/%.o $(PLIBOBJ)
-	$(CCC) $(CFLAGS) $< $(PLIBOBJ) -lm -o $@ $(LFLAGS)
+	@$(CCC) $(CFLAGS) $< $(PLIBOBJ) -lm -o $@ $(LFLAGS)
 
 %: $(MOD)/obj/%.o $(PLIBOBJ)
-	$(CCC) $(CFLAGS) $< $(PLIBOBJ) -lm -o $(BIN)/$@ $(LFLAGS)
+	@$(CCC) $(CFLAGS) $< $(PLIBOBJ) -lm -o $(BIN)/$@ $(LFLAGS)
 
 $(MOD)/obj/%.o: $(MOD)/src/%.cpp
-	$(CCC) -c $(CFLAGS)  -o $@ $<
+	@$(CCC) -c $(CFLAGS)  -o $@ $<

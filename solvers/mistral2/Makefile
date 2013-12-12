@@ -108,11 +108,13 @@ PLIBOBJ = $(patsubst $(SRC)/%, $(OBJ)/%, $(PLIBAUX))
 wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) 
 
 # ------------------------------------------------------------
-clean_swig: 
-	rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
+clean_swig:
+	@echo "-> cleaning swig interface"
+	@rm -rf $(OBJDIR)/* $(PYTHON)/* *~ $(SRCDIR)/*~
 
-clean : 
-	rm -rf $(OBJ)/*.o $(OBJ)/*.a $(SRC)/*~ $(MOD)/obj/*.o $(MOD)/src/*~ $(MOD)/src/*/*~ $(INC)/*~ *~ $(BIN)/* 
+clean:
+	@echo "-> cleaning"
+	@rm -rf $(OBJ)/*.o $(OBJ)/*.a $(SRC)/*~ $(MOD)/obj/*.o $(MOD)/src/*~ $(MOD)/src/*/*~ $(INC)/*~ *~ $(BIN)/* 
 
 $(OBJDIR):
 	@-mkdir -p $(OBJDIR)
@@ -124,29 +126,30 @@ install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
-		@echo "-> compiling $@"
-		$(CCC) $(CFLAGS) $(MCFLAGS) -c -o $@ $< 
+	@echo "-> compiling $@"
+	@$(CCC) $(CFLAGS) $(MCFLAGS) -c -o $@ $< 
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
-		@echo "-> compiling $@"
-		$(CCC) $(CFLAGS) $(MCFLAGS) -I$(SRCDIR) $(PYLIB)  -c $< -o $@
+	@echo "-> compiling $@"
+	@$(CCC) $(CFLAGS) $(MCFLAGS) -I$(SRCDIR) $(PYLIB)  -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	
-	$(SWIG) -c++ -python $<
-	python $(MAINDIR)/tools/finalize.py $(<:.i=.py)
+	@$(SWIG) -c++ -python $<
+	@python $(MAINDIR)/tools/finalize.py $(<:.i=.py)
 
 $(PYTHON)/%.i: $(SRCDIR)/%.hpp
-	python $(MAINDIR)/tools/mk_interface.py $<
+	@echo "-> creating interface $@"
+	@python $(MAINDIR)/tools/mk_interface.py $<
 
 $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(PLIBOBJ)
 	@echo "-> linking $@"
-	$(CCC) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LFLAGS) $(MCFLAGS) $(MLFLAGS) $(AUXOBJFILES) $(MAINOBJFILES) $(PLIBOBJ) python/$(MAINNAME)_wrap.o -o $@
+	@$(CCC) $(BUNDLE) -Wno-long-double $(CFLAGS) $(LFLAGS) $(MCFLAGS) $(MLFLAGS) $(AUXOBJFILES) $(MAINOBJFILES) $(PLIBOBJ) python/$(MAINNAME)_wrap.o -o $@
 
 
 # The library
 lib: $(PLIBOBJ) $(PUTIOBJ)
 $(OBJ)/%.o:  $(SRC)/%.cpp $(INC)/%.hpp
 	@echo 'compile '$<
-	$(CCC) $(MCFLAGS) -c $< -o $@ 
+	$(CCC) $(CFLAGS) $(MCFLAGS) -c $< -o $@ 
 

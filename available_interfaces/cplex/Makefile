@@ -14,7 +14,7 @@ PYLIB = `python-config --cflags`
 PYOBJ = `python-config --prefix`
 
 
-CPLEXCCFLAGS = `python $(MAINDIR)/tools/solverconfig.py CPLEX cflags`
+CPLEXCCFLAGS = `python $(MAINDIR)/tools/solverconfig.py CPLEX cflags` -Wno-unused-private-field
 CPLEXLDFLAGS = `python $(MAINDIR)/tools/solverconfig.py CPLEX lflags`
 
 
@@ -79,7 +79,7 @@ $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 	@echo "-> compiling $@"
-	@$(CCC) $(OPTFLAGS) $(COMPILFLAGS) $(CFLAGS) $(PYLIB) -I$(SRCDIR) -c $< -o $@
+	@$(CCC) $(PYLIB) $(OPTFLAGS) $(COMPILFLAGS) $(CFLAGS) -I$(SRCDIR) -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	

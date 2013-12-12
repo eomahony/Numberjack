@@ -74,6 +74,7 @@ SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 
 MIPDIR          =       $(MAINDIR)/solvers/mip
 MIPFLAGS        =       -I$(MIPDIR)/src/ 
+CXXFLAGS += $(CFLAGS)
 
 
 #-----------------------------------------------------------------------------
@@ -120,7 +121,7 @@ $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 	@echo "-> compiling $@"
-	@$(CXX) $(MIPFLAGS) $(NFLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) $(PYLIB) -fPIC -c $< $(CXX_o)$@
+	@$(CXX) $(PYLIB) $(MIPFLAGS) $(NFLAGS) $(OFLAGS) $(BINOFLAGS) $(CXXFLAGS) -fPIC -c $< $(CXX_o)$@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	

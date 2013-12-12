@@ -39,7 +39,7 @@ SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 
 MCORE     = minisat_src/core
 MTL       = minisat_src/mtl
-CFLAGS    += -I$(MCORE) -I$(MTL) $(HACK) -Wall -ffloat-store -O3  # -DNDEBUG
+CFLAGS    += -I$(MCORE) -I$(MTL) $(HACK) -ffloat-store -O3  # -DNDEBUG
 
 #-----------------------------------------------------------------------------
 # Rules
@@ -50,7 +50,7 @@ CXX = g++
 
 wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/SatWrapper.o
 
-debug: CFLAGS += -D_DEBUGWRAP -g
+debug: CFLAGS += -D_DEBUGWRAP -g -Wall
 debug: wrapper
 
 $(OBJDIR):
@@ -74,12 +74,12 @@ clean:
 	@-rm -rf $(OBJDIR)/* $(PYTHON)/*o $(PYTHON)/*~ $(PYTHON)/build *~ $(SRCDIR)/*~
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
-		@echo "-> compiling $@"
-		@$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
+	@echo "-> compiling $@"
+	@$(CXX) $(CFLAGS) -fPIC -c -o $@ $< 
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
-		@echo "-> compiling $@"
-		@$(CXX) $(CFLAGS) -I$(SRCDIR) $(PYLIB) -fPIC -c $< -o $@
+	@echo "-> compiling $@"
+	@$(CXX) $(PYLIB) $(CFLAGS) -I$(SRCDIR) -fPIC -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
 	@echo "-> compiling $@"	

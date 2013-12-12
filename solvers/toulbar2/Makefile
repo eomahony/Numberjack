@@ -26,33 +26,9 @@ BUNDLE = -shared
 endif
 
 
-ifeq ($(PYVERSION),python2.7)
-PYLIB = `python2.7-config --cflags` $(HACK) 
-PYOBJ = `python2.7-config --prefix`
-SWIG = swig
-else  
-ifeq ($(PYVERSION),python2.6)
-PYLIB = `python2.6-config --cflags` $(HACK) 
-PYOBJ = `python2.6-config --prefix`
-SWIG = swig 
-else 
-ifeq ($(PYVERSION),python2.5)
-PYLIB = `python2.5-config --cflags` 
-PYOBJ = `python2.5-config --prefix`
-SWIG = swig
-else 
-ifeq ($(PYVERSION),python2.4)
-PYLIB = `/usr/bin/python2.4-config --cflags` $(HACK)  
-PYOBJ = `/usr/bin/python2.4-config --prefix`
-SWIG = swig -classic
-else 
 PYLIB = `python-config --cflags` $(HACK) 
 PYOBJ = `python-config --prefix`
 SWIG = swig
-endif
-endif
-endif
-endif
 
 OPTFLAGS = -g -O3 -DNDEBUG
 # -O3 -DNDEBUG

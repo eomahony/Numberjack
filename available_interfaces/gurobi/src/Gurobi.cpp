@@ -36,6 +36,17 @@ void GurobiSolver::initialise(){
     DBG("initialise the solver %s\n", "");
     MipWrapperSolver::initialise();
 
+    // Add all variables
+    if (_obj != NULL){
+        add_variables_from(_obj, _obj_coef);
+    }
+    for(unsigned int i = 0; i < _constraints.size(); ++i)
+        add_variables_from(_constraints[i]);
+
+    // Update model so we can use variables in constraints
+    model->update();
+
+    // Add constraints
     if(_obj != NULL){
         add_in_constraint(_obj, _obj_coef);
     }
@@ -45,19 +56,10 @@ void GurobiSolver::initialise(){
     has_been_added = true;
 }
 
-void GurobiSolver::add_in_constraint(LinearConstraint *con, double coef){
-    DBG("Creating a Gurobi representation of a constriant %s\n", "");
-    
-    double *weights = new double[con->_coefficients.size()];
-    // GRBVar** vars = new GRBVar*[con->_variables.size()];
-    GRBVar *vars = new GRBVar[con->_variables.size()];
-    bool needs_update = false;
-
+void GurobiSolver::add_variables_from(LinearConstraint *con, double coef) {
     for(unsigned int i = 0; i < con->_variables.size(); ++i){
-        
-        DBG("\tAdding variable to Gurobi\n%s", "");
-        
         if(con->_variables[i]->_var == NULL){
+          DBG("\tAdding variable to Gurobi\n%s", "");
         
             GRBVar var_ptr;
             char type;
@@ -75,19 +77,22 @@ void GurobiSolver::add_in_constraint(LinearConstraint *con, double coef){
             *var_id = variables->size();
             variables->push_back(var_ptr);
             con->_variables[i]->_var = (void*) var_id;
-            vars[i] = var_ptr;
-            weights[i] = con->_coefficients[i];
-            DBG("Created new variable with id %d. type:%c lb:%f ub:%f coef:%f\n", *var_id, type, con->_variables[i]->_lower, con->_variables[i]->_upper, coef);
-            needs_update = true;
-        } else {
-            vars[i] = variables->at(*(int*)(con->_variables[i]->_var));
-            weights[i] = con->_coefficients[i];
         }
     }
-    if (needs_update) {
-      // Need to tell Gurobi to update the model to integrate new variables.
-      DBG("Calling model->update()");
-      model->update();
+}
+
+void GurobiSolver::add_in_constraint(LinearConstraint *con, double coef){
+    DBG("Creating a Gurobi representation of a constriant %s\n", "");
+
+    double *weights = new double[con->_coefficients.size()];
+    GRBVar *vars = new GRBVar[con->_variables.size()];
+    bool needs_update = false;
+
+    for(unsigned int i = 0; i < con->_variables.size(); ++i){
+        assert(con->_variables[i]->_var != NULL);
+
+        vars[i] = variables->at(*(int*)(con->_variables[i]->_var));
+        weights[i] = con->_coefficients[i];
     }
 
     GRBLinExpr lin_expr = GRBLinExpr();

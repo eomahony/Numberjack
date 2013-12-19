@@ -4,7 +4,7 @@ MAINDIR = $(shell pwd)/../..
 CURDIR ?= .
 PYTHON = $(CURDIR)/python
 
-PYFILE      =   $(PYTHON)/ClaspCNF.py
+PYFILE      =   $(PYTHON)/BreakIDGlucose.py
 
 wrapper:
 

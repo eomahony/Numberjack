@@ -2,6 +2,7 @@ from SatWrapper import SatWrapperSolver
 import Numberjack
 import subprocess as sp
 import threading
+import tempfile
 import datetime
 import signal
 import atexit
@@ -87,6 +88,7 @@ class ExternalSolver(object):
     def __init__(self):
         self.model = None
         self.variables = []
+        self.tempdir = tempfile.mkdtemp()
         self.filename = self.generate_filename()
         self.timelimit = 0
         self.mem_limit = None
@@ -127,7 +129,7 @@ class ExternalSolver(object):
 
     def generate_filename(self):
         import tempfile
-        tf = tempfile.NamedTemporaryFile(delete=False)
+        tf = tempfile.NamedTemporaryFile(dir=self.tempdir, delete=False)
         return tf.name
 
     def clean_up(self):
@@ -136,6 +138,13 @@ class ExternalSolver(object):
                 os.remove(self.filename)
             except Exception:
                 pass  # shhh
+
+        if self.tempdir:
+            import shutil
+            try:
+                shutil.rmtree(self.tempdir, ignore_errors=True)
+            except Exception:
+                pass
 
     def set_model(self, model, solver_id, solver_name, solver):
         pass

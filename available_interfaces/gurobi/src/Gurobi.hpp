@@ -19,6 +19,7 @@ private:
     int _verbosity, optimstatus;
     bool has_been_added;
     void add_in_constraint(LinearConstraint *con, double coef=0);
+    void add_variables_from(LinearConstraint *con, double coef=0);
 
 public:
 

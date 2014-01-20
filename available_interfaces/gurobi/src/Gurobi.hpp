@@ -43,6 +43,8 @@ public:
     bool is_sat();
     bool is_unsat();
     bool is_opt();
+    void output_lp(const char *filename);
+    void output_mps(const char *filename);
     void printStatistics();
     double getTime();
     double getOptimalityGap();

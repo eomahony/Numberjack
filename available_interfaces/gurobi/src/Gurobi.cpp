@@ -157,6 +157,14 @@ bool GurobiSolver::is_opt(){
     return optimstatus == GRB_OPTIMAL;
 }
 
+void GurobiSolver::output_lp(const char *filename){
+    model->write(filename);
+}
+
+void GurobiSolver::output_mps(const char *filename){
+    model->write(filename);
+}
+
 void GurobiSolver::printStatistics(){
     std::cout << "\td Time: " << getTime() << "\tNodes:" << getNodes() << std::endl;
 }

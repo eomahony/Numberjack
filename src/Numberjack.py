@@ -3411,6 +3411,22 @@ class NBJ_STD_Solver(object):
             raise UnsupportedSolverFunction(str(type(self)), "output_cnf", "Please load the model using a SAT solver to use this functionality.")
         self.solver.output_cnf(filename)
 
+    def output_lp(self, filename):
+        if hasattr(self.solver, 'output_lp'):
+            if not filename.endswith(".lp"):
+                filname = "%s.lp" % filename
+            self.solver.output_lp(filename)
+        else:
+            raise UnsupportedSolverFunction(str(type(self)), "output_lp", "This solver does not support outputing LP files.")
+
+    def output_mps(self, filename):
+        if hasattr(self.solver, 'output_mps'):
+            if not filename.endswith(".mps"):
+                filname = "%s.mps" % filename
+            self.solver.output_mps(filename)
+        else:
+            raise UnsupportedSolverFunction(str(type(self)), "output_mps", "This solver does not support outputing MPS files.")
+
     def num_vars(self):
         return self.solver.num_vars()
 

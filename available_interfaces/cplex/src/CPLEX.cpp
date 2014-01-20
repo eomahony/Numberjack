@@ -154,6 +154,14 @@ bool CPLEXSolver::is_unsat() {
     return optimstatus == IloAlgorithm::Infeasible;
 }
 
+void CPLEXSolver::output_lp(const char *filename) {
+    cplex->exportModel(filename);
+}
+
+void CPLEXSolver::output_mps(const char *filename) {
+    cplex->exportModel(filename);
+}
+
 void CPLEXSolver::printStatistics() {
     std::cout << "\td Time: " << getTime() << "\tNodes:" << getNodes() << std::endl;
 }

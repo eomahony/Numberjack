@@ -40,6 +40,8 @@ public:
     bool is_opt();
     bool is_sat();
     bool is_unsat();
+    void output_lp(const char *filename);
+    void output_mps(const char *filename);
     void printStatistics();
     int getNodes();
     double getTime();

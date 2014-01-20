@@ -135,6 +135,36 @@ bool SCIPSolver::is_opt(){
   return SCIPgetStatus(_scip) == SCIP_STATUS_OPTIMAL;
 }
 
+void SCIPSolver::output_orig_problem(const char *filename){
+  // It's only safe to call SCIPwriteOrigProblem in certain cases:
+  switch(SCIPgetStage(_scip)){
+    case SCIP_STAGE_PROBLEM:
+    case SCIP_STAGE_TRANSFORMING:
+    case SCIP_STAGE_TRANSFORMED:
+    case SCIP_STAGE_INITPRESOLVE:
+    case SCIP_STAGE_PRESOLVING:
+    case SCIP_STAGE_EXITPRESOLVE:
+    case SCIP_STAGE_PRESOLVED:
+    case SCIP_STAGE_INITSOLVE:
+    case SCIP_STAGE_SOLVING:
+    case SCIP_STAGE_SOLVED:
+    case SCIP_STAGE_EXITSOLVE:
+    case SCIP_STAGE_FREETRANS:
+      SCIPwriteOrigProblem(_scip, filename, NULL, true);
+      break;
+    default:
+      std::cerr << "Error: SCIP is not at a stage where it can output the original problem." << std::endl;
+  }
+}
+
+void SCIPSolver::output_lp(const char *filename){
+  output_orig_problem(filename);
+}
+
+void SCIPSolver::output_mps(const char *filename){
+  output_orig_problem(filename);
+}
+
 void SCIPSolver::printStatistics(){
   std::cout << "\td Time: " << getTime() << "\tNodes:" << getNodes()
 	    << std::endl;

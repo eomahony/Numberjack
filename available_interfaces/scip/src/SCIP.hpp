@@ -21,6 +21,7 @@ private:
   int _verbosity;
   SCIP* get_scip();
   void add_in_constraint(LinearConstraint *con, double coef=0);
+  void output_orig_problem(const char *filename);
   bool has_been_added;
 
 public:
@@ -45,6 +46,8 @@ public:
   bool is_sat();
   bool is_unsat();
   bool is_opt();
+  void output_lp(const char *filename);
+  void output_mps(const char *filename);
   void printStatistics();
   double getTime();
   double getOptimalityGap();

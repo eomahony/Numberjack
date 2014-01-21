@@ -297,3 +297,13 @@ class LinearTest(unittest.TestCase):
         solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
+
+    def testMaximiseOffsetExpr(self):
+        v1 = Variable(10)
+        obj = v1 + 100
+        m = Model(Maximise(obj))
+        s = LinearTest.solver(m)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), 9)
+        self.assertEqual(obj.get_value(), 109)

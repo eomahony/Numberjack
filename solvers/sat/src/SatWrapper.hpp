@@ -441,7 +441,7 @@ public:
         return domain->getsize();
     }
 
-    int get_value() const ;
+    virtual int get_value();
     int get_min() const ;
     int get_max() const ;
     int get_size() const ;
@@ -534,6 +534,8 @@ public:
     void addWeight( const int w );
     void set_rhs( const int k );
 
+    virtual int get_value();
+
     virtual ~SatWrapper_Sum();
     virtual SatWrapper_Expression* add(SatWrapperSolver *solver, bool top_level);
 };
@@ -577,6 +579,7 @@ public:
     SatWrapper_add( SatWrapper_Expression* arg1, const int arg2 );
     virtual ~SatWrapper_add();
     virtual SatWrapper_Expression* add(SatWrapperSolver *solver, bool top_level);
+    virtual int get_value();
 };
 
 class SatWrapper_mul : public SatWrapper_binop {
@@ -585,6 +588,7 @@ public:
     SatWrapper_mul( SatWrapper_Expression* arg1, const int arg2 );
     virtual ~SatWrapper_mul();
     virtual SatWrapper_Expression* add(SatWrapperSolver *solver, bool top_level);
+    virtual int get_value();
 };
 
 class SatWrapper_mod : public SatWrapper_binop {

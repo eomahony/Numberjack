@@ -1236,7 +1236,7 @@ bool SatWrapper_Expression::contain(const int v) const {
     return (_solver->truth_value(equal(v)) != l_False);
 }
 
-int SatWrapper_Expression::get_value() const {
+int SatWrapper_Expression::get_value() {
     if(_solver->cp_model) {
         return _solver->cp_model[_ident];
     } else
@@ -1325,6 +1325,12 @@ SatWrapper_Expression* SatWrapper_add::add(SatWrapperSolver *solver, bool top_le
     return this;
 }
 
+int SatWrapper_add::get_value() {
+    int res = _vars[0]->get_value() + _rhs;
+    if(_vars[1]) res += _vars[1]->get_value();
+    return res;
+}
+
 SatWrapper_add::~SatWrapper_add() {}
 
 SatWrapper_mul::SatWrapper_mul(SatWrapper_Expression *arg1, const int arg2)
@@ -1389,6 +1395,13 @@ SatWrapper_Expression* SatWrapper_mul::add(SatWrapperSolver *solver, bool top_le
     }
 
     return this;
+}
+
+int SatWrapper_mul::get_value() {
+    int res = _vars[0]->get_value();
+    if(_vars[1]) res *= _vars[1]->get_value();
+    else res *= _rhs;
+    return res;
 }
 
 SatWrapper_mul::~SatWrapper_mul() {}
@@ -1741,6 +1754,12 @@ void SatWrapper_Sum::set_rhs(const int k) {
     _offset = k;
 }
 
+int SatWrapper_Sum::get_value() {
+    int res = _offset;
+    if(_vars.size() > 0) res += _vars.get_item(_vars.size() - 1)->get_value();
+    return res;
+}
+
 SatWrapper_Expression* SatWrapper_Sum::add(SatWrapperSolver *solver, bool top_level) {
     if(!has_been_added()) {
         _solver = solver;
@@ -1997,6 +2016,7 @@ SatWrapper_binop::SatWrapper_binop(SatWrapper_Expression *var1, SatWrapper_Expre
     : SatWrapper_Expression() {
     _vars[0] = var1;
     _vars[1] = var2;
+    _rhs = 0;
 
 #ifdef _DEBUGWRAP
     std::cout << "creating binary operator" << std::endl;

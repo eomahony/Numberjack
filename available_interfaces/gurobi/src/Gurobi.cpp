@@ -18,6 +18,8 @@ GurobiSolver::GurobiSolver(){
     env = new GRBEnv();
     model = new GRBModel(*env);
     variables = new vector<GRBVar>;
+
+    setVerbosity(_verbosity);  // Default to no output
 }
 
 GurobiSolver::~GurobiSolver(){

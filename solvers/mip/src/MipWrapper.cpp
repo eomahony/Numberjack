@@ -869,7 +869,7 @@ MipWrapper_Expression* MipWrapper_Sum::add(MipWrapperSolver *solver,
 }
 
 double MipWrapper_Sum::get_value() {
-    double res = 0;
+    double res = _offset;
     for (unsigned int i = 0; i < _vars.size(); ++i)
         res += _vars.get_item(i)->get_whatever_value() * _weights.get_item(i);
     return res;

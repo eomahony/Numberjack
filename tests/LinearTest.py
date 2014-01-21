@@ -93,208 +93,176 @@ class LinearTest(unittest.TestCase):
     def testSuccess1(self):
         te = NJIntermediateTest(*TestSuccess[0])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testSuccess2(self):
         te = NJIntermediateTest(*TestSuccess[1])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testSuccess3(self):
         te = NJIntermediateTest(*TestSuccess[2])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testSuccess4(self):
         te = NJIntermediateTest(*TestSuccess[3])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testSuccess5(self):
         te = NJIntermediateTest(*TestSuccess[4])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testSuccess6(self):
         te = NJIntermediateTest(*TestSuccess[5])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testSuccess7(self):
         te = NJIntermediateTest(*TestSuccess[6])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testSuccess8(self):
         te = NJIntermediateTest(*TestSuccess[7])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testSuccess9(self):
         te = NJIntermediateTest(*TestSuccess[8])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testSuccess10(self):
         te = NJIntermediateTest(*TestSuccess[9])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testSuccess11(self):
         te = NJIntermediateTest(*TestSuccess[10])
-        print te.model
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testFailure1(self):
         te = NJIntermediateTest(*TestFailures[0])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertFalse(solver.solve())
 
     def testFailure2(self):
         te = NJIntermediateTest(*TestFailures[1])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertFalse(solver.solve())
 
     def testFailure3(self):
         te = NJIntermediateTest(*TestFailures[2])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertFalse(solver.solve())
 
     def testFailure4(self):
         te = NJIntermediateTest(*TestFailures[3])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertFalse(solver.solve())
 
     def testFailure5(self):
         te = NJIntermediateTest(*TestFailures[4])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertFalse(solver.solve())
 
     def testFailure6(self):
         te = NJIntermediateTest(*TestFailures[5])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertFalse(solver.solve())
 
     def testFailure7(self):
         te = NJIntermediateTest(*TestFailures[6])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertFalse(solver.solve())
 
     def testFailure8(self):
         te = NJIntermediateTest(*TestFailures[7])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertFalse(solver.solve())
 
     def testFailure9(self):
         te = NJIntermediateTest(*TestFailures[8])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertFalse(solver.solve())
 
     def testFailure10(self):
         te = NJIntermediateTest(*TestFailures[9])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertFalse(solver.solve())
 
     def testBoundary1(self):
         te = NJIntermediateTest(*TestBoundary[0])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testBoundary2(self):
         te = NJIntermediateTest(*TestBoundary[1])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testBoundary3(self):
         te = NJIntermediateTest(*TestBoundary[2])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testBoundary4(self):
         te = NJIntermediateTest(*TestBoundary[3])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testBoundary5(self):
         te = NJIntermediateTest(*TestBoundary[4])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testBoundary6(self):
         te = NJIntermediateTest(*TestBoundary[5])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testBoundary7(self):
         te = NJIntermediateTest(*TestBoundary[6])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testBoundary8(self):
         te = NJIntermediateTest(*TestBoundary[7])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testBoundary9(self):
         te = NJIntermediateTest(*TestBoundary[8])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 
     def testBoundary10(self):
         te = NJIntermediateTest(*TestBoundary[9])
         solver = LinearTest.solver(te.model)
-        solver.setVerbosity(0)
         self.assertTrue(solver.solve())
         self.assertTrue(te.test_assign())
 

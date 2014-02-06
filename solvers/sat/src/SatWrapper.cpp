@@ -8,8 +8,8 @@
 #include "SatWrapper.hpp"
 
 
-Lit Lit_True;
-Lit Lit_False;
+static Lit Lit_True = Lit(0);
+static Lit Lit_False = ~Lit_True;
 
 
 void addAMOClauses(Lits literals, Lits auxiliary, SatWrapperSolver *solver, EncodingConfiguration::AMOEncoding amo_encoding){
@@ -2865,9 +2865,8 @@ SatWrapperSolver::SatWrapperSolver() {
     encoding = NULL;
     cp_model = NULL;
 
-    Lit dummy(create_atom(NULL,0),true);
-    Lit_True = Lit(dummy);
-    Lit_False = ~Lit(dummy);
+    // Create variable 0 so variables start from 1
+    Lit dummy0(create_atom(NULL,0),true);
 
     current = 0;
     clause_limit = -1;

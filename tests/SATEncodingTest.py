@@ -193,6 +193,46 @@ class SATEncodingTest(unittest.TestCase):
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value() + v2.get_value(), v3.get_value())
 
+    def testBooleanAddEqConstant(self):
+        v1 = Variable()
+        v2 = Variable()
+        m = Model(v1 + v2 == 2)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value() + v2.get_value(), 2)
+
+    def testBooleanAddEq(self):
+        v1 = Variable()
+        v2 = Variable()
+        v3 = Variable(2)
+        m = Model(v1 + v2 == v3, v3 == 1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v3.get_value(), 1)
+        self.assertEqual(v1.get_value() + v2.get_value(), v3.get_value())
+
+    def testBooleanAddEq2(self):
+        v1 = Variable()
+        v2 = Variable()
+        v3 = Variable(3)
+        m = Model(v1 + v2 == v3, v3 == 2)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value() + v2.get_value(), v3.get_value())
+
+    def testNegBooleanAddEq(self):
+        v1 = Variable()
+        v2 = Variable()
+        m = Model(v1 + v2 >= 1, -1 * v1 + -1 * v2 >= -1)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertGreaterEqual(v1.get_value() + v2.get_value(), 1)
+        self.assertGreaterEqual(-1 * v1.get_value() + -1 * v2.get_value(), -1)
+
     def testAddGapsSat(self):
         v1 = Variable([0, 4, 8])
         v2 = Variable()

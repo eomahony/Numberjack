@@ -504,7 +504,7 @@ void additionEncoder(SatWrapper_Expression *X,
                      SatWrapperSolver *solver,
                      EncodingConfiguration *encoding) {
     Lits lits;
-    int i, j, x, y, z, prev_x, prev_y, prev_z;
+    int i, j, x, y, z, prev_x, prev_y;
 
     if(encoding->direct) {
         for(i=0; i<X->getsize(); ++i) {
@@ -542,16 +542,14 @@ void additionEncoder(SatWrapper_Expression *X,
                 solver->addClause(lits);
 
                 if(i > 0 || j > 0){
-                    // lits.pop_back();
-                    lits.clear();
+                    lits.pop_back();
                     if(i > 0) lits.push_back(X->less_or_equal(prev_x, i-1));
                     if(j > 0) lits.push_back(Y->less_or_equal(prev_y, j-1));
-                    lits.push_back(~(Z->less_or_equal(prev_z)));
+                    lits.push_back(~(Z->less_or_equal(z-1)));
                     solver->addClause(lits);
                 }
 
                 prev_y = y;
-                prev_z = z;
             }
             prev_x = x;
         }
@@ -561,11 +559,10 @@ void additionEncoder(SatWrapper_Expression *X,
             z = Z->getval(i);
             if(used_zvalues.find(z) == used_zvalues.end()){
                 lits.clear();
-                if(i > 0) lits.push_back(Z->less_or_equal(prev_z, i - 1));
+                if(i > 0) lits.push_back(Z->less_or_equal(z-1, i - 1));
                 lits.push_back(~(Z->less_or_equal(z, i)));
                 solver->addClause(lits);
             }
-            prev_z = z;
         }
     } else {
        std::cerr << "ERROR: additionEncoder not implemented for this encoding, exiting." << std::endl;

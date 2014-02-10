@@ -674,7 +674,26 @@ class SATEncodingTest(unittest.TestCase):
         s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         self.assertTrue(s.is_sat())
-        self.assertTrue((v1.get_value() + 1 == v2.get_value()) or (v1.get_value() == 9 or v2.get_value() == 9))
+        self.assertTrue((v1.get_value() + 1 == v2.get_value()) or
+                        (v1.get_value() == 9 or v2.get_value() == 9))
+
+    def testOr(self):
+        v1 = Variable(10)
+        v2 = Variable(10)
+        m = Model((v1 == 2) | (v2 == 2))
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertTrue(v1.get_value() == 2 or v2.get_value() == 2)
+
+    def testOr2(self):
+        v1 = Variable(10)
+        v2 = Variable(10)
+        m = Model((v1 == 2) | False)
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertTrue(v1.get_value() == 2 or v2.get_value() == 2)
 
     # ---------------- Reification of inequalities between two expressions ----------------
 

@@ -432,7 +432,9 @@ class SATEncodingTest(unittest.TestCase):
         v1, v2 = VarArray(2, 1, 3)
         t = Table([v1, v2], [[1, 1], [2, 2], [3, 3]], type="conflict")
         m = Model(t)
-        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        e = copy(SATEncodingTest.encoding)
+        e.direct = True
+        s = SATEncodingTest.solver(m, encoding=e)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertNotEqual(v1.get_value(), v2.get_value())
@@ -441,7 +443,9 @@ class SATEncodingTest(unittest.TestCase):
         v1, v2 = VarArray(2, 1, 3)
         t = Table([v1, v2], [[1, 1], [2, 2], [3, 3]], type="support")
         m = Model(t)
-        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        e = copy(SATEncodingTest.encoding)
+        e.direct = True
+        s = SATEncodingTest.solver(m, encoding=e)
         s.solve()
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value(), v2.get_value())

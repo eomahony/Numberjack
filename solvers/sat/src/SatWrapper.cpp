@@ -2164,7 +2164,7 @@ SatWrapper_and::SatWrapper_and(SatWrapper_Expression *var1, int rhs)
     : SatWrapper_binop(var1,rhs) {
 
 #ifdef _DEBUGWRAP
-    std::cout << "creating or predicate" << std::endl;
+    std::cout << "creating and predicate" << std::endl;
 #endif
 
     if(rhs) domain = new OffsetDomain(this,var1->domain,0);
@@ -2224,23 +2224,49 @@ SatWrapper_Expression* SatWrapper_and::add(SatWrapperSolver *solver, bool top_le
                 std::cout << "add and constraint" << std::endl;
 #endif
 
-                // y and z -> x
-                // x or ~y or ~z
-                lits.clear();
-                lits.push_back(~(this->equal(0)));
-                for(int i=0; i<2; ++i) {
-                    lits.push_back(_vars[i]->equal(0));
-                }
-                _solver->addClause(lits);
-
-                // x -> y  and x -> z
-                for(int i=0; i<2; ++i) {
+                if(encoding->direct) {
+                    // y and z -> x
+                    // x or ~y or ~z
                     lits.clear();
-                    lits.push_back(this->equal(0));
-                    lits.push_back(~(_vars[i]->equal(0)));
+                    lits.push_back(~(this->equal(0)));
+                    for(int i=0; i<2; ++i) {
+                        lits.push_back(_vars[i]->equal(0));
+                    }
                     _solver->addClause(lits);
+
+                    // x -> y  and x -> z
+                    for(int i=0; i<2; ++i) {
+                        lits.clear();
+                        lits.push_back(this->equal(0));
+                        lits.push_back(~(_vars[i]->equal(0)));
+                        _solver->addClause(lits);
+                    }
+                } else if(encoding->order){
+                    // FIXME
+
+                    // y and z -> x
+                    // x or ~y or ~z
+                    lits.clear();
+                    lits.push_back(~(this->less_or_equal(0)));
+                    lits.push_back(_vars[0]->less_or_equal(0));
+                    lits.push_back(_vars[1]->less_or_equal(0));
+                    _solver->addClause(lits);
+
+                    // x -> y and x -> z
+                    for(int i=0; i<2; ++i) {
+                        lits.clear();
+                        lits.push_back(this->less_or_equal(0));
+                        lits.push_back(~(_vars[i]->less_or_equal(0)));
+                        _solver->addClause(lits);
+                    }
+
+                } else {
+                    std::cerr << "ERROR reified SatWrapper_and not implemented for this encoding yet." << std::endl;
+                    exit(1);
                 }
 
+            } else {
+                std::cerr << "Error reified And constraint with just one operand." << std::endl;
             }
         }
 

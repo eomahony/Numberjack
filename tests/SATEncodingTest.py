@@ -652,6 +652,30 @@ class SATEncodingTest(unittest.TestCase):
         self.assertLessEqual(v1.get_value(), 3)
         self.assertEqual(v2.get_value(), 0)
 
+    def testReifAndTrue(self):
+        v1 = Variable(10)
+        v2 = Variable(10)
+        m = Model(
+            v1 == v2,
+            ((v1 + 1) == v2) | ((v1 == 9) & (v2 == 9)),
+        )
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(v1.get_value(), v2.get_value())
+
+    def testReifOrTrue(self):
+        v1 = Variable(10)
+        v2 = Variable(10)
+        m = Model(
+            v1 == v2,
+            ((v1 + 1) == v2) | ((v1 == 9) | (v2 == 9)),
+        )
+        s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertTrue((v1.get_value() + 1 == v2.get_value()) or (v1.get_value() == 9 or v2.get_value() == 9))
+
     # ---------------- Reification of inequalities between two expressions ----------------
 
     def testReif2ExprEqTrue(self):

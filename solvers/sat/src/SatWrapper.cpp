@@ -2093,10 +2093,20 @@ SatWrapper_Expression* SatWrapper_or::add(SatWrapperSolver *solver, bool top_lev
                 std::cout << "add or constraint" << std::endl;
 #endif
 
-                lits.clear();
-                for(int i=0; i<2; ++i)
-                    lits.push_back(~(_vars[i]->equal(0)));
-                _solver->addClause(lits);
+                if(encoding->direct) {
+                    lits.clear();
+                    for(int i=0; i<2; ++i)
+                        lits.push_back(~(_vars[i]->equal(0)));
+                    _solver->addClause(lits);
+                } else if(encoding->order) {
+                    lits.clear();
+                    for(int i=0; i<2; ++i)
+                        lits.push_back(~(_vars[i]->less_or_equal(0)));
+                    _solver->addClause(lits);
+                } else {
+                    std::cerr << "ERROR SatWrapper_or not implemented for this encoding yet." << std::endl;
+                    exit(1);
+                }
 
             } else if(_rhs == 0) {
 
@@ -2106,9 +2116,18 @@ SatWrapper_Expression* SatWrapper_or::add(SatWrapperSolver *solver, bool top_lev
                 std::cout << "add or constraint" << std::endl;
 #endif
 
-                lits.clear();
-                lits.push_back(~(_vars[0]->equal(0)));
-                _solver->addClause(lits);
+                if(encoding->direct) {
+                    lits.clear();
+                    lits.push_back(~(_vars[0]->equal(0)));
+                    _solver->addClause(lits);
+                } else if(encoding->order) {
+                    lits.clear();
+                    lits.push_back(~(_vars[0]->less_or_equal(0)));
+                    _solver->addClause(lits);
+                } else {
+                    std::cerr << "ERROR SatWrapper_or not implemented for this encoding yet." << std::endl;
+                    exit(1);
+                }
             }
 
         } else {
@@ -2123,22 +2142,44 @@ SatWrapper_Expression* SatWrapper_or::add(SatWrapperSolver *solver, bool top_lev
 #ifdef _DEBUGWRAP
                 std::cout << "add or constraint" << std::endl;
 #endif
-
-                // x -> y or z
-                lits.clear();
-                lits.push_back(this->equal(0));
-                for(int i=0; i<2; ++i) {
-                    lits.push_back(~(_vars[i]->equal(0)));
-                }
-                _solver->addClause(lits);
-
-                // y -> x  and z -> x
-                for(int i=0; i<2; ++i) {
+                if(encoding->direct) {
+                    // x -> y or z
                     lits.clear();
-                    lits.push_back(_vars[i]->equal(0));
-                    lits.push_back(~(this->equal(0)));
+                    lits.push_back(this->equal(0));
+                    for(int i=0; i<2; ++i) {
+                        lits.push_back(~(_vars[i]->equal(0)));
+                    }
                     _solver->addClause(lits);
+
+                    // y -> x  and z -> x
+                    for(int i=0; i<2; ++i) {
+                        lits.clear();
+                        lits.push_back(_vars[i]->equal(0));
+                        lits.push_back(~(this->equal(0)));
+                        _solver->addClause(lits);
+                    }
+                } else if(encoding->order) {
+                    // x -> y or z
+                    lits.clear();
+                    lits.push_back(this->less_or_equal(0));
+                    for(int i=0; i<2; ++i) {
+                        lits.push_back(~(_vars[i]->less_or_equal(0)));
+                    }
+                    _solver->addClause(lits);
+
+                    // y -> x  and z -> x
+                    for(int i=0; i<2; ++i) {
+                        lits.clear();
+                        lits.push_back(_vars[i]->less_or_equal(0));
+                        lits.push_back(~(this->less_or_equal(0)));
+                        _solver->addClause(lits);
+                    }
+                } else {
+                    std::cerr << "ERROR reified SatWrapper_or not implemented for this encoding yet." << std::endl;
+                    exit(1);
                 }
+            } else {
+                std::cerr << "Error reified Or constraint with just one operand." << std::endl;
             }
         }
 

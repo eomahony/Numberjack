@@ -5,8 +5,10 @@ MAINDIR = $(CURDIR)/../..
 # paths
 #-----------------------------------------------------------------------------
 
-# GUROBI_HOME environment variable should be set according to install instructions:
-# http://www.gurobi.com/documentation/current/quick-start-guide/
+# Numberjack will try to find the Gurobi, install location. It will first check
+# for the GUROBI_HOME environment variable which should be set accodring to the
+# Gurobi install guide. If not, it will try to find the path based on the
+# location of the gurobi_cl executable.
 
 OBJDIR = ./obj
 SRCDIR = ./src
@@ -14,6 +16,9 @@ PYTHON = ./python
 SWIG = swig
 PYLIB = `python-config --cflags`
 PYOBJ = `python-config --prefix`
+
+GRBCCFLAGS = `python $(MAINDIR)/tools/solverconfig.py Gurobi --cflags`
+GRBLDFLAGS = `python $(MAINDIR)/tools/solverconfig.py Gurobi --lflags`
 
 
 #-----------------------------------------------------------------------------
@@ -24,9 +29,6 @@ MAINNAME	=	Gurobi
 MAINOBJ		=	$(MAINNAME).o
 MAINSRC		=	$(addprefix $(SRCDIR)/,$(MAINOBJ:.o=.cpp))
 MAINOBJFILES	=	$(addprefix $(OBJDIR)/,$(MAINOBJ))
-
-GRBLIBFILES = $(shell find $(GUROBI_HOME)/lib -name "libgurobi??.so")
-GUROBILIB=$(strip $(patsubst $(GUROBI_HOME)/lib/lib%.so, %, $(GRBLIBFILES)))
 
 
 #-----------------------------------------------------------------------------
@@ -40,8 +42,8 @@ WOBFILE		= 	$(PYTHON)/$(MAINNAME)_wrap.o
 SOFILE		= 	$(PYTHON)/_$(MAINNAME).so
 
 MIPDIR = $(MAINDIR)/solvers/mip
-CFLAGS += -I$(MIPDIR)/src/ -I$(GUROBI_HOME)/include
-LFLAGS = -L$(GUROBI_HOME)/lib -lgurobi_c++ -l$(GUROBILIB)
+CFLAGS += -I$(MIPDIR)/src/ $(GRBCCFLAGS)
+LFLAGS += $(GRBLDFLAGS)
 
 
 #-----------------------------------------------------------------------------
@@ -51,17 +53,10 @@ LFLAGS = -L$(GUROBI_HOME)/lib -lgurobi_c++ -l$(GUROBILIB)
 CXX ?= g++
 
 
-wrapper: check-env $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/Gurobi.o $(PYTHON)/Gurobi_wrap.o
+wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) $(OBJDIR)/Gurobi.o $(PYTHON)/Gurobi_wrap.o
 
 debug: CFLAGS += -D_DEBUGWRAP -g
 debug: wrapper
-
-check-env:
-	@if [ "${GUROBI_HOME}" == "" ]; then \
-		echo "The environment variable GUROBI_HOME is not set. Please set it according to:"; \
-		echo "http://www.gurobi.com/documentation/current/quick-start-guide/"; \
-		exit 1; \
-	fi
 
 install_python: wrapper
 	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install

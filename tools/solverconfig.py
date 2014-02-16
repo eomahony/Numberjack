@@ -7,10 +7,14 @@ import sys
 """This script will attempt to find the home directory for a named solver."""
 
 
+CPLEX = "CPLEX"
+GUROBI = "Gurobi"
+
+
 def get_solver_home(solvername):
     from distutils.spawn import find_executable
 
-    if solvername == "CPLEX":
+    if solvername == CPLEX:
         # Try for environmental variable first
         env_path = os.getenv('CPLEXDIR')
         if env_path and len(env_path.strip()) > 0:
@@ -22,6 +26,19 @@ def get_solver_home(solvername):
             ex_path = os.path.realpath(ex_path)  # Expand symbolic links if any
             ex_dir = os.path.dirname(ex_path)  # Path to the bin directory
             return os.path.abspath(os.path.join(ex_dir, os.pardir, os.pardir))
+
+    elif solvername == GUROBI:
+        # Try for environmental variable first
+        env_path = os.getenv('GUROBI_HOME')
+        if env_path and len(env_path.strip()) > 0:
+            return env_path
+
+        # Try to find the gurobi_cl binary in the PATH
+        ex_path = find_executable('gurobi_cl')
+        if ex_path:
+            ex_path = os.path.realpath(ex_path)  # Expand symbolic links if any
+            ex_dir = os.path.dirname(ex_path)  # Path to the bin directory
+            return os.path.abspath(os.path.join(ex_dir, os.pardir))
     else:
         print >> sys.stderr, "Error unknown solver name", solvername
 
@@ -30,7 +47,7 @@ def get_solver_home(solvername):
 
 def get_cflags(solvername):
     solverhome = get_solver_home(solvername)
-    if solvername == "CPLEX":
+    if solvername == CPLEX:
         concertdir = get_concert_dir(solverhome)
         cplexincdir = os.path.join(solverhome, "include")
         concertincdir = os.path.join(concertdir, "include")
@@ -43,6 +60,10 @@ def get_cflags(solvername):
         else:
             print >> sys.stderr, "Error unknown platform", sys.platform
             sys.exit(1)
+
+    elif solvername == GUROBI:
+        incdir = os.path.join(solverhome, "include")
+        return "-I%s" % incdir
     else:
         print >> sys.stderr, "Error unknown solvername", solvername
         sys.exit(1)
@@ -50,7 +71,7 @@ def get_cflags(solvername):
 
 def get_lflags(solvername):
     solverhome = get_solver_home(solvername)
-    if solvername == "CPLEX":
+    if solvername == CPLEX:
         concertdir = get_concert_dir(solverhome)
         cplexlibdir = get_cplex_lib_dir(solverhome)
         concertlibdir = get_cplex_lib_dir(concertdir)
@@ -63,9 +84,27 @@ def get_lflags(solvername):
         else:
             print >> sys.stderr, "Error unknown platform", sys.platform
             sys.exit(1)
+
+    elif solvername == GUROBI:
+        libdir = os.path.join(solverhome, "lib")
+        libname = get_gurobi_libname(libdir)
+        return "-L%s -lgurobi_c++ -l%s" % (libdir, libname)
+
     else:
         print >> sys.stderr, "Error unknown solvername", solvername
         sys.exit(1)
+
+
+def get_gurobi_libname(libdir):
+    import re
+    libre = re.compile("lib(?P<libname>gurobi\d+)\.so")
+    for dirpath, dirnames, filenames in os.walk(libdir):
+        for f in filenames:
+            match = libre.match(f)
+            if match:
+                return match.groupdict()["libname"]
+    print >> sys.stderr, "Error could not find the Gurobi library in '%s'" % libdir
+    sys.exit(1)
 
 
 def get_concert_dir(cplexdir):
@@ -88,7 +127,7 @@ def get_cplex_lib_dir(cplexdir):
 
 
 def exit_usage():
-    print >> sys.stderr, "Usage: %s CPLEX (home|cflags|lflags)" % sys.argv[0]
+    print >> sys.stderr, "Usage: %s CPLEX [--prefix|--cflags|--lflags]" % sys.argv[0]
     sys.exit(1)
 
 
@@ -99,11 +138,11 @@ if __name__ == '__main__':
         solvername = sys.argv[1]
         query = sys.argv[2]
 
-        if query == "home":
+        if query == "--prefix":
             print get_solver_home(solvername)
-        elif query == "cflags":
+        elif query == "--cflags":
             print get_cflags(solvername)
-        elif query == "lflags":
+        elif query == "--lflags":
             print get_lflags(solvername)
         else:
             print >> sys.stderr, "Error unknown query argument:", query

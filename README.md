@@ -47,19 +47,17 @@ Numberjack provides an interface to the mathematical programming solver,
 [Gurobi][gurobiopt]. To use it in Numberjack, please follow the following steps:
 
 1. [Download and install Gurobi Optimizer][gurobiopt] from their website.
+   Numberjack has been tested against Gurobi versions 5.1, 5.5, and 5.6.
 
-2. The environment variable `GUROBI_HOME` should point to the Gurobi's install
-   directory. This should have been [set during installation][gurobiqs], along
-   with appending `$GUROBI_HOME/lib` to the environment variable
-   `LD_LIBRARY_PATH`. For example, something like this should have been added to
-   your `~/.bash_profile`:
+2. Numberjack will try to find the Gurobi, install location by first checking
+   the `GUROBI_HOME` environment variable which should be set according to the
+   Gurobi install guide. If not, it will try to find the path based on the
+   location of the `gurobi_cl` executable.
 
-    ```bash
-    export GUROBI_HOME="/opt/gurobi550/linux64"    # Example Linux install dir
-    export GUROBI_HOME="/Library/gurobi550/mac64"  # Example Mac OSX install dir
-    export PATH="${PATH}:${GUROBI_HOME}/bin"
-    export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${GUROBI_HOME}/lib"
-    ```
+   ```bash
+   export GUROBI_HOME="/opt/gurobi550/linux64"    # Example Linux install dir
+   export GUROBI_HOME="/Library/gurobi550/mac64"  # Example Mac OSX install dir
+   ```
 
 3. In the Numberjack directory, move the folder `available_interfaces/gurobi` to
    `solvers/gurobi`.

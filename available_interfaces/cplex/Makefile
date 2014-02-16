@@ -14,8 +14,8 @@ PYLIB = `python-config --cflags`
 PYOBJ = `python-config --prefix`
 
 
-CPLEXCCFLAGS = `python $(MAINDIR)/tools/solverconfig.py CPLEX cflags` -Wno-unused-private-field
-CPLEXLDFLAGS = `python $(MAINDIR)/tools/solverconfig.py CPLEX lflags`
+CPLEXCCFLAGS = `python $(MAINDIR)/tools/solverconfig.py CPLEX --cflags` -Wno-unused-private-field
+CPLEXLDFLAGS = `python $(MAINDIR)/tools/solverconfig.py CPLEX --lflags`
 
 
 OPTFLAGS = -O3

@@ -16,26 +16,30 @@ constraint programming solver (Mistral).
 * Numberjack directly benefits from python's features and modules
 * Numberjack uses efficient underlying C/C++ solvers.
 
-## Building the solvers
+## Installation
 
-Numberjack offers the ability to use several high-performance solvers. The
-source-code for Mistral, [Minisat][minisat], and [Walksat][walksat] is included
-in the Numberjack distribution and interfaces to additional solvers are
-available.
+Numberjack offers the ability to use several high-performance solvers, some of
+which are required to be installed separately or have their own dependencies.
+The source-code for building Mistral, [Minisat][minisat], and [Walksat][walksat]
+is included in the Numberjack distribution and interfaces to additional solvers
+are available.
 
-To install Numberjack from source, simply run `make` from the Numberjack
-directory. You will require the following to be installed:
+To install Numberjack from source simply run `make` from the Numberjack
+directory, followed by `make install`. This requires the following to be
+installed:
 
 * python 2
 * swig
 * libxml2-dev
 * zlib1g-dev
 * python-dev
+* libgmp-dev
 
 [minisat]: http://minisat.se
 [walksat]: http://www.cs.rochester.edu/u/kautz/walksat/
 
 
+## Building the Solvers
 
 ### Gurobi Optimizer
 
@@ -60,7 +64,7 @@ Numberjack provides an interface to the mathematical programming solver,
 3. In the Numberjack directory, move the folder `available_interfaces/gurobi` to
    `solvers/gurobi`.
 
-4. Run `make` from the Numberjack directory.
+4. Run `make`, followed by `make install` from the Numberjack directory.
 
 [gurobiopt]: http://www.gurobi.com/download/gurobi-optimizer
 [gurobiqs]: http://www.gurobi.com/documentation/current/quick-start-guide/
@@ -83,7 +87,7 @@ have it installed on your system, follow these steps to use in in Numberjack:
 2. In the Numberjack directory, move the folder `available_interfaces/cplex` to
    `solvers/cplex`.
 
-3. Run `make` from the Numberjack directory.
+3. Run `make`, followed by `make install` from the Numberjack directory.
 
 [cplex]: http://www.ibm.com/software/commerce/optimization/cplex-optimizer/
 
@@ -120,7 +124,7 @@ academic license). Please download version 3.0.1.
 
 4. Move the folder `available_interfaces/scip` to `solvers/scip`.
 
-5. Run `make` from the Numberjack directory.
+5. Run `make`, followed by `make install` from the Numberjack directory.
 
 
 ### Osi Solvers

@@ -303,9 +303,8 @@ def run_solve(model, output_vars, param):
     time_limit = max(int(param['tcutoff'] - total_seconds(datetime.datetime.now() - load_time)), 1)
     solver.setTimeLimit(time_limit)
     solver.setHeuristic(param['var'], param['val'], param['rand'])
-    if param['solver'] == 'Gurobi':
-        solver.setThreadCount(param['threads'])
-    elif param['solver'] == 'Toulbar2':
+    solver.setThreadCount(param['threads'])
+    if param['solver'] == 'Toulbar2':
         solver.setOption('lds',param['lds'])
         solver.setOption('lcLevel',param['lcLevel'])
         solver.setOption('deadEndElimination',param['dee'])

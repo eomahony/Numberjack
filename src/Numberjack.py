@@ -2841,6 +2841,7 @@ class NBJ_STD_Solver(object):
         self.decomposition_store = []
         self.enc_config_cache = {}
         self.free_memory = None
+        self.verbosity = 0
 
         self.solver = getattr(sys.modules[Library],
                               Library + "Solver", None)()
@@ -3230,6 +3231,7 @@ class NBJ_STD_Solver(object):
 
     ## Sets the verbosity level of the solver
     def setVerbosity(self, degree):
+        self.verbosity = max(0, degree)
         self.solver.setVerbosity(degree)
 
     ## Sets the number of threads a solver should use.
@@ -3238,7 +3240,8 @@ class NBJ_STD_Solver(object):
         if f:
             f(num_threads)
         else:
-            print >> sys.stderr, "Warning: this solver does not support the ability to specify a thread count."
+            if self.verbosity > 0:
+                print >> sys.stderr, "Warning: this solver does not support the ability to specify a thread count."
 
     ## Sets the initial random seed
     def setRandomSeed(self, seed):

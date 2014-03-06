@@ -402,6 +402,10 @@ class Expression(object):
                 value = self.model.strings[var.get_value()]
             else:
                 value = var.get_value()
+
+            if isinstance(self, Variable):
+                value = type(self.lb)(value)
+
         return value
 
     def get_size(self, solver=None):

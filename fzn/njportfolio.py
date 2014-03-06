@@ -45,14 +45,20 @@ def run_cmd(process_name, starttime, pid_queue, result_queue, cmd, memlimit):
     process = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE,
                        shell=True, preexec_fn=os.setpgrp)
     # Tell the parent the process pid, so it can be killed later
-    pid_queue.put(process.pid, True)
+    try:
+        pid_queue.put(process.pid, True)
+    except IOError:
+        pass
+
     stdout, stderr = process.communicate()
     exitcode = process.returncode
     try:
-        if exitcode == 0:
-            result_queue.put([True, exitcode, process_name, starttime, stdout, stderr], True)
-        else:
-            result_queue.put([False, exitcode, process_name, starttime, stdout, stderr], True)
+        res = True if exitcode == 0 else False
+        try:
+            result_queue.put([res, exitcode, process_name, starttime, stdout, stderr], True, 1.0)
+        except IOError:
+            # Pass on error as the parent process has probably exited, too late
+            pass
     except Exception:
         pass
 
@@ -128,9 +134,11 @@ def njportfolio(njfilename, cores, timeout, memlimit):
         print "% Launching:", cmd
 
     def tidy_up(*args):
-        # Tidy up, kill all processes that did not finish.
         num_pids_seen = 0
-        while not pid_queue.empty() and num_pids_seen < len(threads):
+        if pid_queue.empty():
+            return
+
+        while num_pids_seen < len(threads):
             try:
                 pid = pid_queue.get()
                 num_pids_seen += 1
@@ -139,6 +147,11 @@ def njportfolio(njfilename, cores, timeout, memlimit):
                 pass
             except OSError:
                 pass  # Process already finished.
+            except IOError:
+                break  # If manager process for pid_queue has been killed
+
+            if pid_queue.empty():
+                break
 
     # Set handlers for term and interupt signals
     signal.signal(signal.SIGTERM, tidy_up)
@@ -189,6 +202,8 @@ def njportfolio(njfilename, cores, timeout, memlimit):
                 break
         except Empty:
             pass  # Nothing new posted to the result_queue yet.
+        except EOFError:
+            break
         except IOError:
             break  # Can happen if sent term signal.
         except KeyboardInterrupt:
@@ -202,6 +217,10 @@ def njportfolio(njfilename, cores, timeout, memlimit):
 
     tidy_up()
     print "%% Total time in njportfolio: %.1f" % total_seconds(datetime.datetime.now() - start_time)
+
+    # Join each thread, otherwise one could try queue.put() after we exit
+    for t in threads:
+        t.join()
 
 
 if __name__ == '__main__':

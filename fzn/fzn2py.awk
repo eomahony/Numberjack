@@ -243,18 +243,32 @@ parameter {
 	objective_type = "Maximize";
 }
 
+function trimvarindex(s) {
+	ind = index(s, "[");
+	if(ind > 0) {
+		return substr(s, 1, ind - 1);
+	}
+	return s;
+}
+
 END {
 	if (!error) {
-	output_vars = "";
-	if(objective) output_vars = objective;
+	
+	# Create an array vars_array, keyed with the output variable names so that
+	# we output a set of unique variable names. We will also trim indexed vars.
+	if(objective) vars_array[trimvarindex(objective)] = 1;
 
 	n = asorti(output,varnames);
 	for (i=1; i<=n; i++) {
 		e = varnames[i];
 		if(e != objective) {
-			if(length(output_vars) > 0) output_vars = output_vars ", ";
-			output_vars = output_vars e;
+			vars_array[trimvarindex(e)] = 1;
 		}
+	}
+	output_vars = sep = "";
+	for (x in vars_array) {
+	    output_vars = output_vars sep x;
+	    sep = ", ";
 	}
 	print "    output_vars = (" output_vars ")";
 	print "    return model, output_vars";

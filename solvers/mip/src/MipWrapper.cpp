@@ -527,7 +527,7 @@ MipWrapper_Expression* MipWrapper_mod::add(MipWrapperSolver *solver,
                 MipWrapper_Expression *num_div = new MipWrapper_IntVar(-max_divs, max_divs);
                 num_div = num_div->add(solver, false);
 
-                LinearConstraint *con = new LinearConstraint(0, INFINITY);
+                LinearConstraint *con = new LinearConstraint(0, 0);
                 con->add_coef(vars[0], 1);
                 con->add_coef(num_div, -_coef);
                 con->add_coef(v, -1);

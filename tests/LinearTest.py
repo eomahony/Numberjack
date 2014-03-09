@@ -275,3 +275,19 @@ class LinearTest(unittest.TestCase):
         self.assertTrue(s.is_sat())
         self.assertEqual(v1.get_value(), 9)
         self.assertEqual(obj.get_value(), 109)
+
+    def testModSumEq1(self):
+        xs = VarArray(10)
+        m = Model(Sum(xs) % 2 == 1)
+        s = LinearTest.solver(m)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(sum(x.get_value() for x in xs) % 2, 1)
+
+    def testModSumEq0(self):
+        xs = VarArray(10)
+        m = Model(Sum(xs) % 2 == 0)
+        s = LinearTest.solver(m)
+        s.solve()
+        self.assertTrue(s.is_sat())
+        self.assertEqual(sum(x.get_value() for x in xs) % 2, 0)

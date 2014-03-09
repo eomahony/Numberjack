@@ -88,19 +88,25 @@ def njportfolio(njfilename, cores, timeout, memlimit):
     start_time = datetime.datetime.now()
     result_queue = Queue()
     pid_queue = Queue()
+    available = available_solvers()
     threads = []
-
     configs = []
+
     configs.append({'solver': 'Mistral', 'var': 'DomainOverWDegree', 'val': 'Lex', 'restart': GEOMETRIC, 'base': 256, 'factor': 1.3})
-    configs.append({'solver': 'Gurobi'})
-    configs.append({'solver': 'Toulbar2', 'lds': 1})
+    if 'CPLEX' in available:
+        configs.append({'solver': 'CPLEX'})
+    elif 'Gurobi' in available:
+        configs.append({'solver': 'Gurobi'})
+    if 'Toulbar2' in available:
+        configs.append({'solver': 'Toulbar2', 'lds': 1})
     configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': LUBY, 'base': 10000})
     # configs.append({'solver': 'Toulbar2', 'btd': 3, 'lcLevel': 1, 'rds': 1})
     configs.append({'solver': 'Mistral', 'dichotomic': 1, 'dichtcutoff': 10, 'base': 10, 'restart': GEOMETRIC, 'base': 256, 'factor': 1.3})
     configs.append({'solver': 'MiniSat'})
     configs.append({'solver': 'Mistral', 'var': 'DomainOverWDegree', 'val': 'Lex', 'restart': GEOMETRIC, 'base': 10, 'factor': 1.3})
     configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': GEOMETRIC, 'base': 256, 'factor': 1.5})
-    configs.append({'solver': 'SCIP'})
+    if 'SCIP' in available:
+        configs.append({'solver': 'SCIP'})
     configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': GEOMETRIC, 'base': 512, 'factor': 2})
     configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': LUBY, 'base': 5000})
     configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': GEOMETRIC, 'base': 512, 'factor': 1.3})

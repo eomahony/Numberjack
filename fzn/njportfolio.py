@@ -95,7 +95,7 @@ def njportfolio(njfilename, cores, timeout, memlimit):
     configs.append({'solver': 'Gurobi'})
     configs.append({'solver': 'Toulbar2', 'lds': 1})
     configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': LUBY, 'base': 10000})
-    configs.append({'solver': 'Toulbar2', 'btd': 3, 'lcLevel': 1, 'rds': 1})
+    # configs.append({'solver': 'Toulbar2', 'btd': 3, 'lcLevel': 1, 'rds': 1})
     configs.append({'solver': 'Mistral', 'dichotomic': 1, 'dichtcutoff': 10, 'base': 10, 'restart': GEOMETRIC, 'base': 256, 'factor': 1.3})
     configs.append({'solver': 'MiniSat'})
     configs.append({'solver': 'Mistral', 'var': 'DomainOverWDegree', 'val': 'Lex', 'restart': GEOMETRIC, 'base': 10, 'factor': 1.3})

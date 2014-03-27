@@ -122,7 +122,7 @@ public:
 
     // -- use this function instead:
     template<class V>
-    friend Clause* Clause_new(const V& ps, bool learnt = false);
+    Clause* Clause_new(const V& ps, bool learnt=false);
 
     int          size        ()      const   { return size_etc >> 3; }
     void         shrink      (int i)         { assert(i <= size()); size_etc = (((size_etc >> 3) - i) << 3) | (size_etc & 7); }
@@ -146,7 +146,7 @@ public:
 };
 
 template<class V>
-Clause* Clause_new(const V& ps, bool learnt) {
+Clause* Clause_new(const V& ps, bool learnt=false) {
     assert(sizeof(Lit)      == sizeof(uint32_t));
     assert(sizeof(float)    == sizeof(uint32_t));
     void* mem = malloc(sizeof(Clause) + sizeof(uint32_t)*(ps.size()));
@@ -156,11 +156,11 @@ Clause* Clause_new(const V& ps, bool learnt) {
 /*_________________________________________________________________________________________________
 |
 |  subsumes : (other : const Clause&)  ->  Lit
-|  
+|
 |  Description:
 |       Checks if clause subsumes 'other', and at the same time, if it can be used to simplify 'other'
 |       by subsumption resolution.
-|  
+|
 |    Result:
 |       lit_Error  - No subsumption or simplification
 |       lit_Undef  - Clause subsumes 'other'

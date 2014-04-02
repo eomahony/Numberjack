@@ -16,28 +16,28 @@ PYVERSION	:=	$(shell python -V 2>&1 | \
 			-e s/" 2.6."*/2.6/ )
 
 ifeq ($(OSTYPE),darwin)
-BUNDLE = -bundle -undefined suppress 
+BUNDLE = -bundle -undefined suppress
 HACK = -I/usr/lib/gcc/i686-apple-darwin9/4.2.1/include
 else
-BUNDLE = -shared 
+BUNDLE = -shared
 endif
 
 ifeq ($(PYVERSION),python2.6)
-PYLIB = `python2.6-config --cflags` $(HACK) 
+PYLIB = `python2.6-config --cflags` $(HACK)
 PYOBJ = `python2.6-config --prefix`
-SWIG = swig 
-else 
+SWIG = swig
+else
 ifeq ($(PYVERSION),python2.5)
-PYLIB = `python2.5-config --cflags` 
+PYLIB = `python2.5-config --cflags`
 PYOBJ = `python2.5-config --prefix`
 SWIG = swig
-else 
+else
 ifeq ($(PYVERSION),python2.4)
-PYLIB = `/usr/bin/python2.4-config --cflags` $(HACK)  
+PYLIB = `/usr/bin/python2.4-config --cflags` $(HACK)
 PYOBJ = `/usr/bin/python2.4-config --prefix`
 SWIG = swig -classic
-else 
-PYLIB = `python-config --cflags` $(HACK) 
+else
+PYLIB = `python-config --cflags` $(HACK)
 PYOBJ = `python-config --prefix`
 SWIG = swig
 endif
@@ -95,7 +95,7 @@ OBJ=$(MSTRLDIR)/src/obj
 INC=$(MSTRLDIR)/src/include
 TCL=$(MSTRLDIR)/tools/tclap/include
 
-MCFLAGS = -I$(INC) -I$(TCL) 
+MCFLAGS = -I$(INC) -I$(TCL)
 MLFLAGS = -L$(OBJ)
 
 
@@ -105,7 +105,10 @@ PLIBOBJ = $(patsubst $(SRC)/%, $(OBJ)/%, $(PLIBAUX))
 
 
 
-wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) 
+wrapper: $(OBJDIR) $(PYTHON) $(IFILE) $(WXXFILE) $(SOFILE) # $(WOBFILE) obj/Mistral2.o
+
+debug: CFLAGS += -D_DEBUGWRAP -g -Wall
+debug: wrapper
 
 # ------------------------------------------------------------
 clean_swig:
@@ -114,7 +117,7 @@ clean_swig:
 
 clean:
 	@echo "-> cleaning"
-	@rm -rf $(OBJ)/*.o $(OBJ)/*.a $(SRC)/*~ $(MOD)/obj/*.o $(MOD)/src/*~ $(MOD)/src/*/*~ $(INC)/*~ *~ $(BIN)/* 
+	@rm -rf $(OBJ)/*.o $(OBJ)/*.a $(SRC)/*~ $(MOD)/obj/*.o $(MOD)/src/*~ $(MOD)/src/*/*~ $(INC)/*~ *~ $(BIN)/*
 
 $(OBJDIR):
 	@-mkdir -p $(OBJDIR)
@@ -123,18 +126,18 @@ $(PYTHON):
 	@mkdir -p $(PYTHON)
 
 install_python: wrapper
-	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install	
+	cd $(PYTHON); python $(MAINDIR)/tools/setup.py install
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
 	@echo "-> compiling $@"
-	@$(CCC) $(CFLAGS) $(MCFLAGS) -c -o $@ $< 
+	@$(CCC) $(CFLAGS) $(MCFLAGS) -c -o $@ $<
 
 $(PYTHON)/%_wrap.o: $(PYTHON)/%_wrap.cxx
 	@echo "-> compiling $@"
 	@$(CCC) $(CFLAGS) $(MCFLAGS) -I$(SRCDIR) $(PYLIB)  -c $< -o $@
 
 $(PYTHON)/%_wrap.cxx: $(PYTHON)/%.i
-	@echo "-> compiling $@"	
+	@echo "-> compiling $@"
 	@$(SWIG) -c++ -python $<
 	@python $(MAINDIR)/tools/finalize.py $(<:.i=.py)
 
@@ -151,5 +154,4 @@ $(PYTHON)/_%.so: $(OBJDIR)/%.o $(PYTHON)/%_wrap.o $(PLIBOBJ)
 lib: $(PLIBOBJ) $(PUTIOBJ)
 $(OBJ)/%.o:  $(SRC)/%.cpp $(INC)/%.hpp
 	@echo 'compile '$<
-	$(CCC) $(CFLAGS) $(MCFLAGS) -c $< -o $@ 
-
+	$(CCC) $(CFLAGS) $(MCFLAGS) -c $< -o $@

@@ -2,12 +2,12 @@
 #"""
 #  Numberjack is a constraint satisfaction and optimisation library
 #  Copyright (C) 2009 Cork Constraint Computation Center, UCC
-#  
+#
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU Lesser General Public License as published by
 #  the Free Software Foundation; either version 2 of the License, or
 #  (at your option) any later version.
-#  
+#
 #  This program is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -16,7 +16,7 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
-#  The authors can be contacted electronically at 
+#  The authors can be contacted electronically at
 #  numberjack.support@gmail.com
 
 import types
@@ -71,7 +71,7 @@ class XCSPOutput():
 
     # This maps integer expressions to boolean equivalents
     int2bool = {
-        "eq" : "iff( #a, #b)", 
+        "eq" : "iff( #a, #b)",
         "ne" : "xor( #a, #b)",
         "ge" : "or( and(not(#a), not(#b)), #a)",
         "gt" : "and( #a, not(#b))",
@@ -197,7 +197,7 @@ class XCSPOutput():
                     parameters.append("V%d" % par[1])
             else:
                 parameters.append("%d" % par[1])
-        
+
         arity = len(dvars)
         if arity > self.__maxConstraintArity:
             self.__maxConstraintArity = arity
@@ -295,7 +295,7 @@ class XCSPOutput():
             else:
                 extracted_expr = "X%d" % (self.__dVars.get(expr.ident))
         # If this expression should be taking ints but is being given bools:
-        elif(expr.get_operator() in self.int2bool and 
+        elif(expr.get_operator() in self.int2bool and
              expr.get_children()[0].get_operator() in self.int2bool and
              expr.get_children()[1].get_operator() in self.int2bool):
             extracted_expr = self.int2bool[expr.get_operator()].replace("#a",
@@ -430,7 +430,7 @@ class XCSPOutput():
 
             con_string += "\t\t</parameters>\n\t</constraint>\n"
             self.__constraints.append(con_string)
-            
+
             return index
 
     def handle_weighted_sum(self, expr):
@@ -595,18 +595,18 @@ class XCSPOutput():
         relation += "|".join([" ".join([str(t) for t in tuple]) for tuple in tuples])
         relation += "\n\t</relation>\n"
         self.__relations.append(relation)
-        
+
         constraint  = "\n\t<constraint name=\"C%d\" arity=\"%d\" scope=\"%s\" reference=\"R%d\" />\n" % (
             self.__local_con_idx,
             len(scope),
             " ".join(["V%d" % var.ident for var in scope]),
             self.__local_rel_idx )
-        
+
         self.__constraints.append(constraint)
-        
+
         if self.__maxConstraintArity < len(scope):
             self.__maxConstraintArity = len(scope)
-        
+
         self.__local_rel_idx += 1
         self.__local_con_idx += 1
 
@@ -629,7 +629,7 @@ class XCSPOutput():
         for var in self.__variables:
             outfile.write(var)
         outfile.write("</variables>\n")
-        
+
     def output_relations(self, outfile):
         """
         Outputs all the relations to the file
@@ -663,10 +663,10 @@ class XCSPOutput():
         Otherwise it also creates a domain, automatically reducing sequencial
         numbers in the domain to intervals
         """
-        
+
         if domain is None:
             domain = [lb,ub]
-        
+
         dom_string = ""
 
         if index is None:

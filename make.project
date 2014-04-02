@@ -34,7 +34,5 @@ CFLAGS += -Qunused-arguments  # tell clang to ignore some gcc flags we use
 CFLAGS += -Wno-error=unused-command-line-argument-hard-error-in-future
 
 else
-BUNDLE = -shared 
+BUNDLE = -shared
 endif
-
-

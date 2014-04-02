@@ -810,7 +810,7 @@ class Model(object):
                 # remove first intermediate variables in the objective function
                 rec_functional(objexpr[0], objvar, 0, issubclass(type(objexpr[0]), Minimise))
 
-            
+
             # remove intermediate variables in the constraints if possible
             for expr in self.__expressions:
                 if issubclass(type(expr), Predicate) and not(issubclass(type(expr), (Minimise, Maximise))):
@@ -826,7 +826,7 @@ class Model(object):
                     del self.__expressions[pos]
                 else:
                     pos += 1
-                    
+
             #print self   #SDG: VERY USEFUL FOR DEBUGGING
 
     def __str__(self):
@@ -1571,8 +1571,8 @@ class Div(BinPredicate):
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "div")
         #SDG: initialize lb,ub
-        if (self.get_lb(1) < 0 and self.get_ub(1) > 0):    
-            self.lb = min(self.get_lb(0), -1 * self.get_ub(0))   #SDG: Warning! It assumes var2 can be equal to -1 or 1 
+        if (self.get_lb(1) < 0 and self.get_ub(1) > 0):
+            self.lb = min(self.get_lb(0), -1 * self.get_ub(0))   #SDG: Warning! It assumes var2 can be equal to -1 or 1
             self.ub = max(self.get_ub(0), -1 * self.get_lb(0))
         elif (self.get_ub(1) < 0):
             self.lb = min(self.get_lb(0) / self.get_ub(1), self.get_ub(0) / self.get_ub(1))
@@ -1747,7 +1747,7 @@ class Lt(BinPredicate):
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "lt")
         #SDG: initialize lb,ub
-        self.lb = int(self.get_ub(0) < self.get_lb(1))    
+        self.lb = int(self.get_ub(0) < self.get_lb(1))
         self.ub = int(not(self.get_lb(0) >= self.get_ub(1)))
 
     def get_symbol(self):
@@ -1780,7 +1780,7 @@ class Gt(BinPredicate):
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "gt")
         #SDG: initialize lb,ub
-        self.lb = int(self.get_lb(0) > self.get_ub(1))    
+        self.lb = int(self.get_lb(0) > self.get_ub(1))
         self.ub = int(not(self.get_ub(0) <= self.get_lb(1)))
 
     def get_symbol(self):
@@ -1813,7 +1813,7 @@ class Le(BinPredicate):
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "le")
         #SDG: initialize lb,ub
-        self.lb = int(self.get_ub(0) <= self.get_lb(1))    
+        self.lb = int(self.get_ub(0) <= self.get_lb(1))
         self.ub = int(not(self.get_lb(0) > self.get_ub(1)))
 
     def get_symbol(self):
@@ -1846,7 +1846,7 @@ class Ge(BinPredicate):
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "ge")
         #SDG: initialize lb,ub
-        self.lb = int(self.get_lb(0) >= self.get_ub(1))    
+        self.lb = int(self.get_lb(0) >= self.get_ub(1))
         self.ub = int(not(self.get_ub(0) < self.get_lb(1)))
 
     def get_symbol(self):

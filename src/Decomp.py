@@ -9,39 +9,39 @@ Custom constraints section
 '''
 
 class MyConstraint(Expression):
-    
+
     def __init__(self, vars):
         Expression.__init__(self, "MyConstraint")
-        
+
         self.set_children(vars)
-    
+
         print "This is the MyConstraint method"
-    
+
     def decompose(self):
         '''
         Decompose must return either a list containing a list of expressions
         '''
-        
+
         constraint_list = []
-        variable = Variable(0, 1)   
-        
+        variable = Variable(0, 1)
+
         return (variable, constraint_list)
-        
+
 class MyAllDiff(Expression):
-    
+
     def __init__(self, vars):
         Expression.__init__(self, "MyAllDiff")
         self.set_children(vars)
 
     def decompose(self):
         return [var1 != var2 for var1, var2 in pair_of(self.children)]
-        
+
 class MyAddTwo(Expression):
-    
+
     def __init__(self, vars):
         Expression.__init__(self, "MyAddTwo")
         self.set_children(vars)
-        
+
     def decompose(self):
         return [self.children[0] + self.children[1]]
 
@@ -51,11 +51,11 @@ class MyAddThree(Expression):
         self.set_children(vars)
 
 class MySum(Expression):
-    
+
     def __init__(self, vars):
         Expression.__init__(self, "MySum")
         self.set_children(vars)
-        
+
     def addition(self,X):
         if len(X) == 1: return X[0]
         else: return X[0] + self.addition(X[1:])
@@ -91,7 +91,7 @@ class Add(BinPredicate):
         return '+'
 
 # SDG: new Predicate for expressing arbitrary functions
-## Function 
+## Function
 #
 # \note
 #   - Top-level: Cannot be used as a top level constraint
@@ -180,10 +180,10 @@ class PostUnary(CostFunction):
 #
 
 class PostBinary(CostFunction):
-    
+
     ## PostBinary constraint constructor
     # @param var1 first variable
-    # @param var2 second variable 
+    # @param var2 second variable
     # @param costs table of costs
     #
 	# \note
@@ -199,12 +199,12 @@ class PostBinary(CostFunction):
     #>>> assign:
     #>>>   x0 in {1..3}
     #>>>   x1 in {1..3}
-    #>>>   
+    #>>>
     #>>> subject to:
     #>>>   PostBinary(x0, x1)
     # \endcode
     #
-    
+
     def __init__(self, var1, var2, costs):
         CostFunction.__init__(self, [var1, var2], "PostBinary")
         self.parameters = [costs]
@@ -216,8 +216,8 @@ class PostBinary(CostFunction):
 
 ## PostTernary Constraint
 # @param var first variable
-# @param var1 second variable 
-# @param var2 third variable 
+# @param var1 second variable
+# @param var2 third variable
 # @param costs table of costs
 #
 # \note
@@ -231,7 +231,7 @@ class PostBinary(CostFunction):
 # post = PostTernary(var,var1,var2,[5,3,2,2,2,2,2,1])
 # model = Model(post)
 # \endcode
-      
+
 class PostTernary(CostFunction):
     def __init__(self, var1, var2, var3, costs):
         CostFunction.__init__(self, [var1, var2, var3], "PostTernary")
@@ -245,7 +245,7 @@ class PostTernary(CostFunction):
 
 ## PostWSum Constraint
 #
-# @param vars variables array  
+# @param vars variables array
 # @param arity constraint arity
 # @param semantics semantic constraint
 # @param baseCost baseCost constraint
@@ -266,13 +266,13 @@ class PostWSum(CostFunction):
     def __init__(self, vars, arity, semantics, baseCost, comparator, rightRes):
         CostFunction.__init__(self, vars, "PostWSum")
         self.parameters = [arity, semantics, baseCost, comparator, rightRes]
-        
+
 ## PostWVarSum Constraint
 #
 # \note
 #   - Top-level: PostWSum Constraint
 #   - Nested: Cannot be used as a nested predicate
-#   
+#
 class PostWVarSum(CostFunction):
     def __init__(self, vars, arity, semantics, baseCost, comparator, rightVar):
         CostFunction.__init__(self, vars, "PostWVarSum")
@@ -284,7 +284,7 @@ class PostWVarSum(CostFunction):
 # \note
 #   - Top-level: PostWAmong Constraint
 #   - Nested: Cannot be used as a nested predicate
-#       
+#
 class PostWAmong(CostFunction):
     def __init__(self, vars, arity, semantics, baseCost, rightVar = None):
         CostFunction.__init__(self, [vars], "PostWAmong")
@@ -293,12 +293,12 @@ class PostWAmong(CostFunction):
             self.children.append(rightVar)
         else :
             self.rightvar = None
-        
+
     def addValues(self, values):
         [self.parameters[3].append(value) for value in values]
-    
+
     def setBounds (self, lb, ub):
-        if self.rightvar == None :        
+        if self.rightvar == None :
             self.parameters.append(lb)
             self.parameters.append(ub)
         else :
@@ -309,7 +309,7 @@ class PostWAmong(CostFunction):
 # \note
 #   - Top-level: Regular Constraint
 #   - Nested: Cannot be used as a nested predicate
-#     
+#
 class Regular(CostFunction):
     def __init__(self, vars, arity, nbStates, type = None, measureCost = None):
         CostFunction.__init__(self, vars, "Regular")
@@ -321,17 +321,17 @@ class Regular(CostFunction):
             self.parameters.append([])
             self.parameters.append([])
             self.parameters.append([])
-        
+
     def initialStates(self, state, cost=None):
         self.parameters[2].append(state)
         if cost != None:
             self.parameters[5].append(cost)
-        
+
     def acceptingStates(self, state, cost=None):
         self.parameters[3].append(state)
         if cost != None:
             self.parameters[6].append(cost)
-        
+
     def transitions(self, start, symbol, end, cost=None):
         self.parameters[4].append([start, symbol, end])
         if cost != None:
@@ -353,18 +353,18 @@ class Same(CostFunction):
             self.parameters = [type, semantics]
             if baseCost != None:
                 self.parameters.append(baseCost)
-        
+
 ## PostNary Constraint
 #
 # \note
 #   - Top-level: PostNary Constraint
 #   - Nested: Cannot be used as a nested predicate
-#      
+#
 class PostNary(CostFunction):
     def __init__(self, vars, arity, default_cost):
         CostFunction.__init__(self, vars, "PostNary")
         self.parameters = [arity, default_cost,[],[]]
-        
+
     def add(self, tupleIndex, cost):
             self.parameters[2].append(tupleIndex)
             self.parameters[3].append(cost)
@@ -392,11 +392,11 @@ class PostWSameGcc(CostFunction):
 # \note
 #   - Top-level: PostWOverlap Constraint
 #   - Nested: Cannot be used as a nested predicate
-#       
+#
 class PostWOverlap(CostFunction):
     def __init__(self, vars, arity, semantics, baseCost, comparator, rightRes):
         CostFunction.__init__(self, vars, "PostWOverlap")
-        self.parameters = [arity, semantics, baseCost, comparator, rightRes]    
+        self.parameters = [arity, semantics, baseCost, comparator, rightRes]
 
 
 '''
@@ -411,6 +411,11 @@ def decompose_Element(self):
     for e in self.children[:-1]:
         u = u | set([e] if type(e) is int else range(e.lb, e.ub + 1))
     res = Variable(list(u))
+    # ret = ([res, (self.children[-1] >= 0), (self.children[-1] < len(self.children)-1)] + [((res == e) | (self.children[-1] != i)) for i, e in enumerate(self.children[:-1])])
+    # print "Decomposed:"
+    # for x in map(str, ret):
+    #     print x
+    # return ret
     return ([res, (self.children[-1] >= 0), (self.children[-1] < len(self.children)-1)] + [((res == e) | (self.children[-1] != i)) for i, e in enumerate(self.children[:-1])])
 
 #SDG: decompose LeqLex and LessLex
@@ -525,7 +530,7 @@ def decompose_Maximise(self):
     return [Minimise(Neg([self.children[0]]))]
 
 #SDG: decompose minimise into cost functions
-def decompose_Minimise(self):       
+def decompose_Minimise(self):
     if type(self.children[0]) is int:
         return [PostNullary(self.children[0])]
     elif self.children[0].is_var():

@@ -1,5 +1,5 @@
 # Numberjack
-## A Python constraint programming platform 
+## A Python constraint programming platform
 
 ## What is Numberjack?
 

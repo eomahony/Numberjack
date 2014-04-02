@@ -81,7 +81,7 @@ def print_commented(blob, comment_prefix="c"):
 
 ## Base class for using an external solver binary that doesn't have a native interface.
 #
-#  Provides common functions that are used during 
+#  Provides common functions that are used during
 #  See also ExternalCNF and ExternalXCSP which subclass this.
 class ExternalSolver(object):
 

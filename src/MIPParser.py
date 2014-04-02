@@ -128,7 +128,7 @@ if __name__ == "__main__":
     datafile = options.data if options.data else None
     solver_name = None
     subsolver = None
-    
+
     if 'OsiCbc' in solvers and options.lpsolver:
         solver_name = 'OsiCbc'
         subsolver = options.lpsolver

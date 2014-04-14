@@ -137,19 +137,8 @@ $(PYTHON)/_%.so: $(SCIPLIBFILE) $(NLPILIBFILE) $(LPILIBFILE) $(MAINOBJFILES) $(O
 	@echo "-> linking $@"
 	@$(LINKCXX) $(BUNDLE) -Wno-long-double $(CFLAGS) $(MAINOBJFILES) $(LINKCXX_L)$(SCIPDIR)/lib $(LINKCXX_l)$(SCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(NLPILIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(OBJSCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(LPILIB)$(LINKLIBSUFFIX)  $(OFLAGS) $(LPSLDFLAGS) $(MIPDIR)/obj/MipWrapper.o python/SCIP_wrap.o $(LINKCXX_o)$@
 
-#scip_lib: $(SCIPDIR)/Makefile.backup 
-#	cp  $(SCIPDIR)/Makefile $(SCIPDIR)/Makefile.backup
-#	cp  $(MAINDIR)/tools/Makefile.scip $(SCIPDIR)/Makefile
-#	cp  $(SOPLEXDIR)/Makefile $(SOPLEXDIR)/Makefile.backup
-#	cp  $(MAINDIR)/tools/Makefile.soplex $(SOPLEXDIR)/Makefile
-#	cd  $(SCIPDIR)/..; make ZIMPL=false ZLIB=false READLINE=false
-
-$(SCIPDIR)/done.txt: 
-	@cp $(MAINDIR)/tools/Makefile.Numberjack $(SCIPDIR)/../
-	@cp $(MAINDIR)/tools/Makefile.doit.Numberjack $(SCIPDIR)/../
-	@cp $(MAINDIR)/tools/Makefile.scip.Numberjack $(SCIPDIR)/
-	@cp $(MAINDIR)/tools/Makefile.soplex.Numberjack $(SOPLEXDIR)/
-	@cd $(SCIPDIR)/..; make -f Makefile.Numberjack ZIMPL=false ZLIB=false READLINE=false	
+$(SCIPDIR)/done.txt:
+	@cd $(SCIPDIR)/..; make scipoptlib ZIMPL=false ZLIB=false READLINE=false GAMS=false GMP=false LEGACY=true SPX_LEGACY=true
 	@echo finished | cat > $(SCIPDIR)/done.txt
 
 #---- EOF --------------------------------------------------------------------

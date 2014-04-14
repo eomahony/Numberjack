@@ -94,30 +94,30 @@ have it installed on your system, follow these steps to use in in Numberjack:
 Due to licensing restrictions Numberjack cannot include the sources for SCIP.
 The SCIP source code is available from:
 [http://scip.zib.de/download.shtml][scipopt] (available for free under an
-academic license). Please download version 3.0.1.
+academic license). Please download version 3.1.0.
 
 [scipopt]: http://scip.zib.de/download.shtml
 
-1. Download the source code of SCIP Optimization Suite v3.0.1, unarchive it,
+1. Download the source code of SCIP Optimization Suite v3.1.0, unarchive it,
    however, do not install nor compile it.
 
     ```bash
-    tar zxf scipoptsuite-3.0.1.tgz
+    tar zxf scipoptsuite-?.?.?.tgz
     ```
 
 2. In the scipoptsuite directory, unarchive the SCIP and SoPlex archives.
 
     ```bash
-    cd scipoptsuite-3.0.1/
-    tar zxf scip-3.0.1.tgz
-    tar zxf soplex-1.7.1.tgz
+    cd scipoptsuite-3.1.0/
+    tar zxf scip-?.?.?.tgz
+    tar zxf soplex-?.?.?.tgz
     ```
 
 3. Set an environment variable ZIBPATH to the scipoptsuite directory, for
    example:
 
     ```bash
-    export ZIBPATH=path_to/scipoptsuite-3.0.1
+    export ZIBPATH=path_to/scipoptsuite-3.1.0
     ```
 
 4. Move the folder `available_interfaces/scip` to `solvers/scip`.

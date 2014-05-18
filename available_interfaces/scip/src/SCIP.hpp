@@ -39,6 +39,7 @@ public:
   
   // parameter tuning methods
   void setTimeLimit(const int cutoff);
+  void setOptimalityGap(const double gap);
   void setVerbosity(const int degree);
 
   // statistics methods

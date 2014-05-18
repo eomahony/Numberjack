@@ -34,6 +34,7 @@ public:
     void setNodeLimit(const int cutoff);
     void setTimeLimit(const int cutoff);
     void setThreadCount(const int nr_threads);
+    void setOptimalityGap(const double gap);
     void setVerbosity(const int degree);
     void setRandomSeed(const int seed);
 

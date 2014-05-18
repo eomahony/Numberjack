@@ -3247,6 +3247,14 @@ class NBJ_STD_Solver(object):
             if self.verbosity > 0:
                 print >> sys.stderr, "Warning: this solver does not support the ability to specify a thread count."
 
+    ## Sets the target relative optimality gap tolerance 
+    def setOptimalityGap(self, gap):
+        if hasattr(self.solver, 'setOptimalityGap'):
+            return self.solver.setOptimalityGap(gap)
+        else:
+            raise UnsupportedSolverFunction(self.Library, "setOptimalityGap", "This solver does not support setting the optimility gap.")
+        return None
+
     ## Sets the initial random seed
     def setRandomSeed(self, seed):
         self.solver.setRandomSeed(seed)

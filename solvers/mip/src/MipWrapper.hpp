@@ -498,6 +498,7 @@ public:
                               const char* val_heuristic, const int rand);
     virtual void setFailureLimit(const int cutoff);
     virtual void setTimeLimit(const int cutoff);
+    virtual void setOptimalityGap(const double gap);
     virtual void setNodeLimit(const int cutoff);
     virtual void setVerbosity(const int degree);
     virtual void setRandomized(const int degree);

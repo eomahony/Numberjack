@@ -37,6 +37,7 @@ public:
     void setTimeLimit(const int cutoff);
     void setNodeLimit(const int cutoff);
     void setThreadCount(const int nr_threads);
+    void setOptimalityGap(const double gap);
     void setVerbosity(const int degree);
 
     // statistics methods

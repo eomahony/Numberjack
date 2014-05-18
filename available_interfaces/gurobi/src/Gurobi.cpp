@@ -144,6 +144,14 @@ void GurobiSolver::setThreadCount(const int nr_threads){
         model->getEnv().set(GRB_IntParam_Threads, nr_threads);
     }
 }
+
+void GurobiSolver::setOptimalityGap(const double gap){
+    if(gap < 0.0 || gap > 1.0){
+        std::cerr << "Warning: relative optimality gap must be between 0.0 and 1.0, ignoring." << std::endl;
+    } else {
+        model->getEnv().set(GRB_DoubleParam_MIPGap, gap);
+    }
+}
  
 void GurobiSolver::setVerbosity(const int degree){
     // Gurobi's verbosity should be either 0/1.

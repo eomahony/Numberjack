@@ -1829,6 +1829,9 @@ void MipWrapperSolver::setFailureLimit(const int cutoff) {
 void MipWrapperSolver::setTimeLimit(const int cutoff) {
 }
 
+void MipWrapperSolver::setOptimalityGap(const double gap) {
+}
+
 void MipWrapperSolver::setNodeLimit(const int cutoff) {
 }
 

@@ -122,6 +122,14 @@ int SCIPSolver::solve(){
 void SCIPSolver::setTimeLimit(const int cutoff){
   SCIPsetRealParam(_scip, "limits/time", (double)cutoff);
 }
+
+void SCIPSolver::setOptimalityGap(const double gap){
+  if(gap < 0.0 || gap > 1.0){
+    std::cerr << "Warning: relative optimality gap must be between 0.0 and 1.0, ignoring." << std::endl;
+  } else {
+    SCIPsetRealParam(_scip, "limits/gap", gap);
+  }
+}
  
 void SCIPSolver::setVerbosity(const int degree){ _verbosity = degree; }
 

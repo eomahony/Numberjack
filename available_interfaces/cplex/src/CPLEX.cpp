@@ -132,6 +132,14 @@ void CPLEXSolver::setThreadCount(const int nr_threads){
     }
 }
 
+void CPLEXSolver::setOptimalityGap(const double gap){
+    if(gap < 0.0 || gap > 1.0){
+        std::cerr << "Warning: relative optimality gap must be between 0.0 and 1.0, ignoring." << std::endl;
+    } else {
+        cplex->setParam(IloCplex::EpGap, gap);
+    }
+}
+
 void CPLEXSolver::setVerbosity(const int degree) {
     // http://pic.dhe.ibm.com/infocenter/cosinfoc/v12r2/topic/ilog.odms.cplex.help/Content/Optimization/Documentation/CPLEX/_pubskel/CPLEX999.html
     if(degree >= 0 && degree <= 5)

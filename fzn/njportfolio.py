@@ -82,6 +82,7 @@ def check_optimization(njfilename):
 
 
 def njportfolio(njfilename, cores, timeout, memlimit):
+    from Numberjack import available_solvers
     from multiprocessing import Queue, cpu_count
     from Queue import Empty
 

@@ -633,6 +633,7 @@ namespace Mistral {
 //       } else {
 
 // #ifdef _DEBUG_RELAX
+//  if(_DEBUG_RELAX) {
 // 	std::cout << "[" << std::setw(4) << id << "](" << name() << "): post on " << scope[var] << std::endl;
 // #endif
 // 	//std::cout << "(yep)" << std::endl;
@@ -651,7 +652,9 @@ namespace Mistral {
       } else {
 
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
 	std::cout << "[" << std::setw(4) << id << "](" << name() << "): post on " << scope[var] << std::endl;
+  }
 #endif
 	//std::cout << "(yep)" << std::endl;
 	
@@ -722,7 +725,9 @@ namespace Mistral {
       if(index[var] >= 0) {
 
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
       std::cout << "[" << std::setw(4) << id << "](" << name() << "): f relax from " << scope[var] << std::endl;
+  }
 #endif
 
      Constraint c = self[var];
@@ -772,7 +777,9 @@ namespace Mistral {
    inline void notify_assignment(const int var) {
 
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
      std::cout << "[" << std::setw(4) << id << "](" << name() << "): notify assignment of " << scope[var] << std::endl;
+  }
 #endif
      
      
@@ -798,7 +805,9 @@ namespace Mistral {
 	 if(index[last] >= 0) {
 	   
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
 	   std::cout << "[" << std::setw(4) << id << "](" << name() << "): f relax from " << scope[last] << std::endl;
+  }
 #endif
 	   c.data |= RELAXED;
 	   un_post_from(last);
@@ -812,10 +821,12 @@ namespace Mistral {
     void restore(const int rtype) {
 
 #ifdef _DEBUG_BACKTRACK
+      if(_DEBUG_BACKTRACK) {
       std::cout << "c ";
       int lvl=solver->level;
       while(--lvl>=0) std::cout << " ";
       std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std::endl;
+  }
 #endif
      
       int var = rtype&CTYPE;
@@ -825,7 +836,7 @@ namespace Mistral {
       //   exit(1);
       // }
 
-      // #ifdef _DEBUG_RELAX
+      // #ifdef _DEBUG_RELAX 
       //      std::cout << "RESTORE [" << id << "] " ;
       //      display(std::cout);
       //      std::cout << " (" << (rtype&2) << " / " << (rtype&CTYPE) << ")" << std::endl;
@@ -867,10 +878,12 @@ namespace Mistral {
 	if(index[var] < 0) {
 
 #ifdef _DEBUG_BACKTRACK
-	  std::cout << "c ";
-	  lvl=solver->level;
-	  while(--lvl>=0) std::cout << " ";
-	  std::cout << "[" << std::setw(4) << id << "](" << name() << "): repost on " << scope[var] << std::endl;
+	  if(_DEBUG_BACKTRACK) {
+	    std::cout << "c ";
+	    int lvl=solver->level;
+	    while(--lvl>=0) std::cout << " ";
+	    std::cout << "[" << std::setw(4) << id << "](" << name() << "): repost on " << scope[var] << std::endl;
+	  }
 #endif
 	  
 	  un_relax_from(var);
@@ -890,10 +903,12 @@ namespace Mistral {
 	if(index[var] >= 0) {
 
 #ifdef _DEBUG_BACKTRACK
+      if(_DEBUG_BACKTRACK) {
 	  std::cout << "c ";
-	  lvl=solver->level;
+	  int lvl=solver->level;
 	  while(--lvl>=0) std::cout << " ";
 	  std::cout << "[" << std::setw(4) << id << "](" << name() << "): relax from " << scope[var] << std::endl;
+  }
 #endif
 
 	  un_post_from(var);
@@ -904,12 +919,14 @@ namespace Mistral {
       if(rtype&ACTIVITY) active = 3;
 
 #ifdef _DEBUG_BACKTRACK
+      if(_DEBUG_BACKTRACK) {
       std::cout << "c ";
-      lvl=solver->level;
+      int lvl=solver->level;
       while(--lvl>=0) std::cout << " ";
       std::cout << "[" << std::setw(4) << id << "](" << name() << "): reset active: " ;
       print_active();
       std::cout << std::endl;
+  }
 #endif
 
 
@@ -998,7 +1015,9 @@ namespace Mistral {
    inline void notify_assignment(const int var) {
 
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
      std::cout << "[" << std::setw(4) << id << "](" << name() << "): notify assignment of " << scope[var] << std::endl;
+  }
 #endif
      
      
@@ -1036,7 +1055,9 @@ namespace Mistral {
 	 if(index[last] >= 0) {
 	   
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
 	   std::cout << "[" << std::setw(4) << id << "](" << name() << "): f relax from " << scope[last] << std::endl;
+  }
 #endif
 	   c.data |= (RELAXED|ACTIVITY);
 	   un_post_from(last);
@@ -1059,7 +1080,9 @@ namespace Mistral {
       // //}
 
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
      std::cout << "[" << std::setw(4) << id << "](" << name() << "): notify assignment of " << scope[var] << std::endl;
+  }
 #endif
 	
       bool ret_val = false;
@@ -1068,7 +1091,9 @@ namespace Mistral {
 
 
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
      std::cout << "[" << std::setw(4) << id << "](" << name() << "): -> deseactivate" << std::endl;
+  }
 #endif
 
 	int tmp = active&7;
@@ -1096,10 +1121,12 @@ namespace Mistral {
     void restore(const int rtype) {
       
 #ifdef _DEBUG_BACKTRACK
+      if(_DEBUG_BACKTRACK) {
             std::cout << "c ";
       int lvl=solver->level;
       while(--lvl>=0) std::cout << " ";
 std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std::endl;
+  }
 #endif
       
       // //if(id==36) {
@@ -1130,10 +1157,12 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
 	if(index[var] < 0) {
 
 #ifdef _DEBUG_BACKTRACK
+      if(_DEBUG_BACKTRACK) {
 	  std::cout << "c ";
 	  lvl=solver->level;
 	  while(--lvl>=0) std::cout << " ";
 	  std::cout << "[" << std::setw(4) << id << "](" << name() << "): repost on " << scope[var] << std::endl;
+  }
 #endif
 	
 	  un_relax_from(var);
@@ -1155,10 +1184,12 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
 	if(index[var] >= 0) {
 
 #ifdef _DEBUG_BACKTRACK
+      if(_DEBUG_BACKTRACK) {
 	  std::cout << "c ";
 	  int lvl=solver->level;
 	  while(--lvl>=0) std::cout << " ";
 	  std::cout << "[" << std::setw(4) << id << "](" << name() << "): relax from " << scope[var] << std::endl;
+  }
 #endif
 	  
 	  un_post_from(var);
@@ -1207,12 +1238,14 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
   // //}
   
 #ifdef _DEBUG_BACKTRACK
+      if(_DEBUG_BACKTRACK) {
       std::cout << "c ";
       lvl=solver->level;
       while(--lvl>=0) std::cout << " ";
   std::cout << "[" << std::setw(4) << id << "](" << name() << "): reset active: " ;
   print_active();
   std::cout << std::endl;
+  }
 #endif
    
 }
@@ -1223,7 +1256,9 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
 
 	
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
      std::cout << "[" << std::setw(4) << id << "](" << name() << "): ff notify assignment of " << scope[changed_idx] << std::endl;
+  }
 #endif
 
 	// std::cout << " (" << ((active&7)/2) << ") ";
@@ -1427,7 +1462,9 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     inline void un_relax() {
 
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
 	  std::cout << "[" << std::setw(4) << id << "](" << name() << "): UNRELAX " << std::endl;
+  }
 #endif
 
       int i, n;
@@ -1437,7 +1474,9 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
 	if(index[i]<0) {
 	  
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
 	  std::cout << "[" << std::setw(4) << id << "](" << name() << "): post on " << scope[i] << std::endl;
+  }
 #endif
 	  
 	  index[i] = on[i]->post(self[i]);
@@ -1466,7 +1505,9 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
 	} else {
 
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
       std::cout << "[" << std::setw(4) << id << "](" << name() << "): post on " << scope[i] << std::endl;
+  }
 #endif
 
 	  index[i] = on[i]->post(self[i]);
@@ -1500,7 +1541,9 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
 
 
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
       std::cout << "[" << std::setw(4) << id << "](" << name() << "): UNPOST " << std::endl;
+  }
 #endif
       
       int var;
@@ -1511,7 +1554,9 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
 	if(index[var]>=0) {
 	  
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
 	  std::cout << "[" << std::setw(4) << id << "](" << name() << "): g1 relax from " << scope[var] << std::endl;
+  }
 #endif
 	  
 	  un_post_from(var);
@@ -1531,7 +1576,9 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     inline void relax() {
 
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
 	  std::cout << "[" << std::setw(4) << id << "](" << name() << "): RELAX " << std::endl;
+  }
 #endif
 
       //solver->save( Constraint(this, type|1) );
@@ -1564,7 +1611,9 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
 	if(index[var]>=0) {
 	  
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
 	std::cout << "[" << std::setw(4) << id << "](" << name() << "): g1 relax from " << scope[var] << std::endl;
+  }
 #endif
 
 	  un_post_from(var);
@@ -1584,7 +1633,9 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
       //if(index[var] > -1) {
 
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
 	  std::cout << "[" << std::setw(4) << id << "](" << name() << "): RELAX FROM "  << std::endl;
+  }
 #endif
 
       if(index[var]>=0) {
@@ -1594,7 +1645,9 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
 	
 	
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
 	std::cout << "[" << std::setw(4) << id << "](" << name() << "): g2 relax from " << scope[var] << std::endl;
+  }
 #endif
 	
 	un_post_from(var);
@@ -1629,7 +1682,9 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     inline void notify_assignment(const int var) {
       
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
       std::cout << "[" << std::setw(4) << id << "](" << name() << "): notify assignment of " << scope[var] << " => ";//<< std::endl;
+  }
 #endif
       
       // if(!active.contain(var)) {
@@ -1650,8 +1705,10 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
       }
       
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
       print_active();
       std::cout << std::endl;
+  }
 #endif
       
     }
@@ -3307,18 +3364,9 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     //@{
     virtual int check( const int* sol ) const { 
       int ret_value = 0;
-
-      
-
-      if(sol[2]) { // sol[0] + p[0] <= sol[1]
-
-	//std::cout << sol[0] << " + " << processing_time[0] << " <= " << sol[1] << std::endl;
-
+      if(sol[2]) {
 	ret_value = (sol[0] + processing_time[0] > sol[1]);
       } else {
-
-	//std::cout << sol[1] << " + " << processing_time[1] << " <= " << sol[0] << std::endl;
-
 	ret_value = (sol[1] + processing_time[1] > sol[0]);
       }
       return ret_value;

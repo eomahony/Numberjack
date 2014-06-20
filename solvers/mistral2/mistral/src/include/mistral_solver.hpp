@@ -550,6 +550,7 @@ namespace Mistral {
 
     Outcome satisfied();
     Outcome exhausted();
+    Outcome interrupted();
 
     /*!@name Constructor*/
     //@{

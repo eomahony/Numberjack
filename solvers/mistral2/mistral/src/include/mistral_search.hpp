@@ -34,6 +34,8 @@
 
 //#define _DEBUG_IMPACT true
 
+//#define _DEBUG_VARORD
+
 namespace Mistral {
 
 
@@ -407,6 +409,9 @@ namespace Mistral {
       int i;
       Constraint con = solver->culprit;
 
+
+      //std::cout << "failure on " << con << std::endl;
+
       if(!con.empty()) {
 	Variable *scope = con.get_scope();
 	int idx;
@@ -415,10 +420,15 @@ namespace Mistral {
 	while(i--) {
 	  idx = scope[i].id();
 	  if(idx>=0) {
+	    //std::cout << " ++x" << idx; 
 	    variable_weight[idx] += weight_unit;
 	  }
 	}
       } 
+      // std::cout << std::endl;
+
+      // display(std::cout, false);
+
     }
 
     virtual void notify_post(Constraint con) {
@@ -1493,6 +1503,7 @@ namespace Mistral {
 
 
 
+
   /*! \class GenericRandomDVO
     \brief  Class GenericRandomDVO
 
@@ -1545,8 +1556,14 @@ namespace Mistral {
     double **get_value_weight() { return manager->get_value_weight(); }
     double *get_bound_weight() { return manager->get_bound_weight(); }
 
+
     Variable select()
     {
+
+#ifdef _DEBUG_VARORD
+      std::cout << std::endl;
+#endif
+
       Variable *variables = solver->sequence.list_;
       unsigned int length = solver->sequence.size-1;
       unsigned int realsize=1, i, j;
@@ -1560,6 +1577,14 @@ namespace Mistral {
 	    bestvars[i] = bestvars[i-1];
 	    --i;
 	  }
+
+#ifdef _DEBUG_VARORD
+	  if(i<RAND) {
+	    std::cout << "*";
+	  }
+	  std::cout << std::endl;
+#endif
+
 	  bests[i] = current;
 	  bestvars[i] = variables[j];
 	  
@@ -1702,8 +1727,7 @@ namespace Mistral {
 		  if(!is_in) neighborhood[self_idx].add(scope[j]);
 		}
 	    }
-	  }
-	  //std::cout << seq[i] << ": " << neighborhood[self_idx] << std::endl;
+	  }	  //std::cout << seq[i] << ": " << neighborhood[self_idx] << std::endl;
 	}
       }
 
@@ -2852,7 +2876,7 @@ namespace Mistral {
     //@{ 
     double *weight;
     Vector< Variable > *map;
-    int dom_;
+    double dom_;
     double wei_;
     //@}  
 
@@ -2864,9 +2888,17 @@ namespace Mistral {
     inline bool operator==( const MinNeighborDomainOverWeight& x ) const { return dom_*x.wei_ == x.dom_*wei_; }
     inline void operator=( const MinNeighborDomainOverWeight& x ) { dom_ = x.dom_; wei_ = x.wei_; }
     inline void operator=( const Variable x ) { 
+
       int idx = x.id();
       int i = map[idx].size;
       Variable y;
+
+#ifdef _DEBUG_VARORD
+      std::cout << "check " << x << " (" << weight[idx] 
+		<< "): " << map[idx][0] << " in " <<  map[idx][0].get_domain() 
+		<< " <> " << map[idx][1] << " in " <<  map[idx][1].get_domain() ; //<< std::endl;
+#endif
+
       wei_ = weight[idx];
       dom_ = 0;
       while(i--) {

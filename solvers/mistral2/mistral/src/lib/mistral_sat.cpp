@@ -414,7 +414,6 @@ void Mistral::ConstraintClauseBase::mark_domain() {
 
 void Mistral::ConstraintClauseBase::initialise() {
   //solver->base = this;
-
   for(unsigned int i=0; i<scope.size; ++i) {
     if(scope[i].is_bool())
       trigger_on(_VALUE_, scope[i]);

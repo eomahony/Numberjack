@@ -60,20 +60,17 @@ Mistral::Variable::Variable() {
 
 // Constant variable
 Mistral::Variable::Variable(const int value) {
-  domain_type = NULL;
   domain_type = CONST_VAR;
   variable = NULL;
   constant_value = value;
 }
 
 Mistral::Variable::Variable(VariableImplementation* impl, const int type) {
-  domain_type = NULL;
   domain_type = type;
   variable = impl;
 }
 
 Mistral::Variable::Variable(Expression* exp) {
-  domain_type = NULL;
   domain_type = EXPRESSION;
   expression = exp;
 }
@@ -7700,14 +7697,15 @@ Mistral::Outcome Mistral::Goal::notify_solution(Solver *solver) {
       Decision deduction(objective, Decision::UPPERBOUND, upper_bound-1);
 
 
-#ifdef _DEBUG_SEARCH
-      if(_DEBUG_SEARCH) {
-	std::cout << "c";
-	for(unsigned int k=0; k<=solver->decisions.size; ++k) std::cout << " ";
-	std::cout << "backtrack to lvl " << solver->level << " and deduce " 
-		  << deduction << " (upper bound)" << std::endl;
-      }
-#endif
+// #ifdef _DEBUG_SEARCH
+//       SolverParamaters& parameters(solver->parameters)
+//       if(_DEBUG_SEARCH) {
+// 	std::cout << "c";
+// 	for(unsigned int k=0; k<=solver->decisions.size; ++k) std::cout << " ";
+// 	std::cout << "backtrack to lvl " << solver->level << " and deduce " 
+// 		  << deduction << " (upper bound)" << std::endl;
+//       }
+// #endif
 
       deduction.make();
 
@@ -7732,14 +7730,15 @@ Mistral::Outcome Mistral::Goal::notify_solution(Solver *solver) {
 	
       Decision deduction(objective, Decision::LOWERBOUND, lower_bound+1);
 
-#ifdef _DEBUG_SEARCH
-      if(_DEBUG_SEARCH) {
-	std::cout << "c";
-	for(unsigned int k=0; k<=solver->decisions.size; ++k) std::cout << " ";
-	std::cout << "backtrack to lvl " << solver->level << " and deduce " 
-		  << deduction << " (lower bound)" << std::endl;
-      }
-#endif
+// #ifdef _DEBUG_SEARCH
+//       SolverParamaters& parameters(solver->parameters)
+//       if(_DEBUG_SEARCH) {
+// 	std::cout << "c";
+// 	for(unsigned int k=0; k<=solver->decisions.size; ++k) std::cout << " ";
+// 	std::cout << "backtrack to lvl " << solver->level << " and deduce " 
+// 		  << deduction << " (lower bound)" << std::endl;
+//       }
+// #endif
       
       deduction.make();
       return UNKNOWN;

@@ -466,7 +466,10 @@ namespace Mistral {
     // std::ostream& print_weights(std::ostream& os);
     // void decay_weights(const double decay);
 
-    //void addObjective() { goal = new MinimiseVar(this, model->get_objective_var()); }
+    void addObjective() { 
+      objective = new Goal(Goal::MINIMIZATION, get_objective_var());
+    }
+      //goal = new MinimiseVar(this, model->get_objective_var()); }
     //void removeObjective() { delete goal; goal = NULL; }
 //     void addHeuristic( std::string Heu, const int rdz, std::string vo, const int hlimit ) {
       
@@ -654,7 +657,7 @@ namespace Mistral {
     // void old_jtl_presolve();
      void dichotomic_search();
     // void all_solutions_search();
-    // void branch_and_bound();
+    void branch_and_bound();
     // //void large_neighborhood_search();
     // //void extract_stable(List& neighbors, Vector<VariableInt*>& stable);
     // //void repair(Solution *sol, Vector<VariableInt*>& stable);

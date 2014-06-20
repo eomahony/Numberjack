@@ -351,15 +351,12 @@ void Mistral::Constraint::restore() {
 
 #ifdef _DEBUG_BACKTRACK
     GlobalConstraint *c = (GlobalConstraint*)propagator;
-
+    int id = c->id;
+    if(_DEBUG_BACKTRACK) {
       std::cout << "c ";
       int lvl=c->solver->level;
       while(--lvl>=0) std::cout << " ";
       std::cout << "[" << std::setw(4) << c->id << "](" << c->name() << "): restore" << std::endl;
-#endif
-
-
-#ifdef _DEBUG_BACKTRACK
       std::cout << "c ";
       lvl=c->solver->level;
       while(--lvl>=0) std::cout << " ";
@@ -368,6 +365,7 @@ void Mistral::Constraint::restore() {
       std::cout << std::endl;
 
       std::cout << "posted? " << (data&POSTED) << " / relaxed? " << (data&RELAXED) << std::endl;
+  }
 
 #endif
 

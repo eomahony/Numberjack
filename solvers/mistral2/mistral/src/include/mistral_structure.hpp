@@ -4258,21 +4258,49 @@ template < int N, class T >
       }
     }
 
+
+    inline int lsb_mantissa(const WORD_TYPE v) const {
+      union {FLOAT_TYPE f; WORD_TYPE i; } t;
+      WORD_TYPE b = v & -v;
+
+      t.f = (FLOAT_TYPE)b; // cast the least significant bit in v to a float
+      b = t.i >> mantissa;
+      return b - float_offset;
+    }
+
+    inline int lsb_gcc(const WORD_TYPE v) const {
+      return __builtin_ctz(v);
+    }
+
+    inline int msb_gcc(const WORD_TYPE v) const {
+      return __builtin_clz(v);
+    }
+
       
     inline int minimum_element(int idx, WORD_TYPE v, const int def=NOVAL) const
     {
+           
       while(v == 0) {
 	if( ++idx >= pos_words )
 	  return def;
 	v = table[idx];
       }
 
+      
+      /*
+      
       union {FLOAT_TYPE f; WORD_TYPE i; } t;
       WORD_TYPE b = v & -v;
 
       t.f = (FLOAT_TYPE)b; // cast the least significant bit in v to a float
       b = t.i >> mantissa;
-      return b + idx * size_word_bit - float_offset;
+      */
+      //return b + idx * size_word_bit - float_offset;
+
+
+     return __builtin_ctz(v) //__builtin_ffs(v) - 1 
+       + (idx * size_word_bit);
+      
     }
 
     /*!
@@ -4323,12 +4351,27 @@ template < int N, class T >
       table[neg_words] &= (full ^ ((WORD_TYPE)1 << (elt & CACHE)));
     }
 
+
+   inline int next(const int elt) const {
+      int idx = ((elt+1) >> EXP);
+      if(idx >= pos_words) return elt;
+      WORD_TYPE v = (table[idx] & (full << ((elt+1) & CACHE)));
+      while(v == 0) {
+	if(++idx >= pos_words) return elt;
+	v = table[idx];
+      }
+      return lsb_gcc(v) + (idx * size_word_bit);
+    }
+
+
+    /*
     inline int next(const int elt) const {
       int idx = ((elt+1) >> EXP);
       if(idx >= pos_words) return elt;
       WORD_TYPE v = (table[idx] & (full << ((elt+1) & CACHE)));
       return minimum_element(idx,v,elt);
     }
+    */
 
     inline int prev(const int elt) const {
 
@@ -4626,6 +4669,7 @@ template < int N, class T >
     }
 
 
+
     /*!
      * Returns the number of bits set in v.
      * For a derivation of this algorithm, see
@@ -4635,10 +4679,13 @@ template < int N, class T >
      */
     inline unsigned int word_size(WORD_TYPE v) const 
     {
+      return __builtin_popcount(v);
+      /*
       v = v - ((v >> 1) & (WORD_TYPE)~(WORD_TYPE)0/3);                           // temp
       v = (v & (WORD_TYPE)~(WORD_TYPE)0/15*3) + ((v >> 2) & (WORD_TYPE)~(WORD_TYPE)0/15*3);      // temp
       v = (v + (v >> 4)) & (WORD_TYPE)~(WORD_TYPE)0/255*15;                      // temp
       return (WORD_TYPE)(v * ((WORD_TYPE)~(WORD_TYPE)0/255)) >> (sizeof(v) - 1) * CHAR_BIT; // count
+      */
     }
 	
     inline unsigned int size() const 
@@ -4900,7 +4947,7 @@ template < int N, class T >
 	WORD_TYPE masked_ub = (full >> (CACHE - (ub & CACHE)));
 	
 	if( i == j ) {
-	  if( table[i] |= (masked_lb & masked_ub) );
+	  table[i] |= (masked_lb & masked_ub);
 	} else {
 	  
 	  if( i >= pos_words ) {
@@ -5541,10 +5588,6 @@ template < int N, class T >
       unsigned int ascendant = (rank-1)/2;
       int x = heap[rank];
       while(rank && value[x] > value[heap[ascendant]]) {
-	
-	// std::cout << "swap " << rank << ":" << heap[rank] << ":" << value[heap[rank]] << "  with "
-	// 	  << ascendant << ":" << heap[ascendant] << ":" << value[heap[ascendant]] << std::endl;
-
 	index[x] = ascendant;
 	index[heap[ascendant]] = rank;
 	
@@ -5553,10 +5596,6 @@ template < int N, class T >
 
 	rank = ascendant--;
 	ascendant /= 2;
-
-
-	//display(std::cout);
-
       }
     }
     
@@ -5575,9 +5614,6 @@ template < int N, class T >
 	}
 	if(largest == rank) break;
 	
-	// std::cout << "swap " << rank << ":" << heap[rank] << ":" << value[heap[rank]] << "  with "
-	//  	  << largest << ":" << heap[largest] << ":" << value[heap[largest]] << std::endl;
-
 	index[heap[largest]] = rank;
 	index[x] = largest;
 

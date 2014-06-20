@@ -102,11 +102,12 @@ namespace Mistral {
   // };
 
 
+  //#define _DEBUG_LESS (id == 84)
   //#define _DEBUG_PARITY ((id == 2))
   //#define _DEBUG_BUILD true
-  //#define _DEBUG_BACKTRACK true
+  //#define _DEBUG_BACKTRACK (id == 84)
   //#define _DEBUG_RESTORE true
-  //#define _DEBUG_RELAX true
+  //#define _DEBUG_RELAX (id == 84)
   //#define _DEBUG_HISTORY true  
   //#define _DEBUG_GENPROPAG (id == 5)
   //#define _DEBUG_MUL (id==7660)
@@ -129,7 +130,8 @@ namespace Mistral {
   //#define _DEBUG_MAX (get_solver()->parameters.verbosity == -7)
   //#define _DEBUG_MAX ((id==368))
   //#define _DEBUG_MEMORY true
-  //#define _DEBUG_SEARCH true
+  //#define _DEBUG_SEARCH true //(parameters.verbosity > 1)
+  //#define _MONITOR true
   //#define _DEBUG_NOGOOD true
   //(statistics.num_filterings > 640)
   //((statistics.num_filterings == 48212) || (statistics.num_filterings == 46738))

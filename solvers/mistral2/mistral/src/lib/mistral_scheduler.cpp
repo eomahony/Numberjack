@@ -80,20 +80,32 @@ void StatisticList::add_info(const int objective, int tp) {
   propags.push_back(solver->statistics.num_propagations);
   types.push_back(tp);
 
-  std::cout << outcome2str(solver->statistics.outcome) << std::endl;
+  //std::cout << outcome2str(solver->statistics.outcome) << std::endl;
 
   outcome.push_back(solver->statistics.outcome);
 
-  if(outcome.back() == SAT || outcome.back() == OPT) {
-    ++num_solutions;
-    best_solution_index = outcome.size()-1;
-    upper_bound = objective;
-    if(outcome.back() == OPT) lower_bound = objective;
-  } else if(types.back() != LNS && outcome.back() == UNSAT) {
-    lower_bound = objective+1;
+
+  
+
+  if(tp == BNB) {
+    if(outcome.back() == OPT) {
+      lower_bound = upper_bound = objective;
+      best_solution_index = outcome.size()-1;
+    } else if(outcome.back() == UNSAT) {
+      lower_bound = objective+1;
+    }
+  } else {
+    if(outcome.back() == SAT || outcome.back() == OPT) {
+      ++num_solutions;
+      best_solution_index = outcome.size()-1;
+      upper_bound = objective;
+      if(outcome.back() == OPT) lower_bound = objective;
+    } else if(types.back() != LNS && outcome.back() == UNSAT) {
+      lower_bound = objective+1;
+    }
   }
 
-  std::cout << outcome2str(outcome.back()) << " ==> [" << lower_bound << ".." << upper_bound << "]" << std::endl;
+  //std::cout << outcome2str(outcome.back()) << " ==> [" << lower_bound << ".." << upper_bound << "]" << std::endl;
 
 }
 
@@ -174,59 +186,59 @@ std::ostream& StatisticList::print(std::ostream& os,
   int plength = 0;
   while(prefix[plength] != '\0') ++plength;
   
-  os << "c =================[ statistics ]==================" << std::endl
-     << "d " << prefix << std::left << std::setw(28-plength)  << "LOWERBOUND "    << std::right << std::setw(21) << lower_bound << std::endl
-    << "d " << prefix << std::left << std::setw(28-plength)  << "UPPERBOUND "    << std::right << std::setw(21) << upper_bound << std::endl
-    << "d " << prefix << std::left << std::setw(28-plength)  << "OBJECTIVE "     << std::right << std::setw(21) << upper_bound << std::endl 
-    << "d " << prefix << std::left << std::setw(28-plength)  << "NORMOBJECTIVE " << std::right << std::setw(21) << normalized_objective << std::endl 
-    << "d " << prefix << std::left << std::setw(28-plength)  << "REALTIME "      << std::right << std::setw(21) << (get_run_time() - real_start_time) << std::endl
-    << "d " << prefix << std::left << std::setw(28-plength)  << "RUNTIME "       << std::right << std::setw(21) << total_time << std::endl
-    << "d " << prefix << std::left << std::setw(28-plength)  << "OPTTIME "       << std::right << std::setw(21) << opt_time << std::endl
-    << "d " << prefix << std::left << std::setw(28-plength)  << "PROOFTIME "     << std::right << std::setw(21) << proof_time << std::endl
-    << "d " << prefix << std::left << std::setw(28-plength)  << "UBTIME "        << std::right << std::setw(21) << ub_time << std::endl
-    << "d " << prefix << std::left << std::setw(28-plength)  << "LBTIME "        << std::right << std::setw(21) << lb_time << std::endl
-    << "d " << prefix << std::left << std::setw(28-plength)  << "LOSTTIME "      << std::right << std::setw(21) << lost_time << std::endl
-     << "d " << prefix << std::left << std::setw(28-plength)  << "NODES "         << std::right << std::setw(21) << total_nodes << std::endl
-     << "d " << prefix << std::left << std::setw(28-plength)  << "BACKTRACKS "    << std::right << std::setw(21) << total_backtracks << std::endl
-     << "d " << prefix << std::left << std::setw(28-plength)  << "FAILS "         << std::right << std::setw(21) << total_fails << std::endl
-     << "d " << prefix << std::left << std::setw(28-plength)  << "PROPAGS "       << std::right << std::setw(21) << total_propags << std::endl
-     << "d " << prefix << std::left << std::setw(28-plength)  << "NOGOODS "       << std::right << std::setw(21) << num_nogoods << std::endl;
+  os << "\n c +==============[ statistics ]===============+" << std::endl
+     << " d " << prefix << std::left << std::setw(25-plength)  << " LOWERBOUND "    << std::right << std::setw(19) << lower_bound << std::endl
+    << " d " << prefix << std::left << std::setw(25-plength)  << " UPPERBOUND "    << std::right << std::setw(19) << upper_bound << std::endl
+    << " d " << prefix << std::left << std::setw(25-plength)  << " OBJECTIVE "     << std::right << std::setw(19) << upper_bound << std::endl 
+    << " d " << prefix << std::left << std::setw(25-plength)  << " NORMOBJECTIVE " << std::right << std::setw(19) << normalized_objective << std::endl 
+    << " d " << prefix << std::left << std::setw(25-plength)  << " REALTIME "      << std::right << std::setw(19) << (get_run_time() - real_start_time) << std::endl
+    << " d " << prefix << std::left << std::setw(25-plength)  << " RUNTIME "       << std::right << std::setw(19) << total_time << std::endl
+    << " d " << prefix << std::left << std::setw(25-plength)  << " OPTTIME "       << std::right << std::setw(19) << opt_time << std::endl
+    << " d " << prefix << std::left << std::setw(25-plength)  << " PROOFTIME "     << std::right << std::setw(19) << proof_time << std::endl
+    << " d " << prefix << std::left << std::setw(25-plength)  << " UBTIME "        << std::right << std::setw(19) << ub_time << std::endl
+    << " d " << prefix << std::left << std::setw(25-plength)  << " LBTIME "        << std::right << std::setw(19) << lb_time << std::endl
+    << " d " << prefix << std::left << std::setw(25-plength)  << " LOSTTIME "      << std::right << std::setw(19) << lost_time << std::endl
+     << " d " << prefix << std::left << std::setw(25-plength)  << " NODES "         << std::right << std::setw(19) << total_nodes << std::endl
+     << " d " << prefix << std::left << std::setw(25-plength)  << " BACKTRACKS "    << std::right << std::setw(19) << total_backtracks << std::endl
+     << " d " << prefix << std::left << std::setw(25-plength)  << " FAILS "         << std::right << std::setw(19) << total_fails << std::endl
+     << " d " << prefix << std::left << std::setw(25-plength)  << " PROPAGS "       << std::right << std::setw(19) << total_propags << std::endl
+     << " d " << prefix << std::left << std::setw(25-plength)  << " NOGOODS "       << std::right << std::setw(19) << num_nogoods << std::endl;
   if(num_nogoods)
-    std::cout << "d " << prefix << std::left << std::setw(28-plength)  << "NOGOODSIZE "    << std::right << std::setw(21) << avg_nogood_size/(double)num_nogoods << std::endl;
-  std::cout << "d " << prefix << std::left << std::setw(28-plength)  << "NODES/s "       << std::right << std::setw(21) ;
+    std::cout << " d " << prefix << std::left << std::setw(25-plength)  << " NOGOODSIZE "    << std::right << std::setw(19) << avg_nogood_size/(double)num_nogoods << std::endl;
+  std::cout << " d " << prefix << std::left << std::setw(25-plength)  << " NODES/s "       << std::right << std::setw(19) ;
   if(total_time > 0)
     std::cout << (int)((double)total_nodes/total_time);
   else 
     std::cout << "N/A";
   std::cout << std::endl
-     << "d " << prefix << std::left << std::setw(28-plength)  << "BACKTRACKS/s "  << std::right << std::setw(21) ;
+     << " d " << prefix << std::left << std::setw(25-plength)  << " BACKTRACKS/s "  << std::right << std::setw(19) ;
   if(total_time > 0)
     std::cout << (int)((double)total_backtracks/total_time);
   else 
     std::cout << "N/A";
   std::cout << std::endl
-     << "d " << prefix << std::left << std::setw(28-plength)  << "FAILS/s "       << std::right << std::setw(21) ;
+     << " d " << prefix << std::left << std::setw(25-plength)  << " FAILS/s "       << std::right << std::setw(19) ;
   if(total_time > 0)
     std::cout << (int)((double)total_fails/total_time);
   else 
     std::cout << "N/A";
   std::cout << std::endl
-     << "d " << prefix << std::left << std::setw(28-plength)  << "PROPAGS/s "     << std::right << std::setw(21) ;
+     << " d " << prefix << std::left << std::setw(25-plength)  << " PROPAGS/s "     << std::right << std::setw(19) ;
   if(total_time > 0)
     std::cout << (int)((double)total_propags/total_time);
   else 
     std::cout << "N/A";
   std::cout 
     << std::endl
-    //<< "d " << prefix << std::left << std::setw(28-plength)  << "RESTARTS "      << std::right << std::setw(21) << total_restarts << std::endl
+    //<< " d " << prefix << std::left << std::setw(25-plength)  << "RESTARTS "      << std::right << std::setw(19) << total_restarts << std::endl
     
-    << "d " << prefix << std::left << std::setw(28-plength)  << "SOLUTIONS "     << std::right << std::setw(21) << num_solutions << std::endl
-    << "d " << prefix << std::left << std::setw(28-plength)  << "AVGCUTOFF "     << std::right << std::setw(21) << avg_cutoff_time << std::endl
-    << "d " << prefix << std::left << std::setw(28-plength)  << "AVGDISTANCE "   << std::right << std::setw(21) << avg_distance << std::endl
-    << "d " << prefix << std::left << std::setw(28-plength)  << "MINDISTANCE "   << std::right << std::setw(21) << min_distance << std::endl
-    << "d " << prefix << std::left << std::setw(28-plength)  << "MAXDISTANCE "   << std::right << std::setw(21) << max_distance << std::endl
-    << "d " << prefix << std::left << std::setw(28-plength)  << "OPTIMAL "       << std::right << std::setw(21) << (lower_bound == upper_bound) << std::endl
-    << "c =================[ statistics ]==================" << std::endl
+    << " d " << prefix << std::left << std::setw(25-plength)  << " SOLUTIONS "     << std::right << std::setw(19) << num_solutions << std::endl
+    << " d " << prefix << std::left << std::setw(25-plength)  << " AVGCUTOFF "     << std::right << std::setw(19) << avg_cutoff_time << std::endl
+    << " d " << prefix << std::left << std::setw(25-plength)  << " AVGDISTANCE "   << std::right << std::setw(19) << avg_distance << std::endl
+    << " d " << prefix << std::left << std::setw(25-plength)  << " MINDISTANCE "   << std::right << std::setw(19) << min_distance << std::endl
+    << " d " << prefix << std::left << std::setw(25-plength)  << " MAXDISTANCE "   << std::right << std::setw(19) << max_distance << std::endl
+    << " d " << prefix << std::left << std::setw(25-plength)  << " OPTIMAL "       << std::right << std::setw(19) << (lower_bound == upper_bound) << std::endl
+    << " c +==============[ statistics ]===============+" << std::endl
     << std::endl;
 
   return os;
@@ -279,7 +291,7 @@ ParameterList::ParameterList(int length, char **commandline) {
   if(strcmp(str_param[4],"nil")) Type = str_param[4];
   else {
     Type = "jsp";
-    std::cout << "c Warning: no type specified, treating the data as Taillard's jsp" << std::endl;
+    std::cout << " c Warning: no type specified, treating the data as Taillard's jsp" << std::endl;
   }
 
   UBinit      = -1;
@@ -288,7 +300,7 @@ ParameterList::ParameterList(int length, char **commandline) {
   Seed        = 12345;
   Cutoff      = 300;
   NodeCutoff  = 0;
-  NodeBase    = 30;
+  NodeBase    = 20;
   Dichotomy   = 128;
   Base        = 256;
   Randomized  = -1;
@@ -414,41 +426,41 @@ void ParameterList::initialise(SchedulingSolver *s) {
 
 
 std::ostream& ParameterList::print(std::ostream& os) {
-  os << "c =================[ parameters ]==================" << std::endl;
-  os << std::left << std::setw(30) << "c data file " << ":" << std::right << std::setw(20) << data_file_name << std::endl;
-  os << std::left << std::setw(30) << "c type " << ":" << std::right << std::setw(20) << Type << std::endl;
-  os << std::left << std::setw(30) << "c seed " << ":" << std::right << std::setw(20) << Seed << std::endl;
-  os << std::left << std::setw(30) << "c greedy iterations " << ":" << std::right << std::setw(20) << InitBound << std::endl;
-  os << std::left << std::setw(30) << "c use initial probe " << ":" << std::right << std::setw(20) << (InitStep ? "yes" : "no") << std::endl;
-  os << std::left << std::setw(30) << "c time cutoff " << ":" << std::right << std::setw(20) << Cutoff << std::endl;
-  os << std::left << std::setw(30) << "c node cutoff " << ":" << std::right << std::setw(20) << NodeCutoff << std::endl;
-  os << std::left << std::setw(30) << "c dichotomy " << ":" << std::right << std::setw(20) << (Dichotomy ? "yes" : "no") << std::endl;
-  os << std::left << std::setw(30) << "c restart policy " << ":" << std::right << std::setw(20) << Policy << std::endl;
-  os << std::left << std::setw(30) << "c base " << ":" << std::right << std::setw(20) << Base << std::endl;
-  os << std::left << std::setw(30) << "c factor " << ":" << std::right << std::setw(20) << Factor << std::endl;
-  os << std::left << std::setw(30) << "c heuristic " << ":" << std::right << std::setw(20) << Heuristic << " (" << abs(Randomized) << ")" << std::endl;
-  os << std::left << std::setw(30) << "c value ordering (init step) " << ":" << std::right << std::setw(20) << IValue << std::endl;
-  os << std::left << std::setw(30) << "c value ordering (dichotomy) " << ":" << std::right << std::setw(20) << DValue << std::endl;
-  os << std::left << std::setw(30) << "c value ordering (optim) " << ":" << std::right << std::setw(20) << Value << std::endl;
-  os << std::left << std::setw(30) << "c randomization " << ":" ;
+  os << " c +==============[ parameters ]===============+" << std::endl;
+  os << std::left << std::setw(30) << " c | data file " << ":" << std::right << std::setw(15) << data_file_name << " |" << std::endl;
+  os << std::left << std::setw(30) << " c | type " << ":" << std::right << std::setw(15) << Type << " |" << std::endl;
+  os << std::left << std::setw(30) << " c | seed " << ":" << std::right << std::setw(15) << Seed << " |" << std::endl;
+  os << std::left << std::setw(30) << " c | greedy iterations " << ":" << std::right << std::setw(15) << InitBound << " |" << std::endl;
+  os << std::left << std::setw(30) << " c | use initial probe " << ":" << std::right << std::setw(15) << (InitStep ? "yes" : "no") << " |" << std::endl;
+  os << std::left << std::setw(30) << " c | time cutoff " << ":" << std::right << std::setw(15) << Cutoff << " |" << std::endl;
+  os << std::left << std::setw(30) << " c | node cutoff " << ":" << std::right << std::setw(15) << NodeCutoff << " |" << std::endl;
+  os << std::left << std::setw(30) << " c | dichotomy " << ":" << std::right << std::setw(15) << (Dichotomy ? "yes" : "no") << " |" << std::endl;
+  os << std::left << std::setw(30) << " c | restart policy " << ":" << std::right << std::setw(15) << Policy << " |" << std::endl;
+  os << std::left << std::setw(30) << " c | base " << ":" << std::right << std::setw(15) << Base << " |" << std::endl;
+  os << std::left << std::setw(30) << " c | factor " << ":" << std::right << std::setw(15) << Factor << " |" << std::endl;
+  os << std::left << std::setw(30) << " c | heuristic " << ":" << std::right << std::setw(15) << Heuristic << " (" << abs(Randomized) << ")" << " |" << std::endl;
+  os << std::left << std::setw(30) << " c | value ord. (init step) " << ":" << std::right << std::setw(15) << IValue << " |" << std::endl;
+  os << std::left << std::setw(30) << " c | value ord. (dichotomy) " << ":" << std::right << std::setw(15) << DValue << " |" << std::endl;
+  os << std::left << std::setw(30) << " c | value ord. (optim) " << ":" << std::right << std::setw(15) << Value << " |" << std::endl;
+  os << std::left << std::setw(30) << " c | randomization " << ":" ;
      
   if(Randomized<-1) 
     os << std::right
-       << std::setw(17) << "i-shuff random (" << std::setw(2) << -Randomized << ")" << std::endl;
+       << std::setw(12) << "i-shuff random (" << std::setw(2) << -Randomized << ")" << " |" << std::endl;
   else if(Randomized>1) 
     os << std::right
-       << std::setw(17) << "shuff & random (" << std::setw(2) << Randomized << ")" << std::endl;
+       << std::setw(12) << "shuff & random (" << std::setw(2) << Randomized << ")" << " |" << std::endl;
   else if(Randomized==1) 
     os << std::right
-       << std::setw(20) << "shuffled" << std::endl;
+       << std::setw(15) << "shuffled" << " |" << std::endl;
   else if(Randomized==0) 
     os << std::right
-       << std::setw(20) << "not random" << std::endl;
+       << std::setw(15) << "not random" << " |" << std::endl;
   else 
     os << std::right
-       << std::setw(20) << "init shuffle" << std::endl;
+       << std::setw(15) << "init shuffle" << " |" << std::endl;
   
-  os << "c =================[ parameters ]==================" << std::endl;
+  os << " c +==============[ parameters ]===============+" << std::endl;
   
   return os;
 }
@@ -824,12 +836,12 @@ int Instance::getSetupTime(const int k, const int i, const int j) const {
 }
 
 std::ostream& Instance::print(std::ostream& os) {
-  os << "c " << (nJobs()) << " jobs, " 
+  os << " c " << (nJobs()) << " jobs, " 
      << nMachines() << " machines ("
      << nTasks() << " tasks)" << std::endl;
   for(int i=0; i<nJobs(); ++i) {
     if(nTasksInJob(i) > 1) {
-      os << "c ";
+      os << " c ";
       for(int j=1; j<nTasksInJob(i); ++j)
 	os << "  t" << tasks_in_job[i][j-1] << "+" << (duration[tasks_in_job[i][j-1]]) 
 	   << " <= t" << tasks_in_job[i][j];
@@ -838,7 +850,7 @@ std::ostream& Instance::print(std::ostream& os) {
   }
   for(int i=0; i<nMachines(); ++i) {
     if(tasks_in_machine[i].size() > 0) {
-      os << "c machine" << i << ": t" << tasks_in_machine[i][0];
+      os << " c machine" << i << ": t" << tasks_in_machine[i][0];
       for(unsigned int j=1; j<tasks_in_machine[i].size(); ++j)
 	os << ", t" << tasks_in_machine[i][j];
       os << std::endl;
@@ -903,15 +915,15 @@ double Instance::getNormalizer() const {
 }
 
 std::ostream& Instance::printStats(std::ostream& os) {
-  os << "c ==================[ instance ]===================" << std::endl
-     << "d " << std::left << std::setw(28)  << "NUMTASKS "      << std::right << std::setw(21) << nTasks() << std::endl
-     << "d " << std::left << std::setw(28)  << "NUMJOBS "       << std::right << std::setw(21) << nJobs() << std::endl
-     << "d " << std::left << std::setw(28)  << "NUMMACHINES "   << std::right << std::setw(21) << nMachines() << std::endl
-     << "d " << std::left << std::setw(28)  << "NUMDISJUNCTS "  << std::right << std::setw(21) << nDisjuncts() << std::endl
-     << "d " << std::left << std::setw(28)  << "NUMPRECEDENCES "<< std::right << std::setw(21) << nPrecedences() << std::endl
-//     << "d " << std::left << std::setw(28)  << "LBMAKESPAN "    << std::right << std::setw(21) << lb_C_max << std::endl
-//     << "d " << std::left << std::setw(28)  << "UBMAKESPAN "    << std::right << std::setw(21) << ub_C_max << std::endl
-     << "c ==================[ instance ]===================" << std::endl;
+  os << " c +===============[ instance ]================+" << std::endl
+     << " d " << std::left << std::setw(25)  << " NUMTASKS "      << std::right << std::setw(19) << nTasks() << std::endl
+     << " d " << std::left << std::setw(25)  << " NUMJOBS "       << std::right << std::setw(19) << nJobs() << std::endl
+     << " d " << std::left << std::setw(25)  << " NUMMACHINES "   << std::right << std::setw(19) << nMachines() << std::endl
+     << " d " << std::left << std::setw(25)  << " NUMDISJUNCTS "  << std::right << std::setw(19) << nDisjuncts() << std::endl
+     << " d " << std::left << std::setw(25)  << " NUMPRECEDENCES "<< std::right << std::setw(19) << nPrecedences() << std::endl
+//     << " d " << std::left << std::setw(25)  << "LBMAKESPAN "    << std::right << std::setw(19) << lb_C_max << std::endl
+//     << " d " << std::left << std::setw(25)  << "UBMAKESPAN "    << std::right << std::setw(19) << ub_C_max << std::endl
+     << " c +===============[ instance ]================+" << std::endl;
   return os;
 }
 
@@ -1623,10 +1635,10 @@ SchedulingSolver::SchedulingSolver(Instance *pb,
 }
 
 std::ostream& SchedulingSolver::printStats(std::ostream& os) {
-  os << "c ====================[ model ]====================" << std::endl
-     << "d " << std::left << std::setw(28)  << "LBMAKESPAN "    << std::right << std::setw(21) << lb_C_max << std::endl
-     << "d " << std::left << std::setw(28)  << "UBMAKESPAN "    << std::right << std::setw(21) << ub_C_max << std::endl
-     << "c ====================[ model ]====================" << std::endl;
+  os << " c +=================[ model ]=================+" << std::endl
+     << " d " << std::left << std::setw(25)  << "LBMAKESPAN "    << std::right << std::setw(19) << lb_C_max << std::endl
+     << " d " << std::left << std::setw(25)  << "UBMAKESPAN "    << std::right << std::setw(19) << ub_C_max << std::endl
+     << " c +=================[ model ]=================+" << std::endl;
   return os;
 }
 
@@ -1745,9 +1757,9 @@ void SchedulingSolver::setup() {
 
 
 	Vector< Variable > tasks_of_d;
-	tasks_of_d.add(disjuncts.back());
-	tasks_of_d.add(tasks[ti]);
-	tasks_of_d.add(tasks[tj]);
+	tasks_of_d.add(disjuncts.back().get_var());
+	tasks_of_d.add(tasks[ti].get_var());
+	tasks_of_d.add(tasks[tj].get_var());
 	disjunct_map.add(tasks_of_d);
 
 
@@ -1770,6 +1782,11 @@ void SchedulingSolver::setup() {
     add(Precedence(tasks[ti], data->getDuration(ti), C_max));
   }
 
+
+#ifdef _MONITOR
+  monitor_list << tasks[15] << " "
+
+#endif
 
 
 //   if(data->hasJobDueDate()) {
@@ -1848,7 +1865,7 @@ void SchedulingSolver::setup() {
 //     add(depth == Sum(scope));
 //   }
 
-  std::cout << *this << std::endl;
+//  std::cout << *this << std::endl;
 }
 
 SchedulingSolver::~SchedulingSolver() {}
@@ -2312,7 +2329,7 @@ std::ostream& SchedulingSolution::print(std::ostream& os, std::string type) {
       order[rank[i]] = i;
     }
 
-    os << "c ";
+    os << " c ";
 
     for(i=0; i<m; ++i) {
       os << (order[i]+1) << " ";
@@ -2407,8 +2424,8 @@ std::ostream& SchedulingSolution::print(std::ostream& os, std::string type) {
 //   solver->set_objective(stats->upper_bound);
 //   addObjective();
   
-//   std::cout << "c =============[ greedy step for jtl ]=============" << std::endl;
-//   std::cout << std::left << std::setw(30) << "c node cutoff" << ":"  
+//   std::cout << " c =============[ greedy step for jtl ]=============" << std::endl;
+//   std::cout << std::left << std::setw(30) << " c node cutoff" << ":"  
 // 	    << std::right << std::setw(20) << 50000 << std::endl;
 //   //for(int iteration=0; iteration<params->InitBound; ++iteration) {
 
@@ -2424,12 +2441,12 @@ std::ostream& SchedulingSolution::print(std::ostream& os, std::string type) {
 //       pool->add(new SchedulingSolution(solver, this));
      
       
-//       //std::cout << std::left << std::setw(30) << "c iteration / objective" << ":" << std::right << std::setw(11) << (iteration+1) << " / " << std::setw(6) << objective << ")" << std::endl;
-//       std::cout << std::left << std::setw(30) << "c objective" << ":" << std::right << std::setw(20) << objective << std::endl;
+//       //std::cout << std::left << std::setw(30) << " c iteration / objective" << ":" << std::right << std::setw(11) << (iteration+1) << " / " << std::setw(6) << objective << ")" << std::endl;
+//       std::cout << std::left << std::setw(30) << " c objective" << ":" << std::right << std::setw(20) << objective << std::endl;
 //     }
     
 //   } else {
-//     std::cout << std::left << std::setw(30) << "c jtl presolve " << ":" << std::right << std::setw(20) << "failed" << std::endl;
+//     std::cout << std::left << std::setw(30) << " c jtl presolve " << ":" << std::right << std::setw(20) << "failed" << std::endl;
 //     params->InitBound = 0;
 //   }
   
@@ -2440,7 +2457,7 @@ std::ostream& SchedulingSolution::print(std::ostream& os, std::string type) {
 //   //exit(1);
 //   //}
   
-//   std::cout << "c ===============[ end greedy step ]===============" << std::endl;   
+//   std::cout << " c ===============[ end greedy step ]===============" << std::endl;   
 //   std::cout << std::endl;
   
 //   //resetBacktrackLimit();
@@ -2472,8 +2489,8 @@ std::ostream& SchedulingSolution::print(std::ostream& os, std::string type) {
 //  //  solver->set_objective(stats->upper_bound);
 // //   addObjective();
   
-//   std::cout << "c =============[ greedy step for jtl ]=============" << std::endl;
-//   std::cout << std::left << std::setw(30) << "c backtrack cutoff" << ":"  
+//   std::cout << " c =============[ greedy step for jtl ]=============" << std::endl;
+//   std::cout << std::left << std::setw(30) << " c backtrack cutoff" << ":"  
 // 	    << std::right << std::setw(20) << 1000 << std::endl;
 //   for(int iteration=0; iteration<params->InitBound; ++iteration) {
     
@@ -2488,12 +2505,12 @@ std::ostream& SchedulingSolution::print(std::ostream& os, std::string type) {
 // 	objective = new_objective;
 // 	pool->add(new SchedulingSolution(solver, this));
 	
-// 	std::cout << std::left << std::setw(30) << "c iteration / objective" << ":" << std::right << std::setw(11) << (iteration+1) << " / " << std::setw(6) << objective << ")" << std::endl;
-// 	//std::cout << std::left << std::setw(30) << "c objective" << ":" << std::right << std::setw(20) << objective << std::endl;
+// 	std::cout << std::left << std::setw(30) << " c iteration / objective" << ":" << std::right << std::setw(11) << (iteration+1) << " / " << std::setw(6) << objective << ")" << std::endl;
+// 	//std::cout << std::left << std::setw(30) << " c objective" << ":" << std::right << std::setw(20) << objective << std::endl;
 //       }
       
 //     } else {
-//       std::cout << std::left << std::setw(30) << "c jtl presolve " << ":" << std::right << std::setw(20) << "failed" << std::endl;
+//       std::cout << std::left << std::setw(30) << " c jtl presolve " << ":" << std::right << std::setw(20) << "failed" << std::endl;
 //       params->InitBound = 0;
 //     }
     
@@ -2504,7 +2521,7 @@ std::ostream& SchedulingSolution::print(std::ostream& os, std::string type) {
 //     //exit(1);
 //   }
    
-//   std::cout << "c ===============[ end greedy step ]===============" << std::endl;   
+//   std::cout << " c ===============[ end greedy step ]===============" << std::endl;   
 //   std::cout << std::endl;
   
 //   resetBacktrackLimit();
@@ -2532,8 +2549,8 @@ std::ostream& SchedulingSolution::print(std::ostream& os, std::string type) {
 //   addHeuristic( params->Heuristic, params->Randomized, params->IValue, params->Hlimit );
 
 
-//   std::cout << "c =============[ initial probing step ]============" << std::endl;
-//   std::cout << std::left << std::setw(30) << "c propag cutoff" << ":"  
+//   std::cout << " c =============[ initial probing step ]============" << std::endl;
+//   std::cout << std::left << std::setw(30) << " c propag cutoff" << ":"  
 // 	    << std::right << std::setw(20) << (params->NodeCutoff/100) << std::endl;
 //   setPropagsLimit(params->NodeCutoff/100);
 
@@ -2550,14 +2567,14 @@ std::ostream& SchedulingSolution::print(std::ostream& os, std::string type) {
 //     pool->add(new SchedulingSolution(solver, this));
 //     stats->upper_bound = objective;
 	
-//      std::cout << std::left << std::setw(30) << "c solutions's objective" << ":" << std::right << std::setw(20) << objective << std::endl;
+//      std::cout << std::left << std::setw(30) << " c solutions's objective" << ":" << std::right << std::setw(20) << objective << std::endl;
 
 //   } else if( status == UNSAT ) {
 
 //     stats->lower_bound = objective+1;
     
 //   } else {
-//     std::cout << std::left << std::setw(30) << "c probing " << ":" << std::right << std::setw(20) << "failed" << std::endl;
+//     std::cout << std::left << std::setw(30) << " c probing " << ":" << std::right << std::setw(20) << "failed" << std::endl;
 //   }
 
 //   reset(true);
@@ -2572,7 +2589,7 @@ std::ostream& SchedulingSolution::print(std::ostream& os, std::string type) {
 //   resetPropagsLimit();
 //   resetFailureLimit();
 
-//    std::cout << "c ===============[ end probing step ]==============" << std::endl;
+//    std::cout << " c ===============[ end probing step ]==============" << std::endl;
 
 //   return ret_value;
 // }
@@ -2582,7 +2599,6 @@ void SchedulingSolver::dichotomic_search()
   
   //   presolve();
   
-  //std::cout << this << std::endl;
   
   //exit(1);
   
@@ -2632,63 +2648,53 @@ void SchedulingSolver::dichotomic_search()
   //   RandomMinMax 
   //   > (this); 
 
-  BranchingHeuristic *heu = new SchedulingWeightedDegree < TaskDomOverBoolWeight, MinValue, 1 > (this, disjunct_map);
+  BranchingHeuristic *heu = new SchedulingWeightedDegree < TaskDomOverBoolWeight, Guided< MinValue >, 2 > (this, disjunct_map);
 
   //BranchingHeuristic *heu = new GenericHeuristic < NoOrder, MinValue > (this);
 
   RestartPolicy *pol = new Geometric();
 
-  //std::cout << disjunct_map << std::endl;
 
   initialise_search(disjuncts, heu, pol);
 
 
-  Outcome result;
+  //propagate the bounds, with respect to the initial upper bound
+  Outcome result = (IS_OK(propagate()) ? UNKNOWN : UNSAT);
+
+  
   ////////// dichotomic search ///////////////
-  while( minfsble<maxfsble && 
+  while( //result == UNKNOWN && 
+	 minfsble<maxfsble && 
 	 iteration<params->Dichotomy
 	 ) {
+
     
     double remaining_time = params->Optimise - stats->get_total_time();
     
     if(remaining_time < (2*params->NodeBase)) break;
     
     objective = (int)(floor(((double)minfsble + (double)maxfsble)/2));
-    std::cout << "c ============[ start dichotomic step ]============" << std::endl;
+    std::cout << "\n c +=========[ start dichotomic step ]=========+" << std::endl;
     //       setPropagsLimit(params->NodeCutoff);
     
     parameters.propagation_limit = params->NodeCutoff;
     
     
-    std::cout << std::left << std::setw(30) << "c current dichotomic range" << ":" 
-	      << std::right << std::setw(6) << " " << std::setw(5) << minfsble 
-	      << " to " << std::setw(5) << maxfsble << std::endl;
-    std::cout << std::left << std::setw(30) << "c target objective" << ":"  
-	      << std::right << std::setw(20) << objective << std::endl;
+    std::cout << std::left << std::setw(30) << " c | current real range" << ":" 
+	      << std::right << " " << std::setw(5) << stats->lower_bound 
+	      << " to " << std::setw(5) << stats->upper_bound << " |" << std::endl;
+    std::cout << std::left << std::setw(30) << " c | current dichotomic range" << ":" 
+	      << std::right << " " << std::setw(5) << minfsble 
+	      << " to " << std::setw(5) << maxfsble << " |" << std::endl;
+    std::cout << std::left << std::setw(30) << " c | target objective" << ":"  
+	      << std::right << std::setw(15) << objective << " |" << std::endl;
+   
     
+    statistics.start_time = get_run_time();
+
     save();
     
     result = set_objective(objective);
-
-
-    //std::cout << "LEVEL: " << level << " " << this << std::endl;
-
-    //       if(pool->size()) {
-    // 	if(params->DValue == "guided") {
-    
-    // 	  //std::cout << params->Type << std::endl;
-    
-    // // 	  if(params->Type == "now2") 
-    // // 	    pool->getBestSolution()->guide_search_bounds();
-    // // 	  else
-    // 	    pool->getBestSolution()->guide_search();
-    // 	}
-    //       }
-    
-    //       if(nogoods) {
-    // 	ngd_stamp = (params->Rngd>1 ? nogoods->base->nogood.size : 0);
-    // 	lit_stamp = sUnaryCons.size;
-    //       }
     
 
 #ifdef _DEBUG_PRUNING
@@ -2697,24 +2703,7 @@ void SchedulingSolver::dichotomic_search()
 #endif
     
 
-    result = restart_search();
-    //result = solve();
-    //       if(status == UNKNOWN) {
-    // 	solve_and_restart(params->PolicyRestart, params->Base, params->Factor);
-    //       }
-
-    
-// #ifdef _PROFILING
-
-//     // std::cout << "time spent on propagation: " << statistics.total_propag_time << std::endl;
-//     // std::cout << statistics.prof_num[_m_get_min_][VARTYPE[RANGE_VAR]] << " calls to (range) \"get_min()\" (" 
-//     // 	      << statistics.prof_time[_m_get_min_][VARTYPE[RANGE_VAR]] << "s) " << std::endl;
-    
-//     // std::cout << statistics.prof_num[_m_get_min_][VARTYPE[BOOL_VAR]] << " calls to (bool) \"get_min()\" (" 
-//     // 	      << statistics.prof_time[_m_get_min_][VARTYPE[BOOL_VAR]] << "s) " << std::endl;
-    
-// #endif
-
+    result = restart_search(level);
 
     
     if( result == SAT ) {
@@ -2722,6 +2711,10 @@ void SchedulingSolver::dichotomic_search()
       
       // 	stats->normalized_objective = solver->get_normalized_objective();
       
+      // at level 0, deduce new bounds for all variables with respect to the new objective
+      set_objective(new_objective);
+      propagate();
+
       maxfsble = new_objective;
       pool->add(new SchedulingSolution(this));
       
@@ -2732,14 +2725,23 @@ void SchedulingSolver::dichotomic_search()
       // 	  else stats->num_nogoods += nogoods->base->nogood.size;
       // 	}
       
-      std::cout << std::left << std::setw(30) << "c solutions's objective" << ":" << std::right << std::setw(20) << new_objective << std::endl;
+      //std::cout << std::left << std::setw(30) << " c new upper bound" << ":" << std::right << std::setw(20) << new_objective << " |" << std::endl;
+      std::cout << std::left << std::setw(30) << " c | new upper bound" << ":" << std::right << std::setw(15) << new_objective << " |" << std::endl;
       
       //pool->getBestSolution()->print(std::cout);
       
     } else {
-      
+
       new_objective = objective;
       minfsble = objective+1;
+
+      if( result == UNSAT ) {
+	std::cout << std::left << std::setw(30) << " c | real lower bound" << ":" << std::right << std::setw(15) << minfsble << " |" << std::endl;
+      } else {
+	std::cout << std::left << std::setw(30) << " c | dichotomic lower bound" << ":" << std::right << std::setw(15) << minfsble << " |" << std::endl;
+      }
+      
+
       
       // 	if(nogoods) {
       // 	  nogoods->forget(ngd_stamp);
@@ -2748,10 +2750,11 @@ void SchedulingSolver::dichotomic_search()
     }
       
     stats->add_info(new_objective, DICHO);
+
+    std::cout << std::left << std::setw(30) << " c | cpu time" << ":" << std::right << std::setw(15) << (double)((int)((stats->time.back())*10000))/10000.0 << " |" << std::endl;
     
     //printStatistics(std::cout, ((params->Verbose ? RUNTIME : 0) + ((params->Verbose || result != UNKNOWN)  ? BTS + PPGS : 0) + OUTCOME) );
     
-    std::cout << statistics << std::endl;
     
     //std::cout << "LEVEL: " << level << " " << this << std::endl;
 
@@ -2759,25 +2762,19 @@ void SchedulingSolver::dichotomic_search()
     statistics.initialise(this);
     pol->initialise(parameters.restart_limit);
 
+    // std::cout << std::left << std::setw(30) << " c current dichotomic range" << ":" 
+    // 	      << std::right << std::setw(6) << " " << std::setw(5) << minfsble 
+    // 	      << " to " << std::setw(5) << maxfsble << " " << iteration << " " << params->Dichotomy << std::endl;
+    std::cout << " c +==========[ end dichotomic step ]==========+" << std::endl;
+    
 
-    //std::cout << "LEVEL: " << level << " " << this << std::endl;
-
-    //       reset(true);
-    //       decay_weights(params->Decay);
-    
-    //       if(pool->size() && (params->DValue != params->IValue)) {
-    // 	addHeuristic( params->Heuristic, params->Randomized, params->DValue, params->Hlimit );
-    //       }
-    
-    //       std::cout << "c =============[ end dichotomic step ]=============" << std::endl;
-    
     ++iteration;
   } 
   //   } else if( status == SAT ) {
-  //     std::cout << "c Solved during preprocessing!" << std::endl;
+  //     std::cout << " c Solved during preprocessing!" << std::endl;
   
   //   } else if( status == UNSAT ) {
-  //     std::cout << "c Found inconsistent during preprocessing!" << std::endl;
+  //     std::cout << " c Found inconsistent during preprocessing!" << std::endl;
   
   //   }
     
@@ -2819,7 +2816,7 @@ void SchedulingSolver::dichotomic_search()
 //     bool solution_found = false;
 
 //     if(params->Verbose>=0)
-//       std::cout << "c ============[ start dichotomic step ]============" << std::endl;
+//       std::cout << " c ============[ start dichotomic step ]============" << std::endl;
 
 //     ////////// dichotomic search ///////////////
 //     if(status == UNKNOWN) {
@@ -2836,10 +2833,10 @@ void SchedulingSolver::dichotomic_search()
 // 	setPropagsLimit(params->NodeCutoff);
 
 // 	if(params->Verbose>=0) {
-// 	  std::cout << std::left << std::setw(30) << "c current dichotomic range" << ":" 
+// 	  std::cout << std::left << std::setw(30) << " c current dichotomic range" << ":" 
 // 		  << std::right << std::setw(6) << " " << std::setw(5) << minfsble 
 // 		    << " to " << std::setw(5) << maxfsble << std::endl;
-// 	  std::cout << std::left << std::setw(30) << "c target objective" << ":"  
+// 	  std::cout << std::left << std::setw(30) << " c target objective" << ":"  
 // 		    << std::right << std::setw(20) << objective << std::endl;
 // 	}
 
@@ -2878,7 +2875,7 @@ void SchedulingSolver::dichotomic_search()
 	
 // 	if( status == SAT ) {
 
-// 	  //std::cout << "c makespan " << solver->C_max.value() << std::endl;
+// 	  //std::cout << " c makespan " << solver->C_max.value() << std::endl;
 
 // 	  solution_found = true;
 // 	  new_objective = solver->get_objective();
@@ -2889,7 +2886,7 @@ void SchedulingSolver::dichotomic_search()
 // 	  pool->add(new SchedulingSolution(solver, this));
 	  
 // 	  if(params->Verbose>=0) {
-// 	    std::cout << std::left << std::setw(30) << "c solutions's objective" << ":" << std::right << std::setw(20) << new_objective << std::endl;
+// 	    std::cout << std::left << std::setw(30) << " c solutions's objective" << ":" << std::right << std::setw(20) << new_objective << std::endl;
 // 	  }
 
 // 	} else {
@@ -2915,14 +2912,14 @@ void SchedulingSolver::dichotomic_search()
 // 	++ds_iteration;
 //       } 
 //     } else if( status == SAT ) {
-//       std::cout << "c Solved during preprocessing!" << std::endl;
+//       std::cout << " c Solved during preprocessing!" << std::endl;
       
 //     } else if( status == UNSAT ) {
-//       std::cout << "c Found inconsistent during preprocessing!" << std::endl;
+//       std::cout << " c Found inconsistent during preprocessing!" << std::endl;
       
 //     }
 //     if(params->Verbose>=0) {
-//       std::cout << "c =============[ end dichotomic step ]=============" << std::endl;
+//       std::cout << " c =============[ end dichotomic step ]=============" << std::endl;
 //     }
 
 //     //std::cout << status << " =?= " << UNKNOWN << std::endl;
@@ -3045,7 +3042,7 @@ void SchedulingSolver::dichotomic_search()
 // 		if(nd->elt->arity == 3) {
 // 		  PredicateDisjunctive *p = (PredicateDisjunctive *)(nd->elt);
 // 		  //std::cout << "HERE: " << p;
-// 		  std::cout << "c";
+// 		  std::cout << " c";
 // 		  for(int k=0; k<=level; ++k) std::cout << " ";
 // 		  p->print(std::cout);
 // 		  std::cout << std::endl;
@@ -3058,7 +3055,7 @@ void SchedulingSolver::dichotomic_search()
 	    
 // #ifdef _DEBUGSEARCH
 // 	    if(verbosity > 2) {
-// 	      std::cout << "c UNSAT!" << std::endl;
+// 	      std::cout << " c UNSAT!" << std::endl;
 // 	    }
 // #endif
 	    
@@ -3067,7 +3064,7 @@ void SchedulingSolver::dichotomic_search()
 	    
 // #ifdef _DEBUGSEARCH
 // 	    if(verbosity > 2) {
-// 	      std::cout << "c";
+// 	      std::cout << " c";
 // 	      for(int k=0; k<=level; ++k) std::cout << " ";
 // 	      SimpleUnaryConstraint d = branching_decision[level];
 // 	      d.revert();
@@ -3083,7 +3080,7 @@ void SchedulingSolver::dichotomic_search()
 // #ifdef _DEBUGSEARCH
 // 	    if(verbosity > 2) {
 // 	      if( level > backtrackLevel+1 ) {
-// 		std::cout << "c";
+// 		std::cout << " c";
 // 		for(int k=0; k<=level; ++k) std::cout << " ";
 // 		std::cout << " backjump to level " << backtrackLevel << std::endl;
 // 	      }
@@ -3095,7 +3092,7 @@ void SchedulingSolver::dichotomic_search()
 
 // #ifdef _DEBUGSEARCH
 // 	    if(verbosity > 2) {
-// 	      std::cout << "c";
+// 	      std::cout << " c";
 // 	      for(int k=0; k<=level; ++k) std::cout << " ";
 // 	      last_decision.print( std::cout );
 // 	      std::cout << std::endl;
@@ -3108,65 +3105,91 @@ void SchedulingSolver::dichotomic_search()
 //       return status;
 //     }
 
-// void SchedulingSolver::branch_and_bound()
-// {
-//   int ngd_stamp = 0;
-//   int lit_stamp = 0;
-//   //resetNodeLimit();
-//   resetPropagsLimit();
+void SchedulingSolver::branch_and_bound()
+{
+  int ngd_stamp = 0;
+  int lit_stamp = 0;
+  //resetNodeLimit();
+  //resetPropagsLimit();
+  parameters.propagation_limit = 0;
 
-//   save();
-//   solver->set_objective(stats->upper_bound-1);
-//   addObjective();
+  statistics.start_time = get_run_time();
 
-//   setVerbosity(params->Verbose);
-//   //setRandomSeed( params->Seed );
+  //std::cout << (get_run_time() - statistics.start_time) << std::endl;
 
-//   double time_limit = (params->Optimise - stats->get_total_time());
+  save();
+  set_objective(stats->upper_bound-1);
+  addObjective();
 
-//   if(time_limit > 0) {
-//     setTimeLimit( time_limit ); 
-//     addHeuristic( params->Heuristic, params->Randomized, params->Value, params->Hlimit );
-//     if(params->Value == "guided") {
-//       //function = new SolutionGuidedSearch( this, pool, stats );
-//       if(pool->size()) pool->getBestSolution()->guide_search();
-//     } else {
-//       //function = new StoreStats( this, stats );
-//     }
+
+  //std::cout << (get_run_time() - statistics.start_time) << std::endl;
+
+  parameters.verbosity = 2;
+  //setVerbosity(params->Verbose);
+  //setRandomSeed( params->Seed );
+
+  double time_limit = (params->Optimise - stats->get_total_time());
+
+  if(time_limit > 0) {
+    set_time_limit( time_limit ); 
+    // //addHeuristic( params->Heuristic, params->Randomized, params->Value, params->Hlimit );
+    // if(params->Value == "guided") {
+    //   //function = new SolutionGuidedSearch( this, pool, stats );
+    //   if(pool->size()) pool->getBestSolution()->guide_search();
+    // } else {
+    //   //function = new StoreStats( this, stats );
+    // }
     
-//     std::cout << "c ============[ start branch & bound ]=============" << std::endl;
-//     std::cout << std::left << std::setw(30) << "c current range" << ":" 
-// 	      << std::right << std::setw(6) << " " << std::setw(5) << stats->lower_bound 
-// 	      << " to " << std::setw(5) << goal->upper_bound << std::endl;
-//     std::cout << std::left << std::setw(30) << "c run for " << ":"
-// 	      << std::right << std::setw(19) << (time_limit) << "s" << std::endl;
+    std::cout << " c +=========[ start branch & bound ]==========+" << std::endl;
+    std::cout << std::left << std::setw(26) << " c | current range" << ":" 
+	      << std::right << std::setw(5) << " " << std::setw(5) << stats->lower_bound 
+	      << " to " << std::setw(5) << objective->upper_bound << " |" << std::endl;
+    std::cout << std::left << std::setw(26) << " c | run for " << ":"
+	      << std::right << std::setw(18) << (time_limit) << "s |" << std::endl;
     
-//     if(status == UNKNOWN) {
 
-//       if(nogoods) {
-// 	ngd_stamp = nogoods->base->nogood.size;
-// 	lit_stamp = sUnaryCons.size;
-//       }
+    //std::cout << (get_run_time() - statistics.start_time) << std::endl;
+    //std::cout << C_max << " in " << C_max.get_domain() << std::endl;
 
-//       solve_and_restart(params->PolicyRestart, params->Base, params->Factor);
+    //std::cout << this << std::endl;
 
-//       if(nogoods) {
-// 	for(int i=ngd_stamp; i<nogoods->base->nogood.size; ++i)
-// 	  stats->avg_nogood_size += (double)(nogoods->base->nogood[i]->size);
-// 	if(params->Rngd>1) stats->num_nogoods = nogoods->base->nogood.size;
-// 	else stats->num_nogoods += nogoods->base->nogood.size;
-//       }
-//     }
+    //std::cout << level << std::endl;
 
-//     stats->add_info(goal->upper_bound, BNB);
     
-//     printStatistics(std::cout, ((params->Verbose ? RUNTIME : 0) + (params->Verbose ? BTS + PPGS : 0) + OUTCOME) );
+
     
-//     reset(true);
-//     std::cout << "c =============[ end branch & bound ]==============" << std::endl;
+    Outcome result = (stats->upper_bound >= stats->lower_bound ? UNKNOWN : UNSAT);
+
+    if(result == UNKNOWN) {
+
+      // if(nogoods) {
+      // 	ngd_stamp = nogoods->base->nogood.size;
+      // 	lit_stamp = sUnaryCons.size;
+      // }
+
+      //solve_and_restart(params->PolicyRestart, params->Base, params->Factor);
+
+      //std::cout << (get_run_time() - statistics.start_time) << std::endl;
+
+      result = restart_search(level);
+
+      // if(nogoods) {
+      // 	for(int i=ngd_stamp; i<nogoods->base->nogood.size; ++i)
+      // 	  stats->avg_nogood_size += (double)(nogoods->base->nogood[i]->size);
+      // 	if(params->Rngd>1) stats->num_nogoods = nogoods->base->nogood.size;
+      // 	else stats->num_nogoods += nogoods->base->nogood.size;
+      // }
+    }
+
+    stats->add_info(objective->upper_bound, BNB);
     
-//   }
-// }
+    //printStatistics(std::cout, ((params->Verbose ? RUNTIME : 0) + (params->Verbose ? BTS + PPGS : 0) + OUTCOME) );
+    
+    //reset(true);
+    std::cout << " c +==========[ end branch & bound ]===========+" << std::endl;
+    
+  }
+}
 
 // void StoreStats::execute()
 // { 

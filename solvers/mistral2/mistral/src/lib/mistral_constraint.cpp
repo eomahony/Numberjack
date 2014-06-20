@@ -229,7 +229,9 @@ void Mistral::ConstraintImplementation::initial_post(Solver *s) {
 #endif
     
 #ifdef _DEBUG_RELAX
-  std::cout << "[" << std::setw(4) << id << "]: first post on: " ;
+  if(_DEBUG_RELAX) {
+    std::cout << "[" << std::setw(4) << id << "]: first post on: " ;
+  }
 #endif
 
   solver = s;
@@ -270,7 +272,9 @@ void Mistral::ConstraintImplementation::initial_post(Solver *s) {
 #endif
 
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
 	std::cout << _scope[i] << " " ;
+  }
 #endif
 
 	//un_relax_from(i);
@@ -284,7 +288,9 @@ void Mistral::ConstraintImplementation::initial_post(Solver *s) {
 #endif
 
 #ifdef _DEBUG_RELAX
-  std::cout << std::endl;
+  if(_DEBUG_RELAX) {
+    std::cout << std::endl;
+  }
 #endif
 
   //mark_domain();
@@ -1972,31 +1978,54 @@ void Mistral::ConstraintLess::mark_domain() {
 }
 
 Mistral::PropagationOutcome Mistral::ConstraintLess::propagate() {
-
-//   std::cout << "changes: " << changes << std::endl;
-//   std::cout << "events[0]: " << events[0] << " events[0]: " << events[1] << std::endl;
-
-//   if(scope[0].id() == 6 && scope[1].id() == 9) {
-//   std::cout << "propagate " << this << std::endl;
-//   for(unsigned int i=0; i<scope.size; ++i)
-//     std::cout << " " << scope[i].get_domain();
-//   std::cout << std::endl;
-//   }
   Mistral::PropagationOutcome wiped = CONSISTENT;
+
+// //   std::cout << "changes: " << changes << std::endl;
+// //   std::cout << "events[0]: " << events[0] << " events[0]: " << events[1] << std::endl;
+
+// //   if(scope[0].id() == 6 && scope[1].id() == 9) {
+// //   std::cout << "propagate " << this << std::endl;
+// //   for(unsigned int i=0; i<scope.size; ++i)
+// //     std::cout << " " << scope[i].get_domain();
+// //   std::cout << std::endl;
+// //   }
+
+#ifdef _DEBUG_LESS
+  if(_DEBUG_LESS) {
+    std::cout << "init propagate " << scope[0] << " in " << scope[0].get_domain() << " + " << offset
+  	      << " < " << scope[1] << " in " << scope[1].get_domain() << std::endl;
+  }
+#endif
+
+
   if(scope[1].set_min(scope[0].get_min() + offset) == FAIL_EVENT) wiped = FAILURE(1);
   if(IS_OK(wiped) && scope[0].set_max(scope[1].get_max() - offset) == FAIL_EVENT) wiped = FAILURE(0);
   
 
-//   if(scope[0].id() == 6 && scope[1].id() == 9) {
-//     for(unsigned int i=0; i<scope.size; ++i)
-//       std::cout << " " << scope[i].get_domain();
-//     std::cout << std::endl;
-//   }
+#ifdef _DEBUG_LESS
+  if(_DEBUG_LESS) {
+    std::cout << "init propagated " << scope[0] << " in " << scope[0].get_domain() << " + " << offset
+  	      << " < " << scope[1] << " in " << scope[1].get_domain() << std::endl;
+  }
+#endif
+
+// //   if(scope[0].id() == 6 && scope[1].id() == 9) {
+// //     for(unsigned int i=0; i<scope.size; ++i)
+// //       std::cout << " " << scope[i].get_domain();
+// //     std::cout << std::endl;
+// //   }
 
   return wiped;
 }
 
 Mistral::PropagationOutcome Mistral::ConstraintLess::propagate(const int changed_idx, const Event evt) {
+
+#ifdef _DEBUG_LESS
+  if(_DEBUG_LESS) {
+    std::cout << "propagate " << scope[0] << " in " << scope[0].get_domain() << " + " << offset
+  	      << " < " << scope[1] << " in " << scope[1].get_domain() << " because of " << event2str(evt) << " on " << scope[changed_idx] << std::endl;
+  }
+#endif
 
   Mistral::PropagationOutcome wiped = CONSISTENT;
   if(changed_idx==0) {
@@ -2004,6 +2033,13 @@ Mistral::PropagationOutcome Mistral::ConstraintLess::propagate(const int changed
   } else {
     if(UB_CHANGED(evt) && scope[0].set_max(scope[1].get_max() - offset) == FAIL_EVENT) wiped = FAILURE(0);
   }
+
+#ifdef _DEBUG_LESS
+  if(_DEBUG_LESS) {
+    std::cout << "propagated " << scope[0] << " in " << scope[0].get_domain() << " + " << offset
+  	      << " < " << scope[1] << " in " << scope[1].get_domain() << " " << (IS_OK(wiped)) << std::endl;
+  }
+#endif
 
   return wiped;
 }
@@ -2059,7 +2095,9 @@ void Mistral::ConstraintDisjunctive::mark_domain() {
 void Mistral::ConstraintDisjunctive::decide(const int choice) {
 
 #ifdef _DEBUG_RELAX
+  if(_DEBUG_RELAX) {
       std::cout << "[" << std::setw(4) << id << "](" << name() << "): force relax" << std::endl;
+  }
 #endif
 
   relax();
@@ -2160,106 +2198,6 @@ std::ostream& Mistral::ConstraintDisjunctive::display(std::ostream& os) const {
 
 
 
-// Mistral::ConstraintTernaryDisjunctive::ConstraintTernaryDisjunctive(Vector< Variable >& scp, const int p0, const int p1) : Constraint(scp) { 
-//   processing_time[0] = p0; 
-//   processing_time[1] = p1;
-// }
-
-// Mistral::ConstraintTernaryDisjunctive::ConstraintTernaryDisjunctive(std::vector< Variable >& scp, const int p0, const int p1) : Constraint(scp) { 
-//   processing_time[0] = p0; 
-//   processing_time[1] = p1;
-// }
-
-// void Mistral::ConstraintTernaryDisjunctive::initialise() {
-  
-//   precedence[0] = new ConstraintLess(scope, processing_time[0]);
-//   precedence[1] = new ConstraintLess(processing_time[1]);
-//   precedence[1]->add(scope[1]);
-//   precedence[1]->add(scope[0]);
-
-//   Constraint::initialise();
-//   trigger_on(_RANGE_, scope[0]);
-//   trigger_on(_RANGE_, scope[1]);
-//   trigger_on(_VALUE_, scope[2]);
-//   set_idempotent(true);
-//   stress = 0;
-// }
-
-// Mistral::PropagationOutcome Mistral::ConstraintTernaryDisjunctive::decide(const int choice) {
-//   PropagationOutcome wiped = CONSISTENT;
-
-//   if(choice==1) {
-//     if(scope[2].set_domain(1) == FAIL_EVENT) wiped = FAILURE(2);
-//     else {
-//       relax();
-//       solver->add(precedence[1]);
-//     }
-//   } else {
-//     if(scope[2].set_domain(0) == FAIL_EVENT) wiped = FAILURE(2);
-//     else {
-//       relax();
-//       solver->add(precedence[0]);
-//     }
-//   }
-
-//   return wiped;
-// }
-
-// void Mistral::ConstraintTernaryDisjunctive::decide() {
-//   relax();
-
-//   if(scope[2].get_min()) {
-//     solver->add(precedence[1]);
-//   } else {
-//     solver->add(precedence[0]);
-//   }
-
-// }
-
-// Mistral::PropagationOutcome Mistral::ConstraintTernaryDisjunctive::propagate() {
-//   PropagationOutcome wiped = CONSISTENT;
-//   int hold = 3;
-
-//   if(events.contain(2)) {
-    
-//     decide();
- 
-//   } else {
-    
-//     // check if prec[1] is violated (x1 + p1 > x0).
-//     if(scope[1].get_min()+processing_time[1] > scope[0].get_max()) {
-//       hold &= 2;
-//     }
-    
-//     // check if prec[1] is violated (x0 + p0 > x1).
-//     if(scope[0].get_min()+processing_time[0] > scope[1].get_max()) {
-//       hold &= 1;
-//     }
-    
-//     if(!hold) return FAILURE(0);
-//     if(hold<3) {
-//       wiped = decide(hold);
-//     }
-
-//   }
-
-//   return wiped;
-// }
-
-// void Mistral::ConstraintTernaryDisjunctive::consolidate() {
-//   for(unsigned int i=0; i<2; ++i) {
-//     scope[i] = scope[i]/*.get_var()*/;
-//     precedence[0]->scope[i] = scope[i];
-//     precedence[1]->scope[1-i] = scope[i];
-//   }
-//   scope[2] = scope[2]/*.get_var()*/;
-// }
-
-// std::ostream& Mistral::ConstraintTernaryDisjunctive::display(std::ostream& os) const {
-//   os << precedence[0] << " or " 
-//      << precedence[1] ;
-//   return os;
-// }
 
 Mistral::ConstraintReifiedDisjunctive::ConstraintReifiedDisjunctive(Variable x, Variable y, Variable z, const int p0, const int p1) 
   : TernaryConstraint(x,y,z) { 
@@ -2326,7 +2264,47 @@ void Mistral::ConstraintReifiedDisjunctive::mark_domain() {
 }
 
 Mistral::PropagationOutcome Mistral::ConstraintReifiedDisjunctive::propagate() {
-  return CONSISTENT;
+  PropagationOutcome wiped = CONSISTENT;
+
+  if( *min_t0_ptr + processing_time[0] > *max_t1_ptr ) {
+    
+    if( scope[2].set_domain(0) == FAIL_EVENT) wiped = FAILURE(2);
+    // x[1]+p[1] <= x[0] because x[0]'s min is too high or x[1]'s max is too low
+    else if( scope[0].set_min( *min_t1_ptr+processing_time[1] ) == FAIL_EVENT) wiped = FAILURE(0);
+    else if( scope[1].set_max( *max_t0_ptr-processing_time[1] ) == FAIL_EVENT) wiped = FAILURE(1);
+    
+#ifdef _DEBUG_RDISJUNCTIVE
+    std::cout << "  -> YES!: " ;
+    display(std::cout);
+    std::cout << std::endl;
+#endif
+      
+  } else if( *min_t1_ptr + processing_time[1] > *max_t0_ptr ) {
+    
+    if( scope[2].set_domain(1) == FAIL_EVENT) wiped = FAILURE(2);
+    else if( scope[0].set_max( *max_t1_ptr-processing_time[0] ) == FAIL_EVENT) wiped = FAILURE(0);
+    else if( scope[1].set_min( *min_t0_ptr+processing_time[0] ) == FAIL_EVENT) wiped = FAILURE(1);
+    
+#ifdef _DEBUG_RDISJUNCTIVE
+    std::cout << "  -> YES!: " ;
+    display(std::cout);
+    std::cout << std::endl;
+#endif
+    
+  }
+
+
+  if(IS_OK(wiped) && *state != 3) {
+    if(*state == 2) {
+      if( scope[0].set_max( *max_t1_ptr-processing_time[0] ) == FAIL_EVENT) wiped = FAILURE(0);
+      else if( scope[1].set_min( *min_t0_ptr+processing_time[0] ) == FAIL_EVENT) wiped = FAILURE(1);
+    } else {
+      if( scope[0].set_min( *min_t1_ptr+processing_time[1] ) == FAIL_EVENT) wiped = FAILURE(0);
+      else if( scope[1].set_max( *max_t0_ptr-processing_time[1] ) == FAIL_EVENT) wiped = FAILURE(1);
+    }
+  } 
+
+  return wiped;
 }
 
 
@@ -2461,6 +2439,7 @@ std::ostream& Mistral::ConstraintReifiedDisjunctive::display(std::ostream& os) c
     os << scope[0]/*.get_var()*/ << " + " << processing_time[0] << " <= " << scope[1]/*.get_var()*/ << " or " 
        << scope[1]/*.get_var()*/ << " + " << processing_time[1] << " <= " << scope[0]/*.get_var()*/ ;
   }
+  os << "*";
   return os;
 }
 
@@ -14218,11 +14197,11 @@ void Mistral::ConstraintMultiAtMostSeqCard::greedy_assign_for_explanation(Vector
 
 	for(k=0; k<_k; ++k) {
 		max_cardinality[k] = 0;
-		for(i=0; i<=_p[k] && i<arity; ++i) {
+		for(i=0; (int)i<=_p[k] && i<arity; ++i) {
 			occurrences[k][i] = 0;
 		}
 
-		for(i=0; i<_q[k] && i<arity; ++i) {
+		for(i=0; (int)i<_q[k] && i<arity; ++i) {
 			cardinality[k][i] = cardinality[k][i-1]+wl[i];
 			++(occurrences[k][cardinality[k][i]]);
 			if(cardinality[k][i] > max_cardinality[k]) max_cardinality[k] = cardinality[k][i];

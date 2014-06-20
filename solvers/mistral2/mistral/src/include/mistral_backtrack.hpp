@@ -394,24 +394,25 @@ namespace Mistral {
     inline void save(Constraint r) {
 
 #ifdef _DEBUG_BACKTRACK
-      
-      for(int i=0; i<level; ++i) std::cout << " ";
-      std::cout << "c save [" << r.id() << "]" ;
-      r.display(std::cout);
-
-      int info = r.info();
-      if(info & ACTIVITY) {
-	std::cout << " (change on activity)";
+      int id = r.id();
+      if(_DEBUG_BACKTRACK) {
+	for(int i=0; i<level; ++i) std::cout << " ";
+	std::cout << "c save [" << r.id() << "]" ;
+	r.display(std::cout);
+	
+	int info = r.info();
+	if(info & ACTIVITY) {
+	  std::cout << " (change on activity)";
+	}
+	if(info & RELAXED) {
+	  std::cout << " (was relaxed)";
+	}
+	if(info & POSTED) {
+	  std::cout << " (was posted)";
+	}
+	
+	std::cout << std::endl;
       }
-      if(info & RELAXED) {
-	std::cout << " (was relaxed)";
-      }
-      if(info & POSTED) {
-	std::cout << " (was posted)";
-      }
-      
-      std::cout << std::endl;
-
 #endif
 
       saved_cons.add(r);

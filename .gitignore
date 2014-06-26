@@ -1,4 +1,4 @@
-src/build
+build
 *.o
 *~
 *.pyc
@@ -8,9 +8,6 @@ src/build
 .pydevproject
 .DS_Store
 .coverage
-local_lib
-available_interfaces/*/python
-solvers/*/python
-solvers/*/obj
-solvers/mistral/bin
-solvers/mistral/lib/obj
+Numberjack/solvers/*.py
+Numberjack/solvers/*_wrap.cpp
+

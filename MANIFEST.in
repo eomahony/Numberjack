@@ -1,0 +1,10 @@
+include MANIFEST.in README.md setup.cfgs
+recursive-include Numberjack/solvers *.cpp *.hpp
+graft Numberjack/solvers/SatWrapper/minisat_src
+graft Numberjack/solvers/Mistral/mistral
+graft Numberjack/solvers/Mistral2/mistral
+graft Numberjack/solvers/Toulbar2/include
+graft Numberjack/solvers/Toulbar2/lib
+graft Numberjack/solvers/Toulbar2/Copyright.txt
+graft Numberjack/solvers/Toulbar2/ReadMe.txt
+graft Numberjack/solvers/Walksat/walksat_src

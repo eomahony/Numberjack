@@ -855,7 +855,9 @@ class Model(object):
         imported, a Solver object created, initialised and returned
         """
         try:
-            lib = __import__(library)
+            solverspkg = "Numberjack.solvers"
+            solverstring = "%s.%s" % (solverspkg, library)
+            lib = __import__(solverstring, fromlist=[solverspkg])
             solver = lib.Solver(self, X, encoding=encoding)
         except ImportError:
             raise ImportError("ERROR: Failed during import, wrong module name? (%s)" % library)
@@ -2847,31 +2849,36 @@ class NBJ_STD_Solver(object):
         self.free_memory = None
         self.verbosity = 0
 
-        self.solver = getattr(sys.modules[Library],
-                              Library + "Solver", None)()
+        # self.solver = getattr(sys.modules[Library], Library + "Solver", None)()
+        solverpkg = "Numberjack.solvers"
+        libstr = "%s.%s" % (solverpkg, Library)
+        wrapstr = "%s.%s" % (solverpkg, Wrapper)
+        self.solver = getattr(sys.modules[libstr], Library + "Solver", None)()
 
         if hasattr(self.solver, "setClauseLimit"):
             self.solver.setClauseLimit(clause_limit)
 
+        self.LibraryPacakge = libstr
+        self.WrapperPackage = wrapstr
         self.Library = Library
         self.Wrapper = Wrapper
 
-        self.ExpArray = getattr(sys.modules[Wrapper],
+        self.ExpArray = getattr(sys.modules[wrapstr],
                                 Wrapper + "ExpArray", None)
 
-        self.IntArray = getattr(sys.modules[Wrapper],
+        self.IntArray = getattr(sys.modules[wrapstr],
                                 Wrapper + "IntArray", None)
 
-        self.DoubleArray = getattr(sys.modules[Wrapper],
+        self.DoubleArray = getattr(sys.modules[wrapstr],
                                    Wrapper + "DoubleArray", None)
 
-        self.IntVar = getattr(sys.modules[Wrapper],
+        self.IntVar = getattr(sys.modules[wrapstr],
                               Wrapper + "_IntVar", None)
 
-        self.FloatVar = getattr(sys.modules[Wrapper],
+        self.FloatVar = getattr(sys.modules[wrapstr],
                                 Wrapper + "_FloatVar", None)
 
-        self.EncodingConfiguration = getattr(sys.modules[Wrapper],
+        self.EncodingConfiguration = getattr(sys.modules[wrapstr],
                                              "EncodingConfiguration", None)
 
         if "_" + Library in sys.modules:
@@ -2994,7 +3001,7 @@ class NBJ_STD_Solver(object):
         else:
 #            factory = getattr(sys.modules[self.Library],
 #                              "%s_%s" % (self.Library, expr.get_operator()), None)
-            factory = getattr(sys.modules[self.Wrapper],
+            factory = getattr(sys.modules[self.WrapperPackage],
                               "%s_%s" % (self.Wrapper, expr.get_operator()), None)
 
             if factory is not None:

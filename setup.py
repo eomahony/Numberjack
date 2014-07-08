@@ -24,11 +24,10 @@ from distutils.core import setup
 from distutils.extension import Extension
 from distutils.command.build_ext import build_ext as _build_ext
 from distutils.errors import CCompilerError
+import subprocess as sp
 import sys
 import os
 
-
-CPLEX, GUROBI = "CPLEX", "Gurobi"
 
 EXTRA_COMPILE_ARGS = ['-O3']
 EXTRA_LINK_ARGS = []
@@ -91,12 +90,17 @@ class njbuild_ext(_build_ext):
 
 def xml2config(option, path="xml2-config"):
     import shlex
-    ln = os.popen('%s %s' % (path, option), 'r').readline()
-    ln = ln.strip()
-    return shlex.split(ln)
+    cmd = '%s %s' % (path, option)
+    p = sp.Popen(cmd, stdout=sp.PIPE, shell=True)
+    stdout, stderr = p.communicate()
+    return shlex.split(stdout.strip())
+
+
+CPLEX, GUROBI, SCIP = "CPLEX", "Gurobi", "SCIP"
 
 
 def get_solver_home(solvername):
+    # Helps to find the path to a particular third party solver
     from distutils.spawn import find_executable
 
     if solvername == CPLEX:
@@ -124,6 +128,28 @@ def get_solver_home(solvername):
             ex_path = os.path.realpath(ex_path)  # Expand symbolic links if any
             ex_dir = os.path.dirname(ex_path)  # Path to the bin directory
             return os.path.abspath(os.path.join(ex_dir, os.pardir))
+
+    elif solvername == SCIP:
+        # Try for environmental variable first
+        env_path = os.getenv('ZIBPATH')
+        if env_path and len(env_path.strip()) > 0:
+            return env_path
+
+        # Otherwise, if the tgz has been placed in this directory, extract it
+        # and return that folder's path
+        scipoptfolder = None
+        for basename in os.listdir(os.getcwd()):
+            if os.path.isfile(basename) and \
+                    basename.startswith("scipoptsuite-") and \
+                    basename.endswith(".tgz"):
+                # print "Found", basename, "extracting."
+                scipoptfolder = os.path.join(os.getcwd(), basename[:-4])
+                if not os.path.isdir(scipoptfolder):
+                    sp.call('tar zxf %s' % basename,
+                            cwd=os.getcwd(), shell=True)
+                break
+        return scipoptfolder
+
     else:
         raise RuntimeError("Error unknown solver name '%s'" % solvername)
 
@@ -423,6 +449,78 @@ if gurobihome:
     extensions.append(gurobi)
 else:
     disabled_extensions.append(GUROBI)
+
+
+scipopthome = get_solver_home(SCIP)
+if scipopthome:
+    scipoptlibfolder = os.path.join(scipopthome, "lib")
+
+    def get_scip_libs():
+        import re
+        libre = re.compile("lib(?P<libname>scipopt.*)\.a")
+        for dirpath, dirnames, filenames in os.walk(scipoptlibfolder):
+            for f in filenames:
+                match = libre.match(f)
+                if match:
+                    return [match.groupdict()["libname"]]
+        raise RuntimeError(
+            "Error could not find the SCIP library in '%s'" %
+            scipoptlibfolder)
+
+    def compile_scip_ifneeded():
+        # Check if the static lib already exists and if not compile it.
+        # There may be a better place to do this other, e.g. only for build_ext
+        try:
+            get_scip_libs()
+            return
+        except RuntimeError:
+            makecmd = "make scipoptlib ZIMPL=false ZLIB=false READLINE=false" \
+                " GAMS=false GMP=false LEGACY=true SPX_LEGACY=true"
+
+            print "Compiling SCIP library..."
+            returncode = sp.call(makecmd, cwd=scipopthome, shell=True)
+            if returncode != 0:
+                sys.exit(1)
+
+    def get_scipcomponent_folder(comp):
+        for basename in os.listdir(scipopthome):
+            fullpath = os.path.join(scipopthome, basename)
+            if os.path.isdir(fullpath) and basename.startswith(comp):
+                return fullpath
+
+        raise RuntimeError("Error could not find the SCIP %s folder." % comp)
+
+    compile_scip_ifneeded()
+
+    scipfolder = get_scipcomponent_folder("scip")
+    scipincfolder = os.path.join(scipfolder, "src")
+
+    scip = Extension(
+        '_SCIP',
+        sources=[
+            'Numberjack/solvers/SCIP.i',
+            'Numberjack/solvers/SCIP/SCIP.cpp',
+            'Numberjack/solvers/MipWrapper/MipWrapper.cpp',
+        ],
+        swig_opts=[
+            '-modern', '-c++',
+            '-INumberjack/solvers/SCIP',
+            '-INumberjack/solvers/MipWrapper',
+        ],
+        include_dirs=[
+            'Numberjack/solvers/SCIP',
+            'Numberjack/solvers/MipWrapper',
+            scipincfolder,
+        ],
+        library_dirs=[scipoptlibfolder],
+        libraries=get_scip_libs(),
+        extra_compile_args=EXTRA_COMPILE_ARGS,
+        extra_link_args=EXTRA_LINK_ARGS,
+        language='c++',
+    )
+    extensions.append(scip)
+else:
+    disabled_extensions.append(SCIP)
 
 
 # ------------------------------ End Extensions ------------------------------

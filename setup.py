@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-
 '''
   Numberjack is a constraint satisfaction and optimisation library
   Copyright (C) 2009-2013 Cork Constraint Computation Center, UCC
@@ -24,17 +22,12 @@
 
 from distutils.core import setup
 from distutils.extension import Extension
-from distutils.sysconfig import get_config_var
 from distutils.command.build_ext import build_ext as _build_ext
-import subprocess
-import shutil
+from distutils.errors import CCompilerError
 import sys
 import os
 
 
-USE_SYSTEM_LIBXML = False
-THIRDPARTY = os.path.abspath('third-party')
-LIBXMLSRCPATH = os.path.join(THIRDPARTY, "libxml2-2.9.1")
 CPLEX, GUROBI = "CPLEX", "Gurobi"
 
 EXTRA_COMPILE_ARGS = ['-O3']
@@ -50,49 +43,42 @@ if sys.platform == 'darwin':
          '-Wno-self-assign', '-Wno-shadow', '-Wno-unused-label',
          ])
     EXTRA_LINK_ARGS.extend(['-arch', 'x86_64', '-stdlib=libstdc++'])
+elif sys.platform.startswith('linux'):
+    EXTRA_COMPILE_ARGS.extend(['-Wno-narrowing'])
 
 
-# Custom class for build_ext command which will compile dependency libraries
-# like libxml
 class njbuild_ext(_build_ext):
+    # Allow for C extension compilation to fail.
+
+    def __init__(self, *args, **kwargs):
+        self.builtsolvernames = []
+        self.compile_msgs = []
+        _build_ext.__init__(self, *args, **kwargs)
+
     def run(self):
-        if not USE_SYSTEM_LIBXML:
-            build = self.get_finalized_command('build')
-            xmldir = os.path.join(build.build_base, 'libxml')
-            if not os.path.exists(xmldir):
-                builddir = os.path.join(build.build_base, 'libxml-build')
-                if os.path.exists(builddir):
-                    shutil.rmtree(builddir)
-                os.makedirs(builddir)
-
-                cflags = get_config_var('CFLAGS')
-
-                p = subprocess.Popen(
-                    [os.path.join(LIBXMLSRCPATH, 'configure'),
-                     '--enable-static',
-                     '--prefix=%s' % os.path.abspath(xmldir),
-                     'CFLAGS=%s' % cflags,
-                     'CC=%s' % get_config_var('CC'),
-                     ],
-                    cwd=builddir)
-                exitcode = p.wait()
-                if exitcode != 0:
-                    shutil.rmtree(builddir)
-                    raise RuntimeError("libxml configure failed")
-                p = subprocess.Popen(['make', 'install'], cwd=builddir)
-                exitcode = p.wait()
-                if exitcode != 0:
-                    raise RuntimeError("libxml install failed")
-
-            for ext in self.extensions:
-                if ext.name == "_Mistral":
-                    xml2configpath = os.path.join(xmldir, "bin", "xml2-config")
-                    ext.extra_compile_args.extend(
-                        xml2config('--cflags', path=xml2configpath))
-                    ext.extra_link_args.extend(
-                        xml2config('--libs', path=xml2configpath))
-
+        print "njbuild_ext.run()"
         _build_ext.run(self)
+        print "Finished run()"
+        for msg in self.compile_msgs:
+            print >> sys.stderr, msg
+
+        if self.builtsolvernames:
+            print "Successfully built solver interfaces for", \
+                ", ".join(self.builtsolvernames)
+
+    def build_extension(self, ext):
+        print "njbuild_ext.build_extension()", str(ext), ext.name
+        try:
+            _build_ext.build_extension(self, ext)
+
+            # Record the names of extensions which were successful, trim '_'
+            self.builtsolvernames.append(ext.name[1:])
+
+        except CCompilerError:
+            self.compile_msgs.append(
+                "Failed to build %s solver interface, details are above." %
+                ext.name
+            )
 
 
 # ------------------------------ Helper Methods ------------------------------
@@ -160,9 +146,10 @@ mistral = Extension(
     libraries=['m'],
     language='c++',
     define_macros=[('_UNIX', None)],
-    extra_compile_args=EXTRA_COMPILE_ARGS +
-    ['-fPIC', '-Wunused-label', '-fexceptions', '-Wno-overloaded-virtual'],
-    extra_link_args=EXTRA_LINK_ARGS,
+    extra_compile_args=EXTRA_COMPILE_ARGS + xml2config('--cflags') +
+    ['-fPIC', '-Wno-unused-label', '-fexceptions',
+     '-Wno-overloaded-virtual', '-Wno-narrowing'],
+    extra_link_args=EXTRA_LINK_ARGS + xml2config('--libs'),
 )
 extensions.append(mistral)
 
@@ -187,7 +174,8 @@ mistral2 = Extension(
     language='c++',
     # define_macros=[('_UNIX', None)],
     extra_compile_args=EXTRA_COMPILE_ARGS +
-    ['-fPIC', '-Wunused-label', '-fexceptions', '-Wno-overloaded-virtual'],
+    ['-fPIC', '-Wno-unused-label', '-fexceptions', '-Wno-overloaded-virtual',
+     '-Wno-unused-variable'],
     extra_link_args=EXTRA_LINK_ARGS,
 )
 extensions.append(mistral2)
@@ -324,6 +312,7 @@ walksat = Extension(
 )
 extensions.append(walksat)
 
+
 cplexhome = get_solver_home(CPLEX)
 if cplexhome:
     concertdir = os.path.abspath(os.path.join(cplexhome, os.pardir, "concert"))
@@ -379,8 +368,8 @@ if cplexhome:
     )
     extensions.append(cplex)
 else:
-    print "Could not locate CPLEX installation on your system, " \
-        "the interface has been disabled."
+    print >> sys.stderr, "Could not locate CPLEX installation on your " \
+        "system, the interface has been disabled."
 
 
 gurobihome = get_solver_home(GUROBI)
@@ -429,8 +418,8 @@ if gurobihome:
     )
     extensions.append(gurobi)
 else:
-    print "Could not locate Gurboi installation on your system, " \
-        "the interface has been disabled."
+    print >> sys.stderr, "Could not locate Gurboi installation on your " \
+        "system, the interface has been disabled."
 
 
 # ------------------------------ End Extensions ------------------------------

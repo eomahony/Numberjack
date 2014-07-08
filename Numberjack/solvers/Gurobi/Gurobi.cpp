@@ -92,7 +92,6 @@ void GurobiSolver::add_in_constraint(LinearConstraint *con, double coef){
 
     double *weights = new double[con->_coefficients.size()];
     GRBVar *vars = new GRBVar[con->_variables.size()];
-    bool needs_update = false;
 
     for(unsigned int i = 0; i < con->_variables.size(); ++i){
         assert(con->_variables[i]->_var != NULL);

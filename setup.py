@@ -33,6 +33,7 @@ CPLEX, GUROBI = "CPLEX", "Gurobi"
 EXTRA_COMPILE_ARGS = ['-O3']
 EXTRA_LINK_ARGS = []
 extensions = []
+disabled_extensions = []
 
 if sys.platform == 'darwin':
     EXTRA_COMPILE_ARGS.extend(
@@ -56,9 +57,14 @@ class njbuild_ext(_build_ext):
         _build_ext.__init__(self, *args, **kwargs)
 
     def run(self):
-        print "njbuild_ext.run()"
         _build_ext.run(self)
-        print "Finished run()"
+
+        if disabled_extensions:
+            print >> sys.stderr, \
+                "The following solvers could not be located " \
+                "on your system so their interface has been disabled:", \
+                ", ".join(disabled_extensions)
+
         for msg in self.compile_msgs:
             print >> sys.stderr, msg
 
@@ -67,7 +73,6 @@ class njbuild_ext(_build_ext):
                 ", ".join(self.builtsolvernames)
 
     def build_extension(self, ext):
-        print "njbuild_ext.build_extension()", str(ext), ext.name
         try:
             _build_ext.build_extension(self, ext)
 
@@ -368,8 +373,7 @@ if cplexhome:
     )
     extensions.append(cplex)
 else:
-    print >> sys.stderr, "Could not locate CPLEX installation on your " \
-        "system, the interface has been disabled."
+    disabled_extensions.append(CPLEX)
 
 
 gurobihome = get_solver_home(GUROBI)
@@ -418,8 +422,7 @@ if gurobihome:
     )
     extensions.append(gurobi)
 else:
-    print >> sys.stderr, "Could not locate Gurboi installation on your " \
-        "system, the interface has been disabled."
+    disabled_extensions.append(GUROBI)
 
 
 # ------------------------------ End Extensions ------------------------------

@@ -24,6 +24,7 @@ from distutils.core import setup
 from distutils.extension import Extension
 from distutils.command.build_ext import build_ext as _build_ext
 from distutils.errors import CCompilerError
+from distutils.spawn import find_executable
 import subprocess as sp
 import sys
 import os
@@ -99,6 +100,8 @@ class njbuild_ext(_build_ext):
 
 def xml2config(option, path="xml2-config"):
     import shlex
+    if not find_executable(path):
+        raise RuntimeError("Could not find %s" % path)
     cmd = '%s %s' % (path, option)
     p = sp.Popen(cmd, stdout=sp.PIPE, shell=True)
     stdout, stderr = p.communicate()
@@ -110,7 +113,6 @@ CPLEX, GUROBI, SCIP = "CPLEX", "Gurobi", "SCIP"
 
 def get_solver_home(solvername):
     # Helps to find the path to a particular third party solver
-    from distutils.spawn import find_executable
 
     if solvername == CPLEX:
         # Try for environmental variable first

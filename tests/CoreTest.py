@@ -125,7 +125,7 @@ class CoreTest(unittest.TestCase):
 
     def testModelLoad(self):
         "Tests that we can load a solver from a model by name. We assume that Mistral will be available at a minimum."
-        import Mistral
+        import Numberjack.solvers.Mistral as Mistral
         m = Model()
         solver = m.load('Mistral')
         self.assertIsInstance(solver, Mistral.Solver)

@@ -1,5 +1,5 @@
-import Mistral
-import MiniSat
+import Numberjack.solvers.Mistral as Mistral
+import Numberjack.solvers.MiniSat as MiniSat
 
 from LinearTest import LinearTest
 from LogicalTest import LogicalTest

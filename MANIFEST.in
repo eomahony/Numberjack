@@ -1,10 +1,21 @@
-include MANIFEST.in README.md setup.cfgs
+include MANIFEST.in README.md setup.cfg LICENSE
+
+# The solver interfaces code
 recursive-include Numberjack/solvers *.cpp *.hpp
-graft Numberjack/solvers/SatWrapper/minisat_src
+
+# Exclude SWIG generated code
+exclude Numberjack/solvers/*_wrap.cpp  
+exclude Numberjack/solvers/*.py
+
+# Explicity include the blank __init__ for Numberjack.solvers
+include Numberjack/solvers/__init__.py
+
+# Included solver source codes
+graft Numberjack/solvers/MiniSat/minisat_src
 graft Numberjack/solvers/Mistral/mistral
 graft Numberjack/solvers/Mistral2/mistral
 graft Numberjack/solvers/Toulbar2/include
 graft Numberjack/solvers/Toulbar2/lib
-graft Numberjack/solvers/Toulbar2/Copyright.txt
-graft Numberjack/solvers/Toulbar2/ReadMe.txt
+include Numberjack/solvers/Toulbar2/Copyright.txt
+include Numberjack/solvers/Toulbar2/ReadMe.txt
 graft Numberjack/solvers/Walksat/walksat_src

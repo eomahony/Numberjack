@@ -142,7 +142,6 @@ def get_solver_home(solvername):
             if os.path.isfile(basename) and \
                     basename.startswith("scipoptsuite-") and \
                     basename.endswith(".tgz"):
-                # print "Found", basename, "extracting."
                 scipoptfolder = os.path.join(os.getcwd(), basename[:-4])
                 if not os.path.isdir(scipoptfolder):
                     sp.call('tar zxf %s' % basename,

@@ -1,4 +1,6 @@
 build
+dist
+MANIFEST
 *.o
 *~
 *.pyc
@@ -10,4 +12,3 @@ build
 .coverage
 Numberjack/solvers/*.py
 Numberjack/solvers/*_wrap.cpp
-

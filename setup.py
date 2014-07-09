@@ -29,18 +29,25 @@ import sys
 import os
 
 
-EXTRA_COMPILE_ARGS = ['-O3']
+EXTRA_COMPILE_ARGS = [
+    '-O3',
+    # ignore warnings about swig code
+    '-Wno-shadow', '-Wno-unused-label',
+    '-Wno-unused-but-set-variable',
+]
 EXTRA_LINK_ARGS = []
-extensions = []
-disabled_extensions = []
+extensions = []  # List of solver interfaces (C extensions) to be built.
+disabled_extensions = []  # The names of solver interfaces which have been
+    # disabled because the solver was not found on the system.
+
 
 if sys.platform == 'darwin':
     EXTRA_COMPILE_ARGS.extend(
         ['-stdlib=libstdc++', '-Wno-shorten-64-to-32',
          '-arch', 'x86_64',  # force 64bit only builds on Mac
 
-         # ignore warnings about swig code
-         '-Wno-self-assign', '-Wno-shadow', '-Wno-unused-label',
+         # ignore warning about swig code
+         '-Wno-self-assign',
          ])
     EXTRA_LINK_ARGS.extend(['-arch', 'x86_64', '-stdlib=libstdc++'])
 elif sys.platform.startswith('linux'):
@@ -52,7 +59,7 @@ class njbuild_ext(_build_ext):
 
     def __init__(self, *args, **kwargs):
         self.builtsolvernames = []
-        self.compile_msgs = []
+        self.failedsolvernames = []
         _build_ext.__init__(self, *args, **kwargs)
 
     def run(self):
@@ -64,8 +71,9 @@ class njbuild_ext(_build_ext):
                 "on your system so their interface has been disabled:", \
                 ", ".join(disabled_extensions)
 
-        for msg in self.compile_msgs:
-            print >> sys.stderr, msg
+        if self.failedsolvernames:
+            print >> sys.stderr, "Failed to build the following interfaces " \
+                "(details are above):", ", ".join(self.failedsolvernames)
 
         if self.builtsolvernames:
             print "Successfully built solver interfaces for", \
@@ -79,10 +87,7 @@ class njbuild_ext(_build_ext):
             self.builtsolvernames.append(ext.name[1:])
 
         except CCompilerError:
-            self.compile_msgs.append(
-                "Failed to build %s solver interface, details are above." %
-                ext.name
-            )
+            self.failedsolvernames.append(ext.name[1:])
 
 
 # ------------------------------ Helper Methods ------------------------------
@@ -177,8 +182,9 @@ mistral = Extension(
     language='c++',
     define_macros=[('_UNIX', None)],
     extra_compile_args=EXTRA_COMPILE_ARGS + xml2config('--cflags') +
-    ['-fPIC', '-Wno-unused-label', '-fexceptions',
-     '-Wno-overloaded-virtual', '-Wno-narrowing'],
+    ['-fPIC', '-Wno-unused-label', '-fexceptions', '-Wno-sequence-point',
+     '-Wno-overloaded-virtual', '-Wno-narrowing', '-Wno-unused-variable',
+     '-Wno-unused-but-set-variable'],
     extra_link_args=EXTRA_LINK_ARGS + xml2config('--libs'),
 )
 extensions.append(mistral)
@@ -205,7 +211,8 @@ mistral2 = Extension(
     # define_macros=[('_UNIX', None)],
     extra_compile_args=EXTRA_COMPILE_ARGS +
     ['-fPIC', '-Wno-unused-label', '-fexceptions', '-Wno-overloaded-virtual',
-     '-Wno-unused-variable'],
+     '-Wno-unused-variable', '-Wno-parentheses',
+     '-Wno-delete-non-virtual-dtor'],
     extra_link_args=EXTRA_LINK_ARGS,
 )
 extensions.append(mistral2)
@@ -337,7 +344,7 @@ walksat = Extension(
     ],
     language='c++',
     extra_compile_args=EXTRA_COMPILE_ARGS +
-    ['-ffloat-store', '-Wno-format'],
+    ['-ffloat-store', '-Wno-format', '-Wno-unused-variable'],
     extra_link_args=EXTRA_LINK_ARGS,
 )
 extensions.append(walksat)
@@ -537,7 +544,7 @@ lic = "License :: OSI Approved :: " \
 
 setup(
     name='Numberjack',
-    version='1.1.0',
+    version='1.1.0-dev',
     author='Numberjack Developers',
     packages=['Numberjack', 'Numberjack.solvers'],
     ext_modules=extensions,

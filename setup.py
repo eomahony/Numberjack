@@ -33,7 +33,6 @@ EXTRA_COMPILE_ARGS = [
     '-O3',
     # ignore warnings about swig code
     '-Wno-shadow', '-Wno-unused-label',
-    '-Wno-unused-but-set-variable',
 ]
 EXTRA_LINK_ARGS = []
 extensions = []  # List of solver interfaces (C extensions) to be built.
@@ -42,16 +41,21 @@ disabled_extensions = []  # The names of solver interfaces which have been
 
 
 if sys.platform == 'darwin':
-    EXTRA_COMPILE_ARGS.extend(
-        ['-stdlib=libstdc++', '-Wno-shorten-64-to-32',
-         '-arch', 'x86_64',  # force 64bit only builds on Mac
+    EXTRA_COMPILE_ARGS.extend([
+        '-stdlib=libstdc++', '-Wno-shorten-64-to-32',
+        '-arch', 'x86_64',  # force 64bit only builds on Mac
 
-         # ignore warning about swig code
-         '-Wno-self-assign',
-         ])
+        # ignore warning about swig code
+        '-Wno-self-assign', '-Wno-unused-const-variable',
+    ])
     EXTRA_LINK_ARGS.extend(['-arch', 'x86_64', '-stdlib=libstdc++'])
 elif sys.platform.startswith('linux'):
-    EXTRA_COMPILE_ARGS.extend(['-Wno-narrowing'])
+    EXTRA_COMPILE_ARGS.extend([
+        '-Wno-narrowing',
+
+        # ignore warning about swig code
+        '-Wno-unused-but-set-variable',
+    ])
 
 
 class njbuild_ext(_build_ext):

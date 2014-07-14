@@ -1,4 +1,4 @@
-include MANIFEST.in README.md setup.cfg LICENSE
+include README.md setup.cfg LICENSE
 
 # Add examples
 include examples/*.py

@@ -1,4 +1,4 @@
-from SatWrapper import SatWrapperSolver
+from Numberjack.solvers.SatWrapper import SatWrapperSolver
 import Numberjack
 import subprocess as sp
 import threading
@@ -103,6 +103,10 @@ class ExternalSolver(object):
         self.time = -1
         self.threads = 1
 
+        # The base command that will be used to call the solver, also to check
+        # if the solver is available on the current system.
+        self.solverexec = None
+
         # info_regexps should be a dictionary containing the attributes to parse
         # from the solver's output. The dictionary key is the attribute name,
         # the value for that key should be a tuple of two items: a regular
@@ -175,6 +179,9 @@ class ExternalSolver(object):
             if match:
                 setattr(self, key, cast_func(match.groupdict()[key]))
 
+    def is_available(self):
+        return which(self.solverexec) is not None
+
     def is_sat(self):
         return self.sat == Numberjack.SAT
 
@@ -246,7 +253,7 @@ class ExternalCNFSolver(ExternalSolver, SatWrapperSolver):
             SAT Solver competitions.
             http://www.satcompetition.org/2009/format-solvers2009.html
         """
-        from SatWrapper import SatWrapperIntArray
+        from Numberjack.solvers.SatWrapper import SatWrapperIntArray
         print "c Parse output"
         values = SatWrapperIntArray()
         for line in output.split("\n"):
@@ -334,3 +341,21 @@ class ExternalXCSPSolver(ExternalSolver):
         if self.sat == Numberjack.SAT:
             for i, variable in enumerate(self.variables):
                 variable.value = values[i]
+
+
+def which(program):
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None

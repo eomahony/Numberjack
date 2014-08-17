@@ -1,4 +1,4 @@
-from ExternalSolver import ExternalCNFSolver
+from Numberjack.ExternalSolver import ExternalCNFSolver
 from Numberjack import NBJ_STD_Solver
 import re
 
@@ -7,6 +7,7 @@ class ClaspCNFSolver(ExternalCNFSolver):
 
     def __init__(self):
         super(ClaspCNFSolver, self).__init__()
+        self.solverexec = "clasp"
 
         # self.info_regexps = {  # See doc on ExternalSolver.info_regexps
         #     'nodes': (re.compile(r'^decisions[ ]+:[ ]+(?P<nodes>\d+)[ ]'), int),
@@ -16,7 +17,7 @@ class ClaspCNFSolver(ExternalCNFSolver):
     def build_solver_cmd(self):
         # The Verbosity that we pass down to the solver should be at least 1 so
         # that we can parse information like number of nodes, failures, etc.
-        return "clasp %(filename)s" % vars(self)
+        return "%(solverexec)s %(filename)s" % vars(self)
 
 
 class Solver(NBJ_STD_Solver):

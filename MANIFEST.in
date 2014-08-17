@@ -8,8 +8,8 @@ graft examples/data
 recursive-include Numberjack/solvers *.cpp *.hpp
 
 # Exclude SWIG generated code
-exclude Numberjack/solvers/*_wrap.cpp  
-exclude Numberjack/solvers/*.py
+#exclude Numberjack/solvers/*_wrap.cpp  
+#exclude Numberjack/solvers/*.py
 
 # Explicity include the blank __init__ for Numberjack.solvers
 include Numberjack/solvers/__init__.py

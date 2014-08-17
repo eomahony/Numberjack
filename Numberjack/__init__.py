@@ -39,6 +39,7 @@ UNSAT, SAT, UNKNOWN, LIMITOUT = 0, 1, 2, 3
 LUBY, GEOMETRIC = 0, 1
 MAXCOST = 100000000
 
+from .solvers import available_solvers
 import exceptions
 import types
 import sys
@@ -49,22 +50,6 @@ import operator
 
 val_heuristics = ['Lex', 'AntiLex', 'Random', 'RandomMinMax', 'DomainSplit', 'RandomSplit', 'Promise', 'Impact', 'No', 'Guided']
 var_heuristics = ['No', 'MinDomain', 'Lex', 'AntiLex', 'MaxDegree', 'MinDomainMinVal', 'Random', 'MinDomainMaxDegree', 'DomainOverDegree', 'DomainOverWDegree', 'DomainOverWLDegree', 'Neighbour', 'Impact', 'ImpactOverDegree', 'ImpactOverWDegree', 'ImpactOverWLDegree', 'Scheduling']
-
-solver_names = ['Mistral', 'SCIP', 'MiniSat', 'Walksat', 'OsiClp', 'OsiCbc',
-                'OsiGlpk', 'OsiVol', 'OsiDylp', 'OsiSpx', 'OsiSym',
-                'OsiGrb', 'Toulbar2', 'Gurobi', 'CPLEX']  # , 'OsiCpx', 'OsiMsk', 'OsiXpr']
-available = []
-
-
-def available_solvers():
-    if len(available) == 0:
-        for solver in solver_names:
-            try:
-                __import__(solver)
-                available.append(solver)
-            except:
-                continue
-    return available
 
 
 def flatten(x):

@@ -41,6 +41,7 @@ MAXCOST = 100000000
 
 from .solvers import available_solvers
 import exceptions
+import datetime
 import types
 import sys
 #SDG: extend recursive limit for predicate decomposition
@@ -2758,6 +2759,15 @@ def value(x):
     return x.get_value()
 
 
+def total_seconds(td):
+    # Python 2.6 doesn't have timedelta.total_seconds
+    f = getattr(td, 'total_seconds', None)
+    if f:
+        return f()
+    else:
+        return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 1e6) / 1e6
+
+
 def load_in_decompositions():
     import Decomp
 
@@ -2834,6 +2844,12 @@ class NBJ_STD_Solver(object):
         self.free_memory = None
         self.verbosity = 0
 
+        # Time to load the model into the solver. Can be used to track the time
+        # to encode time for linearization and SAT. Only if the model has been
+        # passed to the constructor of the solver though or model.load() is
+        # used.
+        self.load_time = None
+
         # self.solver = getattr(sys.modules[Library], Library + "Solver", None)()
         solverpkg = "Numberjack.solvers"
         libstr = "%s.%s" % (solverpkg, Library)
@@ -2882,8 +2898,12 @@ class NBJ_STD_Solver(object):
                     encoding = EncodingConfiguration()
                 self.solver.encoding = self.getEncodingConfiguration(encoding)
 
+            # Load each expression and its variables into the solver. Record
+            # time to do so.
+            loadstart = datetime.datetime.now()
             for expr in self.model.get_exprs():
                 self.solver.add(self.load_expr(expr))
+            self.load_time = total_seconds(datetime.datetime.now() - loadstart)
 
             if X != None:
                 self.variables = VarArray(flatten(X))

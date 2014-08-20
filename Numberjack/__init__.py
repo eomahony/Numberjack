@@ -3432,6 +3432,12 @@ class NBJ_STD_Solver(object):
     def load_lp(self, filename, epsilon):
         self.solver.load_lp(filename, epsilon)
 
+    def shuffle_cnf(self, *args, **kwargs):
+        if hasattr(self.solver, 'shuffle_cnf'):
+            self.solver.shuffle_cnf(*args, **kwargs)
+        else:
+            raise UnsupportedSolverFunction(str(type(self)), "shuffle_cnf", "Please load the model using a SAT solver to use this functionality.")
+
     def output_cnf(self, filename):
         from Numberjack.solvers.SatWrapper import SatWrapperSolver as sws
         if not issubclass(type(self.solver), sws):

@@ -718,10 +718,13 @@ public:
     std::vector< std::vector<Lit> > clause_base;
     unsigned int current;
 
-    int clause_limit;
+    int clause_limit, randomseed;
 
     int *cp_model;  // Values for the CSP expressions
     std::vector<lbool> sat_model;  // SAT model solution
+
+    // If not empty, then maps the shuffled variable IDs to their original ID
+    std::vector<unsigned int> shuffle_map;
 
     SatWrapperSolver();
     virtual ~SatWrapperSolver();
@@ -738,6 +741,7 @@ public:
     virtual void validate();
     virtual void displayClause(std::vector<Lit>& cl);
     virtual void displayLiteral(Lit p);
+    virtual void shuffle_cnf(int seed=42);
     virtual void output_cnf(const char *filename);
 
     virtual lbool truth_value(Lit x);

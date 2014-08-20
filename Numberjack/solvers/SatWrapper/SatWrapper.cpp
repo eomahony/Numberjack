@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <cstdlib>
 #include "SatWrapper.hpp"
 
 
@@ -1593,6 +1594,7 @@ SatWrapper_Expression* SatWrapper_AllDiff::add(SatWrapperSolver *solver, bool to
                 for(i=1; i<n; ++i)
                     for(j=0; j<i; ++j) {
                         exp = new SatWrapper_ne(_vars.get_item(j), _vars.get_item(i));
+                        exp->encoding = encoding; // Inherit this encoding
                         _solver->add(exp);
                         _clique.push_back(exp);
                     }
@@ -2479,10 +2481,18 @@ SatWrapper_Expression* SatWrapper_ne::add(SatWrapperSolver *solver, bool top_lev
                 domain->encode(_solver);                
 
 #ifdef _DEBUGWRAP
-                std::cout << "add notequal predicate" << std::endl;
+                std::cout << "add notequal predicate x" << _ident << " == (x"
+                          << _vars[0]->_ident << " == x" << _vars[1]->_ident << ")" << std::endl;
 #endif
+
                 equalityEncoder(_vars[0], _vars[1], this, _solver, encoding, false);
             } else {
+
+#ifdef _DEBUGWRAP
+                std::cout << "add notequal predicate x" << _ident << " == (x"
+                          << _vars[0]->_ident << " == " << _rhs << ")" << std::endl;
+#endif
+
                 domain = new EqDomain(this, _vars[0]->domain, _rhs, 0);
                 domain->encode(_solver);
             }
@@ -2934,6 +2944,7 @@ SatWrapperSolver::SatWrapperSolver() {
 
     current = 0;
     clause_limit = -1;
+    randomseed = 0;
 }
 
 SatWrapperSolver::~SatWrapperSolver() {
@@ -2941,7 +2952,6 @@ SatWrapperSolver::~SatWrapperSolver() {
 #ifdef _DEBUGWRAP
     std::cout << "delete wrapped solver" << std::endl;
 #endif
-
 }
 
 int SatWrapperSolver::declare(SatWrapper_Expression *exp, bool type) {
@@ -3016,6 +3026,13 @@ void SatWrapperSolver::store_solution(SatWrapperIntArray& literals) {
     for(unsigned int i=0; i<literals.size(); i++) {
         int v = literals.get_item(i);
         int var_index = abs(v);
+
+        // If the variables have been shuffled, then map its ID back to the original
+        if(var_index < shuffle_map.size()){
+            // std::cout << "Mapping variable " << var_index << " back to " << shuffle_map[var_index] << std::endl;
+            var_index = shuffle_map[var_index];
+        }
+
         if(var_index >= sat_model.size()){
             std::cerr << "c Ignoring invalid SAT variable " << var_index << ". sat_model.size: " << sat_model.size() << std::endl;
             continue;  // ignore for now.
@@ -3217,6 +3234,7 @@ void SatWrapperSolver::setRandomSeed(const int seed) {
 #ifdef _DEBUGWRAP
     std::cout << "set the random seed" << std::endl;
 #endif
+    randomseed = seed;
 }
 
 bool SatWrapperSolver::is_sat() {
@@ -3334,6 +3352,41 @@ void SatWrapperSolver::displayLiteral(Lit p) {
             _atom_to_domain[x]->print_lit(p,_atom_to_type[x]);
         else std::cout << "(aux)";
     } else std::cout << "false" ;
+}
+
+void SatWrapperSolver::shuffle_cnf(int seed){
+    if(!shuffle_map.empty()){
+        std::cerr << "Warning: the CNF has already been shuffled. You can only shuffle it once, ignoring." << std::endl;
+        return;
+    }
+
+#ifdef _DEBUGWRAP
+    std::cout << "Shuffling CNF with random seed " << seed << std::endl;
+#endif
+    srand(seed);
+
+    // Generate a new random ID for each variable
+    unsigned int nvars = _atom_to_domain.size(), newid;
+    shuffle_map.reserve(nvars);
+    for(unsigned int i=0; i<nvars; i++){
+        shuffle_map.push_back(i);
+    }
+    random_shuffle(shuffle_map.begin() + 1, shuffle_map.end()); // Skip index 0
+
+    // Replace the variables in each clause with their mapped equivalent
+    for(unsigned int i=0;i<clause_base.size();i++){
+        std::vector<Lit> clause = clause_base[i];
+        for(unsigned int j=0;j<clause.size();j++){
+            newid = find(shuffle_map.begin(), shuffle_map.end(), var(clause[j])) - shuffle_map.begin();
+            clause_base[i][j] = Lit(newid, sign(clause[j]));
+        }
+
+        // Shuffle the order of literals within clause
+        random_shuffle(clause_base[i].begin(), clause_base[i].end());
+    }
+
+    // Shuffle the order of the clauses
+    random_shuffle(clause_base.begin(), clause_base.end());
 }
 
 void SatWrapperSolver::output_cnf(const char *filename){

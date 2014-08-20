@@ -1871,6 +1871,18 @@ void MipWrapperSolver::printStatistics() {
                   << std::endl;
 }
 
+int MipWrapperSolver::getNumVariables() {
+    // FIXME Not so simple as we're currently not tracking how many MIP
+    // variables are being created. May need to change it so that as constraints
+    // are added to _constraints, that we count the number of unique variables
+    // or something along these lines.
+    return 0;
+}
+
+int MipWrapperSolver::getNumConstraints() {
+    return _constraints.size();
+}
+
 int MipWrapperSolver::getBacktracks() {
     if (_verbosity)
         std::cout << "c print the number of backtracks" << std::endl;

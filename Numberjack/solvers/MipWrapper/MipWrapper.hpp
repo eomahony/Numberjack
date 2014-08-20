@@ -509,6 +509,8 @@ public:
     virtual bool is_opt();
     virtual bool is_unsat();
     virtual void printStatistics();
+    virtual int getNumVariables();
+    virtual int getNumConstraints();
     virtual int getBacktracks();
     virtual int getNodes();
     virtual int getFailures();

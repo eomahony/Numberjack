@@ -3272,6 +3272,23 @@ void SatWrapperSolver::printStatistics() {
 
 }
 
+int SatWrapperSolver::getNumVariables() {
+#ifdef _DEBUGWRAP
+    std::cout << "return the number of variables" << std::endl;
+#endif
+
+    // Number of atoms - 1 because of the dummy literal.
+    return _atom_to_domain.size() - 1;
+}
+
+int SatWrapperSolver::getNumConstraints() {
+#ifdef _DEBUGWRAP
+    std::cout << "return the number of clauses" << std::endl;
+#endif
+
+    return clause_base.size();
+}
+
 int SatWrapperSolver::getBacktracks() {
 
 #ifdef _DEBUGWRAP

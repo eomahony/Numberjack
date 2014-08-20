@@ -3433,7 +3433,7 @@ class NBJ_STD_Solver(object):
         self.solver.load_lp(filename, epsilon)
 
     def output_cnf(self, filename):
-        from SatWrapper import SatWrapperSolver as sws
+        from Numberjack.solvers.SatWrapper import SatWrapperSolver as sws
         if not issubclass(type(self.solver), sws):
             raise UnsupportedSolverFunction(str(type(self)), "output_cnf", "Please load the model using a SAT solver to use this functionality.")
         self.solver.output_cnf(filename)

@@ -41,7 +41,7 @@ void CPLEXSolver::initialise() {
 }
 
 void CPLEXSolver::add_in_constraint(LinearConstraint *con, double coef){
-    DBG("Creating a Gurobi representation of a constriant %s\n", "");
+    DBG("Creating a CPLEX representation of a constriant %s\n", "");
     IloNumArray weights(*env, (IloInt)con->_coefficients.size());
     IloNumVarArray vars(*env, (IloInt)con->_variables.size());
     

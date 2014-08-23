@@ -1773,6 +1773,7 @@ void MipWrapperSolver::initialise() {
                     _constraints[i]->_variables.begin() + j);
                 _constraints[i]->_coefficients.erase(
                     _constraints[i]->_coefficients.begin() + j);
+                j--;
             }
         }
     }

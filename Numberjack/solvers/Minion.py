@@ -105,7 +105,11 @@ class Minion_ne(Minion_binop):
     def add(self, solver, toplevel):
         if not self.has_been_added():
             super(Minion_ne, self).add(solver, toplevel)
-            solver.print_constraint("diseq(%s, %s)" % (varname(self.vars[0]), varname(self.vars[1])))
+            consstr = "diseq(%s, %s)" % (varname(self.vars[0]), varname(self.vars[1]))
+            if toplevel:
+                solver.print_constraint(consstr)
+            else:
+                solver.print_constraint("reify(%s, %s)" % (consstr, varname(self)))
         return self
 
 
@@ -113,9 +117,12 @@ class Minion_eq(Minion_binop):
 
     def add(self, solver, toplevel):
         if not self.has_been_added():
-            assert toplevel, "Constraint not implemented as a sub-expression/reified yet."
             super(Minion_eq, self).add(solver, toplevel)
-            solver.print_constraint("eq(%s, %s)" % (varname(self.vars[0]), varname(self.vars[1])))
+            consstr = "eq(%s, %s)" % (varname(self.vars[0]), varname(self.vars[1]))
+            if toplevel:
+                solver.print_constraint(consstr)
+            else:
+                solver.print_constraint("reify(%s, %s)" % (consstr, varname(self)))
         return self
 
 
@@ -123,7 +130,6 @@ class Minion_lt(Minion_binop):
 
     def add(self, solver, toplevel):
         if not self.has_been_added():
-            assert toplevel, "Constraint not implemented as a sub-expression/reified yet."
             super(Minion_lt, self).add(solver, toplevel)
             consstr = "ineq(%s, %s, -1)" % (varname(self.vars[0]), varname(self.vars[1]))
             if toplevel:
@@ -176,7 +182,6 @@ class Minion_or(Minion_binop):
 
     def add(self, solver, toplevel):
         if not self.has_been_added():
-            assert toplevel, "Constraint not implemented as a sub-expression/reified yet."
             super(Minion_or, self).add(solver, toplevel)
 
             # watched-or requires the constraints to be specified in brackets,
@@ -184,6 +189,25 @@ class Minion_or(Minion_binop):
             # Sum(reified variables) >= 1
             s = Minion_Sum(self.vars)
             return Minion_ge(s, 1).add(solver, toplevel)
+
+        return self
+
+
+class Minion_and(Minion_binop):
+
+    def add(self, solver, toplevel):
+        if not self.has_been_added():
+            if toplevel:
+                self.vars[0].add(solver, toplevel)
+                self.vars[1].add(solver, toplevel)
+            else:
+                super(Minion_and, self).add(solver, toplevel)
+
+                # watched-and requires the constraints to be specified in
+                # brackets, possible to change to this later? for now decompose
+                # to Sum(reified variables) >= 1
+                s = Minion_Sum(self.vars)
+                return Minion_eq(s, len(self.vars)).add(solver, toplevel)
 
         return self
 
@@ -211,7 +235,6 @@ class Minion_mul(Minion_Expression):
             super(Minion_mul, self).add(solver, toplevel)
             self.auxvar = Minion_IntVar(self.lb, self.ub).add(solver, False)
             self.varname = varname(self.auxvar)
-            print "Adding mul", self.lb, self.ub, self.varname
             solver.print_constraint("product(%s, %s, %s)" % (varname(self.vars[0]), varname(self.vars[1]), varname(self)))
         return self
 
@@ -319,7 +342,7 @@ class Minion_Sum(Minion_Expression):
         self.offset = 0
         self.weights = None
         self.auxvar = None
-        print "SUM:", len(args)
+
         if len(args) >= 1 and len(args) <= 3:
             if hasattr(args[0], '__iter__'):
                 self.vars = args[0]
@@ -344,7 +367,6 @@ class Minion_Sum(Minion_Expression):
             self.lb = sum(w * x.get_min() if w >= 0 else w * x.get_max() for w, x in zip(self.weights, self.vars)) + self.offset
             self.ub = sum(w * x.get_max() if w >= 0 else w * x.get_min() for w, x in zip(self.weights, self.vars)) + self.offset
         else:
-            print "VARS:", self.vars
             self.lb = sum(x.get_min() for x in self.vars) + self.offset
             self.ub = sum(x.get_max() for x in self.vars) + self.offset
 
@@ -355,7 +377,8 @@ class Minion_Sum(Minion_Expression):
             for i in xrange(len(self.vars)):
                 self.vars[i] = self.vars[i].add(solver, False)
 
-            if len(self.vars) == 1 and self.offset == 0:
+            if len(self.vars) == 1 and self.offset == 0 and \
+                    (self.weights is None or self.weights[0] == 1):
                 return self.vars[0]
 
             names = [varname(x) for x in self.vars]
@@ -364,21 +387,28 @@ class Minion_Sum(Minion_Expression):
 
             # print "Sum", len(self.vars), self.vars, self.offset
             if self.offset != 0:
-                if len(self.vars) == 1:
-                    solver.print_constraint("ineq(%s, %s, %d)" % (varname(self), names[0], self.offset))
-                    solver.print_constraint("ineq(%s, %s, %d)" % (names[0], varname(self), -self.offset))
-                    return self.auxvar
-                else:
-                    print >> sys.stderr, "Error: translation of Sum with multiple variables and an offset not implemented yet."
-                    print >> sys.stderr, self.offset, self.weights, names
-                    sys.exit(1)
+                # To achieve (a+b+c + offset = x) with Minion, we must use
+                # auxiliary expressions: (a+b+c = y) and (x = y + offset).
+                # Auxiliary sum is not needed if there is only one variable 'a'
+                if len(self.vars) > 1:
+                    args = [self.vars]
+                    if self.weights:
+                        args.append(self.weights)
+                    auxsum = Minion_Sum(*args).add(solver, False)
+                    self.vars = [auxsum]
+                    self.weights = None
+                    names = [varname(auxsum)]
+
+                solver.print_constraint("ineq(%s, %s, %d)" % (varname(self), names[0], self.offset))
+                solver.print_constraint("ineq(%s, %s, %d)" % (names[0], varname(self), -self.offset))
+
             else:
                 varvecstr = csvstr(names)
                 if self.weights and any(x != 1 for x in self.weights):  # Weighted
                     constantvecstr = csvstr(self.weights)
                     solver.print_constraint("weightedsumgeq([%s], [%s], %s)" % (constantvecstr, varvecstr, varname(self)))
                     solver.print_constraint("weightedsumleq([%s], [%s], %s)" % (constantvecstr, varvecstr, varname(self)))
-                else:  # Unweighted FIXME test
+                else:
                     solver.print_constraint("sumgeq([%s], %s)" % (varvecstr, varname(self)))
                     solver.print_constraint("sumleq([%s], %s)" % (varvecstr, varname(self)))
             return self.auxvar
@@ -387,6 +417,107 @@ class Minion_Sum(Minion_Expression):
 
     def get_value(self):
         return self.auxvar.get_value()
+
+
+class Minion_Max(Minion_Expression):
+
+    def __init__(self, *args):
+        super(Minion_Max, self).__init__()
+        if len(args) == 1:
+            self.vars = args[0]
+        elif len(args) == 2:
+            self.vars = [args[0], args[1]]
+        else:
+            raise Exception("Invalid constructor to Minion_Max args: %s" % str(args))
+
+        self.lb = max(x.get_min() for x in self.vars)
+        self.ub = max(x.get_max() for x in self.vars)
+
+    def add(self, solver, toplevel):
+        assert not toplevel, "Constraint is only valid as a sub-expression."
+        if not self.has_been_added():
+            super(Minion_Max, self).add(solver, toplevel)
+            for i in xrange(len(self.vars)):
+                self.vars[i] = self.vars[i].add(solver, False)
+
+            if len(self.vars) == 1:
+                return self.vars[0]
+
+            names = [varname(x) for x in self.vars]
+            auxvar = Minion_IntVar(self.lb, self.ub).add(solver, False)
+            solver.print_constraint("max([%s], %s)" % (csvstr(names), varname(auxvar)))
+            return auxvar
+
+        return self
+
+
+class Minion_Min(Minion_Expression):
+
+    def __init__(self, *args):
+        super(Minion_Min, self).__init__()
+        if len(args) == 1:
+            self.vars = args[0]
+        elif len(args) == 2:
+            self.vars = [args[0], args[1]]
+        else:
+            raise Exception("Invalid constructor to Minion_Min args: %s" % str(args))
+
+        self.lb = min(x.get_min() for x in self.vars)
+        self.ub = min(x.get_max() for x in self.vars)
+
+    def add(self, solver, toplevel):
+        assert not toplevel, "Constraint is only valid as a sub-expression."
+        if not self.has_been_added():
+            super(Minion_Min, self).add(solver, toplevel)
+            for i in xrange(len(self.vars)):
+                self.vars[i] = self.vars[i].add(solver, False)
+
+            if len(self.vars) == 1:
+                return self.vars[0]
+
+            names = [varname(x) for x in self.vars]
+            auxvar = Minion_IntVar(self.lb, self.ub).add(solver, False)
+            solver.print_constraint("min([%s], %s)" % (csvstr(names), varname(auxvar)))
+            return auxvar
+
+        return self
+
+
+class Minion_Element(Minion_Expression):
+
+    def __init__(self, *args):
+        super(Minion_Element, self).__init__()
+        self.indexvar = None
+
+        if len(args) == 1:
+            self.vars = args[0][:-1]
+            self.indexvar = args[0][-1]
+        else:
+            raise Exception("Invalid constructor to Minion_Element args: %s" % str(args))
+
+        lowind = max(0, self.indexvar.get_min())
+        highind = min(len(self.vars), self.indexvar.get_max())
+        self.lb = min(self.vars[i].get_min() for i in xrange(lowind, highind))
+        self.ub = min(self.vars[i].get_max() for i in xrange(lowind, highind))
+        print "Element constructor", self.vars
+        print "indexvar:", self.indexvar
+        print "Created element aux var with domain", self.lb, self.ub
+
+    def add(self, solver, toplevel):
+        assert not toplevel, "Constraint is only valid as a sub-expression."
+        if not self.has_been_added():
+            super(Minion_Element, self).add(solver, toplevel)
+            for i in xrange(len(self.vars)):
+                self.vars[i] = self.vars[i].add(solver, False)
+            self.indexvar = self.indexvar.add(solver, False)
+
+            names = [varname(x) for x in self.vars]
+            auxvar = Minion_IntVar(self.lb, self.ub).add(solver, False)
+            solver.print_constraint("watchelement([%s], %s, %s)" % (csvstr(names), varname(self.indexvar), varname(auxvar)))
+
+            return auxvar
+
+        return self
 
 
 class Minion_Minimise(Minion_Expression):
@@ -472,7 +603,7 @@ class MinionSolver(ExternalSolver):
 
     def initialise(self, searchvars=None):
         print "initialise", str(searchvars)
-        pass  # FIXME, could add the search vars
+        # FIXME, could add the search vars
 
     def solve(self, *args, **kwargs):
         print >> self.f, "**EOF**"

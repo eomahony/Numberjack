@@ -32,7 +32,6 @@ class Minion_IntVar(Minion_Expression):
 
     def __init__(self, *args):
         super(Minion_IntVar, self).__init__()
-        # print "IntVar", len(args), repr(args)
         self.domain = self.value = None
 
         if len(args) == 0:  # Boolean
@@ -385,7 +384,6 @@ class Minion_Sum(Minion_Expression):
             self.auxvar = Minion_IntVar(self.lb, self.ub).add(solver, False)
             self.varname = varname(self.auxvar)
 
-            # print "Sum", len(self.vars), self.vars, self.offset
             if self.offset != 0:
                 # To achieve (a+b+c + offset = x) with Minion, we must use
                 # auxiliary expressions: (a+b+c = y) and (x = y + offset).
@@ -495,13 +493,11 @@ class Minion_Element(Minion_Expression):
         else:
             raise Exception("Invalid constructor to Minion_Element args: %s" % str(args))
 
+        # Compute the lower and upper bound for the auxiliary variable
         lowind = max(0, self.indexvar.get_min())
         highind = min(len(self.vars), self.indexvar.get_max())
         self.lb = min(self.vars[i].get_min() for i in xrange(lowind, highind))
         self.ub = min(self.vars[i].get_max() for i in xrange(lowind, highind))
-        print "Element constructor", self.vars
-        print "indexvar:", self.indexvar
-        print "Created element aux var with domain", self.lb, self.ub
 
     def add(self, solver, toplevel):
         assert not toplevel, "Constraint is only valid as a sub-expression."
@@ -550,28 +546,6 @@ class Minion_Maximise(Minion_Expression):
         return self
 
 
-# class ExternalIntVariable(object):
-
-#     def __init__(self, nj_var):
-#         self.nj_var = nj_var
-#         self.value = None
-
-#     def get_value(self):
-#         # print "Get value", self.nj_var.name()
-#         return self.value
-
-#     def get_min(self):
-#         return self.nj_var.lb
-#     #     return self.nj_var.get_min(solver=None)
-
-#     def get_max(self):
-#         return self.nj_var.ub
-#     #     return self.nj_var.get_max(solver=None)
-
-#     def get_size(self):
-#         return self.get_max() - self.get_min() + 1
-
-
 class MinionSolver(ExternalSolver):
 
     HEADER, VARIABLES, CONSTRAINTS, SEARCH = 0, 1, 2, 3
@@ -586,7 +560,6 @@ class MinionSolver(ExternalSolver):
         self.info_regexps = {  # See doc on ExternalSolver.info_regexps
             'nodes': (re.compile(r'^Nodes:[ ]+(?P<nodes>\d+)$'), int),
             'time': (re.compile(r'^Solve Time:[ ]+(?P<time>\d+\.\d+)$'), float),
-            # 'failures': (re.compile(r'^conflicts[ ]+:[ ]+(?P<failures>\d+)[ ]'), int),
         }
         self.f = open(self.filename, "wt")
         print >> self.f, "MINION 3"
@@ -597,8 +570,6 @@ class MinionSolver(ExternalSolver):
         return "%(solverexec)s %(filename)s" % vars(self)
 
     def add(self, expr):
-        # print "Solver add"
-        # print type(expr), str(expr)
         expr.add(self, True)
 
     def initialise(self, searchvars=None):
@@ -607,7 +578,6 @@ class MinionSolver(ExternalSolver):
 
     def solve(self, *args, **kwargs):
         print >> self.f, "**EOF**"
-        print "calling solve"
         self.f.close()
 
         # DEBUG
@@ -645,148 +615,6 @@ class MinionSolver(ExternalSolver):
 
     def getNumConstraints(self):
         return self.constraintcount
-
-    # def create_variable(self, f, lb, ub, domain=None, v=None):
-    #     name = "x%d" % (self.variable_id)  # Minion variable name
-    #     self.variable_id += 1
-    #     if v:
-    #         # Create a wrapper variable that numberjack will call get_value on
-    #         # which will be associated with the Minion variable
-    #         # my_var = ExternalIntVariable()
-    #         my_var = ExternalIntVariable(v)
-    #         v.setVar(self.solver_id, self.solver_name, my_var, new_solver=self)
-    #         v.solver = self
-
-    #         self.name_var_map[name] = my_var
-    #         self.expr_name_map[v] = name
-
-    #     if lb == ub:
-    #         return str(lb)
-    #     elif lb == 0 and ub == 1:
-    #         self.print_variable(f, "BOOL %s" % name)
-    #     elif domain and len(domain) != (ub - lb) + 1:
-    #         dom_str = ",".join(str(x) for x in domain)
-    #         self.print_variable(f, "SPARSEBOUND %s {%s}" % (name, dom_str))
-    #     else:
-    #         self.print_variable(f, "DISCRETE %s {%d..%d}" % (name, lb, ub))
-    #     return name
-
-    # def create_aux_variable(self, f, expr):
-    #     print "# creating aux variable for", str(expr)
-    #     return self.create_variable(f, expr.lb, expr.ub, v=expr)
-
-    # def output_variable(self, f, v):
-    #     return self.create_variable(f, v.lb, v.ub, domain=v.domain_, v=v)
-
-    # def output_variables(self, f):
-    #     for v in self.model.variables:
-    #         self.output_variable(f, v)
-
-    # def output_constraints(self, f):
-    #     for c in self.model.get_exprs():
-    #         self.output_expr(f, c, toplevel=True)
-
-    # def output_expr(self, f, e, toplevel=True):
-    #     """"
-    #         Outputs the expression 'e' to minion format. If toplevel is False
-    #         then will reify the expression and return the name of the
-    #         auxiliary Boolean variable that it was reified to.
-    #     """
-    #     def getchildname(x):
-    #         # print "# getchildname", type(x), str(x)
-    #         if type(x) in [int]:
-    #             return str(x)
-    #         elif isinstance(x, Variable):
-    #             # Return the minion name for this variable
-    #             return self.expr_name_map[x]
-    #         else:
-    #             return self.output_expr(f, x, toplevel=False)
-    #             # print >> sys.stderr, "Error need to get the reified version of this constraint."
-    #             # sys.exit(1)
-
-    #     op = e.get_operator()
-    #     print "# op:", op, toplevel, "e:", e, "children:", e.children
-    #     names = [getchildname(child) for child in e.children]
-    #     print "#", names
-
-    #     # -------------------- Top level constraints --------------------
-    #     if toplevel:
-
-    #         if op == "ne":
-    #             self.print_constraint(f, "diseq(%s, %s)" % tuple(names))
-
-    #         elif op == "eq":
-    #             self.print_constraint(f, "eq(%s, %s)" % tuple(names))
-
-    #         elif op == "lt":
-    #             self.print_constraint(f, "ineq(%s, %s, -1)" % tuple(names))
-
-    #         elif op == "le":
-    #             self.print_constraint(f, "ineq(%s, %s, 0)" % tuple(names))
-
-    #         elif op == "gt":
-    #             self.print_constraint(f, "ineq(%s, %s, -1)" % (names[1], names[0]))
-
-    #         elif op == "ge":
-    #             self.print_constraint(f, "ineq(%s, %s, 0)" % (names[1], names[0]))
-
-    #         elif op == "AllDiff":
-    #             self.print_constraint(f, "gacalldiff([%s])" % (csvstr(names)))
-
-    #         elif op == "LeqLex":
-    #             self.print_constraint(f, "lexleq([%s], [%s])" % (csvstr(names[:len(names)/2]), csvstr(names[len(names)/2:])))
-
-    #         elif op == "LessLex":
-    #             self.print_constraint(f, "lexless([%s], [%s])" % (csvstr(names[:len(names)/2]), csvstr(names[len(names)/2:])))
-
-    #         elif op == "Gcc":
-    #             print "# Gcc Parameters:", e.parameters
-    #             value_str = csvstr(e.parameters[0])
-    #             vec_str = csvstr(self.create_variable(f, l, u) for l, u in zip(e.parameters[1], e.parameters[2]))
-    #             self.print_constraint(f, "gccweak([%s], [%s], [%s])" % (csvstr(names), value_str, vec_str))
-
-    #         else:
-    #             print >> sys.stderr, "# UNKNOWN top level constraint", op, c
-    #             sys.exit(1)
-
-    #     # -------------------- Sub-expressions --------------------
-    #     else:
-    #         aux_name = self.create_aux_variable(f, e)
-    #         if op == "Abs":
-    #             self.print_constraint(f, "abs(%s, %s)" % (aux_name, names[0]))
-
-    #         elif op == "div":
-    #             self.print_constraint(f, "div(%s, %s, %s)" % (names[0], names[1], aux_name))
-
-    #         elif op == "Element":
-    #             self.print_constraint(f, "element([%s], %s, %s)" % (csvstr(names[:-1]), names[-1], aux_name))
-
-    #         elif op == "Sum":
-    #             flat_coefs, offset = e.parameters
-
-    #             if offset != 0:
-    #                 assert(len(names) == 1, "asdf")  # FIXME
-    #                 self.print_constraint(f, "ineq(%s, %s, %d)" % (aux_name, names[0], offset))
-    #                 self.print_constraint(f, "ineq(%s, %s, %d)" % (names[0], aux_name, -offset))
-    #                 print >> sys.stderr, "Error: translation of Sum with offset not implemented yet."
-    #                 print >> sys.stderr, offset, flat_coefs, names
-    #                 sys.exit(1)
-
-    #             constantvecstr = csvstr(flat_coefs)
-    #             varvecstr = csvstr(names)
-    #             if any(lambda x: x != 1 for x in flat_coefs):  # Weighted
-    #                 self.print_constraint(f, "weightedsumgeq([%s], [%s], %s)" % (constantvecstr, varvecstr, aux_name))
-    #                 self.print_constraint(f, "weightedsumleq([%s], [%s], %s)" % (constantvecstr, varvecstr, aux_name))
-    #             else:  # Unweighted FIXME test
-    #                 self.print_constraint(f, "sumgeq([%s], %s)" % (varvecstr, aux_name))
-    #                 self.print_constraint(f, "sumleq([%s], %s)" % (varvecstr, aux_name))
-
-    #         else:
-    #             print >> sys.stderr, "# UNKNOWN sub-expression", op, e
-    #             sys.exit(1)
-    #         return aux_name
-
-    #     return None
 
     def parse_output(self, output):
         print "c Parse output"

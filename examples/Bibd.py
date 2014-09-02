@@ -20,7 +20,6 @@ def get_model(v, b, r, k, l):
         # the scalar product of every pair of columns adds up to l
         [Sum([(row[col_i] * row[col_j]) for row in matrix.row]) == l
             for col_i in range(v) for col_j in range(col_i)],
-        [Sum() for x, y in zip()]
     )
     return matrix, model
 

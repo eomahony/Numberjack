@@ -158,12 +158,14 @@ class ExternalSolver(object):
 
     def solve(self, *args, **kwargs):
         cmd = self.build_solver_cmd()
-        print "c Running:", cmd
+        if self.verbosity >= 1:
+            print "c Running:", cmd
         c = Command(cmd)
         c.run(timelimit=self.timelimit)
-        print "c External solver finished."
-        print_commented(c.stdout)
-        print_commented(c.stderr)
+        if self.verbosity >= 1:
+            print "c External solver finished."
+            print_commented(c.stdout)
+            print_commented(c.stderr)
         self.parse_output(c.stdout)
         return self.is_sat()
 

@@ -552,10 +552,11 @@ class MinionSolver(ExternalSolver):
 
     def __init__(self):
         super(MinionSolver, self).__init__()
-        self.solverexec = "minion"
+        self.solverexec = "minion"  # executable name to check availability
         self.name_var_map = {}  # Maps an output variable name back to the Variable object
         self.last_section = MinionSolver.HEADER
         self.variablecount = self.constraintcount = 0
+        self.cmdlineoptdict = {}
 
         self.info_regexps = {  # See doc on ExternalSolver.info_regexps
             'nodes': (re.compile(r'^Nodes:[ ]+(?P<nodes>\d+)$'), int),
@@ -567,23 +568,34 @@ class MinionSolver(ExternalSolver):
     def build_solver_cmd(self):
         # The Verbosity that we pass down to the solver should be at least 1 so
         # that we can parse information like number of nodes, failures, etc.
-        return "%(solverexec)s %(filename)s" % vars(self)
+        return "%(solverexec)s %(filename)s " % vars(self) + self.build_cmdlineoptions()
+
+    def build_cmdlineoptions(self):
+        s = ""
+        for k, v in self.cmdlineoptdict.iteritems():
+            s += " " + str(k)
+            if v is not None:
+                s += " " + str(v)
+        return s
 
     def add(self, expr):
         expr.add(self, True)
 
     def initialise(self, searchvars=None):
-        print "initialise", str(searchvars)
-        # FIXME, could add the search vars
+        if searchvars:
+            self.print_search("VARORDER [%s]" % csvstr(map(varname, searchvars)))
 
     def solve(self, *args, **kwargs):
         print >> self.f, "**EOF**"
         self.f.close()
 
-        # DEBUG
-        with open(self.filename, "rt") as f:
-            for line in f:
-                print line,
+        if self.verbosity >= 2:
+            self.setOption("-verbose", None)
+
+        if self.verbosity >= 3:
+            with open(self.filename, "rt") as f:
+                for line in f:
+                    print line,
 
         return super(MinionSolver, self).solve(*args, **kwargs)
 
@@ -616,8 +628,19 @@ class MinionSolver(ExternalSolver):
     def getNumConstraints(self):
         return self.constraintcount
 
+    def setRandomSeed(self, seed):
+        self.setOption("-randomseed", seed)
+
+    def setNodeLimit(self, limit):
+        self.setOption("-nodelimit", limit)
+
+    def setTimeLimit(self, limit):
+        self.setOption("-cpulimit", limit)
+
+    def setOption(self, name, value=None):
+        self.cmdlineoptdict[name] = value
+
     def parse_output(self, output):
-        print "c Parse output"
         minionvarid = 0
         # Assumes variables are printed in the order x1, x2, ...
         for line in output.split("\n"):

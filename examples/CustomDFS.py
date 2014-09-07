@@ -19,11 +19,14 @@ def binarydfs(solver, variables, variableselection=lexvar):
     prevvar, prevval = None, None
     depth = 0
 
+    def log(s):
+        print "  " * depth, s
+
     while not proven_infeasibility:
         if solver.propagate():  # left branch
-            print "  " * depth, "Variable domains at depth %d:" % depth
+            log("Variable domains at depth %d:" % depth)
             for x in variables:
-                print "  " * depth, x
+                log(x)
 
             x = variableselection(variables)
             if x is None:  # Complete, no more variables to assign
@@ -31,7 +34,7 @@ def binarydfs(solver, variables, variableselection=lexvar):
             v = x.get_min()
 
             prevvar, prevval = x.name(), v  # Save for debugging output
-            print "  " * depth, "Decision: %s == %d" % (prevvar, prevval)
+            log("Decision: %s == %d" % (prevvar, prevval))
 
             solver.save()
             solver.post(x == v)
@@ -41,16 +44,25 @@ def binarydfs(solver, variables, variableselection=lexvar):
             proven_infeasibility = not solver.undo()
             if not proven_infeasibility:
                 solver.deduce()  # Invert the previous decision, i.e. x != v
-                print "  " * depth, "Deduce: %s != %d" % (prevvar, prevval)
+                log("Deduce: %s != %d" % (prevvar, prevval))
                 depth -= 1
 
     return None
 
 
-if __name__ == "__main__":
+def main():
     v1, v2 = VarArray(2, 10)
     m = Model(v1 != v2)
-    s = m.load("Mistral")
+    # m = Model(v1 + v2 > 4, v1 > v2)  # Force backtracking with lex var ordering
+
+    # s = m.load("Mistral")
+    s = m.load("MiniSat")
     s.startNewSearch()
     binarydfs(s, [v1, v2])
-    print s.is_sat(), v1.get_value(), v2.get_value()
+    if s.is_sat():
+        print "\nSolution:"
+        print "v1 = %d, v2 = %d" % (v1.get_value(), v2.get_value())
+
+
+if __name__ == "__main__":
+    main()

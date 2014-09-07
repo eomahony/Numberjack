@@ -1,11 +1,12 @@
 from Numberjack import *
 
 # An example of mixing the SAT encoding of a model, each variable is encoded in
-# a different manner and the AllDiff is encoded in multiple ways.
-# See NJEncodings for a list of predefined EncodingConfiguration.
+# a different manner and the AllDiff is encoded in multiple ways. This is
+# intended for advanced usage. See NJEncodings for a list of predefined
+# EncodingConfiguration.
 
 
-def solve(param):
+def mixed1(param):
     model = Model()
     v1, v2, v3 = VarArray(3, 3)
 
@@ -36,10 +37,8 @@ def solve(param):
         AllDiffEncoding.LadderAMO | AllDiffEncoding.PigeonHole)
     model += cons1
 
-    solver = model.load(param["solver"])
+    solver = model.load(param["solver"], encoding=NJEncodings[param['encoding']])
     solver.output_cnf("mixedencoding.cnf")
-    solver.setTimeLimit(param["tcutoff"])
-    solver.setVerbosity(param["verbose"])
     solver.solve()
 
     if solver.is_sat():
@@ -51,9 +50,24 @@ def solve(param):
         print "UNKNOWN"
 
 
+def mixed2(param):
+    xs = VarArray(3, 3)
+    model = Model(AllDiff(xs))
+
+    solver = model.load(param["solver"], encoding=NJEncodings[param['encoding']])
+    solver.output_cnf("mixedencoding_%s.cnf" % param['encoding'])
+    solver.solve()
+
+    if solver.is_sat():
+        print xs
+    elif solver.is_unsat():
+        print "UNSATISFIABLE"
+    else:
+        print "UNKNOWN"
+
+
 if __name__ == "__main__":
-    default = {
-        "solver": "MiniSat", "tcutoff": 3600, 'verbose': 1,
-    }
+    default = {"solver": "MiniSat", "encoding": "directorder"}
     param = input(default)
-    solve(param)
+    mixed1(param)
+    mixed2(param)

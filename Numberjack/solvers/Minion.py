@@ -211,11 +211,11 @@ class Minion_and(Minion_binop):
         return self
 
 
-class Minion_mul(Minion_Expression):
+class Minion_mul(Minion_binop):
 
-    def __init__(self, var1, var2):
-        super(Minion_mul, self).__init__()
-        self.vars = [var1, var2]
+    def __init__(self, *args):
+        super(Minion_mul, self).__init__(*args)
+        var1, var2 = self.vars
         l1, u1 = var1.get_min(), var1.get_max()
 
         if isinstance(var2, Minion_Expression):
@@ -235,6 +235,33 @@ class Minion_mul(Minion_Expression):
             self.auxvar = Minion_IntVar(self.lb, self.ub).add(solver, False)
             self.varname = varname(self.auxvar)
             solver.print_constraint("product(%s, %s, %s)" % (varname(self.vars[0]), varname(self.vars[1]), varname(self)))
+        return self
+
+
+class Minion_div(Minion_binop):
+
+    def __init__(self, *args):
+        super(Minion_div, self).__init__(*args)
+        var1, var2 = self.vars
+        l1, u1 = var1.get_min(), var1.get_max()
+
+        if isinstance(var2, Minion_Expression):
+            l2, u2 = var2.get_min(), var2.get_max()
+        else:
+            if not isinstance(var2, int):
+                raise Exception("Division must be either by an expression or int, got '%s'." % str(type(var2)))
+            l2 = u2 = var2
+
+        self.lb = min(l1 / l2, l1 / u2, u1 / l2, u1 / u2)
+        self.ub = max(l1 / l2, l1 / u2, u1 / l2, u1 / u2)
+
+    def add(self, solver, toplevel):
+        assert not toplevel, "Constraint is only valid as a sub-expression."
+        if not self.has_been_added():
+            super(Minion_div, self).add(solver, toplevel)
+            self.auxvar = Minion_IntVar(self.lb, self.ub).add(solver, False)
+            self.varname = varname(self.auxvar)
+            solver.print_constraint("div(%s, %s, %s)" % (varname(self.vars[0]), varname(self.vars[1]), varname(self)))
         return self
 
 

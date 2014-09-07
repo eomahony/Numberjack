@@ -6,8 +6,8 @@ def get_model():
     model = Model()
 
     #Variable definitions, we need a variable for every letter
-    s, m = (Variable(1, 9) for val in range(2))  # These can't be zero as they are the start of a word
-    e, n, d, o, r, y = (Variable(0, 9) for val in range(6))  # These can
+    s, m = VarArray(2, 1, 9)  # These can't be zero as they are the start of a word
+    e, n, d, o, r, y = VarArray(6, 0, 9)  # These can
 
     model.add(      s*1000 + e*100 + n*10 + d +
                     m*1000 + o*100 + r*10 + e ==
@@ -27,16 +27,14 @@ def solve(param):
     solver.setVerbosity(param['verbose'])
 
     # Now Solve
-    out = ''
-    if solver.solve():
-        out += "     " + str(s) + ' ' + str(e) + ' ' + str(n) + ' ' + str(d) + ' ' + '\n'
-        out += " +  " + ' ' + str(m) + ' ' + str(o) + ' ' + str(r) + ' ' + str(e) + ' ' + '\n'
-        out += "= " + ' ' + str(m) + ' ' + str(o) + ' ' + str(n) + ' ' + str(e) + ' ' + str(y) + ' ' + '\n'
-    return out
+    solver.solve()
+    if solver.is_sat():
+        print "    %d %d %d %d" % (s.get_value(), e.get_value(), n.get_value(), d.get_value())
+        print "+   %d %d %d %d" % (m.get_value(), o.get_value(), r.get_value(), e.get_value())
+        print "= %d %d %d %d %d" % (m.get_value(), o.get_value(), n.get_value(), e.get_value(), y.get_value())
 
-
-default = {'solver': 'Mistral', 'verbose': 1, 'tcutoff': 3}
 
 if __name__ == '__main__':
+    default = {'solver': 'Mistral', 'verbose': 0}
     param = input(default)
-    print solve(param)
+    solve(param)

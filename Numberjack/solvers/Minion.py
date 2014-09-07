@@ -1,3 +1,15 @@
+# This file represents the interface from Numberjack to the Minion constraint
+# solver http://minion.sourceforge.net
+# If you have minion installed on your machine and the 'minion' binary is in
+# your path, then you can use Minion with Numberjack.
+#
+# Some Numberjack constraints still to be implemented: Mod, Abs, Table There are
+# more constraints supported by Minion that are not in Numberjack yet, It would
+# be goot to support these in Numberjack but decompositions should also be added
+# so that they can be used with other solvers. In particular reifyimply would be
+# nice.
+
+
 from Numberjack.ExternalSolver import ExternalSolver
 from Numberjack import NBJ_STD_Solver, Variable, SAT, UNSAT
 import sys

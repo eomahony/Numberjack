@@ -5,7 +5,6 @@ from Numberjack import *
 
 def solve(param):
     data = WareHouseParser(param['data'])
-    lib = __import__(param['solver'])
     cutoff = param['cutoff']
 
     WareHouseOpen = VarArray(data.get("NumberOfWarehouses"))
@@ -32,7 +31,7 @@ def solve(param):
         [Sum(col) <= cap for (col, cap) in zip(ShopSupplied.col, data.get("Capacity"))]
     )
 
-    solver = lib.Solver(model)
+    solver = model.load(param['solver'])
     solver.setNodeLimit(cutoff)
     solver.setHeuristic('DomainOverWDegree', 'Guided')
     solver.setVerbosity(param['verbose'])
@@ -64,7 +63,7 @@ class WareHouseParser:
         return None
 
 
-default = {'solver': 'Mistral', 'data': 'data/cap44.dat.txt', 'cutoff': 50000, 'verbose': 3, 'tcutoff': 3}
+default = {'solver': 'Mistral', 'data': 'data/cap44.dat.txt', 'cutoff': 50000, 'verbose': 3, 'tcutoff': 30}
 
 if __name__ == '__main__':
     param = input(default)

@@ -7,10 +7,11 @@ Numberjack is a modelling package written in Python for constraint programming.
 Python benefits from a large and active programming community, Numberjack is
 therefore a perfect tool to embed CP technology into larger applications. It is
 designed to support a number of underlying C/C++ solvers seamlessly and
-efficiently. Currently, there are six available back-ends: three mixed integer
+efficiently. There are a number of available back-ends: three mixed integer
 programming solvers ([Gurobi][gurobiopt], [CPLEX][cplex], and [SCIP][scipopt]),
-two satisfiability solvers ([MiniSat][minisat] and [Walksat][walksat]), and a
-constraint programming solver (Mistral).
+two satisfiability solvers ([MiniSat][minisat] and [Walksat][walksat]), a
+constraint programming solver (Mistral), and a weighted constraint satisfaction
+solver ([Toulbar2][toulbar2]).
 
 * Numberjack offers a high level constraint programming language
 * Numberjack directly benefits from python's features and modules
@@ -20,49 +21,50 @@ constraint programming solver (Mistral).
 
 Numberjack offers the ability to use several high-performance solvers, some of
 which are required to be installed separately or have their own dependencies.
-The source-code for building Mistral, [Minisat][minisat], and [Walksat][walksat]
-is included in the Numberjack distribution and interfaces to additional solvers
-are available.
+The source-code for building Mistral, Toulbar2, Minisat, and Walksat is included
+in the Numberjack distribution and interfaces to additional solvers are
+available.
 
-To install Numberjack from source simply run `make` from the Numberjack
-directory, followed by `make install`. This requires the following to be
-installed:
+To install Numberjack from source simply run `python setup.py build` from the
+Numberjack directory, followed by `python setup.py install`. This requires the
+following to be installed:
 
-* python 2
+* python-dev
 * swig
 * libxml2-dev
-* zlib1g-dev
-* python-dev
+* zlib1g-dev 
 * libgmp-dev
 
 [minisat]: http://minisat.se
 [walksat]: http://www.cs.rochester.edu/u/kautz/walksat/
+[toulbar2]: https://mulcyber.toulouse.inra.fr/projects/toulbar2/
 
 
-## Building the Solvers
+## Building the Solver Interfaces
+
+The following solvers are entirely optional and are not required to use
+Numberjack however they can be a valuable tool to have. If any of the solvers
+cannot be found on the system, then their interface will be disabled within
+Numberjack. If you add one of these solvers after already installing Numberjack,
+please reinstall Numberjack to enable the new interface.
+
 
 ### Gurobi Optimizer
 
 Numberjack provides an interface to the mathematical programming solver,
-[Gurobi][gurobiopt]. To use it in Numberjack, please follow the following steps:
+[Gurobi][gurobiopt]. To use it in Numberjack, [Download and install Gurobi
+Optimizer][gurobiopt] from their website. Numberjack has been tested against
+Gurobi versions 5.1, 5.5, and 5.6.
 
-1. [Download and install Gurobi Optimizer][gurobiopt] from their website.
-   Numberjack has been tested against Gurobi versions 5.1, 5.5, and 5.6.
+Numberjack will try to automatically find the Gurobi install location by first
+checking the `GUROBI_HOME` environment variable which should be set according to
+the Gurobi install guide. If not, it will try to find the path based on the
+location of the `gurobi_cl` executable.
 
-2. Numberjack will try to find the Gurobi, install location by first checking
-   the `GUROBI_HOME` environment variable which should be set according to the
-   Gurobi install guide. If not, it will try to find the path based on the
-   location of the `gurobi_cl` executable.
-
-   ```bash
-   export GUROBI_HOME="/opt/gurobi550/linux64"    # Example Linux install dir
-   export GUROBI_HOME="/Library/gurobi550/mac64"  # Example Mac OSX install dir
-   ```
-
-3. In the Numberjack directory, move the folder `available_interfaces/gurobi` to
-   `solvers/gurobi`.
-
-4. Run `make`, followed by `make install` from the Numberjack directory.
+```bash
+export GUROBI_HOME="/opt/gurobi550/linux64"    # Example Linux install dir
+export GUROBI_HOME="/Library/gurobi550/mac64"  # Example Mac OS X install dir
+```
 
 [gurobiopt]: http://www.gurobi.com/download/gurobi-optimizer
 [gurobiqs]: http://www.gurobi.com/documentation/current/quick-start-guide/
@@ -70,63 +72,45 @@ Numberjack provides an interface to the mathematical programming solver,
 
 ### CPLEX
 
-Numberjack provides an interface to [IBM ILOG CPLEX Optimizer][cplex]. If you
-have it installed on your system, follow these steps to use in in Numberjack:
+Numberjack provides an interface to [IBM ILOG CPLEX Optimizer][cplex] and has
+been tested against CPLEX versions 12.5, and 12.5.1.
 
-1. If the executable `cplex` is in the PATH Numberjack will be able to find the
-   location of CPLEX on your system. If not, you should set the environment
-   variable `CPLEXDIR` to the location where CPLEX is installed, for example:
+Numberjack will try to automatically find the CPLEX install location by first
+checking the environment variable `CPLEXDIR`. If this is not set it will try to
+find it based on the location of the `cplex` executable.
 
-    ```bash
-    export CPLEXDIR="/opt/ibm/ILOG/CPLEX_Studio1251/cplex"
-    export CPLEXDIR="/Applications/IBM/ILOG/CPLEX_Studio1251/cplex"
-    ```
-
-2. In the Numberjack directory, move the folder `available_interfaces/cplex` to
-   `solvers/cplex`.
-
-3. Run `make`, followed by `make install` from the Numberjack directory.
+```bash
+export CPLEXDIR="/opt/ibm/ILOG/CPLEX_Studio1251/cplex"
+export CPLEXDIR="/Applications/IBM/ILOG/CPLEX_Studio1251/cplex"
+```
 
 [cplex]: http://www.ibm.com/software/commerce/optimization/cplex-optimizer/
 
 
 ### SCIP
-Due to licensing restrictions Numberjack cannot include the sources for SCIP.
-The SCIP source code is available from:
-[http://scip.zib.de/download.shtml][scipopt] (available for free under an
-academic license). Please download version 3.1.0.
 
-[scipopt]: http://scip.zib.de/download.shtml
+SCIP is an open-source MIP solver available from: [http://scip.zib.de][scipopt],
+please download version 3.1.0. The simplest way to install SCIP is to [download
+the source code of SCIP Optimization Suite v3.1.0][scipoptdl] and place
+scipoptsuite-3.1.0.tgz in the same folder as Numberjack, alongside this file, so
+that it can be compiled with the necessary flags.
 
-1. Download the source code of SCIP Optimization Suite v3.1.0, unarchive it,
-   however, do not install nor compile it.
+If you would like to compile SCIP yourself from a different location, then
+please set the environment variable `ZIBPATH` to the scipoptsuite directory and
+compile the static library using the following options:
 
-    ```bash
-    tar zxf scipoptsuite-?.?.?.tgz
-    ```
+```bash
+export ZIBPATH=path_to/scipoptsuite-3.1.0
+make scipoptlib ZIMPL=false ZLIB=false READLINE=false GAMS=false GMP=false LEGACY=true SPX_LEGACY=true
+```
 
-2. In the scipoptsuite directory, unarchive the SCIP and SoPlex archives.
-
-    ```bash
-    cd scipoptsuite-3.1.0/
-    tar zxf scip-?.?.?.tgz
-    tar zxf soplex-?.?.?.tgz
-    ```
-
-3. Set an environment variable ZIBPATH to the scipoptsuite directory, for
-   example:
-
-    ```bash
-    export ZIBPATH=path_to/scipoptsuite-3.1.0
-    ```
-
-4. Move the folder `available_interfaces/scip` to `solvers/scip`.
-
-5. Run `make`, followed by `make install` from the Numberjack directory.
+[scipopt]: http://scip.zib.de
+[scipoptdl]: http://scip.zib.de/download.php?fname=scipoptsuite-3.1.0.tgz
 
 
-### Osi Solvers
-Some of the solvers cannot be included in the source tree.
+### OSI Solvers
+_The following OSI solvers have not been ported to the distutils build system yet._
+
 Before you get started with the compiling Osi solvers for Numberjack you must first get the Osi module working.
 
 Download Osi from: [http://www.coin-or.org/download/source/Osi/][osi]

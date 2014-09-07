@@ -1,0 +1,38 @@
+include README.md setup.cfg LICENSE
+
+# Add examples
+include examples/*.py
+graft examples/data
+
+# The solver interfaces code
+recursive-include Numberjack/solvers *.cpp *.hpp
+
+# Exclude SWIG generated code
+#exclude Numberjack/solvers/*_wrap.cpp  
+#exclude Numberjack/solvers/*.py
+
+# Explicity include the blank __init__ for Numberjack.solvers
+include Numberjack/solvers/__init__.py
+
+# Included solver source codes
+graft Numberjack/solvers/MiniSat/minisat_src
+graft Numberjack/solvers/Mistral/mistral
+graft Numberjack/solvers/Mistral2/mistral
+graft Numberjack/solvers/Toulbar2/include
+graft Numberjack/solvers/Toulbar2/lib
+include Numberjack/solvers/Toulbar2/Copyright.txt
+include Numberjack/solvers/Toulbar2/ReadMe.txt
+graft Numberjack/solvers/Walksat/walksat_src
+
+# Exclude some folders of the solvesr that we don't use
+prune Numberjack/solvers/Mistral2/mistral/cnf
+prune Numberjack/solvers/Mistral2/mistral/data
+prune Numberjack/solvers/Mistral2/mistral/doc
+prune Numberjack/solvers/Mistral2/mistral/examples
+prune Numberjack/solvers/Mistral2/mistral/fz
+prune Numberjack/solvers/Mistral2/mistral/tools/tclap/configure
+prune Numberjack/solvers/Mistral2/mistral/tools/tclap/examples
+prune Numberjack/solvers/Mistral2/mistral/tools/tclap/docs
+prune Numberjack/solvers/Mistral2/mistral/tools/tclap/msc
+prune Numberjack/solvers/Mistral2/mistral/tools/tclap/tests
+prune Numberjack/solvers/Mistral2/mistral/xcsp

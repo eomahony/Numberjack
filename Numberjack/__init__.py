@@ -287,8 +287,9 @@ class Expression(object):
             return self.domain()
 
     def is_str(self):
-        if hasattr(self, 'lb'):
-            return not numeric(self.lb)
+        lb = getattr(self, 'lb', None)
+        if lb is not None:
+            return not numeric(lb)
         return False
 
     def getVar(self, solver_id):

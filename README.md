@@ -9,9 +9,9 @@ therefore a perfect tool to embed CP technology into larger applications. It is
 designed to support a number of underlying C/C++ solvers seamlessly and
 efficiently. There are a number of available back-ends: three mixed integer
 programming solvers ([Gurobi][gurobiopt], [CPLEX][cplex], and [SCIP][scipopt]),
-two satisfiability solvers ([MiniSat][minisat] and [Walksat][walksat]), a
-constraint programming solver (Mistral), and a weighted constraint satisfaction
-solver ([Toulbar2][toulbar2]).
+satisfiability solvers ([MiniSat][minisat], [Walksat][walksat], and many
+others), a constraint programming solver (Mistral), and a weighted constraint
+satisfaction solver ([Toulbar2][toulbar2]).
 
 * Numberjack offers a high level constraint programming language
 * Numberjack directly benefits from python's features and modules

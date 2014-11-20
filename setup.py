@@ -537,6 +537,41 @@ else:
 
 # ------------------------------ End Extensions ------------------------------
 
+# Possibly compile only a subset of the solvers. This can be specified as a CSV
+# list on the command line or by passing -solver multiple times, e.g:
+# python setup.py build -solver Mistral,Mistral2 -solver SCIP
+allsolvers = dict((e.name[1:], e) for e in extensions)
+SOLVERARG = "-solver"
+solversubsetnames = set()
+while SOLVERARG in sys.argv:
+    pos = sys.argv.index(SOLVERARG)
+    if pos + 1 >= len(sys.argv):
+        print >> sys.stderr, "Error: you should specify a solver or list of " \
+            "solvers to compile with the %s option." % SOLVERARG
+        sys.exit(1)
+
+    solvernames = [x.strip() for x in sys.argv[pos + 1].split(",")]
+    for s in solvernames:
+        if s not in allsolvers:
+            print >> sys.stderr, "Error: the solver '%s' is not known, please" \
+                " use one of: %s" % (s, ", ".join(allsolvers.keys()))
+            sys.exit(1)
+        solversubsetnames.add(s)
+    del sys.argv[pos:pos + 2]
+
+if solversubsetnames:
+    # Ensure MipWrapper is included if needed
+    if 'CPLEX' in solversubsetnames or 'Gurobi' in solversubsetnames or \
+            'SCIP' in solversubsetnames:
+        solversubsetnames.add("MipWrapper")
+
+    # Ensure SatWrapper is included if needed
+    if 'MiniSat' in solversubsetnames or 'Walksat' in solversubsetnames:
+        solversubsetnames.add("SatWrapper")
+
+    extensions = [allsolvers[s] for s in solversubsetnames]
+
+
 
 long_desc = """Numberjack is a modelling package written in Python for
 constraint programming and combinatorial optimization. Python benefits from a

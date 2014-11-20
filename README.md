@@ -45,8 +45,7 @@ following to be installed:
 The following solvers are entirely optional and are not required to use
 Numberjack however they can be a valuable tool to have. If any of the solvers
 cannot be found on the system, then their interface will be disabled within
-Numberjack. If you add one of these solvers after already installing Numberjack,
-please reinstall Numberjack to enable the new interface.
+Numberjack.
 
 
 ### Gurobi Optimizer
@@ -106,6 +105,16 @@ make scipoptlib ZIMPL=false ZLIB=false READLINE=false GAMS=false GMP=false LEGAC
 
 [scipopt]: http://scip.zib.de
 [scipoptdl]: http://scip.zib.de/download.php?fname=scipoptsuite-3.1.0.tgz
+
+
+### Compiling Specific Solvers
+If you add one of these solvers after already installing Numberjack,
+you can compile a subset of the solvers by specifying a comma separated list
+with the `-solver` argument, for example:
+
+```bash
+python setup.py build -solver Mistral,SCIP,MiniSat
+```
 
 
 ### OSI Solvers

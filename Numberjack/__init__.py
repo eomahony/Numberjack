@@ -1898,13 +1898,27 @@ class Abs(Predicate):
 
 class Table(Predicate):
     """
-    Table constraint explicityly specifying the list of allowed or forbidden
+    Table constraint explicitly specifies the list of allowed or forbidden
     tuples. Must be used as a top-level constraint, it cannot be used as a
     sub-expression.
 
+    Table takes a list of variables, `vars`, as its first argument, which are
+    the variables to be constrained. The `tuples` argument should be a list of
+    the tuples to constrain `vars`. Each item in `tuples` should contain a tuple
+    of values, one value for each variable in `vars` and ordered according to
+    the variable order in `vars`. In the following example, the first Table
+    constraint specifies that `x1` and `x2` are different, the second specifies
+    two supported assignements to `x2` and `x3`.
+
+    .. code-block:: python
+
+        x1, x2, x3 = VarArray(3, 1, 3)
+        Table([x1, x2], [[1, 1], [2, 2], [3, 3]], type='conflict')
+        Table([x2, x3], [[1, 2], [2, 3]], type='support')
+
     :param list vars: the variables to be constrained by the constraint.
     :param tuples: list of tuples used for the table constraint.
-    :param type: type of table constraint, either support of conflict
+    :param type: type of table constraint, either `support` of `conflict`
     """
 
     def __init__(self, vars, tuples=[], type='support'):

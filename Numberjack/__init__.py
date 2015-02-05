@@ -3461,6 +3461,18 @@ class NBJ_STD_Solver(object):
         """
         self.solver.setRandomSeed(seed)
 
+    def setWorkMem(self, mb):
+        """
+        Set the limit of working memory, only used for CPLEX.
+        """
+        if hasattr(self.solver, 'setWorkMem'):
+            return self.solver.setWorkMem(mb)
+        else:
+            raise UnsupportedSolverFunction(
+                self.Library, "setWorkMem", "This solver does not support"
+                " setting the work memory.")
+        return None
+
     def setOption(self,func,param=None):
         """
         Sets an option in Toulbar2 whose name is passed as the first parameter,

@@ -146,6 +146,10 @@ void CPLEXSolver::setWorkMem(const int mb){
     cplex->setParam(IloCplex::WorkMem, mb);
 }
 
+int CPLEXSolver::getWorkMem(){
+    return cplex->getParam(IloCplex::WorkMem);
+}
+
 bool CPLEXSolver::is_opt() {
     return optimstatus == IloAlgorithm::Optimal;
 }

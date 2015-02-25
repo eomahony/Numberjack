@@ -193,6 +193,7 @@ class Expression(object):
         #self.mod = None
         self.ident = -1
         self.operator = operator
+        self.domain_ = None
 
         # This is the stuff for maintaining multiple representations of the
         # model among different solvers
@@ -2618,7 +2619,6 @@ class Task(Expression):
         Expression.__init__(self, "t")
         self.lb = lb
         self.ub = ub
-        self.domain_ = None
 
     def __str__(self):
         if self.is_built() and self.solver.is_sat():

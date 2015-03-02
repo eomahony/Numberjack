@@ -254,6 +254,36 @@ toulbar2 = Extension(
 extensions.append(toulbar2)
 
 
+gecodedir = "/Users/bhurley/ThirdPartySoftware/gecode-4.3.3"
+gecode = Extension(
+    '_Gecode',
+    sources=[
+        'Numberjack/solvers/Gecode.i',
+        'Numberjack/solvers/Gecode/Gecode.cpp',
+    ],
+    swig_opts=[
+        '-modern', '-c++',
+        '-INumberjack/solvers/Gecode',
+    ],
+    include_dirs=[
+        'Numberjack/solvers/Gecode',
+        os.path.join(gecodedir, 'include')
+    ],
+    library_dirs=[
+        os.path.join(gecodedir, 'lib'),
+    ],
+    # libraries=['m', 'gecodesearch', 'gecodeint', 'gecodekernel', 'gecodesupport'],  # 'gecodedriver'
+    libraries=['m', 'gecodeflatzinc', 'gecodedriver', 'gecodegist', 'gecodesearch', 'gecodeminimodel', 'gecodeset', 'gecodefloat', 'gecodeint', 'gecodekernel', 'gecodesupport'],
+    language='c++',
+    define_macros=[
+        ('_DEBUGWRAP', None),
+    ],
+    extra_compile_args=EXTRA_COMPILE_ARGS + ['-fPIC'],  # + ['-g', '-fPIC', '-fexceptions'],
+    extra_link_args=EXTRA_LINK_ARGS,
+)
+extensions.append(gecode)
+
+
 mip = Extension(
     '_MipWrapper',
     sources=[
@@ -585,7 +615,7 @@ lic = "License :: OSI Approved :: " \
 
 setup(
     name='Numberjack',
-    version='1.1.0',
+    version='1.1.1-dev',
     author='Numberjack Developers',
     packages=['Numberjack', 'Numberjack.solvers'],
     ext_modules=extensions,

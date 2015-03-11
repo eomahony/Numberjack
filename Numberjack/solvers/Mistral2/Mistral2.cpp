@@ -666,10 +666,10 @@ Mistral2_Expression* Mistral2_Sum::add(Mistral2Solver *solver, bool top_level){
     
     int i, n=_vars.size();  
     Mistral::VarArray scope(n);
-    Mistral::Vector<int> w(n);
+    Mistral::Vector<int> w;
     bool weighted = false;
     bool boolean = true;
-
+    w.initialise(n, n);
 
     for(i=0; i<n; ++i) {
 

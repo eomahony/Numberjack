@@ -530,6 +530,8 @@ Mistral2_Expression* Mistral2_LeqLex::add(Mistral2Solver *solver, bool top_level
 #ifdef _DEBUGWRAP
     std::cout << "add leqlex constraint" << std::endl;
 #endif
+
+    _solver = solver;
       
     for(int i = 0; i < _vars.size(); ++i)
       _vars.set_item(i, _vars.get_item(i)->add(solver, false));
@@ -569,6 +571,8 @@ Mistral2_Expression* Mistral2_LessLex::add(Mistral2Solver *solver, bool top_leve
 #ifdef _DEBUGWRAP
     std::cout << "add lesslex constraint" << std::endl;
 #endif
+
+    _solver = solver;
       
     for(int i = 0; i < _vars.size(); ++i)
       _vars.set_item(i, _vars.get_item(i)->add(solver, false));
@@ -938,6 +942,8 @@ Mistral2_Expression* Mistral2_or::add(Mistral2Solver *solver, bool top_level){
 #ifdef _DEBUGWRAP
     std::cout << "add or predicate" << std::endl;
 #endif
+
+    _solver = solver;
 
     bool used = false;
     _vars[0]->add(_solver,false);

@@ -1,1 +1,2 @@
-tools/parse.py -key test -sample TIME avg NODES avg min PROPAGATIONS avg min -precision NODES 0 PROPAGATIONS 0
+tools/parse.py -key opt_test -sample SUCCESS avg OBJECTIVE avg min TIME avg NODES avg min -precision NODES 0 OBJECTIVE 0 SUCCESS  1 -nosummary
+tools/parse.py -key sat_test -sample SUCCESS avg TIME avg NODES avg min -precision NODES 0 SUCCESS 1 -nosummary 

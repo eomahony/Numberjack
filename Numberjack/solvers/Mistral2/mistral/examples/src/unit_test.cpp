@@ -1843,7 +1843,7 @@ int main(int argc, char *argv[])
   int N = 8; //atoi(argv[1]);
   if(argc>1) N=atoi(argv[1]);
 
-
+  /*
   tests.push_back(new CheckerTest());
   tests.push_back(new SymmetricDifferenceTest());
   tests.push_back(new LexTest());
@@ -1862,7 +1862,9 @@ int main(int argc, char *argv[])
   tests.push_back(new OpshopTest());
   tests.push_back(new BoolPigeons(N+1, EXPRESSION));
   tests.push_back(new BoolPigeons(N+1, BITSET_VAR));
+  */
   tests.push_back(new SatTest());
+  /*
   tests.push_back(new Pigeons(N+2)); 
   tests.push_back(new CostasAllDiffAllSolutions(N+1, FORWARD_CHECKING));
   tests.push_back(new CostasAllDiffAllSolutions(N+1, BOUND_CONSISTENCY, RANGE_VAR));
@@ -1878,7 +1880,7 @@ int main(int argc, char *argv[])
   // tests.push_back(new RandomRevNumAffectations<int>());
   // //tests.push_back(new ConstraintArrayTest());
   // tests.push_back(new RandomIntervalTest());
-
+  */
  
   //tests[0]->Verbosity = HIGH;
   //tests[0]->Quality = HIGH;
@@ -3183,7 +3185,7 @@ void CostasAllDiffAllSolutions::run() {
   s.add( AllDiff(X) );
 
 
-  Vector< Variable > distance[size-2];
+  Vector< Variable > *distance = new Vector< Variable >[size-2];
   for(i=1; i<size-1; ++i) {
     for(j=0; j<size-i; ++j) {
       distance[i-1].add(X[j] - X[j+i]);
@@ -3231,6 +3233,8 @@ void CostasAllDiffAllSolutions::run() {
     cout << "Error: wrong number of solutions! (should be " << num_sol[size] << ")" << endl;
     //exit(1);
   }
+
+  delete [] distance;
 }
 
   
@@ -3250,7 +3254,7 @@ void CostasNotEqualAllSolutions::run() {
     for(j=i+1; j<size; ++j)
       s.add( X[i] != X[j] );
 
-  Vector< Variable > distance[size-2];
+  Vector< Variable > *distance =  new Vector< Variable >[size-2];
   for(i=1; i<size-1; ++i) {
     for(j=0; j<size-i; ++j) {
       distance[i-1].add(X[j] - X[j+i]);
@@ -3297,6 +3301,7 @@ void CostasNotEqualAllSolutions::run() {
     //exit(1);
   }
 
+  delete [] distance;
 }
 
 
@@ -4828,6 +4833,9 @@ void SatTest::run() {
   solver.parse_dimacs("cnf/gen-1.3/unif-c1000-v250-s542677735.cnf");
   //solver.parameters.verbosity = 2;
   solver.parameters.backjump = 1;
+  
+  std::cout << solver << std::endl;
+  
 
   solver.depth_first_search(solver.variables,
 			    new GenericHeuristic< VSIDS<4>, Guided<RandomMinMax> >(&solver),

@@ -1,11 +1,20 @@
---test 
-From within the folder Mistral-2.0:
+Usage: 
 
-To build (i.e., generate the executable fzn-mistral):
+*/ Compilation :
+1- First add the folder Mistral-2.0/fz to the PATH. 
+2- To build (from within the folder Mistral-2.0):
+
 $ make
 
-Options: 
+This will generate the executable file fzn-mistral in the 'bin' folder.
+
+*/ You can test a flatzinc instance with :
+
+$ bin/fzn-mistral data/zinc/zebra.fzn 
+
+*/ Notes:
+
 1- fzn-mistral does not use parallel threads so the option -p has no use (yet). 
-2- Search annotations are not yet supported. However, we need to mention the -f option to ignore these annotations.
+2- Search annotations are not (yet) supported. So with or without the option -f, the solver will ignore them.
 
-
+As expected, the 'globals' directory contains the solver-specific definitions of the global constraints in the MiniZinc library. Mistral-2.0 usues a specific definition of all_different_int. 

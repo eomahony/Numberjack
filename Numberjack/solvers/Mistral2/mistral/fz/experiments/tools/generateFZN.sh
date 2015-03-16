@@ -28,7 +28,7 @@ do
 l_m=`expr length $m` 
 l_d=`expr length $d` 
 l_1=`expr length $1` 
-output_file=${m:l_1+1:l_m-l_1-5}"_"${d:l_1+1:l_d-l_1-5}".fzn" 
+output_file=${m}"_"${d}".fzn" 
 #echo $output_file
 #echo  mzn2fzn $m $d -O- -o $output/$output_file
      mzn2fzn $m $d -O- -o $output/$output_file

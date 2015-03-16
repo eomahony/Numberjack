@@ -1,0 +1,1 @@
+tools/launch.py -key min_test -solverdir solvers -file ~/exp_mzn2014/data/all_min.txt -timelimit 150 -j7 -seed 100 1001 1000

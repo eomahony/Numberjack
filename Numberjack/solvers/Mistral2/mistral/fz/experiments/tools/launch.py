@@ -252,7 +252,7 @@ class ExperimentRunner(Thread):
             dotidx = bench.rfind('.')
             if seed != '0':
                 if dotidx >= 0:
-                    seedbench = seedbench[:-4]+('^'+str(seed))+'.xml';
+                    seedbench = seedbench[:-4]+('^'+str(seed));
                 else:
                     seedbench = seedbench+('^'+str(seed));
 

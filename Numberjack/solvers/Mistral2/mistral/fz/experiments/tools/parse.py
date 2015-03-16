@@ -1130,6 +1130,7 @@ class Parser:
                         print pretty(sum(crossaverage[solver+st+method])/len(crossaverage[solver+st+method]), self.precision[st], 12),
                 print '|',
             print '\n',
+            """
             print 'PRD: '.ljust(self.bench_length+1)+'|',
             for solver in self.solvers:
                 for st in self.sample_stats:
@@ -1140,6 +1141,8 @@ class Parser:
                 print '|',
             print '\n'+separator                        
             print '\n'
+            """
+            print separator+'\n'
         else:
             print '\hline \n average',
             for solver in self.solvers:

@@ -7,12 +7,28 @@ if len(sys.argv) > 1:
     cmd = sys.argv[1:-1]
     filename = sys.argv[-1]
 
-    if '-f' in cmd:
-        cmd[cmd.index['-f']] = '--follow_annotations'
+#    if '-f' in cmd:
+#        cmd[cmd.index['-f']] = '--follow_annotations'
 
-    mcmd = ['./mistral-fzn']
+    if '-f' in cmd:
+	cmd.remove('-f')
+
+    if '-p' in cmd:
+	cmd.remove(cmd[cmd.index('-p') +1])
+	cmd.remove('-p')
+
+
+    #mcmd = ['./mistral-fzn']
+    #We assume fz/ is in the $PATH
+    mcmd = ['mistral-fzn']
     mcmd.extend(cmd)
-    mcmd.extend(['--print_sol', '--prefix_sol', '%', '--prefix_comment', '%', '--prefix_obj', '%', '--prefix_stat', '%', '--prefix_res', '%', '-f', filename, '-c', 'dom/wdeg', '-b', 'minval+guided', '-r', 'luby'])
+    mcmd.extend(['--print_sol', '-v 0', '-z 2', '--prefix_sol', '%', '--prefix_comment', '%', '--prefix_obj', '%', '--prefix_stat', '%', '--prefix_res', '%', '-f', filename, '-c', 'dom/gwdeg', '-b', 'adapted', '--follow_annotations', '--seed 26071986'])
+
+
+#    for w in mcmd:
+#        print w,
+#    print
+
 
     mistral = subprocess.Popen(mcmd) #, stdout=subprocess.PIPE)
     mistral.wait()

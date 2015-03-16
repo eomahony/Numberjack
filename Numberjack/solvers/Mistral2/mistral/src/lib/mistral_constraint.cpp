@@ -29,6 +29,7 @@
 //#define _DEBUG_AMSC_CHECK_LINEAR_IMPLEMENTATION true
 
 #define _GET_SUM_NAME true
+//#define _DEBUG_WEIGHT_CONFLICT true
 //#define _DEBUG_IWEIGHTEDBOOLSUM (id == 75)
 //#define _DEBUG_CARD true
 //#define _DEBUG_MIN (id == 1184)
@@ -41,8 +42,9 @@
 //#define _DEBUG_PWEIGHTEDBOOLSUM (id == 7)
 //#define _DEBUG_REASONRIWBS (get_solver()->statistics.num_filterings == 10037)
 //#define _DEBUG_WEIGHTEDBOOLSUM (id == 102)
-//#define _DEBUG_CLIQUENOTEQUAL true
-
+//#define _DEBUG_CLIQUENOTEQUAL (id == 1)
+//#define _DEBUG_WEIGHT_CONFLICT
+//#define _DEBUG_MUL (id == 4735)
 
 std::ostream& Mistral::operator<< (std::ostream& os, const Mistral::Constraint& x) {
   return x.display(os);
@@ -3005,6 +3007,94 @@ Mistral::PropagationOutcome Mistral::PredicateFactor::propagate(const int change
 
 std::ostream& Mistral::PredicateFactor::display(std::ostream& os) const {
   os << scope[1]/*.get_var()*/ << " == (" << scope[0]/*.get_var()*/ << " * " << factor << ")";
+  return os;
+}
+
+
+
+void Mistral::PredicateSquare::initialise() {
+  ConstraintImplementation::initialise();
+  trigger_on(_RANGE_, scope[0]);
+  trigger_on(_RANGE_, scope[1]);
+}
+
+void Mistral::PredicateSquare::mark_domain() {
+  get_solver()->forbid(scope[0].id(), LIST_VAR);
+  get_solver()->forbid(scope[1].id(), LIST_VAR);
+}
+
+Mistral::PropagationOutcome Mistral::PredicateSquare::propagate(const int changed_idx, const Event evt) {
+	return propagate();
+}   
+
+Mistral::PropagationOutcome Mistral::PredicateSquare::propagate() {      
+	Mistral::PropagationOutcome wiped = CONSISTENT;
+  
+	if( FAILED(scope[1].set_min(0)) ) wiped = FAILURE(1);
+	else {
+
+		int val;
+		int lb_sq; // = scope[0].get_min();
+		int ub_sq; // = scope[0].get_max();
+		int lb_sr; // = scope[0].get_min();
+		int ub_sr; // = scope[0].get_max();
+		do {
+			 lb_sr = scope[0].get_min();
+			 ub_sr = scope[0].get_max();
+				
+			// compute the bounds of the square, given the bounds of x [taking into account a hole centered on 0]
+			if(lb_sr > 0) {
+				// The domain is strictly positive
+				lb_sq = lb_sr*lb_sr;
+				ub_sq = ub_sr*ub_sr;
+			} else if(ub_sq < 0) {
+				// The domain is strictly negative
+				lb_sq = ub_sr*ub_sr;
+				ub_sq = lb_sr*lb_sr;
+			} else {
+				// The domain spans over 0
+				if(-lb_sr > ub_sr) {
+					ub_sq = lb_sr*lb_sr;
+				} else {
+					ub_sq = ub_sr*ub_sr;
+				}
+				lb_sq = scope[0].get_min_pos();
+				val = -scope[0].get_max_neg();
+				if(lb_sq > val) {
+					lb_sq = val;
+				}
+				lb_sq *= lb_sq;
+			}
+			if( FAILED(scope[1].set_max(ub_sq)) ||
+				FAILED(scope[1].set_min(lb_sq))
+					) wiped = FAILURE(1);
+			else {
+				// compute the bounds of x given the bounds of x^2
+				int cur_ub_xsq = scope[1].get_max();
+				if(cur_ub_xsq < ub_sq) {
+					// there's something to prune because of x^2 upper bound
+					ub_sr = (int)(sqrt((double)(cur_ub_xsq)));
+					if( FAILED(scope[0].set_max(ub_sr)) ) wiped = FAILURE(0);
+				}
+				if(IS_OK(wiped)) {
+					int cur_lb_xsq = scope[1].get_min();
+					if(cur_lb_xsq > lb_sq) {
+						// there's something to prune because of x^2 upper bound
+						lb_sr = (int)(ceil(sqrt((double)(cur_ub_xsq))));
+						if( FAILED(scope[0].set_min(lb_sr)) ) wiped = FAILURE(0);
+					}
+				}
+			}
+		} while(lb_sr < scope[0].get_min() || ub_sr > scope[0].get_max());
+	
+	}	
+
+  
+	return wiped;
+}
+
+std::ostream& Mistral::PredicateSquare::display(std::ostream& os) const {
+  os << scope[1]/*.get_var()*/ << " == (" << scope[0] << "^2)";
   return os;
 }
 
@@ -6155,90 +6245,96 @@ Mistral::PropagationOutcome Mistral::PredicateMul::revise_division(const int X, 
     } 
   }
 
-  if(lb_neg != ub_pos && (!zero[X] || !zero[Y])) { // if X and Y can both be 0, we cannot deduce anything
-    if(IS_OK(wiped)) {
-      if(max_pos[Z]>0) {
-	// revise the positive part of Z's domain (if it has one)
-	nlb1 = nlb2 = INFTY; //lb_neg;
-	nub1 = nub2 = 0; //ub_neg;
+  //if(lb_neg != ub_pos) {
+    if(!zero[X] || !zero[Y]) { // if X and Y can both be 0, we cannot deduce anything
+      if(IS_OK(wiped)) {
+	if(max_pos[Z]>0) {
+	  // revise the positive part of Z's domain (if it has one)
+	  nlb1 = nlb2 = INFTY; //lb_neg;
+	  nub1 = nub2 = 0; //ub_neg;
+	  
+	  // it can either be the positive parts of X and Y:
+	  if(max_pos[X]>0 && max_pos[Y]>0) {
+	    // compute the bounds
+	    nlb1 = (int)(ceil((double)(min_pos[X])/(double)(max_pos[Y])));
+	    nub1 = (int)(floor((double)(max_pos[X])/(double)(min_pos[Y])));
+	  }
+	  
+	  // or the negative parts of X and Y:
+	  if(min_neg[X]<0 && min_neg[Y]<0) {
+	    // compute the bounds
+	    nlb2 = (int)(ceil((double)(max_neg[X])/(double)(min_neg[Y])));
+	    nub2 = (int)(floor((double)(min_neg[X])/(double)(max_neg[Y])));
+	  }
+	  if(nlb1>nlb2) nlb1 = nlb2;
+	  if(nub1<nub2) nub1 = nub2;
+	  
+	  if(lb_pos<nlb1) {
+	    lb_pos = nlb1;
+	    pruning_flag = true;
+	  }
+	  if(ub_pos>nub1) {
+	    ub_pos = nub1;
+	    pruning_flag = true;
+	  }
+	  
+	  if(lb_pos > max_pos[Z] || ub_pos < min_pos[Z]) ppos = true;
+	  
+	} else if(pzero || !zero[Z]) // if(lb_pos || ub_pos)
+	  {
+	    lb_pos = min_neg[Z];
+	    ub_pos = max_neg[Z];
+	  } else {
+	  lb_pos = ub_pos = 0; 
+	}
 	
-	// it can either be the positive parts of X and Y:
-	if(max_pos[X]>0 && max_pos[Y]>0) {
-	  // compute the bounds
-	  nlb1 = (int)(ceil((double)(min_pos[X])/(double)(max_pos[Y])));
-	  nub1 = (int)(floor((double)(max_pos[X])/(double)(min_pos[Y])));
+	if(min_neg[Z]<0) {
+	  // revise the negative part of Z's domain (if it has one)
+	  nlb1 = nlb2 = 0; //lb_pos;
+	  nub1 = nub2 = -INFTY; //ub_pos;
+	  
+	  // it can either be the negitive part of X and the positive part of Y:
+	  if(min_neg[X]<0 && max_pos[Y]>0) {
+	    // compute the bounds
+	    
+	    nlb1 = (int)(ceil((double)(min_neg[X])/(double)(min_pos[Y])));
+	    nub1 = (int)(floor((double)(max_neg[X])/(double)(max_pos[Y])));
+	  }
+	  // or the negitive part of Y and the positive part of X:
+	  if(max_pos[X]>0 && min_neg[Y]<0) {
+	    // compute the bounds
+	    nlb2 = (int)(ceil((double)(max_pos[X])/(double)(max_neg[Y])));
+	    nub2 = (int)(floor((double)(min_pos[X])/(double)(min_neg[Y])));
+	  }
+	  
+	  if(nlb1>nlb2) nlb1 = nlb2;
+	  if(nub1<nub2) nub1 = nub2;
+	  
+	  if(lb_neg<nlb1) {
+	    lb_neg = nlb1;
+	    pruning_flag = true;
+	  }
+	  if(ub_neg>nub1) {
+	    ub_neg = nub1;
+	    pruning_flag = true;
+	  }
+	  
+	  if(lb_neg > max_neg[Z] || ub_neg < min_neg[Z]) pneg = true;
+	  
+	} else if(pzero || !zero[Z])// if(lb_neg || ub_neg)
+	  {
+	    lb_neg = min_pos[Z];
+	    ub_neg = max_pos[Z];
+	  } else {
+	  lb_neg = ub_neg = 0;
 	}
-
-	// or the negative parts of X and Y:
-	if(min_neg[X]<0 && min_neg[Y]<0) {
-	  // compute the bounds
-	  nlb2 = (int)(ceil((double)(max_neg[X])/(double)(min_neg[Y])));
-	  nub2 = (int)(floor((double)(min_neg[X])/(double)(max_neg[Y])));
-	}
-	if(nlb1>nlb2) nlb1 = nlb2;
-	if(nub1<nub2) nub1 = nub2;
-
-	if(lb_pos<nlb1) {
-	  lb_pos = nlb1;
-	  pruning_flag = true;
-	}
-	if(ub_pos>nub1) {
-	  ub_pos = nub1;
-	  pruning_flag = true;
-	}
-
-	if(lb_pos > max_pos[Z] || ub_pos < min_pos[Z]) ppos = true;
-
-      } else if(pzero || !zero[Z]) // if(lb_pos || ub_pos)
-	{
-	  lb_pos = min_neg[Z];
-	  ub_pos = max_neg[Z];
-	} else {
-	lb_pos = ub_pos = 0; 
       }
-
-     if(min_neg[Z]<0) {
-       // revise the negative part of Z's domain (if it has one)
-       nlb1 = nlb2 = 0; //lb_pos;
-       nub1 = nub2 = -INFTY; //ub_pos;
-	
-	// it can either be the negitive part of X and the positive part of Y:
-	if(min_neg[X]<0 && max_pos[Y]>0) {
-	  // compute the bounds
-
-	  nlb1 = (int)(ceil((double)(min_neg[X])/(double)(min_pos[Y])));
-	  nub1 = (int)(floor((double)(max_neg[X])/(double)(max_pos[Y])));
-	}
-	// or the negitive part of Y and the positive part of X:
-	if(max_pos[X]>0 && min_neg[Y]<0) {
-	  // compute the bounds
-	  nlb2 = (int)(ceil((double)(max_pos[X])/(double)(max_neg[Y])));
-	  nub2 = (int)(floor((double)(min_pos[X])/(double)(min_neg[Y])));
-	}
-
-	if(nlb1>nlb2) nlb1 = nlb2;
-	if(nub1<nub2) nub1 = nub2;
-
-	if(lb_neg<nlb1) {
-	  lb_neg = nlb1;
-	  pruning_flag = true;
-	}
-	if(ub_neg>nub1) {
-	  ub_neg = nub1;
-	  pruning_flag = true;
-	}
-
-	if(lb_neg > max_neg[Z] || ub_neg < min_neg[Z]) pneg = true;
-
-     } else if(pzero || !zero[Z])// if(lb_neg || ub_neg)
-       {
-	 lb_neg = min_pos[Z];
-	 ub_neg = max_pos[Z];
-       } else {
-       lb_neg = ub_neg = 0;
-     }
     }
-  }
+  // }
+  // else {
+  //   // lb_neg != ub_pos => Z is ground
+  
+  // }
 
   if(pneg && (pzero || !zero[Z]) && ppos) {
     wiped = FAILURE(Z);
@@ -8802,6 +8898,65 @@ Mistral::ConstraintBoolSumInterval::~ConstraintBoolSumInterval()
 #endif
 }
 
+
+#ifdef _CBSI_WC
+void Mistral::ConstraintBoolSumInterval::weight_conflict(double unit, Vector<double>& weights)
+{
+#ifdef _DEBUG_WEIGHT_CONFLICT
+  std::cout << "\nWEIGHT " << this << std::endl;
+  std::cout << "( " << scope[0] << " in " << scope[0].get_domain() << std::endl;
+  for(unsigned int i=1; i<scope.size; ++i) 
+    std::cout << " + " << scope[i] << " in " << scope[i].get_domain() << std::endl;
+  std::cout << ") in " << lower_bound << ".." << upper_bound << std::endl;
+#endif
+
+
+  int idx, i = scope.size, arity = scope.size;
+  //int explanation_size = 0;
+  if(min_>upper_bound) {
+#ifdef _DEBUG_WEIGHT_CONFLICT
+      std::cout << " too many 1s " << std::endl;
+#endif
+    // too many ones
+    while(i-- // && explanation_size <= upper_bound
+	  ) {
+      idx = scope[i].id();
+      if(idx>=0 && scope[i].get_min()) {
+	weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+;
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+	//++explanation_size;
+      }
+    }
+  } else {
+#ifdef _DEBUG_WEIGHT_CONFLICT
+      std::cout << " too many 0s " << std::endl;
+#endif
+    // too many zeros
+    while(i-- // && explanation_size <= scope.size-lower_bound
+	  ) {
+      idx = scope[i].id();
+      if(idx && !(scope[i].get_max())) {
+	weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+;
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+	//++explanation_size;
+      }
+    }
+  }
+}
+#endif
+
 Mistral::PropagationOutcome Mistral::ConstraintBoolSumInterval::propagate() 
 {
   PropagationOutcome wiped_idx = CONSISTENT;
@@ -9382,6 +9537,104 @@ Mistral::PredicateBoolSum::~PredicateBoolSum()
 #endif
 }
 
+#ifdef _PBS_WC
+void Mistral::PredicateBoolSum::weight_conflict(double unit, Vector<double>& weights)
+{
+
+#ifdef _DEBUG_WEIGHT_CONFLICT
+  std::cout << "\nWEIGHT " << this << std::endl;
+  std::cout << "( " << scope[0] << " in " << scope[0].get_domain() << std::endl;
+  for(unsigned int i=1; i<scope.size-1; ++i) 
+    std::cout << " + " << scope[i] << " in " << scope[i].get_domain() << std::endl;
+  if(offset) std::cout << " + " << offset ;
+  std::cout << ") = " << scope[scope.size-1] << " in " << scope[scope.size-1].get_domain() << std::endl;
+#endif
+
+  //int i = scope.size-1;
+  //int explanation_size = 0;
+  int upper_bound = scope.back().get_max();
+  int lower_bound = scope.back().get_min();
+
+  int _min_ = offset;
+  int _max_ = offset;
+  unsigned int i, arity=scope.size-1;
+  int idx;
+
+  for( i=0; i<arity; ++i ) {
+    _min_ += scope[i].get_min();
+    _max_ += scope[i].get_max();
+  }
+
+
+  i=arity;
+  if(_min_>upper_bound) {
+    // too many ones
+#ifdef _DEBUG_WEIGHT_CONFLICT
+    std::cout << " too many 1s\n";
+#endif
+    idx = scope[i].id();
+    if(idx>=0 && scope[i].get_max() < scope[i].get_initial_max()) {
+      weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+;
+#ifdef _DEBUG_WEIGHT_CONFLICT
+      std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+    }
+    while(i-- // && explanation_size <= upper_bound
+	  ) {
+      idx = scope[i].id();
+      if(idx>=0 && scope[i].get_min()) {
+	weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+;
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+	//++explanation_size;
+      }//  else {
+      // 	std::cout << scope[i].get_min() << std::endl;
+      // }
+    }
+  } else {
+    // too many zeros
+#ifdef _DEBUG_WEIGHT_CONFLICT
+    std::cout << " too many 0s\n";
+#endif
+    idx = scope[i].id();
+    if(idx>=0 && scope[i].get_min() > scope[i].get_initial_min()) {
+      weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+;
+#ifdef _DEBUG_WEIGHT_CONFLICT
+      std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+    }
+    while(i-- // && explanation_size <= scope.size-lower_bound
+	  ) {
+      idx = scope[i].id();
+      if(idx>=0 && !(scope[i].get_max())) {
+	weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+;
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+	//++explanation_size;
+      }
+    }
+  }
+}
+#endif
+
 
 Mistral::Explanation::iterator Mistral::PredicateBoolSum::get_reason_for(const Atom a, const int lvl, Explanation::iterator& end) {
 
@@ -9670,6 +9923,212 @@ Mistral::PropagationOutcome Mistral::PredicateWeightedSum::rewrite() {
   return r_evt;
 }
 
+
+
+#ifdef _PWS_WC
+void Mistral::PredicateWeightedSum::weight_conflict(double unit, Vector<double>& weights)
+{
+#ifdef _DEBUG_WEIGHT_CONFLICT
+  std::cout << "\nWEIGHT " << this << " (\n";
+  //std::cout << "( " << weight[0] << " * " << scope[0] << " in " << scope[0].get_domain() << std::endl;
+  //for(unsigned int i=1; i<scope.size; ++i) 
+  //  std::cout << " + " << weight[i] << " * " << scope[i] << " in " << scope[i].get_domain() << std::endl;
+  //std::cout << ") in [" << lower_bound << ".." << upper_bound << "]" << std::endl;
+#endif
+
+
+  int i, smin=0, smax=0, arity=scope.size;
+  int wmax=1, idx;
+
+
+  for(i=0; i<wpos; ++i) {
+    smax += scope[i].get_max();
+    smin += scope[i].get_min();
+#ifdef _DEBUG_WEIGHT_CONFLICT
+    std::cout << "  " << weight[i] << " * " << scope[i] << " in " << scope[i].get_domain() 
+	      << " : [" << smin << ".." << smax << "]" << std::endl;
+#endif
+  }
+  for(i=wpos; i<wneg; ++i) {
+    smax += weight[i] * scope[i].get_max();
+    smin += weight[i] * scope[i].get_min();
+    if(weight[i]>wmax) wmax = weight[i];
+#ifdef _DEBUG_WEIGHT_CONFLICT
+    std::cout << "  " << weight[i] << " * " << scope[i] << " in " << scope[i].get_domain() 
+	      << " : [" << smin << ".." << smax << "]" << std::endl;
+#endif
+  }
+  for(i=wneg; i<arity; ++i) {
+    smax += weight[i] * scope[i].get_min();
+    smin += weight[i] * scope[i].get_max();
+    if(-weight[i]>wmax) wmax = -weight[i];
+#ifdef _DEBUG_WEIGHT_CONFLICT
+    std::cout << "  " << weight[i] << " * " << scope[i] << " in " << scope[i].get_domain() 
+	      << " : [" << smin << ".." << smax << "]" << std::endl;
+#endif
+  }
+
+#ifdef _DEBUG_WEIGHT_CONFLICT
+  std::cout << ") in [" << lower_bound << ".." << upper_bound << "]" << std::endl;
+#endif
+
+  if(smin > upper_bound) {
+
+#ifdef _DEBUG_WEIGHT_CONFLICT
+    std::cout << " too high: " << smin << " > " << upper_bound << "\n";
+#endif
+
+    // failure because of "big" variables
+    //  - either variables with positive weights and whose lower bound has been pruned
+    //  - or variables with negative weights and whose upper bound has been pruned
+    for(i=0; i<wneg; ++i) {
+      idx = scope[i].id();
+      if(idx>=0 && scope[i].get_min() > scope[i].get_initial_min()) {
+	weights[idx] += unit
+#ifdef _DIV_WEIGHT
+	  * (double)(weight[i])/(double)(wmax) 
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+	  )
+#endif
+	;
+ 
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+      }
+    }
+    for(i=wneg; i<arity; ++i) {
+      idx = scope[i].id();
+      if(idx>=0 && scope[i].get_max() < scope[i].get_initial_max()) {	
+	weights[idx] += unit
+#ifdef _DIV_WEIGHT
+	  * (double)(-weight[i])/(double)(wmax)
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+	  )
+#endif
+;
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+      }
+    }
+    
+  } else if(smax < lower_bound) {
+
+#ifdef _DEBUG_WEIGHT_CONFLICT
+    std::cout << " too low: " << smax << " < " << lower_bound << "\n";
+#endif
+
+
+    // failure because of "small" variables
+    //  - either variables with negative weights and whose lower bound has been pruned
+    //  - or variables with positive weights and whose upper bound has been pruned
+    for(i=0; i<wneg; ++i) {
+      idx = scope[i].id();
+      if(idx>=0 && scope[i].get_max() < scope[i].get_initial_max()) {
+	weights[idx] += unit
+#ifdef _DIV_WEIGHT
+	  * (double)(weight[i])/(double)(wmax)
+#ifdef _DIV_ARITY
+	  arity
+#endif
+	  )
+#endif
+	;
+
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+      } 
+#ifdef _DEBUG_WEIGHT_CONFLICT
+      else {	
+	std::cout << " >> does not weight " << scope[i] << " because " 
+		  << scope[i].get_max() << " = " << scope[i].get_initial_max() << std::endl;
+      }
+#endif
+    }
+    for(i=wneg; i<arity; ++i) {
+      idx = scope[i].id();
+      if(idx>=0 && scope[i].get_min() > scope[i].get_initial_min()) {
+	weights[idx] += unit 
+#ifdef _DIV_WEIGHT
+	  * (double)(-weight[i])/(double)(wmax)
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+	  )
+#endif
+	;
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+      }
+    }
+
+  } else {
+
+#ifdef _DEBUG_WEIGHT_CONFLICT
+    std::cout << " parity?\n";
+#endif
+
+    // failure because of parity
+    for(i=0; i<wpos; ++i) {
+      idx = scope[i].id();
+      if(idx>=0)
+	weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+;
+#ifdef _DEBUG_WEIGHT_CONFLICT
+      std::cout << " >+ weight " << scope[i] << std::endl;
+#endif
+    }
+    for(i=wpos; i<arity; ++i) {
+      if(weight[i]%2) {
+	idx = scope[i].id();
+	if(idx>=0)
+	  weights[idx] += unit
+#ifdef _DIV_ARITY
+	    / arity
+#endif
+	    ;
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	std::cout << " >+ weight " << scope[i] << std::endl;
+#endif
+      }
+    }
+  }
+}
+#endif
+
+
+
+#ifdef _PWS_WC_ALT
+void Mistral::PredicateWeightedSum::weight_conflict(double unit, Vector<double>& weights)
+{
+  int i, idx, arity=scope.size;
+  for(i=0; i<wpos; ++i) {
+    idx = scope[i].id();
+    if(idx>=0)
+      weights[idx] += unit/(double)(scope.size);
+  }
+  for(i=wpos; i<wneg; ++i) {
+    idx = scope[i].id();
+    if(idx>=0)
+      weights[idx] += unit*((double)(weight[i]))/((double)(scope.size));
+  }
+  for(i=wneg; i<arity; ++i) {
+    idx = scope[i].id();
+    if(idx>=0)
+      weights[idx] += unit*((double)(-weight[i]))/((double)(scope.size));
+  }
+}
+#endif
 
 
 Mistral::PropagationOutcome Mistral::PredicateWeightedSum::propagate() 
@@ -10384,7 +10843,160 @@ Mistral::ConstraintWeightedBoolSumInterval::~ConstraintWeightedBoolSumInterval()
 
 
 
+#ifdef _CWBSI_WC
+void Mistral::ConstraintWeightedBoolSumInterval::weight_conflict(double unit, Vector<double>& weights)
+{
+  
+#ifdef _DEBUG_WEIGHT_CONFLICT
+  std::cout << "\nWEIGHT " << this << std::endl;
+  std::cout << "( " << weight[0] << " * " << scope[0] << " in " << scope[0].get_domain() << std::endl;
+  for(unsigned int i=1; i<scope.size; ++i) 
+    std::cout << " + " << weight[i] << " * " << scope[i] << " in " << scope[i].get_domain() << std::endl;
+  std::cout << ") in [" << lower_bound << ".." << upper_bound << "]" << std::endl;
+#endif
+  
+  int i, j;
+  int smin=0, smax=0, arity=scope.size;
+  //int wmin=INFTY;
+  int wmax=1, idx;
+  
+  for(i=0; i<wpos; ++i) {
+    smax += GET_MAX(domains[i]); 
+    smin += GET_MIN(domains[i]); 
+  }
+  for(i=wpos; i<wneg; ++i) {
+    smax += weight[i] * GET_MAX(domains[i]); 
+    smin += weight[i] * GET_MIN(domains[i]); 
+    if(weight[i]>wmax) wmax = weight[i];
+  }
+  for(i=wneg; i<arity; ++i) {
+    smax += weight[i] * GET_MIN(domains[i]); 
+    smin += weight[i] * GET_MAX(domains[i]); 
+    if(-weight[i]>wmax) wmax = -weight[i];
+  }
 
+  if(smin > upper_bound) {
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	  std::cout << " too many 1s " << std::endl;
+#endif
+
+    // failure because of "big" variables
+    //  - either variables with positive weights and whose lower bound has been pruned
+    //  - or variables with negative weights and whose upper bound has been pruned
+    for(i=0; i<wneg; ++i) {
+      idx = scope[i].id();
+      if(idx>=0 && GET_MIN(domains[i])) {
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+	weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+; // * (double)(weight[i])/(double)(wmax);
+      }
+    }
+    for(i=wneg; i<arity; ++i) {
+      idx = scope[i].id();
+      if(idx>=0 && !(GET_MAX(domains[i]))) {
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+	weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+; // * (double)(-weight[i])/(double)(wmax);
+      }
+    }
+    
+  } else if(smax < lower_bound) {
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	  std::cout << " too many 1s " << std::endl;
+#endif
+
+    // failure because of "small" variables
+    //  - either variables with negative weights and whose lower bound has been pruned
+    //  - or variables with positive weights and whose upper bound has been pruned
+    for(i=0; i<wneg; ++i) {
+      idx = scope[i].id();
+      if(idx>=0 && !(GET_MAX(domains[i]))) {
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+	weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+; // * (double)(weight[i])/(double)(wmax);
+      }
+    }
+    for(i=wneg; i<arity; ++i) {
+      idx = scope[i].id();
+      if(idx>=0 && GET_MIN(domains[i])) {
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+	weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+; // * (double)(-weight[i])/(double)(wmax);
+      }
+    }
+    
+  } else {
+    // failure because of parity
+    for(i=0; i<wpos; ++i) {
+      idx = scope[i].id();
+      if(idx>=0) {
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	std::cout << " >+ weight " << scope[i] << std::endl;
+#endif
+	weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+;
+      }
+    }
+    for(i=wpos; i<arity; ++i) {
+      if(weight[i]%2) {
+	idx = scope[i].id();
+	if(idx>=0) {
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	  std::cout << " >+ weight " << scope[i] << std::endl;
+#endif
+	  weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+;
+	}
+      }
+    }
+  }
+}
+#endif
+
+#ifdef _CWBSI_WC_ALT
+void Mistral::ConstraintWeightedBoolSumInterval::weight_conflict(double unit, Vector<double>& weights)
+{
+  int i, idx, arity=scope.size;
+  for(i=0; i<wpos; ++i) {
+    idx = scope[i].id();
+    if(idx>=0) weights[idx] += unit/(double)(scope.size);
+  }
+  for(i=wpos; i<wneg; ++i) {
+    idx = scope[i].id();
+    if(idx>=0) weights[idx] += unit*((double)(weight[i]))/((double)(scope.size));
+  }
+  for(i=wneg; i<arity; ++i) {
+    idx = scope[i].id();
+    if(idx>=0) weights[idx] += unit*((double)(-weight[i]))/((double)(scope.size));
+  }
+}
+#endif
 
 Mistral::Explanation::iterator Mistral::ConstraintWeightedBoolSumInterval::get_reason_for(const Atom a, const int lvl, Explanation::iterator& end) {
   /*
@@ -11257,8 +11869,102 @@ void Mistral::ConstraintIncrementalWeightedBoolSumInterval::initialise_activity(
 
 }
 
+#ifdef _CIWBSI_WC_ALT
+void Mistral::ConstraintIncrementalWeightedBoolSumInterval::weight_conflict(double unit, Vector<double>& weights)
+{
+  int i, idx, arity=weight.size;
+  for(i=0; i<arity; ++i) {
+    idx = scope[i].id();
+    if(idx>=0) weights[idx] += unit * ((double)(weight[i]>0 ? weight[i] : -weight[i])) / ((double)arity);
+  }
+}
+#endif
 
 
+#ifdef _CIWBSI_WC
+void Mistral::ConstraintIncrementalWeightedBoolSumInterval::weight_conflict(double unit, Vector<double>& weights)
+{
+
+#ifdef _DEBUG_WEIGHT_CONFLICT
+  std::cout << "\nWEIGHT " << this << std::endl;
+  std::cout << "( " << weight[0] << " * " << scope[0] << " in " << scope[0].get_domain() << std::endl;
+  for(unsigned int i=1; i<scope.size; ++i) 
+    std::cout << " + " << weight[i] << " * " << scope[i] << " in " << scope[i].get_domain() << std::endl;
+  std::cout << ") in [" << lower_bound << ".." << upper_bound << "] :: " 
+	    << bound_[0] << ".." << bound_[1] << std::endl;
+#endif
+
+
+  int i, idx, arity=scope.size;
+
+
+  if(bound_[0] > upper_bound) {
+
+#ifdef _DEBUG_WEIGHT_CONFLICT
+    std::cout << " too many 1s\n";
+#endif
+
+    // failure because of "big" variables
+    //  - either variables with positive weights and whose lower bound has been pruned
+    //  - or variables with negative weights and whose upper bound has been pruned
+    for(i=0; i<arity; ++i) {
+      idx = scope[i].id();
+      if(idx>=0) {
+	if( (weight[i]>0 && GET_MIN(domains[i])) ||
+	    (weight[i]<0 && !(GET_MAX(domains[i]))) ) {
+	  weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+; // * (double)(weight[i])/(double)(wmax);
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	  std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+	}
+      }
+    }
+  } else if(bound_[1] < lower_bound) {
+
+#ifdef _DEBUG_WEIGHT_CONFLICT
+    std::cout << " too many 0s\n";
+#endif
+
+    // failure because of "small" variables
+    //  - either variables with negative weights and whose lower bound has been pruned
+    //  - or variables with positive weights and whose upper bound has been pruned
+    for(i=0; i<arity; ++i) {
+      idx = scope[i].id();
+      if(idx>=0) {
+	if( (weight[i]<0 && GET_MIN(domains[i])) ||
+	    (weight[i]>0 && !(GET_MAX(domains[i]))) ) {
+	  weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+; // * (double)(weight[i])/(double)(wmax);
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	  std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+	}
+      }
+    }
+  } else {
+    // failure because of parity
+    for(i=0; i<arity; ++i)  
+      if(weight[i]%2) {
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	std::cout << " >+ weight " << scope[i] << std::endl;
+#endif
+	idx = scope[i].id();
+	if(idx>=0) weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+;
+      }
+  }
+}
+#endif
 
 
 Mistral::Explanation::iterator Mistral::ConstraintIncrementalWeightedBoolSumInterval::get_reason_for(const Atom a, const int lvl, Explanation::iterator& end) {
@@ -12115,6 +12821,126 @@ void Mistral::PredicateWeightedBoolSum::initialise_activity(double *lact, double
   */
 }
 
+#ifdef _PWBS_WC_ALT
+void Mistral::PredicateWeightedBoolSum::weight_conflict(double unit, Vector<double>& weights)
+{
+  int i, idx, arity=weight.size;
+  for(i=0; i<arity; ++i) {
+    idx = scope[i].id();
+    if(idx>=0) weights[idx] += unit * ((double)(weight[i]>0 ? weight[i] : -weight[i])) / ((double)arity);
+  }
+  idx = scope[arity].id();
+  if(idx>=0) weights[idx] += unit / ((double)arity);
+}
+#endif
+
+
+#ifdef _PWBS_WC
+void Mistral::PredicateWeightedBoolSum::weight_conflict(double unit, Vector<double>& weights)
+{
+
+  //GlobalConstraint::weight_conflict(unit, weights);
+
+  
+#ifdef _DEBUG_WEIGHT_CONFLICT
+  std::cout << "\nWEIGHT " << this << std::endl;
+  std::cout << "( " << weight[0] << " * " << scope[0] << " in " << scope[0].get_domain() << std::endl;
+  for(unsigned int i=1; i<scope.size-1; ++i) 
+    std::cout << " + " << weight[i] << " * " << scope[i] << " in " << scope[i].get_domain() << std::endl;
+  if(offset) std::cout << " + " << offset ;
+  std::cout << ") = " << scope.back() << " in " << scope.back().get_domain() 
+	    << " -- " << bound_[0] << ".." << bound_[1] << std::endl;
+#endif
+
+  int i, idx, arity=weight.size;
+  
+
+
+  if(bound_[0] > scope[arity].get_max()) {
+
+#ifdef _DEBUG_WEIGHT_CONFLICT
+    std::cout << " too high: " << bound_[0] << " > " << scope[arity].get_max() << "\n";
+#endif
+
+    // failure because of "big" variables
+    //  - either variables with positive weights and whose lower bound has been pruned
+    //  - or variables with negative weights and whose upper bound has been pruned
+
+    idx = scope[arity].id();
+    if(idx>=0 && (scope[arity].get_max() < scope[arity].get_initial_max()))
+      weights[idx] += unit  
+#ifdef _DIV_ARITY
+	/ arity
+#endif
+	;
+    for(i=0; i<arity; ++i) {
+      idx = scope[i].id();
+      if(idx>=0) {
+	if( (weight[i]>0 && GET_MIN(domains[i])) ||
+	    (weight[i]<0 && !(GET_MAX(domains[i]))) ) {
+	  weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+; // * (double)(weight[i])/(double)(arity);
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	  std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+	}
+      }
+    }
+  } else if(bound_[1] < scope[arity].get_min()) {
+
+#ifdef _DEBUG_WEIGHT_CONFLICT
+    std::cout << " too low: " << bound_[1] << " < " << scope[arity].get_min() << "\n";
+#endif
+
+    // failure because of "small" variables
+    //  - either variables with negative weights and whose lower bound has been pruned
+    //  - or variables with positive weights and whose upper bound has been pruned
+    idx = scope[arity].id();
+
+    if(idx>=0 && (scope[arity].get_min() > scope[arity].get_initial_min()))
+      weights[idx] += unit 
+#ifdef _DIV_ARITY
+	/ arity
+#endif
+	;
+    for(i=0; i<arity; ++i) {
+      idx = scope[i].id();
+      if(idx>=0) {
+	if( (weight[i]<0 && GET_MIN(domains[i])) ||
+	    (weight[i]>0 && !(GET_MAX(domains[i]))) ) {
+	  weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+; // * (double)(weight[i])/(double)(arity);
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	  std::cout << " >> weight " << scope[i] << std::endl;
+#endif
+	}
+      }
+    }
+  } else {
+    // failure because of parity
+    for(i=0; i<arity; ++i) 
+      if(weight[i]%2) {
+	idx = scope[i].id();
+	if(idx>=0) 
+	  weights[idx] += unit
+#ifdef _DIV_ARITY
+	  / arity
+#endif
+;
+#ifdef _DEBUG_WEIGHT_CONFLICT
+	std::cout << " >+ weight " << scope[i] << std::endl;
+#endif
+      }
+  }
+  
+}
+#endif
 
 
 Mistral::Explanation::iterator Mistral::PredicateWeightedBoolSum::get_reason_for(const Atom a, const int lvl, Explanation::iterator& end) {
@@ -12952,6 +13778,17 @@ Mistral::PropagationOutcome Mistral::PredicateElement::propagate()
   //exit(1);
 
 
+  // if(!(IS_OK(wiped))) {
+
+  //   std::cout << "\nFAILURE " << offset << " (\n";
+  //   for(int i=0; i<n; ++i) {
+  //     std::cout << " " << scope[i] << " in " << scope[i].get_domain() << (scope[n].contain(i+offset) ? "*" : " ") << std::endl;
+  //   }
+  //   std::cout << ")[" << scope[n].get_domain() <<"] = " << scope[n+1].get_domain() << "\n";
+
+  // }
+
+
   return wiped;
 }
 
@@ -12959,6 +13796,47 @@ int Mistral::PredicateElement::check( const int* s ) const
 {
   return (s[s[scope.size-2]-offset] != s[scope.size-1]);
 }
+
+
+#ifdef _ELT_WC
+void Mistral::PredicateElement::weight_conflict(double unit, Vector<double>& weights)
+{
+
+  int idx, n = scope.size-2;
+  double w = unit;
+
+#ifdef _DIV_ARITY
+  w /= (2+scope[n].get_size());
+#endif
+
+#ifdef _DEBUG_WEIGHT_CONFLICT
+  std::cout << "\nWEIGHT (\n";
+  for(int i=0; i<n; ++i) {
+    std::cout << " " << scope[i] << " in " << scope[i].get_domain() << (scope[n].contain(i+offset) ? "*" : " ") << std::endl;
+  }
+  std::cout << ")[" << scope[n].get_domain() <<"] = " << scope[n+1].get_domain() << "\n";
+#endif
+
+  
+  idx = scope[n].id();
+  if(idx>=0) weights[idx] += w;
+  idx = scope[n+1].id();
+  if(idx>=0) weights[idx] += w;
+  
+  int vali, vnext = scope[n].get_min();
+  //std::cout << "w (";
+  do {
+    vali = vnext;
+    
+    //std::cout << " " << scope[vali-offset].id() ;
+    idx = scope[vali-offset].id();
+    if(idx>=0) weights[idx] += w;
+
+    vnext = scope[n].next(vali);
+  } while( vali < vnext );
+  //std::cout << " )\n";
+}
+#endif
 
 std::ostream& Mistral::PredicateElement::display(std::ostream& os) const {
   os << "(" << scope[0]/*.get_var()*/;
@@ -12980,6 +13858,7 @@ void Mistral::ConstraintCliqueNotEqual::initialise() {
     trigger_on(_VALUE_, scope[i]);
   }
   GlobalConstraint::initialise();
+  culprit = -1;
   //GlobalConstraint::set_idempotent(true);
 }
 
@@ -13014,8 +13893,9 @@ Mistral::PropagationOutcome Mistral::ConstraintCliqueNotEqual::propagate()
   std::cout << std::endl << active << std::endl;
 #endif
   for(i=0; i<changes.size; ++i) {
-    value = scope[changes[i]].get_min();
-
+    culprit = changes[i];
+    value = scope[culprit].get_min();
+    
 #ifdef _DEBUG_CLIQUENOTEQUAL
     std::cout << "react to " << scope[changes[i]] << "=" << value << std::endl; 
     std::cout << "  check pairs of recently assigned vars: " << std::endl;
@@ -13028,6 +13908,8 @@ Mistral::PropagationOutcome Mistral::ConstraintCliqueNotEqual::propagate()
 #ifdef _DEBUG_CLIQUENOTEQUAL
 	std::cout << "FAIL!" << std::endl;
 #endif
+
+	//std::cout << "a " << culprit << std::endl;
 	return FAILURE(changes[j]);
       } 
 #ifdef _DEBUG_CLIQUENOTEQUAL
@@ -13042,6 +13924,7 @@ Mistral::PropagationOutcome Mistral::ConstraintCliqueNotEqual::propagate()
     // processing this loop, we do it backward
     for(j=n; j; --j) {
       active_var = active[j-1];
+
       if(active_var != changes[i]) {
 
 #ifdef _DEBUG_CLIQUENOTEQUAL
@@ -13049,18 +13932,25 @@ Mistral::PropagationOutcome Mistral::ConstraintCliqueNotEqual::propagate()
 #endif
 	
 	evt = scope[active_var].remove(value);
+
+#ifdef _DEBUG_CLIQUENOTEQUAL
+	std::cout << event2str(evt) << " ";
+#endif
+
+
 	if(evt == FAIL_EVENT) {
 #ifdef _DEBUG_CLIQUENOTEQUAL
 	  std::cout << "FAIL!" << std::endl;
 #endif
 	  //assigned.clear();
+	  //std::cout << "b " << culprit << std::endl;
 	  return FAILURE(active_var);
 	} else if(ASSIGNED(evt)) {
 	  //assigned.add(active_var);
 	  active.reversible_remove(active_var);
 	}
 #ifdef _DEBUG_CLIQUENOTEQUAL
-	else std::cout << "OK!" << std::endl;
+	else std::cout << "OK! " << scope[active_var].get_domain() << std::endl;
 #endif
       }
     }
@@ -13073,7 +13963,9 @@ Mistral::PropagationOutcome Mistral::ConstraintCliqueNotEqual::propagate()
 
   while(m < n) {
     for(i=m; i<n; ++i) {
-      value = scope[active[i]].get_min();
+      culprit = active[i];
+      value = scope[culprit].get_min();
+
 #ifdef _DEBUG_CLIQUENOTEQUAL
       std::cout << "rreact to " << scope[active[i]] << "=" << value << std::endl; 
       std::cout << "  check pairs of recently assigned vars: " << std::endl;
@@ -13086,6 +13978,7 @@ Mistral::PropagationOutcome Mistral::ConstraintCliqueNotEqual::propagate()
 #ifdef _DEBUG_CLIQUENOTEQUAL
 	  std::cout << "FAIL!" << std::endl;
 #endif
+	  //std::cout << "c " << culprit << std::endl;
 	  return FAILURE(active[j]);
 	}
 #ifdef _DEBUG_CLIQUENOTEQUAL
@@ -13099,17 +13992,28 @@ Mistral::PropagationOutcome Mistral::ConstraintCliqueNotEqual::propagate()
 
       for(j=m; j; --j) {
 	active_var = active[j-1];
+	
 #ifdef _DEBUG_CLIQUENOTEQUAL
 	std::cout << "    " << scope[active_var] << "-" << value << " ";
 #endif
-	if(scope[active_var].remove(value) == FAIL_EVENT) {
+	evt = scope[active_var].remove(value);
+
 #ifdef _DEBUG_CLIQUENOTEQUAL
-	std::cout << "FAIL!" << std::endl;
+	std::cout << event2str(evt) << " ";
 #endif
+
+	if(evt == FAIL_EVENT) {
+#ifdef _DEBUG_CLIQUENOTEQUAL
+	  std::cout << "FAIL!" << std::endl;
+#endif
+	  //std::cout << "d " << culprit << std::endl;
 	  return FAILURE(active_var);
+	} else if(ASSIGNED(evt)) {
+	  //assigned.add(active_var);
+	  active.reversible_remove(active_var);
 	}
 #ifdef _DEBUG_CLIQUENOTEQUAL
-	else std::cout << "OK!" << std::endl;
+	else std::cout << "OK! " << scope[active_var].get_domain() << std::endl;
 #endif
       }
     }
@@ -13138,6 +14042,35 @@ std::ostream& Mistral::ConstraintCliqueNotEqual::display(std::ostream& os) const
   os << ")" ; //<< events << " " << event_type;
   return os;
 }
+
+#ifdef _CNE_WC
+void Mistral::ConstraintCliqueNotEqual::weight_conflict(double unit, Vector<double>& weights)  {
+  // std::cout << std::endl << "WEIGHT AFTER FAILURE ON CLIQUENOTEQUAL " << get_solver()->prev_wiped_idx << " <> " << culprit << "\n";
+  // std::cout << scope[get_solver()->prev_wiped_idx] << " in " << scope[get_solver()->prev_wiped_idx].get_domain() 
+  // 	    << " == " << scope[culprit] << " in " << scope[culprit].get_domain() << std::endl;
+
+  // for(int i=0; i<scope.size; ++i) {
+  //   weights[scope[i].id()] += unit;
+  // }
+
+  int idx1 = scope[get_solver()->prev_wiped_idx].id();
+  int idx2 = scope[culprit].id();
+
+  if(idx1>=0)
+    weights[idx1] += unit
+#ifdef _DIV_ARITY
+	    / 2.0
+#endif
+;
+  if(idx2>=0)
+    weights[idx2] += unit
+#ifdef _DIV_ARITY
+	    / 2.0
+#endif
+;
+  
+}
+#endif
 
 
 /**********************************************
@@ -14557,7 +15490,15 @@ int Mistral::ConstraintAllDiff::filterlower()
     if (--d[z] == 0)
       t[z = pathmax(t, t[z]=z+1)] = j;
     pathset(t, x+1, z, z); // path compression
-    if (d[z] < bounds[z]-bounds[y]) return INCONSISTENT; // no solution
+    if (d[z] < bounds[z]-bounds[y]) {
+
+      expl_note = 2*i;      
+      // print_structs();
+      // std::cout << "MAXSORTED " << i << " " << expl_note << std::endl;
+
+
+      return INCONSISTENT; // no solution
+    }
     if (h[x] > x) {
       maxsorted[i]->min = bounds[w = pathmax(h, h[x])];
       pathset(h, x, w, w); // path compression
@@ -14588,7 +15529,14 @@ int Mistral::ConstraintAllDiff::filterupper()
     if (--d[z] == 0)
       t[z = pathmin(t, t[z]=z-1)] = j;
     pathset(t, x-1, z, z);
-    if (d[z] < bounds[y]-bounds[z]) return INCONSISTENT; // no solution
+    if (d[z] < bounds[y]-bounds[z]) {
+
+      expl_note = 1+(2*i);
+      // print_structs();
+      // std::cout << "MINSORTED " << i << " " << expl_note << std::endl;
+
+      return INCONSISTENT; // no solution
+    } 
     if (h[x] < x) {
       minsorted[i]->max = bounds[w = pathmin(h, h[x])] - 1;
       pathset(h, x, w, w);
@@ -14705,8 +15653,8 @@ Mistral::PropagationOutcome Mistral::ConstraintAllDiff::propagate()
     if( (status_lower == CHANGES) || (status_upper == CHANGES) ) {
       i = 0;
       while (i < scope.size) {
-	if( scope[i].set_min( iv[i].min ) == FAIL_EVENT )  { return FAILURE(i); }
-	if( scope[i].set_max( iv[i].max ) == FAIL_EVENT )  { return FAILURE(i); }
+	if( scope[i].set_min( iv[i].min ) == FAIL_EVENT )  { expl_note = -(i+1); return FAILURE(i); }
+	if( scope[i].set_max( iv[i].max ) == FAIL_EVENT )  { expl_note = -(i+1); return FAILURE(i); }
 	i++;
       }
     }  
@@ -14731,6 +15679,802 @@ std::ostream& Mistral::ConstraintAllDiff::display(std::ostream& os) const {
   os << ")" ;
   return os;
 }
+
+#ifdef _ALLDIFF_WC
+void Mistral::ConstraintAllDiff::weight_conflict(double unit, Vector<double>& weights)  {
+  //std::cout << "\nWEIGHT AFTER FAILURE ON ALLDIFF " << expl_note << "\n";
+
+
+  
+  int rank; // = expl_note/2;
+  int l; // = minsorted[0]->min;     
+  int u; // = maxsorted[scope.size-1]->max;
+  int idx;
+  double w = unit;
+  other_bounds.clear();
+
+  if(expl_note>=0) {
+    rank = expl_note/2;
+
+    if(expl_note&1) {
+
+      //std::cout << "MINSORTED!\n";
+
+
+      l = minsorted[rank]->min;
+      for(int i=rank; i<scope.size; ++i) {
+	other_bounds.push_back(minsorted[i]->max);
+      }
+      sort(other_bounds.begin(), other_bounds.end());
+
+      for(int i=0; i<=rank; ++i) {
+	u = other_bounds[i];
+	if(u-l < i)
+	  break;
+      }
+    } else {
+
+      //std::cout << "MAXSORTED!\n";
+
+      u = maxsorted[rank]->max;
+      for(int i=0; i<=rank; ++i) {
+	other_bounds.push_back(maxsorted[i]->min);
+	//std::cout << " " << maxsorted[i]->min ;
+      }
+      //std::cout << std::endl;
+
+      sort(other_bounds.begin(), other_bounds.end());
+      // for(int i=0; i<=rank; ++i) {
+      //   std::cout << " " << other_bounds[rank-i] ;
+      // }
+      // std::cout << std::endl;
+
+      for(int i=0; i<=rank; ++i) {
+	l = other_bounds[rank-i];
+	if(u-l < i)
+	  break;
+	//std::cout << "[" << l << ".." << u << "] is ok\n";
+      }
+    }
+
+
+#ifdef _DIV_ARITY
+    int size_conflict = 0;
+    for(int i=0; i<scope.size; ++i) 
+      if(iv[i].min>=l && iv[i].max<=u) ++size_conflict;
+    w /= (double)size_conflict;
+#endif
+
+    for(int i=0; i<scope.size; ++i) {
+      //std::cout << scope[i].get_domain() << std::endl;
+      if(iv[i].min>=l && iv[i].max<=u) {
+	//std::cout << " " << scope[i].id();
+	idx = scope[i].id();
+	if(idx>=0) weights[idx] += w;
+      }
+    }
+    
+  } else {
+    
+    // TODO: this thing is not "correct" (we don't care it's a heuristic, but still)
+
+    rank = -1-expl_note;
+    l = scope[rank].get_min();
+    u = scope[rank].get_max();
+    
+#ifdef _DIV_ARITY
+    int size_conflict = 0;
+    for(int i=0; i<scope.size; ++i)
+      if(iv[i].min<=u && iv[i].max>=l) ++size_conflict;
+    w /= (double)size_conflict;
+#endif
+    
+    for(int i=0; i<scope.size; ++i) {
+      if(iv[i].min<=u && iv[i].max>=l) {
+	idx = scope[i].id();
+	if(idx>=0) weights[idx] += w;
+      }
+    }
+    
+  }
+  
+
+  //std::cout << "the Hall interval is  [" << l << ".." << u << "]\n";
+
+
+
+  //std::cout << std::endl;
+
+}
+#endif
+
+void Mistral::ConstraintAllDiff::print_structs() {
+  
+
+
+  std::cout << std::endl;
+  for(int i=0; i<scope.size; ++i) {
+    std::cout << i << " [" 
+	      << minsorted[i]->min << ".." << minsorted[i]->max << "] ["
+	      << maxsorted[i]->min << ".." << maxsorted[i]->max << "] \n";
+  }
+  // for(int i=0; i<2*scope.size+2; ++i) {
+  //   std::cout << i << " bounds=" << bounds[i] << " t=" << t[i] << " d=" << d[i] << " h=" << h[i] << std::endl; 
+  // }
+
+}
+
+
+//#define _DEBUG_VERTEXCOVER 0
+
+Mistral::PredicateVertexCover::PredicateVertexCover(Mistral::Vector< Variable >& scp, Graph& g) 
+: _G(g), GlobalConstraint(scp) { 	
+	priority = 1; 
+}
+
+Mistral::PredicateVertexCover::~PredicateVertexCover() {
+#ifdef _DEBUG_MEMORY
+  std::cout << "c delete vertex cover predicate" << std::endl;
+#endif
+}
+
+void Mistral::PredicateVertexCover::initialise() {
+  ConstraintImplementation::initialise();
+  for(unsigned int i=0; i<scope.size-1; ++i) {
+    trigger_on(_RANGE_, scope[i]);
+  }
+  trigger_on(_VALUE_, scope[scope.size-1]);
+  GlobalConstraint::initialise();
+}
+
+int Mistral::PredicateVertexCover::check( const int* sol ) const {
+	
+#ifdef _DEBUG_VERTEXCOVER
+	if(_DEBUG_VERTEXCOVER>1) {
+	std::cout << "check {";
+	for(int i=0; i<scope.size-1; ++i) {
+		if(sol[i]) std::cout << " " << i;
+	}
+	std::cout << " } " ;
+}
+#endif
+	
+	bool covered = true;
+	int i, N = scope.size-1;
+	int count = sol[N];
+	for(int x=0; count>=0 && covered && x<N; ++x) {
+		if(!sol[x]) {
+			i = _G.neighbor[x].size;
+			while(covered && i--) {
+				covered = sol[_G.neighbor[x][i]];
+			}
+		} else --count;
+	}
+	
+#ifdef _DEBUG_VERTEXCOVER
+	if(_DEBUG_VERTEXCOVER>1) {
+	if(covered && count>=0) {
+		std::cout << "ok!" << std::endl;
+	} else {
+		std::cout << "NO!" << std::endl;
+	}
+}
+#endif
+	
+	return !covered || count<0;
+}
+
+
+Mistral::PropagationOutcome Mistral::PredicateVertexCover::propagate() {
+
+  PropagationOutcome wiped = CONSISTENT;
+  int var;
+  Event evt;
+
+
+#ifdef _DEBUG_VERTEXCOVER
+  
+  for(int i=0; i<changes.size; ++i) {
+    var = changes[i];
+    evt = event_type[var];
+
+	std::cout << " -change: " << scope[var] <<  " in " << scope[var].get_domain() << " ("<< event2str(evt) << ")" << std::endl;
+    
+  }	
+  
+#endif
+  
+  wiped = GlobalConstraint::propagate();
+
+  return wiped;
+}
+
+std::ostream& Mistral::PredicateVertexCover::display(std::ostream& os) const {
+  os << scope.back() << ":" << scope.back().get_domain() << " == | vertex cover(G) = " << scope[0]/*.get_var()*/ << ":" << scope[0].get_domain();
+  for(unsigned int i=1; i<scope.size-1; ++i) {
+    os << ", " << scope[i]/*.get_var()*/ << ":" << scope[i].get_domain();
+  }
+  os << "|";
+  return os;
+}
+
+
+
+
+#define _DEBUG_FOOTRULE true
+#define _DEBUG_FRDP true
+#define _SUM_ONLY 
+
+Mistral::PredicateFootrule::PredicateFootrule(Mistral::Vector< Variable >& scp) 
+: GlobalConstraint(scp) { 	
+	priority = 1;
+	N = scope.size/2;
+	uncorrelated_distance = N*N/4;
+	init_prop = true;
+}
+
+Mistral::PredicateFootrule::~PredicateFootrule() {
+#ifdef _DEBUG_MEMORY
+  std::cout << "c delete footrule predicate" << std::endl;
+#endif
+  
+  delete [] values;
+}
+
+
+// |X - N^/4| = 
+
+void Mistral::PredicateFootrule::initialise() {
+  ConstraintImplementation::initialise();
+  for(unsigned int i=0; i<scope.size-1; ++i) {
+    trigger_on(_DOMAIN_, scope[i]);
+  }
+  trigger_on(_DOMAIN_, scope[scope.size-1]);
+  GlobalConstraint::initialise();
+    
+  int dmax = std::min(scope[scope.size-1].get_max(), uncorrelated_distance*2);
+  
+  util_bitset.initialise(0, N-1, BitSet::empt);
+  util_stack.initialise(0, N-1, N, false);
+  
+  values      = new int[N];
+  state       = new IntStack[N+1];
+  distance    = new IntStack[N];
+  switness    = new int*[N];
+  twitness[0] = new int*[N];
+  twitness[1] = new int*[N];
+  
+  state[0].initialise(0, 0, 1, true);
+  for(int i=0; i<N; ++i) {
+	  state[i+1].initialise(0, dmax, dmax+1, false);
+	  distance[i].initialise(0, N-1, N, false);
+	  twitness[0][i] = new int[N-1];
+	  twitness[1][i] = new int[N-1];
+	  switness   [i] = new int[N-1];
+  }
+	
+#ifdef _CHECKED_MODE
+	domains = new IntStack[2*N];
+	for(int i=0; i<2*N; ++i) {
+		domains[i].initialise(scope[i].get_min(), scope[i].get_max(), scope[i].get_max()-scope[i].get_min()+1, false);
+		int val, vnxt = scope[i];
+	}
+#endif
+	
+    
+}
+
+
+int Mistral::PredicateFootrule::max_md(const int n, const int k) const {
+	// return the maximum manhattan distance over k coordinates of 2 n-permutations
+	int chk = (int)(ceil((double)k/2.0));
+	return k*n-(chk*chk)-(k%2 ? 0 : chk);
+}
+
+int Mistral::PredicateFootrule::check( const int* sol ) const {
+	
+#ifdef _DEBUG_FRCHECK
+	if(_DEBUG_FRCHECK>1) {
+	std::cout << "check {";
+	for(int i=0; i<scope.size-1; ++i) {
+		if(sol[i]) std::cout << " " << i;
+	}
+	std::cout << " } " ;
+}
+#endif
+		
+
+	int manhattan_distance = 0, repeat=false;
+	std::fill(values, values+N, 0);
+	
+	for(int i=0;
+#ifndef _SUM_ONLY
+	!repeat && 
+#endif
+															i<N; ++i) {
+		manhattan_distance += abs(sol[i]-sol[N+i]);
+#ifndef _SUM_ONLY
+		if(values[sol[i]]&1 || values[sol[N+i]]&2) repeat = true;
+		else {
+			values[sol[i]]   |= 1;
+			values[sol[N+i]] |= 2;
+		}
+#endif
+	}
+	
+	
+#ifdef _DEBUG_FRCHECK
+	if(_DEBUG_FRCHECK>1) {
+	if(!repeat && abs(manhattan_distance-uncorrelated_distance)==sol[scope.size-1]) {
+		std::cout << "ok!" << std::endl;
+	} else {
+		std::cout << "NO!" << std::endl;
+	}
+}
+#endif
+	
+	return 
+#ifndef _SUM_ONLY
+		repeat || 
+#endif
+		abs(manhattan_distance-uncorrelated_distance)!=sol[scope.size-1];
+}
+
+
+//void used_values
+Mistral::PropagationOutcome Mistral::PredicateFootrule::prune_from_transitions(const int i) {
+	PropagationOutcome wiped = CONSISTENT;
+	
+#ifdef _DEBUG_FRDP
+	if(_DEBUG_FRDP) {
+		std::cout << "look for inconsistent values in " << scope[i] << " and " << scope[N+i] << " in " 
+			<< scope[i].get_domain() << " x " << scope[N+i].get_domain() 
+				<< "\n   because the only possible transitions are " << util_stack << std::endl;
+	}
+#endif
+	
+	
+	int val, vnxt = scope[i].get_min(), not_supported;
+	do {
+		val = vnxt;
+		
+#ifdef _DEBUG_FRDP
+		if(_DEBUG_FRDP) {
+			std::cout <<  "look for a support to " << scope[i] << "=" << val << "\n";
+		}
+#endif	
+		not_supported = true;
+		for(int j=0; not_supported && j<util_stack.size; ++j) {
+			
+#ifdef _DEBUG_FRDP
+			if(_DEBUG_FRDP) {
+				std::cout << "  -transition " << util_stack[j] << "?";
+			}
+#endif
+			if(scope[i+N].contain(abs(util_stack[j]-val)) || scope[i+N].contain(abs(util_stack[j]+val))) {
+#ifdef _DEBUG_FRDP
+				if(_DEBUG_FRDP) {
+					std::cout << " yes b/c " << scope[N+i].get_domain() << " contains " << abs(util_stack[j]-val) << " or " << abs(util_stack[j]+val) << std::endl;
+				}
+#endif
+				not_supported = false;
+			} else {
+#ifdef _DEBUG_FRDP
+				if(_DEBUG_FRDP) {
+					std::cout << " no b/c " << scope[N+i].get_domain() << " does not contain " << abs(util_stack[j]-val) << " nor " << abs(util_stack[j]+val) << std::endl;
+				}
+#endif
+			}
+		}
+		if(not_supported) {
+#ifdef _DEBUG_FRDP
+			if(_DEBUG_FRDP) {
+				std::cout << "  => remove " << val << " from " << scope[i].get_domain() << std::endl;
+			}
+#endif
+			if(FAILED(scope[i].remove(val))) wiped = FAILURE(i);
+		}	
+		vnxt = scope[i].next(val);
+	} while(val != vnxt && IS_OK(wiped));
+	
+	
+	if(IS_OK(wiped)) {
+		vnxt = scope[N+i].get_min();
+		do {
+			val = vnxt;
+			
+#ifdef _DEBUG_FRDP
+			if(_DEBUG_FRDP) {
+				std::cout <<  "look for a support to " << scope[N+i] << "=" << val << "\n";
+			}
+#endif	
+			
+			not_supported = true;
+			for(int j=0; not_supported && j<util_stack.size; ++j) {
+				
+#ifdef _DEBUG_FRDP
+				if(_DEBUG_FRDP) {
+					std::cout << "  -transition " << util_stack[j] << "?";
+				}
+#endif
+				
+				if(scope[i].contain(abs(util_stack[j]-val)) || scope[i].contain(abs(util_stack[j]+val))) {
+					
+#ifdef _DEBUG_FRDP
+					if(_DEBUG_FRDP) {
+						std::cout << " yes b/c " << scope[i].get_domain() << " contains " << abs(util_stack[j]-val) << " or " << abs(util_stack[j]+val) << std::endl;
+					}
+#endif
+								
+					not_supported = false;
+				}  else {
+#ifdef _DEBUG_FRDP
+					if(_DEBUG_FRDP) {
+						std::cout << " no b/c " << scope[i].get_domain() << " does not contain " << abs(util_stack[j]-val) << " nor " << abs(util_stack[j]+val) << std::endl;
+					}
+#endif
+				}
+			}
+			if(not_supported) {
+				
+#ifdef _DEBUG_FRDP
+				if(_DEBUG_FRDP) {
+					std::cout << "  => remove " << val << " from " << scope[N+i].get_domain() << std::endl;
+				}
+#endif
+				
+				if(FAILED(scope[N+i].remove(val))) wiped = FAILURE(N+i);
+			}	
+			vnxt = scope[N+i].next(val);
+		} while(val != vnxt && IS_OK(wiped));
+	}
+
+	return wiped;
+}
+
+Mistral::PropagationOutcome Mistral::PredicateFootrule::compute_DP_from_scratch() {
+	PropagationOutcome wiped = CONSISTENT;
+	
+	int v1, v1n, v2, v2n, d, ns, idx;
+	
+	
+	// for(int i=1; i<10; ++i) {
+	// 	std::cout << max_md(10, i) << std::endl;
+	//
+	// }
+	// exit(1);
+	
+#ifdef _DEBUG_FRDP
+	if(_DEBUG_FRDP) {
+		std::cout << get_solver()->statistics.num_propagations << " compute DP from scratch on:\n";
+		for(int i=0; i<N; ++i) {
+			std::cout << " " << std::setw(10) << scope[i].get_domain() ;
+		}
+		std::cout << std::endl;
+		for(int i=0; i<N; ++i) {
+			std::cout << " " << std::setw(10) << scope[N+i].get_domain() ;
+		}
+		//if(get_solver()->statistics.num_propagations==8) exit(1);
+		
+		std::cout << std::endl << "compute final state from the domain of " << scope.back() << ": " << scope.back().get_domain() << std::endl;
+	}
+#endif
+	
+
+	v1n = scope.back().get_min();
+	do {
+		v1 = v1n;
+				
+		ns = uncorrelated_distance+v1;
+		if(!(ns%2)) {
+			if(!state[N].contain(ns)) {
+				state[N].add(ns);
+			}
+			if(v1) {
+				ns = uncorrelated_distance-v1;
+				if(!state[N].contain(ns)) {
+					state[N].add(ns);
+				}
+			}
+		}
+		v1n = scope.back().next(v1);
+	} while(v1 != v1n);
+	
+	
+	
+#ifdef _DEBUG_FRDP
+	if(_DEBUG_FRDP) {
+		std::cout << "   -> " << state[N] << std::endl;
+	}
+#endif
+	
+	int mu = scope.back().get_max();
+	int ub_md = uncorrelated_distance+mu;
+	int lb_md = uncorrelated_distance-mu;
+	
+	
+	// forward
+	for(int i=0; i<N; ++i) {
+		
+#ifdef _DEBUG_FRDP
+		if(_DEBUG_FRDP) {
+			std::cout << "compute transitions out of state " << i << std::endl;
+		}
+#endif
+	
+
+		v1n = scope[i].get_min();
+		do {
+			v1 = v1n;
+			v2n = scope[N+i].get_min();
+			do {
+				v2 = v2n;
+				d = abs(v2-v1);
+				if(!distance[i].contain(d)) {
+					twitness[0][i][d] = v1;
+					twitness[1][i][d] = v2;
+					distance[i].add(d);
+						
+#ifdef _DEBUG_FRDP
+					if(_DEBUG_FRDP) {
+						std::cout << "  +" << d << " (" << scope[i] << "=" << v1 << ", " << scope[i+N] << "=" << v2 << ")\n";
+					}
+#endif
+					
+				}
+				v2n = scope[N+i].next(v2);
+			} while(v2 != v2n);
+			v1n = scope[i].next(v1);
+		} while(v1 != v1n);
+		
+		
+		//if(i<N-1) {
+			
+#ifdef _DEBUG_FRDP
+		if(_DEBUG_FRDP) {
+			std::cout << "compute state " << (i+1) << std::endl;
+		}
+#endif
+
+		ns = 0;
+		for(int s=0; s<state[i].size; ++s) {
+			for(int t=0; t<distance[i].size; ++t) {
+				d = state[i][s]+distance[i][t];
+				
+				if(d<=ub_md && d+max_md(N,N-i-1)>=lb_md) {
+				
+					if(i<N-1) {
+						if(!state[i+1].contain(d)) {
+							//switness[i][ns]
+							state[i+1].add(d);
+						
+						
+#ifdef _DEBUG_FRDP
+							if(_DEBUG_FRDP) {
+								std::cout << "  +" << d << " (" << state[i][s] << "+" << distance[i][t] << ")\n";
+							}
+#endif
+						
+						}
+					} else {
+						idx = state[N].get_index(d);
+						if(idx < state[N].size && idx >= ns) {
+							if(idx>ns) state[N].set(d,ns);
+							++ns;
+						
+#ifdef _DEBUG_FRDP
+							if(_DEBUG_FRDP) {
+								std::cout << "  ¬" << d << " (" << state[i][s] << "+" << distance[i][t] << " & |"
+									<< d << "-" << uncorrelated_distance << "| in " << scope.back().get_domain() << ")\n";
+							}
+#endif
+						
+						}
+					}
+				}
+			}
+		}
+		if(i==N-1) {
+			state[N].size = ns;
+#ifdef _DEBUG_FRDP
+			if(_DEBUG_FRDP) {
+				std::cout << "final state = " << state[N] << std::endl;
+			}
+#endif
+						
+		}
+	}
+	
+#ifdef _DEBUG_FRDP
+	if(_DEBUG_FRDP) {
+		print_automaton();
+		std::cout << std::endl << "do the backward pass\n";
+	}
+#endif
+	
+	// backward
+	
+	bool utra = false;
+	
+	for(int i=N; i>0; --i) {
+		
+#ifdef _DEBUG_FRDP
+		if(_DEBUG_FRDP) {
+			std::cout << "compute state " << (i-1) << std::endl;
+		}
+#endif
+		
+		ns = 0;
+		util_stack.clear();
+		for(int t=0; t<distance[i-1].size; ++t) util_stack.add(distance[i-1][t]);
+		util_stack.clear();
+		for(int s=0; s<state[i].size; ++s) {
+			for(int t=0; t<distance[i-1].size; ++t) {
+				d = state[i][s]-distance[i-1][t];
+				idx = state[i-1].get_index(d);
+				if(idx < state[i-1].size) {
+					if(!util_stack.contain(distance[i-1][t])) util_stack.add(distance[i-1][t]);
+					
+					
+					if(idx >= ns) {
+						if(idx>ns)
+							state[i-1].set(d, ns);
+						++ns;
+						
+#ifdef _DEBUG_FRDP
+	if(_DEBUG_FRDP) {
+		std::cout << "  +" << d << " (" << state[i][s] << "-" << distance[i-1][t] << ")\n";
+	}
+#endif
+					}
+				}
+			}
+		}
+		state[i-1].size = ns;
+		
+		if(util_stack.size < distance[i-1].size) {
+			
+			wiped = prune_from_transitions(i-1);
+			
+			utra = true;
+		}
+		
+		
+		
+// #ifdef _DEBUG_FRDP
+// 	if(_DEBUG_FRDP) {
+//
+// 	}
+// #endif
+	}
+	
+#ifdef _DEBUG_FRDP
+	if(_DEBUG_FRDP) {
+		print_automaton();
+		std::cout << std::endl ;
+	}
+
+	
+	
+	if(utra) {
+		exit(1);
+	}
+#endif
+	
+	return wiped;	
+}
+
+void Mistral::PredicateFootrule::print_automaton() const {
+	for(int i=0; i<N; ++i) {
+		std::cout << "s" << std::left << std::setw(2) << (i+1) << " " << std::setw(30) << state[i].to_str() << " | "
+				  << "t   " << distance[i] << " = " << scope[i].get_domain() 
+				  << " x " << scope[N+i].get_domain() << std::endl;
+	}
+	std::cout << "s" << std::setw(2) << (N+1) << " " << state[N] << std::endl;
+}
+
+
+Mistral::PropagationOutcome Mistral::PredicateFootrule::initial_propagate() {
+	PropagationOutcome wiped = CONSISTENT;
+	
+	if(FAILED(scope.back().set_min(0))) {
+	  wiped = FAILURE(2*N);
+	} else if(FAILED(scope.back().set_max(uncorrelated_distance))) {
+	  wiped = FAILURE(2*N);
+	} else {	
+		int val, vnxt=scope.back().get_min();
+		do {	
+			val = vnxt;
+			
+			if((uncorrelated_distance+val)%2) {
+				if(FAILED(scope.back().remove(val))) 
+					wiped = FAILURE(2*N);
+			}
+			
+			vnxt = scope.back().next(val);
+		} while(IS_OK(wiped) && val != vnxt);
+		
+		wiped = compute_DP_from_scratch();
+	}
+	
+	//init_prop = false;
+	return wiped;
+}
+
+Mistral::PropagationOutcome Mistral::PredicateFootrule::propagate() {
+
+  PropagationOutcome wiped = (init_prop ? initial_propagate() : CONSISTENT);
+
+#ifdef _DEBUG_FOOTRULE
+	std::cout << std::endl << "=================================\n";
+  //print_automaton();
+  std::cout << std::endl;
+#endif  
+  
+  
+  int var;
+  Event evt;
+
+
+#ifdef _DEBUG_FOOTRULE
+  
+  for(int i=0; i<changes.size; ++i) {
+    var = changes[i];
+    evt = event_type[var];
+
+	std::cout << " -change: " << scope[var] <<  " in " << scope[var].get_domain() << " ("<< event2str(evt) << ")" << std::endl;
+    
+  }	
+  
+#endif
+  
+  // compute_DP_from_scratch();
+  // print_automaton();
+  // for(int i=0; i<N; ++i) {
+  // 	  state[i+1].clear();
+  // 	  distance[i].clear();
+  // }
+  // std::cout << std::endl;
+ 
+ 
+   //wiped = GlobalConstraint::propagate();
+   
+   
+   for(int i=0; i<N; ++i) {
+ 	  state[i+1].clear();
+ 	  distance[i].clear();
+   }
+   compute_DP_from_scratch();
+   for(int i=0; i<N; ++i) {
+ 	  state[i+1].clear();
+ 	  distance[i].clear();
+   }
+   //print_automaton();
+   //std::cout << std::endl;
+   
+   //exit(1);
+	 
+	 
+	 wiped = GlobalConstraint::propagate();
+
+  return wiped;
+}
+
+std::ostream& Mistral::PredicateFootrule::display(std::ostream& os) const {
+  os << scope.back() << ":" << scope.back().get_domain() << " == |Manhattan([" << scope[0]/*.get_var()*/ << ":" << scope[0].get_domain();
+  for(unsigned int i=1; i<N; ++i) {
+    os << ", " << scope[i]/*.get_var()*/ << ":" << scope[i].get_domain();
+  }
+  os << "] vs [" << scope[N]/*.get_var()*/ << ":" << scope[N].get_domain();
+  for(unsigned int i=1; i<N; ++i) {
+    os << ", " << scope[i+N]/*.get_var()*/ << ":" << scope[i+N].get_domain();
+  }
+  os << "]) - " << uncorrelated_distance << "|";
+  return os;
+}
+
+
+
 
 
 
@@ -15049,8 +16793,10 @@ void Mistral::PredicateMin::react_to(PropagationOutcome& wiped, const int change
     }
 #endif
     var = candidates.back();
-    if(IS_OK(wiped)) FILTER3(var, set_domain(scope[n]));
-    
+    if(IS_OK(wiped)) {
+      FILTER3(var, set_domain(scope[n]));
+    }
+
 #ifdef _DEBUG_MIN
     if(_DEBUG_MIN) {
       if(IS_OK(wiped)) {
@@ -15061,8 +16807,10 @@ void Mistral::PredicateMin::react_to(PropagationOutcome& wiped, const int change
     }
 #endif
 
-    if(IS_OK(wiped)) FILTER3(n, set_domain(scope[var]));
-    
+    if(IS_OK(wiped)) {
+      FILTER3(n, set_domain(scope[var]));
+    }
+
 #ifdef _DEBUG_MIN
     if(_DEBUG_MIN) {
       if(IS_OK(wiped)) {
@@ -15618,8 +17366,9 @@ void Mistral::PredicateMax::react_to(PropagationOutcome& wiped, const int change
     }
 #endif
     var = candidates.back();
-    if(IS_OK(wiped)) FILTER3(var, set_domain(scope[n]));
-
+    if(IS_OK(wiped)) {
+      FILTER3(var, set_domain(scope[n]));
+    }
 #ifdef _DEBUG_MAX
     if(_DEBUG_MAX) {
       if(IS_OK(wiped)) {
@@ -15630,8 +17379,9 @@ void Mistral::PredicateMax::react_to(PropagationOutcome& wiped, const int change
     }
 #endif
 
-    if(IS_OK(wiped)) FILTER3(n, set_domain(scope[var]));
-
+    if(IS_OK(wiped)) {
+      FILTER3(n, set_domain(scope[var]));
+    }
 #ifdef _DEBUG_MAX
     if(_DEBUG_MAX) { 
       if(IS_OK(wiped)) {

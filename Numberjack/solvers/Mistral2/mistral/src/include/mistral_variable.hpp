@@ -123,19 +123,19 @@ namespace Mistral {
     int size;
     BitSet values;
   
-    virtual std::ostream& display(std::ostream& os) const {
-      if(min == max-1) {
-	os << "[" << min << "," << max << "]";
-      } else if(values.table && (max-min) >= size
-		) {
-	os << values ; //<< " [" << min << ".." << max << "] (" << size << ")";
-      } else if(min==max){
-	os << min;
-      } else {
-	os << "[" << min << ".." << max << "]";
-      }
-      return os;
-    }
+	virtual std::ostream& display(std::ostream& os) const {
+		//os << "[" << min << ".." << max << "] (" << size << ") ";
+		if(min == max-1) {
+			os << "[" << min << "," << max << "]";
+		} else if(values.table && (max-min) >= size) {
+			os << values ; //<< " [" << min << ".." << max << "] (" << size << ")";
+		} else if(min==max){
+			os << min;
+		} else {
+			os << "[" << min << ".." << max << "]";
+		}
+		return os;
+	}
   
   };
 
@@ -172,6 +172,7 @@ namespace Mistral {
       initialise(lb, ub);
     };
 
+    using VariableImplementation::initialise;
     virtual void initialise(const int lb, const int ub) {
       domain.initialise(lb, ub);
       initialise_trail();
@@ -1287,6 +1288,7 @@ namespace Mistral {
       initialise(lb, ub);
     };
 
+    using VariableImplementation::initialise;
     virtual void initialise(const int lb, const int ub) {
       min = lb;
       max = ub;
@@ -1580,8 +1582,9 @@ namespace Mistral {
     //     Variable(Vector< int >& values, const int type=DYN_VAR);
     Variable(const int lo, const int up, const int type=EXPRESSION);
     Variable(const Vector< int >& values, const int type=EXPRESSION);
-    Variable(const int lo, const int up, 
-	     const Vector< int >& values, const int type=EXPRESSION);
+	Variable(const IntStack& values, const int type=EXPRESSION);
+	Variable(const int* values, const int nvalues, const int type=EXPRESSION);
+    Variable(const int lo, const int up, const Vector< int >& values, const int type=EXPRESSION);
     Variable(Variable X, bool h);
     Variable(const Variable& X);
     //Variable(const int lo, const int up, BitSet& values, const int type=EXPRESSION);
@@ -1623,7 +1626,7 @@ namespace Mistral {
     bool is_expression() { return domain_type == EXPRESSION; }
     bool is_initialised() const { return domain_type != CONST_VAR && variable->is_initialised(); }
     bool is_set_var(); //{ return domain_type == EXPRESSION && expression->is_set(); }
- 
+    bool same_as(Variable& x) const { return domain_type==x.domain_type && variable==x.variable; }
 
     Variable operator+(Variable);
     Variable operator+(const int);
@@ -2031,6 +2034,9 @@ namespace Mistral {
 
     DeltaBitset( VariableBitmap *x ) {
       initialise( x );
+    }
+
+    virtual ~DeltaBitset( ) {
     }
 
     virtual void initialise( VariableBitmap *x ) {
@@ -2466,6 +2472,19 @@ namespace Mistral {
     virtual const char* get_name() const;
 
   };
+  
+  class SquareExpression : public Expression {
+
+  public:
+    SquareExpression(Variable X);
+    virtual ~SquareExpression();
+
+    virtual void extract_constraint(Solver*);
+    virtual void extract_variable(Solver*);
+    virtual void extract_predicate(Solver*);
+    virtual const char* get_name() const;
+
+  };
 
   class ModConstantExpression : public Expression {
 
@@ -2768,6 +2787,45 @@ namespace Mistral {
   Variable Occurrences(Vector< Variable >& args, const int first, const int last, const int* lb, const int* ub, const int ct=BOUND_CONSISTENCY);
 
 
+
+  class VertexCoverExpression : public Expression {
+
+  public:
+	  
+	  Graph _G;
+	  
+
+    VertexCoverExpression(Vector< Variable >& args, const Graph& g);
+    virtual ~VertexCoverExpression();
+
+    virtual void extract_constraint(Solver*);
+    virtual void extract_variable(Solver*);
+    virtual void extract_predicate(Solver*);
+    virtual const char* get_name() const;
+
+  };
+
+  Variable VertexCover(Vector< Variable >& args, const Graph& g);
+  
+  
+  
+  class FootruleExpression : public Expression {
+
+  public:
+
+    FootruleExpression(Vector< Variable >& args);
+    virtual ~FootruleExpression();
+
+    virtual void extract_constraint(Solver*);
+    virtual void extract_variable(Solver*);
+    virtual void extract_predicate(Solver*);
+    virtual const char* get_name() const;
+
+  };
+
+  Variable Footrule(Vector< Variable >& arg1, Vector< Variable >& arg2);
+
+
   // class CardinalityExpression : public Expression {
   //   // count the number of occurrences 
 
@@ -2958,6 +3016,7 @@ namespace Mistral {
     BoolSumExpression(std::vector< Variable >& args, const std::vector< int >& w, const int l, const int u);
     virtual ~BoolSumExpression();
     void initialise_bounds();
+    void remove_duplicates_and_zeros();
 
     virtual void extract_constraint(Solver*);
     virtual void extract_variable(Solver*);
@@ -2991,6 +3050,8 @@ namespace Mistral {
     Vector< int > weight;
 
 
+    LinearExpression(Vector< Variable >& args, const int l, const int u, const int o);
+    LinearExpression(std::vector< Variable >& args, const int l, const int u, const int o);
     LinearExpression(Vector< Variable >& args, Vector< int >& wgt, const int l, const int u, const int o);
     LinearExpression(std::vector< Variable >& args, std::vector< int >& wgt, const int l, const int u, const int o);
     virtual ~LinearExpression();
@@ -3004,6 +3065,12 @@ namespace Mistral {
   };
 
   //Variable Sum(Vector< Variable >& args);
+  Variable Sum(Vector< Variable >& args, Variable T, const int o=0);
+  Variable Sum(std::vector< Variable >& args, Variable T, const int o=0);
+  Variable Sum(Vector< Variable >& args, const int l=-INFTY, const int u=INFTY, const int o=0);
+  Variable Sum(std::vector< Variable >& args, const int l=-INFTY, const int u=INFTY, const int o=0);
+
+
   Variable Sum(Vector< Variable >& args, Vector< int >& wgts, Variable T, const int o=0);
   Variable Sum(std::vector< Variable >& args, std::vector< int >& wgts, Variable T, const int o=0);
   Variable Sum(Vector< Variable >& args, Vector< int >& wgts, const int l=-INFTY, const int u=INFTY, const int o=0);
@@ -3317,6 +3384,7 @@ namespace Mistral {
 
     
     virtual const char* get_name() const;
+    using Expression::display;
     virtual std::ostream& display(std::ostream& os, const bool all=false) const;
     virtual int get_solution_int_value() const ;
     virtual std::string get_solution_str_value() const ;

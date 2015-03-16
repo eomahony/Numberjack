@@ -36,6 +36,31 @@
 #define __CONSTRAINT_HPP
 
 
+
+#define _ALLDIFF_WC
+#define _ELT_WC
+#define _CNE_WC
+
+//#define _DIV_ARITY
+
+//#define _DIV_WEIGHT
+
+#define _PWBS_WC
+#define _PWS_WC
+#define _CIWBSI_WC
+#define _CWBSI_WC
+#define _PBS_WC
+#define _CBSI_WC
+
+
+
+/*
+#define _PWS_WC_ALT
+#define _CWBSI_WC_ALT
+#define _CIWBSI_WC_ALT
+#define _PWBS_WC_ALT
+*/
+
 #define FILTER1( var, method )				    \
   event_type[(var)] = scope[(var)].method ;		     \
   if(event_type[(var)] == FAIL_EVENT) wiped = FAILURE(var);		\
@@ -342,6 +367,7 @@ namespace Mistral {
     virtual std::ostream& display(std::ostream&) const ;
     virtual std::string name() const { return "c"; }
     virtual bool is_clause() {return false;}
+    //virtual bool verify_state() = 0;
     //@}
   };
 
@@ -1793,6 +1819,34 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     }
 
 
+
+    virtual void weight_conflict(double unit, Vector<double>& weights) {
+      int idx;
+      double w = unit
+#ifdef _DIV_ARITY
+	    / (double)(scope.size)
+#endif
+      ;
+
+      for(int i=0; i<scope.size; ++i) {
+	idx = scope[i].id();
+
+	// std::cout << i << " " << idx << "/" << weights.size << std::endl;
+	// if(idx<0 || idx>weights.size) {
+	//   std::cout << this << std::endl;
+	//   std::cout << scope << std::endl;
+	//   std::cout << scope[i] << std::endl;
+	//   exit(1);
+	// }
+
+
+
+	if(idx>=0) // constants have negative ids
+	  weights[idx] += w;
+      }
+    }
+
+
     std::ostream& display(std::ostream& os) const;  
   };
 
@@ -2863,11 +2917,61 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
   };
 
 
+ /**********************************************
+  * Square Predicate
+  **********************************************/
+ /*! \class PredicateSquare
+   \brief  Truth value of a conjunction (!x0 <-> y)
+ */
+ class PredicateSquare : public BinaryConstraint
+ {
+
+ public:
+
+   /**@name Parameters*/
+   //@{  
+   //@}
+
+   /**@name Constructors*/
+   //@{
+   PredicateSquare() : BinaryConstraint() {}
+   PredicateSquare(Vector< Variable >& scp) 
+     : BinaryConstraint(scp) {  }
+   PredicateSquare(Variable x, Variable y) 
+     : BinaryConstraint(x,y) {  }
+   PredicateSquare(std::vector< Variable >& scp) 
+     : BinaryConstraint(scp) {  }
+   virtual Constraint clone() { return Constraint(new PredicateSquare(scope[0], scope[1])); }
+   virtual void initialise();
+   virtual void mark_domain();
+   virtual int idempotent() { return 1;}
+   virtual ~PredicateSquare() {}
+   //@}
+
+   /**@name Solving*/
+   //@{
+   virtual int check( const int* sol ) const { 
+     return((sol[0]*sol[0]) != sol[1]);
+   }
+   virtual PropagationOutcome propagate(const int changed_idx, const Event evt);
+   virtual PropagationOutcome propagate();
+   //virtual RewritingOutcome rewrite();
+   //@}
+
+   /**@name Miscellaneous*/
+   //@{  
+   virtual std::ostream& display(std::ostream&) const ;
+   virtual std::string name() const { return "^2"; }
+   //@}
+ };
+
+
+
   /**********************************************
    * Abs Predicate
    **********************************************/
   /*! \class PredicateAbs
-    \brief  Truth value of a conjunction (!x0 <-> y)
+    \brief  Absolute value of a variable
   */
   class PredicateAbs : public BinaryConstraint
   {
@@ -4008,6 +4112,9 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     virtual int pushed() { return 1;}
     //virtual bool absorb_negation(const int var) { return true; }
     virtual ~ConstraintBoolSumInterval();
+#ifdef _CBSI_WC
+    void weight_conflict(double unit, Vector<double>& weights);//  {
+#endif
     //@}
 
     /**@name Solving*/
@@ -4087,6 +4194,13 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     virtual int pushed() { return 1;}
     //virtual bool absorb_negation(const int var) { return true; }
     virtual ~ConstraintWeightedBoolSumInterval();
+#ifdef _CWBSI_WC
+    void weight_conflict(double unit, Vector<double>& weights);//  {
+#endif
+#ifdef _CWBSI_WC_ALT
+    void weight_conflict(double unit, Vector<double>& weights);//  {
+#endif
+
     //@}
 
 
@@ -4166,7 +4280,12 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     virtual ~ConstraintIncrementalWeightedBoolSumInterval();
     //@}
 
-
+#ifdef _CIWBSI_WC
+    void weight_conflict(double unit, Vector<double>& weights);//  {
+#endif
+#ifdef _CIWBSI_WC_ALT
+    void weight_conflict(double unit, Vector<double>& weights);//  {
+#endif
     virtual iterator get_reason_for(const Atom a, const int lvl, iterator& end);
     virtual void initialise_activity(double *lact, double *vact, double norm);
 
@@ -4241,6 +4360,12 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
 
     virtual void initialise_activity(double *lact, double *vact, double norm);
     virtual iterator get_reason_for(const Atom a, const int lvl, iterator& end);
+#ifdef _PWBS_WC
+    void weight_conflict(double unit, Vector<double>& weights);//  {
+#endif
+#ifdef _PWBS_WC_ALT
+    void weight_conflict(double unit, Vector<double>& weights);//  {
+#endif
 
     /**@name Solving*/
     //@{
@@ -4297,7 +4422,9 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     virtual ~PredicateBoolSum();
     //@}
 
-
+#ifdef _PBS_WC
+    void weight_conflict(double unit, Vector<double>& weights);//  {
+#endif
     virtual iterator get_reason_for(const Atom a, const int lvl, iterator& end);
 
     /**@name Solving*/
@@ -4366,7 +4493,13 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     virtual int pushed() { return 1;}
     virtual void initialise();
     virtual void mark_domain();
-    //@}
+#ifdef _PWS_WC
+    void weight_conflict(double unit, Vector<double>& weights);//  {
+#endif
+#ifdef _PWS_WC_ALT
+    void weight_conflict(double unit, Vector<double>& weights);//  {
+#endif
+//@}
 
     /**@name Solving*/
     //@{
@@ -4546,7 +4679,121 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     };
 
 
+   /**********************************************
+    * VertexCover Predicate
+    **********************************************/
+   /*! \class PredicateVertexCover
+     \brief  Predicate on the size of the vertex cover {X} of a graph G
+   */
+   class PredicateVertexCover : public GlobalConstraint {
 
+   public:
+     /**@name Parameters*/
+     //@{ 
+	 Graph _G;
+     //@}
+
+     /**@name Constructors*/
+     //@{
+     PredicateVertexCover(Vector< Variable >& scp, Graph& g);
+     virtual ~PredicateVertexCover();
+     virtual Constraint clone() { return Constraint(new PredicateVertexCover(scope,_G)); }
+     virtual int idempotent() { return 1;}
+     virtual int postponed() { return 1;}
+     virtual int pushed() { return 1;}
+     virtual void initialise();
+     //virtual void mark_domain();
+     //@}
+
+     /**@name Solving*/
+     //@{
+     virtual int check( const int* sol ) const ;
+     virtual PropagationOutcome propagate();
+     //@}
+
+     /**@name Miscellaneous*/
+     //@{  
+     virtual std::ostream& display(std::ostream&) const ;
+     virtual std::string name() const { return "|vertex cover|="; }
+     //@}
+ };
+ 
+ 
+  /**********************************************
+   * Footrule Predicate
+   **********************************************/
+  /*! \class PredicateFootrule
+    \brief  Predicate on the size of the vertex cover {X} of a graph G
+  */
+  class PredicateFootrule : public GlobalConstraint {
+
+  public:
+    /**@name Parameters*/
+    //@{ 
+  	int  N;
+  	int  uncorrelated_distance;
+  	int* values;
+	
+	
+	bool init_prop;
+	
+	// structure for the DP
+	
+	// state <=> value of the sum [N+1]
+	IntStack* state;
+	
+	// transition <=> manhattan distance value [N]
+	IntStack* distance;
+	
+	
+	// util bitset/intstacks
+	BitSet   util_bitset;
+	IntStack util_stack;
+	
+	
+	int **twitness[2];
+	int **switness;
+	
+	
+#ifdef _CHECKED_MODE
+	IntStack *domains;/////.....
+#endif
+	
+	
+	// for each transition
+	
+    //@}
+
+    /**@name Constructors*/
+    //@{
+    PredicateFootrule(Vector< Variable >& scp);
+    virtual ~PredicateFootrule();
+    virtual Constraint clone() { return Constraint(new PredicateFootrule(scope)); }
+    virtual int idempotent() { return 1;}
+    virtual int postponed() { return 1;}
+    virtual int pushed() { return 1;}
+    virtual void initialise();
+    //virtual void mark_domain();
+    //@}
+
+    /**@name Solving*/
+    //@{
+	int max_md(const int n, const int k) const;
+	PropagationOutcome prune_from_transitions(const int i);
+	PropagationOutcome compute_DP_from_scratch();
+	PropagationOutcome initial_propagate();
+    virtual int check( const int* sol ) const ;
+    virtual PropagationOutcome propagate();
+    //@}
+
+    /**@name Miscellaneous*/
+    //@{  
+	void print_automaton() const;
+    virtual std::ostream& display(std::ostream&) const ;
+    virtual std::string name() const { return "footrule="; }
+    //@}
+};
+ 
 
   /**********************************************
    * Min Predicate
@@ -4658,6 +4905,9 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     virtual int pushed() { return 1;}
     virtual void initialise();
     virtual void mark_domain();
+#ifdef _ELT_WC
+    void weight_conflict(double unit, Vector<double>& weights);//  {
+#endif
     //@}
 
     /**@name Solving*/
@@ -4701,6 +4951,7 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     virtual int pushed() { return 1;}
     virtual void initialise();
     virtual void mark_domain();
+    //void weight_conflict(double unit, Vector<double>& weights);//  {
     //@}
 
     /**@name Solving*/
@@ -4730,6 +4981,7 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
   public:
 
     //Vector<int> assigned;
+    int culprit;
     
     /**@name Constructors*/
     //@{
@@ -4760,6 +5012,15 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     virtual std::ostream& display(std::ostream&) const ;
     virtual std::string name() const { return "{=/=}"; }
     //@}
+#ifdef _CNE_WC
+    void weight_conflict(double unit, Vector<double>& weights);//  {
+#endif
+    //   std::cout << std::endl;
+    //   for(int i=0; i<scope.size; ++i) {
+    // 	std::cout << scope[i].get_domain() << std::endl;
+    // 	weights[scope[i].id()] += unit;
+    //   }
+    // }
     
   };
 
@@ -4797,6 +5058,25 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     int *bounds;  // bounds[1..nb] hold set of min & max in the niv intervals
                   // while bounds[0] and bounds[nb+1] allow sentinels
     int nb;
+
+    
+    int expl_note;
+    // used to store 
+    //  -- which interval order was used to find the Hall interval (least significant bit)
+    //  -- at which rank was is discovered (rest)
+    // When computing an explanation, suppose that it was when exploring the maxsorted intervals an at rank r
+    //  -> then maxsorted[r]->max is the max of the Hall interval AND it is a HI of the subset of variables whose rank is <= r
+    //     we then use the following array:
+    //Vector<int> count_bound;
+    std::vector<int> other_bounds;
+    // let m = maxsorted[r]->max
+    // for each pos s in the interval [0, m] we store how many times an interval finishing before or at m starts at s
+    // then, going from m toward 0, we compute how many of these intervals start at a pos s or before (call this b[s])
+    // IF s+b[s]>m+1 THEN [s, m] is a Hall interval
+    // if the Hall interval was found on minsorted intervals, then we do the same thing in reverse order
+    // i.e., in the interval [m, n-1]
+
+
     void sortit();
     int filterlower();
     int filterupper();
@@ -4835,6 +5115,12 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     virtual std::ostream& display(std::ostream&) const ;
     virtual std::string name() const { return "alldiff"; }
     //@}
+
+    void print_structs();
+
+#ifdef _ALLDIFF_WC
+    void weight_conflict(double unit, Vector<double>& weights);//  {
+#endif
   };
 
 

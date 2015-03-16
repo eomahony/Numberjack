@@ -8,7 +8,7 @@ from Numberjack import *
 
 
 def get_model(N):
-    queens = [Variable(N) for i in range(N)]
+    queens = VarArray(N, N)
     model = Model(
         AllDiff(queens),
         AllDiff([queens[i] + i for i in range(N)]),

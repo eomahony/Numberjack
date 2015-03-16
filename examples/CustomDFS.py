@@ -23,7 +23,8 @@ def binarydfs(solver, variables, variableselection=lexvar):
         print "  " * depth, s
 
     while not proven_infeasibility:
-        if solver.propagate():  # left branch
+        if solver.propagate():  # Propagate to a fixed point. Returns False if there was a conflict
+            # left branch
             log("Variable domains at depth %d:" % depth)
             for x in variables:
                 log(x)

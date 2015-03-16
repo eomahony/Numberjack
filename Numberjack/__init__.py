@@ -1,39 +1,5 @@
-##@mainpage Numberjack
-# @authors Eoin O'Mahony, Emmanuel Hebrard, Barry O'Sullivan, Barry Hurley, Kevin Leo, & Simon de Givry
-#
-# \section intro_sec What is Numberjack?
-#
-# Numberjack is a modelling package written in Python for constraint
-# programming. Python benefits from a large and active programming community,
-# Numberjack is therefore a perfect tool to embed CP technology into larger
-# applications. It is designed to support a number of underlying C/C++ solvers
-# seamlessly and efficiently. Currently, there are six available back-ends:
-# three mixed integer programming solvers (Gurobi, CPLEX, and SCIP), two
-# satisfiability solvers (MiniSat and Walksat), and a constraint programming
-# solver (Mistral).
-#
-# \section license_sec License:
-#
-#  Numberjack is a constraint satisfaction and optimisation library
-#  Copyright (C) 2009-2013 Cork Constraint Computation Center, UCC
-#
-#  This program is free software; you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation; either version 2 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with this program; if not, write to the Free Software
-#  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-#
-#  The authors can be contacted electronically at
-#  numberjack.support@gmail.com
+# Copyright 2009 - 2014 Insight Centre for Data Analytics, UCC
 
-#CHECK_VAR_EQUALITY = [True]
 
 UNSAT, SAT, UNKNOWN, LIMITOUT = 0, 1, 2, 3
 LUBY, GEOMETRIC = 0, 1
@@ -62,18 +28,21 @@ def flatten(x):
             result.append(el)
     return result
 
+
 def numeric(x):
     tx = type(x)
     return tx is int or tx is float
 
-"""
 
-Numberjack exceptions:
-
-"""
+# Numberjack exceptions:
 
 
 class ConstraintNotSupportedError(exceptions.Exception):
+    """
+    Raised if the solver being loaded does not support the constraint, and no
+    decomposition is available for the constraint. For example in the case of
+    loading a divison expression with a Mixed Integer Programming solver.
+    """
 
     def __init__(self, value, solver=None):
         self.value = value
@@ -84,6 +53,9 @@ class ConstraintNotSupportedError(exceptions.Exception):
 
 
 class UnsupportedSolverFunction(exceptions.Exception):
+    """
+    Raised if a solver does not support a particular API call.
+    """
 
     def __init__(self, solver, func_name, msg=""):
         self.solver = solver
@@ -95,6 +67,10 @@ class UnsupportedSolverFunction(exceptions.Exception):
 
 
 class InvalidEncodingException(exceptions.Exception):
+    """
+    Raised if an invalid encoding was specified, for example if no domain
+    encoding is turned on.
+    """
 
     def __init__(self, msg=""):
         self.msg = msg
@@ -104,6 +80,9 @@ class InvalidEncodingException(exceptions.Exception):
 
 
 class InvalidConstraintSpecification(exceptions.Exception):
+    """
+    Raised in the case of the invalid use of a constraint.
+    """
 
     def __init__(self, msg=""):
         self.msg = msg
@@ -113,6 +92,10 @@ class InvalidConstraintSpecification(exceptions.Exception):
 
 
 class ModelSizeError(exceptions.Exception):
+    """
+    Raised if the size of a model has grown excessively large when decomposing
+    some constraints for a solver.
+    """
 
     def __init__(self, value, solver=None):
         self.value = value
@@ -122,12 +105,7 @@ class ModelSizeError(exceptions.Exception):
         return "ERROR: Model decomposition size too big %s for solver %s." % (self.value, self.solver)
 
 
-"""
-
-Numberjack domain and expressions:
-
-"""
-
+# Numberjack domain and expressions:
 
 
 class Domain(list):
@@ -204,13 +182,12 @@ class Domain(list):
         return ret_str + '}'
 
 
-## Base Expression class from which everything inherits
-#
-#    All variables and constraints are expressions. Variables are
-#    just expressions where predicates extend the expression class to add
-#    more functionality.
-#
 class Expression(object):
+    """
+    Base class from which all expressions and variables inherit.
+
+    :param str operator: the name of this expression operator or variable name.
+    """
 
     def __init__(self, operator):
         #self.mod = None
@@ -221,29 +198,38 @@ class Expression(object):
         # model among different solvers
         self.var_list = []
         self.encoding = None
+        self.solver = None
 
     def __iter__(self):
         return self.get_domain()
 
     def get_solver(self):
+        """
+        Returns the solver with which this expression was last loaded.
+
+        :return: The last loaded solver, or `None` if it has not been loaded
+            anywhere.
+        :rtype: `NBJ_STD_Solver`
+        """
         if getattr(self, 'solver', False):
             return self.solver
         else:
             return None
 
-    ## Returns a string representing the initial domain of the expression
-    # @return String representation of original expression definition
-    #
-    #    This method returns a string representing the original definition
-    #    of the expression.
-    #
-    #    For example:
-    # \code
-    #    var1 = Variable(0, 10)
-    #    print var1.initial()
-    #    >>> x0 in {0..10}
-    # \endcode
     def initial(self):
+        """
+        Returns a string representing the initial domain of the expression. For
+        example:
+
+        .. code-block:: python
+
+            var1 = Variable(0, 10)
+            print var1.initial()
+            >>> x0 in {0..10}
+
+        :return: A String representation of original expression definition
+        :rtype: str
+        """
         output = self.name()
         if self.domain_ is None:
             output += ' in ' + str(Domain(self.lb, self.ub))
@@ -251,22 +237,20 @@ class Expression(object):
             output += ' in ' + str(Domain(self.domain_))
         return output
 
-    ## Returns a string representing the current domain of the expression
-    # @param solver Solver from which current expression domain will be sourced
-    # @return String representing of current expression domain
-    #
-    #    domain(self, solver=None) :- Returns a string representing the current domain
-    #    of the expression in the solver specified. If no solver is specified then
-    #    the returned string represents the domain of the expression in the solver
-    #    that has most recently loaded the expression.
-    #
     def domain(self, solver=None):
-        output = self.name() + ' in ' + str(self.get_domain())
+        """
+        Returns a string representing the current domain of the expression.
+
+        :param `NBJ_STD_Solver` solver: If specified, the solver for
+            which this expression has been loaded. If not specified, the solver
+            that has most recenlty loaded the expression will be used.
+        """
+        output = self.name() + ' in ' + str(self.get_domain(solver=solver))
         return output
 
     ## Returns a string containing the value of the expression
     # @param solver Solver from which expression solution will be sourced
-    # @return String represent-ion of expression solution
+    # @return String representation of expression solution
     #
     #    solution(self, solver=None) :- Returns a string representing the current solution
     #    of the expression in the solver specified. If no solver is specified then
@@ -274,13 +258,26 @@ class Expression(object):
     #    that has most recently loaded and solved the expression.
     #
     def solution(self, solver=None):
+        """
+        .. deprecated:: 1.1
+           Instead you should use :func:`get_value`, this function is equivalent
+           to calling :func:`str` on that.
+
+        Returns a string containing the solution value of the expression. For a
+        native representation of the solution value, use :func:`get_value`
+
+        :param `NBJ_STD_Solver` solver: If specified, the solver from which the
+            solution will be sourced, if `None` then the most recently loaded
+            solver is used.
+        :return: String representation of the expressions solution.
+        :rtype: str
+        """
         return str(self.get_value(solver))
 
     def name(self):
-        #output = self.operator
-        #if (output == 'x' or output == 't') and self.ident >= 0:
-        #    output += str(self.ident)
-        #return output
+        """
+        The name of the variable or the operator if this is an expression.
+        """
         return self.operator
 
     def __str__(self):
@@ -290,23 +287,28 @@ class Expression(object):
             return self.domain()
 
     def is_str(self):
-        if hasattr(self, 'lb'):
-            return not numeric(self.lb)
+        lb = getattr(self, 'lb', None)
+        if lb is not None:
+            return not numeric(lb)
         return False
 
     def getVar(self, solver_id):
+        # \internal
         return self.var_list[solver_id - 1]
 
     def setVar(self, solver_id, solver_name, variable, new_solver=None):
+        # \internal
         if (solver_id - 1) < len(self.var_list):
             self.var_list[solver_id - 1] = variable
         else:
             self.var_list.append(variable)
 
     def has_children(self):
+        # \internal
         return hasattr(self, 'children')
 
     def has_parameters(self):
+        # \internal
         return hasattr(self, 'parameters')
 
     def is_built(self, solver=None):
@@ -319,6 +321,7 @@ class Expression(object):
         return not issubclass(type(self), Predicate)
 
     def close(self):
+        # \internal
         if self.has_children():
             for child in self.children:
                 tc = type(child)
@@ -326,6 +329,16 @@ class Expression(object):
                     child.close()
 
     def get_domain(self, solver=None):
+        """
+        Creates a new :class:`Domain` instance representing the current domain
+        of the expression.
+
+        :param `NBJ_STD_Solver` solver: If specified, the solver from which the
+            domain will be sourced, if `None` then the most recently loaded
+            solver is used.
+        :return: The current domain of the expression.
+        :rtype: Domain
+        """
         if self.is_built(solver):
             if solver is None:
                 solver = self.solver
@@ -333,11 +346,12 @@ class Expression(object):
             if self.get_size(solver) == (ub - lb + 1):
                 dom = range(lb, ub + 1)
             else:
-                # we should make that more efficient by using the underlying solvers to iterate
+                # we should make that more efficient by using the underlying
+                # solvers to iterate
                 dom = [lb]
                 while True:
                     v = solver.next(self, dom[-1])
-                    if v == dom[-1]:
+                    if v <= dom[-1]:
                         break
                     else:
                         dom.append(v)
@@ -347,34 +361,35 @@ class Expression(object):
         else:
             return Domain(self.lb, self.ub)
 
-    def get_name(self):
-        return self.operator
-
-    ## Current value of the expression
-    # @param solver solver reference for solver from which current value will be sourced
-    # @return current value of expression
-    #
-    #    get_value(self, solver=None) :- Returns the current value of the expression
-    #    in the specified solver. Provided the solver has found a solution. If no solution
-    #    has been found None is returned.
-    #
-    #    In the case of variables, it may not be passed in to the solver if it
-    #    is not involved in a non-trivial constraint. For example, x <= 1, x
-    #    will not get added (by this constraint alone) if it has a upperbound
-    #    which is less or equal to 1. get_value() will return the variable's
-    #    lower bound as the value in this case.
-    #
-    #    If no solver is specified then the solver that has loaded the expression
-    #    most recently is used.
-    #
     def get_value(self, solver=None):
+        """
+        The current value of the expression. Should be used to retrieve the
+        assigned value of a variable and the value of expressions like the
+        objective function.
+
+        In the case of variables, it may not be passed in to the solver if it is
+        not involved in a non-trivial constraint. For example, `x <= 1`, `x`
+        will not get added (by this constraint alone) if it has a upper bound
+        which is less or equal to 1. The variable's lower bound will be returned
+        as the value in this case.
+
+        :param `NBJ_STD_Solver` solver: If specified, the solver from which the
+            value will be sourced, if `None` then the most recently loaded
+            solver is used.
+        :return: The current value of the expression.
+        :rtype: The same as the original domain, either `int`, `float`, or
+            `str`.
+        """
         has_value = False
         if self.is_built(solver):
             if self.solver.is_sat():
                 has_value = True
         value = None
-        # In the case of a variable not being created in the interface, return lb as per the doc above.
-        if len(self.var_list) == 0 or (solver and ((solver.solver_id - 1) < len(self.var_list) or (solver.solver_id - 1) == 0)):
+        # In the case of a variable not being created in the interface, return
+        # lb as per the doc above.
+        if len(self.var_list) == 0 or \
+                (solver and ((solver.solver_id - 1) < len(self.var_list) or
+                 (solver.solver_id - 1) == 0)):
             has_value = False
             value = self.lb
 
@@ -395,6 +410,15 @@ class Expression(object):
         return value
 
     def get_size(self, solver=None):
+        """
+        The current size of the expression's domain.
+
+        :param `NBJ_STD_Solver` solver: If specified, the solver from which the
+            domain size will be sourced, if `None` then the most recently loaded
+            solver is used.
+        :return: The size of the expression's domain.
+        :rtype: `int`
+        """
         if solver is not None:
             if self.is_built(solver):
                 return self.var_list[solver.solver_id - 1].get_size()
@@ -405,17 +429,17 @@ class Expression(object):
         else:
             return self.ub - self.lb + 1
 
-    ## Current lower bound of variable
-    # @param solver solver reference for solver from which current bound will be sourced
-    # @return current lower bound of expression
-    #
-    #    get_min(self, solver=None) :- Returns the current lower bound of the expression
-    #    in the specified solver.
-    #
-    #    If not solver is specified then the solver that has loaded the expression
-    #    most recently is used.
-    #
     def get_min(self, solver=None):
+        """
+        Current lower bound of the expression.
+
+        :param `NBJ_STD_Solver` solver: If specified, the solver from which the
+            lower bound will be sourced, if `None` then the most recently loaded
+            solver is used.
+        :return: The current lower bound of the expression.
+        :rtype: The same as the original domain, either `int`, `float`, or
+            `str`.
+        """
         the_min = self.lb
         if solver is not None:
             if self.is_built(solver):
@@ -426,17 +450,17 @@ class Expression(object):
             return self.model.strings[the_min]
         return the_min
 
-    ## Current upper bound of variable
-    # @param solver solver reference for solver from which current bound will be sourced
-    # @return current upper bound of expression
-    #
-    #    get_max(self, solver=None) :- Returns the current upper bound of the expression
-    #    in the specified solver.
-    #
-    #    If not solver is specified then the solver that has loaded the expression
-    #    most recently is used.
-    #
     def get_max(self, solver=None):
+        """
+        Current upper bound of variable.
+
+        :param `NBJ_STD_Solver` solver: If specified, the solver from which the
+            upper bound will be sourced, if `None` then the most recently loaded
+            solver is used.
+        :return: The current upper bound of the variable.
+        :rtype: The same as the original domain, either `int`, `float`, or
+            `str`.
+        """
         the_max = self.ub
         if solver is not None:
             if self.is_built(solver):
@@ -447,19 +471,21 @@ class Expression(object):
             return self.model.strings[the_max]
         return the_max
 
-    #SDG: methods to access initial lb and ub and domain of the expression or one of its children
+    # SDG: methods to access initial lb and ub and domain of the expression or
+    # one of its children
     def get_ub(self, child=None):
         if (child == None):
             return self.ub
         else:
             return self.children[child].ub if issubclass(type(self.children[child]), Expression) else self.children[child]
+
     def get_lb(self, child=None):
         if (child == None):
             return self.lb
         else:
             return self.children[child].lb if issubclass(type(self.children[child]), Expression) else self.children[child]
 
-    # not safe!
+    # not safe! FIXME
     def get_domain_tuple(self):
         if self.is_str():
             tmp_domain = sorted([self.model.string_map[value] for value in self.domain_])
@@ -468,12 +494,14 @@ class Expression(object):
             return (self.lb, self.ub, self.domain_)
 
     def get_children(self):
+        # \internal
         if self.has_children():
             return self.children
         else:
             return None
 
     def get_operator(self):
+        # \internal
         return self.operator
 
     def __and__(self, pred):
@@ -521,13 +549,9 @@ class Expression(object):
         return Mod([pred, self])
 
     def __eq__(self, pred):
-        #if CHECK_VAR_EQUALITY[0]:              #SGD: nasty bug when using the variable equality operator outside the model definition (condition replaced by a constraint!)
-        #     raise InvalidConstraintSpecification("use == outside the model definition!")
         return Eq([self, pred])
 
     def __ne__(self, pred):
-        #if CHECK_VAR_EQUALITY[0]:              #SGD: nasty bug when using the variable disequality operator outside the model definition (condition replaced by a constraint!)
-        #     raise InvalidConstraintSpecification("use != outside the model definition!")
         return Ne([self, pred])
 
     def __lt__(self, pred):
@@ -554,47 +578,28 @@ class Expression(object):
             return v in self.domain_
 
 
-## @defgroup mod_group Modelling constructs
-# The modelling constructs
-#  @{
-#
-
-## Model object
-#
-#    Stores the variables and constraints.
-#    The constraints declarations are trees, whose internal nodes
-#    are predicates or constraints and leaves are variables.
-#
-#    - self.variables contains the leaves of these trees.
-#
-#    - self.constraints contains the internal nodes of these trees.
-#
-#    The constructor of Model can be called with any number of arguments.
-#    Each argument will be treated as an Expression or a list of
-#    Expressions to be added into the model. If no argument is given
-#    the Model will be initially empty.
-#    If X and Y are lists of Expressions, then the following declarations are all valid:
-#
-# \code
-#    m = Model()
-#    m = Model( X[0]<Y[0] )
-#    m = Model( X[0]<Y[0], Y[0]!=Z[0] )
-#    m = Model( [x<y for (x,y) in zip(X,Y)] )
-# \endcode
-#
-#    Expressions and lists of Expressions can be subsequently added
-#    using the method self.add() or the operator '+='.
-#
 class Model(object):
+    """
+    Model object which stores the variables and constraints. The constraints
+    declarations are trees, whose internal nodes are predicates or constraints
+    and leaves are variables.
+
+    Model can be initialized with any number of arguments. Each argument will be
+    treated as an :class:`Expression` or a list of :class:`Expression` to be
+    added into the model. If no argument is given the Model will be initially
+    empty. An :class:`Expression` can be subsequently added using the method
+    :func:`add` or the operator '+='.
+    """
 
     def __init__(self, *expr):
-        ## \internal - List of expressions (predicate trees) that where added to the model
+        ## \internal - List of expressions (predicate trees) that where added to
+        #  the model
         self.__expressions = []
 
-        ## Leaves of the predicate trees
+        #: A :class:`VarArray`: containing the leaves of the predicate trees.
         self.variables = VarArray([])
 
-        ## Roots of the predicate trees
+        #: A :class:`VarArray`: containing the roots of the predicate trees.
         self.constraints = VarArray([])
 
         #SDG: initial bounds for optimization problems
@@ -603,7 +608,8 @@ class Model(object):
         ## Initial lower bound for a maximization problem
         self.lower_bound = -MAXCOST
 
-        ## \internal - Before giving an expression to a solver, or before printing it, it needs to
+        ## \internal - Before giving an expression to a solver, or before
+        #  printing it, it needs to
         self.closed = 0
 
         ## \internal - Every new solver get assigned an unique id
@@ -618,13 +624,16 @@ class Model(object):
         self.current_id += 1
         return self.current_id
 
-    ## Add an expresion, or a list/tuple/dict of expressions to the model
-    # @param *expr Any number of (nested lists of) Expressions
     def add(self, *expr):
+        """Add an expresion, or a list/tuple/dict of expressions to the model.
+
+        :param expr: Any number of (or nested lists of) Expression instances.
+        """
         self.add_prime(expr)
 
     def add_prime(self, expr):
-        ## \internal - Used to distinguish between a single Expression and a list of Expressions
+        ## \internal - Used to distinguish between a single Expression and a
+        #  list of Expressions
         if issubclass(type(expr), list):
             for exp in expr:
                 self.add_prime(exp)
@@ -639,7 +648,11 @@ class Model(object):
         self.close_exp()
 
     def __iadd__(self, *expr):
-        ## \internal - '+=' operator
+        """Can be used to add an expression or a collection of expressions to
+        the model like: `model += expression`
+
+        :param expr: Any number of (or nested lists of) Expression instances.
+        """
         self.add_prime(expr)
         return self
 
@@ -663,18 +676,21 @@ class Model(object):
                         self.add_expression(child, level + 1)
 
     def close_exp(self):
-        ## \internal - close() is used to fire up preprocessing requiring knowledge about the whole model
+        ## \internal - close() is used to fire up preprocessing requiring
+        #  knowledge about the whole model
         for i in range(self.closed, len(self.__expressions)):
             self.add_expression(self.__expressions[i], 0)
         self.closed = len(self.__expressions)
 
     def close(self, solver=None):
-        ## \internal - close() is used to fire up preprocessing requiring knowledge about the whole model AND THE SOLVER USED
+        ## \internal - close() is used to fire up preprocessing requiring
+        #  knowledge about the whole model and the solver used.
+
         #SDG: check if it is an optimization problem
         if not any([issubclass(type(expr), Minimise) or issubclass(type(expr), Maximise) or issubclass(type(expr), CostFunction) for expr in self.__expressions]):
             self.upper_bound = 1
-        if solver is not None and  solver.Library is 'Toulbar2' and self.upper_bound is not None:
-             solver.setOption('updateUb',str(self.upper_bound))
+        if solver is not None and solver.Library is 'Toulbar2' and self.upper_bound is not None:
+            solver.setOption('updateUb', str(self.upper_bound))
 
         if self.closed == len(self.__expressions):
             tmp_strings = []
@@ -829,31 +845,38 @@ class Model(object):
         ## \internal - return the list of Expressions
         return self.__expressions
 
-    def is_native_model(self):
-        ## \internal - distinguish with NumberjackSolver models (deprecated?)
-        return False
-
-    ## Return a Solver for that Model
-    # @param library A string standing for a back end solver ('Mistral', 'MiniSat', 'SCIP')
-    def load(self, library, X=None, encoding=None):
+    def load(self, solvername, X=None, encoding=None):
         """
-        The solver is passed as a string, the corresponding module is
-        imported, a Solver object created, initialised and returned
+        The solver is passed as a string, the corresponding module is imported,
+        a Solver object created, initialised, and returned.
+
+        :param str solvername: the name of the solver being loaded. Should be
+               one of the modules in :mod:`Numberjack.solvers`.
+        :param str X: the decision variables.
+        :type X: :class:`list` or :class:`VarArray`
+        :param EncodingConfiguration encoding: An :class:`EncodingConfiguration`
+            instance defining the default encoding for expressions.
+        :type encoding: :class:`EncodingConfiguration`
+        :raises ImportError: if the named solver could not be loaded.
+        :returns: an instance of a :class:`NBJ_STD_Solver` subclass.
         """
         try:
             solverspkg = "Numberjack.solvers"
-            solverstring = "%s.%s" % (solverspkg, library)
+            solverstring = "%s.%s" % (solverspkg, solvername)
             lib = __import__(solverstring, fromlist=[solverspkg])
             solver = lib.Solver(self, X, encoding=encoding)
         except ImportError:
-            raise ImportError("ERROR: Failed during import, wrong module name? (%s)" % library)
+            raise ImportError(
+                "ERROR: Failed during import, wrong module name? (%s)" %
+                solvername)
         return solver
 
-    ## Solve and returns a solution
-    # @param library A string standing for a back end solver ('Mistral', 'MiniSat', 'SCIP')
-    # @return A Solution object
     def solve_with(self, library, encoding=None):
         """
+        .. deprecated:: 1.1
+           Instead you should use :func:`load` first and call solve on that
+           solver object instead.
+
         The solver is passed as a string, the corresponding module is
         imported, a Solver object created, initialised and called.
         A Solution object (dictionary: var -> val) is returned, if the
@@ -864,37 +887,59 @@ class Model(object):
         solver.solve()
         return solver.get_solution()
 
-    #SDG: initial bounds updated by the user
-    ## Give an initial upper bound as a string
-    # @param ub string for an initial upper bound
     def set_upper_bound(self, ub):
-        self.upper_bound = ub
+        """
+        For weighted CSPs, sets the initial upper bound.
 
-    ## Give an initial lower bound as a string
-    # @param lb string for an initial lower bound
+        :param int ub: The initial upper bound.
+        """
+        self.upper_bound = str(ub)
+
     def set_lower_bound(self, lb):
+        """
+        For weighted CSPs, sets the initial lower bound.
+
+        :param int ub: The initial lower bound.
+        """
         self.lower_bound = lb
 
 
-## Variable creation function
-# Creates a variable, see below for usage. To create a continuous variable
-# for solvers capable of handling continuous variables use float values
-# instead of integer values when specifying the domain of the variable.
-
 class Variable(Expression):
+    """
+    Creates a new variable. The following tables shows example calls to the
+    constructor which results in different kinds of variables.
+
+    .. code-block:: python
+
+        Variable()  # Binary variable
+        Variable(N)  # Variable in the domain of {0, N-1}
+        Variable('x')  # Binary variable called 'x'
+        Variable(N, 'x')  # Variable in the domain of {0, N-1} called 'x'
+        Variable(l,u)  # Variable in the domain of {l, u}
+        Variable(l,u, 'x')  # Variable in the domain of {l, u} called 'x'
+        Variable(list)  # Variable with domain specified as a list
+        Variable(list, 'x')  # Variable with domain specified as a list called x
+
+    To create a continuous variable just use float values instead of integer
+    values when specifying the domain of the variable.
+
+    .. note::
+        Typically, just the Mixed Integer Programming solvers support continuous
+        valued variables, other solvers use finite domains.
+
+    The variable's domain may also be specified as a list of strings, and the
+    interface between the solver's representation will be handled by Numberjack.
+    For example in a map-colouring problem, we may have something like the
+    following:
+
+    .. code-block:: python
+
+        v = Variable(['red', 'green', 'blue'])
+        # ... load and solve the model
+        v.get_value()  # Returns 'red'
+    """
 
     def __init__(self, argopt1=None, argopt2=None, argopt3=None):
-        '''
-         Variable() :- Binary variable
-         Variable(N) :- Variable in the domain of {0, N-1}
-         Variable('x') :- Binary variable called 'x'
-         Variable(N, 'x') :- Variable in the domain of {0, N-1} called 'x'
-         Variable(l,u) :- Variable in the domain of {l, u}
-         Variable(l,u, 'x') :- Variable in the domain of {l, u} called 'x'
-         Variable(list) :- Variable with domain specified as a list
-         Variable(list, 'x') :- Variable with domain specified as a list called 'x'
-        '''
-
         domain = None
         lb = 0
         ub = 1
@@ -945,84 +990,41 @@ class Variable(Expression):
         self.ub = ub
 
 
-'''
-def Variable(argopt1=None, argopt2=None, argopt3=None):
-
-     Variable() :- Binary variable
-     Variable(N) :- Variable in the domain of {0, N-1}
-     Variable('x') :- Binary variable called 'x'
-     Variable(N, 'x') :- Variable in the domain of {0, N-1} called 'x'
-     Variable(l,u) :- Variable in the domain of {l, u}
-     Variable(l,u, 'x') :- Variable in the domain of {l, u} called 'x'
-     Variable(list) :- Variable with domain specified as a list
-     Variable(list, 'x') :- Variable with domain specified as a list called 'x'
-
-
-    def numeric(x):
-        tx = type(x)
-        return tx is int or tx is float
-
-    domain=None
-    lb=0
-    ub=1
-    name = 'x'
-
-    if argopt3 is not None:
-        lb = argopt1
-        ub = argopt2
-        name  = argopt3
-    elif argopt2 is not None:
-        if type(argopt2) is str:
-            if numeric(argopt1):
-                ub = argopt1-1
-            else: domain = sorted(argopt1)
-            name = argopt2
-        else:
-            lb = argopt1
-            ub = argopt2
-    elif argopt1 is not None:
-        if type(argopt1) is str:
-            name = argopt1
-        elif numeric(argopt1):
-            ub = argopt1-1
-        else: domain = sorted(argopt1)
-
-    exp = Expression(name)
-
-    exp.domain_ = domain
-    exp.lb = lb
-    exp.ub = ub
-
-    return exp
-'''
-
-
-## Array of Expression
-#
-#    A VarArray is a list of Expression objects.
-#    Various methods are overloaded to allow easy declaration, formatted printing
-#    and modelling syntactic sugars
-#
-#    There are various ways of declaring a VarArray:
-#
-#    - X = VarArray(l) creates an array from a list l
-#    - X = VarArray(n) creates an array of n Boolean variables
-#    - X = VarArray(n, 'x') creates an array of n Boolean variables with names 'x0..xn-1'
-#    - X = VarArray(n, m, 'x') creates an array of n variables with domains [0..m-1] and names 'x0..xn-1'
-#    - X = VarArray(n, m) creates an array of n variables with domains [0..m-1]
-#    - X = VarArray(n, d, 'x') creates an array of n variables with domains d and names 'x0..xn-1'
-#    - X = VarArray(n, d) creates an array of n variables with domains d
-#    - X = VarArray(n, l, u, 'x') creates an array of n variables with domains [l..u] and names 'x0..xn-1'
-#    - X = VarArray(n, l, u) creates an array of n variables with domains [l..u]
-#
-#    VarArray's allow to state Element and Lex Ordering constraint over a sequence
-#    of variables using, respectively the operator '[]' and '<', '>', '<=', '>='.
-#    For instance, given two VarArray X and Y, and an Expression x:
-#
-#    X[x] returns an Element Expression, that is, a variable equal to the xth element of the array X
-#    X <= Y returns a LeqLex Constraint between X and Y
-#
 class VarArray(list):
+    """
+    A VarArray is a list of :class:`Expression` objects. Various methods are
+    overloaded to allow easy declaration, formatted printing, and syntactic
+    sugars for modelling. The following tables shows example calls to the
+    constructor which results in different kinds of variable arrays.
+
+    .. code-block:: python
+
+        VarArray(l)  # creates an array from a list l
+        VarArray(n)  # creates an array of n Boolean variables
+        VarArray(n, 'x')  # creates an array of n Boolean variables with
+                          # names 'x0..xn-1'
+        VarArray(n, m)  # creates an array of n variables with domains [0..m-1]
+        VarArray(n, m, 'x')  # creates an array of n variables with domains
+                             # [0..m-1] and names 'x0..xn-1'
+        VarArray(n, d)  # creates an array of n variables with domains specified
+                        # in the list 'd'
+        VarArray(n, d, 'x')  # creates an array of n variables with domains
+                             # specified in the list 'd' and names 'x0..xn-1'
+        VarArray(n, l, u, 'x')  # creates an array of n variables with domains
+                                # [l..u] and names 'x0..xn-1'
+        VarArray(n, l, u)  # creates an array of n variables with domains [l..u]
+
+    VarArray's allow you to state :class:`Element` and lexicographic ordering
+    constraints over a sequence of variables using, respectively the operator
+    '[]' and '<', '>', '<=', '>='. For instance, given two VarArray X and Y, and
+    an Expression x:
+
+    .. code-block:: python
+
+        X[x]  # returns an Element expression, that is, a variable equal to the
+              # xth element of the array X
+        X <= Y  # returns a LeqLex constraint between X and Y
+    """
 
     def __init__(self, n, optarg1=None, optarg2=None, optarg3=None):
         domain = None
@@ -1034,7 +1036,6 @@ class VarArray(list):
             ub = 1
             name = 'x'
             if optarg1 is not None:
-                #if hasattr(optarg1, '__iter__'):
                 if type(optarg1) is str:
                     name = optarg1
                 elif type(optarg2) is int or type(optarg2) is float:
@@ -1060,26 +1061,48 @@ class VarArray(list):
         else:
             self.__init__([Variable(domain, names[i]) for i in range(n)])
 
-    ## Returns a string representing the initial definition of the content of the arrray
-    #@return string
     def initial(self):
+        """
+        Returns a string representing the initial definition of the content of
+        the array.
+
+        :rtype: str
+        """
         return "[" + ", ".join([var.initial() for var in self]) + "]"
 
-    ## Returns a string representing the current state of the content of the array
-    #@param solver The linked Solver
-    #@return string
     def domain(self, solver=None):
+        """
+        Returns a string representing the current state of the content of the
+        array.
+
+        :param `NBJ_STD_Solver` solver: If specified, the solver from which the
+            state will be sourced, if `None` then the most recently loaded
+            solver is used.
+        :rtype: str
+        """
         return "[" + ", ".join([var.domain(solver) for var in self]) + "]"
 
-    ## Returns a string containing a brief view of the content of the array
-    #@return string
     def name(self):
+        """
+        Returns a string containing a brief view of the content of the array.
+
+        :rtype: str
+        """
         return "[" + ", ".join([var.name() for var in self]) + "]"
 
-    ## Returns a string containing the valuation of the content of the array
-    #@param solver The linked Solver
-    #@return string
     def solution(self, solver=None):
+        """
+        .. deprecated:: 1.1
+           Instead you should use :func:`Expression.get_value` on each item and
+           call :func:`str` on that.
+
+        Returns a string containing the valuation of the content of the array.
+
+        :param `NBJ_STD_Solver` solver: If specified, the solver from which the
+            state will be sourced, if `None` then the most recently loaded
+            solver is used.
+        :rtype: str
+        """
         return "[" + ", ".join([var.solution(solver) for var in self]) + "]"
 
     def __str__(self):
@@ -1094,82 +1117,108 @@ class VarArray(list):
     def __getslice__(self, i, j):
         return VarArray(list.__getslice__(self, i, j))
 
-    ## Syntactic sugar for the Lex Order Constraint X < Y
-    #@param other Another VarArray of same length
-    #@return LessLex Expression
     def __lt__(self, other):
+        """
+        Syntactic sugar for the lexicographic order constraint :class:`LessLex`
+        so it can be specified on two VarArray like so: `X < Y`
+
+        :param VarArray other: Another VarArray of the same length.
+        :rtype: LessLex
+        """
         return LessLex(self, other)
 
-    ## Syntactic sugar for the Lex Order Constraint X <= Y
-    #@param other Another VarArray of same length
-    #@return LessLex Expression
     def __le__(self, other):
+        """
+        Syntactic sugar for the lexicographic order constraint :class:`LeqLex`
+        so it can be specified on two VarArray like so: `X <= Y`
+
+        :param VarArray other: Another VarArray of the same length.
+        :rtype: LeqLex
+        """
         return LeqLex(self, other)
 
-    ## Syntactic sugar for the Lex Order Constraint X > Y
-    #@param other Another VarArray of same length
-    #@return LessLex Expression
     def __gt__(self, other):
+        """
+        Syntactic sugar for the lexicographic order constraint :class:`LessLex`
+        so it can be specified on two VarArray like so: `X > Y`
+
+        :param VarArray other: Another VarArray of the same length.
+        :rtype: LessLex
+        """
         return LessLex(other, self)
 
-    ## Syntactic sugar for the Lex Order Constraint X >= Y
-    #@param other Another VarArray of same length
-    #@return LessLex Expression
     def __ge__(self, other):
+        """
+        Syntactic sugar for the lexicographic order constraint :class:`LeqLex`
+        so it can be specified on two VarArray like so: `X >= Y`
+
+        :param VarArray other: Another VarArray of the same length.
+        :rtype: LeqLex
+        """
         return LeqLex(other, self)
 
-    ## Syntactic sugar for the Equality Constraint X == Y
-    #@param other Another VarArray of same length
-    #@return a list of Equality Expressions
     def __eq__(self, other):
+        """
+        Syntactic sugar for the equality constraint `X == Y`.
+
+        :param VarArray other: Another VarArray of the same length.
+        :rtype: A list of equality (:class:`Eq`) expressions. 
+        """
         return [Eq((x, y)) for x, y in zip(self, other)]
 
 
-## Matrix of Expression
-#
-#    A Matrix is a two-dimensional list of Expression objects.
-#    Various methods are overloaded to allow easy declaration, formatted printing
-#    and modelling syntactic sugars
-#
-#    There are various ways of declaring a Matrix:
-#
-#    - \code M = Matrix(l) \endcode creates a Matrix from a list l
-#    - M = Matrix(n, m) creates a n x m Matrix of Boolean variables
-#    - M = Matrix(n, m, 'x') creates a n x m Matrix of Boolean variables with names 'x0.0..xn-1.m-1'
-#    - M = Matrix(n, m, u) creates a n x m Matrix of variables with domains [0..u-1]
-#    - M = Matrix(n, m, u, 'x') creates a n x m Matrix of variables with domains [0..u-1] and names 'x0.0..xn-1.m-1'
-#    - M = Matrix(n, m, l, u) creates a n x m Matrix of variables with domains [l..u]
-#    - M = Matrix(n, m, l, u, 'x') creates a n x m Matrix of variables with domains [l..u] and names 'x0.0..xn-1.m-1'
-#
-#    Matrices feature specific handlers to access (subsets of) rows and columns.
-#    The fields 'row', 'col' and 'flat' respectively refer to the list of rows,
-#    columns and cell in the matrix. For instance:
-#
-# \code
-#    m = Matrix(5,4,1,3,'cell_')
-#    print m
-#    >>> [[cell_0.0, cell_0.1, cell_0.2, cell_0.3],
-#    >>>  [cell_1.0, cell_1.1, cell_1.2, cell_1.3],
-#    >>>  [cell_2.0, cell_2.1, cell_2.2, cell_2.3],
-#    >>>  [cell_3.0, cell_3.1, cell_3.2, cell_3.3],
-#    >>>  [cell_4.0, cell_4.1, cell_4.2, cell_4.3]]
-#    print m.row
-#    >>> [[cell_0.0, cell_0.1, cell_0.2, cell_0.3],
-#    >>>  [cell_1.0, cell_1.1, cell_1.2, cell_1.3],
-#    >>>  [cell_2.0, cell_2.1, cell_2.2, cell_2.3],
-#    >>>  [cell_3.0, cell_3.1, cell_3.2, cell_3.3],
-#    >>>  [cell_4.0, cell_4.1, cell_4.2, cell_4.3]]
-#    print m.col
-#    >>> [[cell_0.0, cell_1.0, cell_2.0, cell_3.0, cell_4.0],
-#    >>>  [cell_0.1, cell_1.1, cell_2.1, cell_3.1, cell_4.1],
-#    >>>  [cell_0.2, cell_1.2, cell_2.2, cell_3.2, cell_4.2],
-#    >>>  [cell_0.3, cell_1.3, cell_2.3, cell_3.3, cell_4.3]]
-#    print m.flat
-#    >>> [cell_0.0, cell_0.1, cell_0.2, cell_0.3, cell_1.0, cell_1.1, cell_1.2, cell_1.3, cell_2.0, cell_2.1, cell_2.2, cell_2.3, cell_3.0, cell_3.1, cell_3.2, cell_3.3, cell_4.0, cell_4.1, cell_4.2, cell_4.3]
-# \endcode
-#
-#    Matrices support Element constraints on row, column or flatten views.
 class Matrix(list):
+    """
+    A Matrix is a two-dimensional list of variables or
+    :class:`.Expression` objects. Various methods are overloaded to
+    allow easy declaration, formatted printing, and syntactic sugars for
+    modelling. The following tables shows example calls to the constructor
+    which results in different kinds of matrices.
+
+    .. code-block:: python
+
+        Matrix(l)  # creates a Matrix from a list l
+        Matrix(n, m)  # creates a n x m Matrix of Boolean variables
+        Matrix(n, m, 'x')  # creates a n x m Matrix of Boolean variables with
+                           # names 'x0.0..xn-1.m-1'
+        Matrix(n, m, u)  # creates a n x m Matrix of variables with domains
+                         # [0..u-1]
+        Matrix(n, m, u, 'x')  # creates a n x m Matrix of variables with
+                              # domains [0..u-1] and names 'x0.0..xn-1.m-1'
+        Matrix(n, m, l, u)  # creates a n x m Matrix of variables with domains
+                            # [l..u]
+        Matrix(n, m, l, u, 'x')  # creates a n x m Matrix of variables with
+                                 # domains [l..u] and names 'x0.0..xn-1.m-1'
+
+    Matrices feature specific handlers to access (subsets of) rows and columns.
+    The fields `row`, `col`, and `flat` respectively refer to the list of rows,
+    columns and cells in the matrix. For instance:
+
+    .. code-block:: python
+
+        m = Matrix(5,4,1,3,'cell_')
+        print m
+        >>> [[cell_0.0, cell_0.1, cell_0.2, cell_0.3],
+        >>>  [cell_1.0, cell_1.1, cell_1.2, cell_1.3],
+        >>>  [cell_2.0, cell_2.1, cell_2.2, cell_2.3],
+        >>>  [cell_3.0, cell_3.1, cell_3.2, cell_3.3],
+        >>>  [cell_4.0, cell_4.1, cell_4.2, cell_4.3]]
+        print m.row
+        >>> [[cell_0.0, cell_0.1, cell_0.2, cell_0.3],
+        >>>  [cell_1.0, cell_1.1, cell_1.2, cell_1.3],
+        >>>  [cell_2.0, cell_2.1, cell_2.2, cell_2.3],
+        >>>  [cell_3.0, cell_3.1, cell_3.2, cell_3.3],
+        >>>  [cell_4.0, cell_4.1, cell_4.2, cell_4.3]]
+        print m.col
+        >>> [[cell_0.0, cell_1.0, cell_2.0, cell_3.0, cell_4.0],
+        >>>  [cell_0.1, cell_1.1, cell_2.1, cell_3.1, cell_4.1],
+        >>>  [cell_0.2, cell_1.2, cell_2.2, cell_3.2, cell_4.2],
+        >>>  [cell_0.3, cell_1.3, cell_2.3, cell_3.3, cell_4.3]]
+        print m.flat
+        >>> [cell_0.0, cell_0.1, cell_0.2, cell_0.3, cell_1.0, cell_1.1, ...]
+
+    Matrices support Element constraints on row, column or flatten views.
+    """
 
     def __init__(self, optarg1=None, optarg2=None, optarg3=None, optarg4=None, optarg5=None):
         n = 1
@@ -1219,26 +1268,48 @@ class Matrix(list):
         self.flat = VarArray([var for row in self for var in row])
         self.col.flat = self.flat
 
-    ## Returns a string representing the initial definition of the content of the arrray
-    #@return string
     def initial(self):
+        """
+        Returns a string representing the initial definition of the content of
+        the matrix.
+
+        :rtype: str
+        """
         return "[" + ",\n ".join([row.initial() for row in self]) + "]"
 
-    ## Returns a string representing the current state of the content of the matrix
-    #@param solver The linked Solver
-    #@return string
     def domain(self, solver=None):
+        """
+        Returns a string representing the current state of the content of the
+        matrix.
+
+        :param `NBJ_STD_Solver` solver: If specified, the solver from which the
+            state will be sourced, if `None` then the most recently loaded
+            solver is used.
+        :rtype: str
+        """
         return "[" + ",\n ".join([row.domain(solver) for row in self]) + "]"
 
-    ## Returns a string containing a brief view of the content of the matrix
-    #@return string
     def name(self):
+        """
+        Returns a string containing a brief view of the content of the matrix.
+
+        :rtype: str
+        """
         return "[" + ",\n ".join([row.name() for row in self]) + "]"
 
-    ## Returns a string containing the valuation of the content of the matrix
-    #@param solver The linked Solver
-    #@return string
     def solution(self, solver=None):
+        """
+        .. deprecated:: 1.1
+           Instead you should use :func:`Expression.get_value` on each item and
+           call :func:`str` on that.
+
+        Returns a string containing the valuation of the content of the array.
+
+        :param `NBJ_STD_Solver` solver: If specified, the solver from which the
+            state will be sourced, if `None` then the most recently loaded
+            solver is used.
+        :rtype: str
+        """
         return "[" + ",\n ".join([row.solution(solver) for row in self]) + "]"
 
     def __str__(self):
@@ -1276,8 +1347,6 @@ class MatrixWrapper(list):
 
     def __str__(self):
         return str(self.var) + " th index of " + str(self.matrix)
-
-##  @}
 
 
 ## Class that all constraints inherit from
@@ -1322,6 +1391,11 @@ class MatrixWrapper(list):
 #      whose truth value corresponds to the relation (x<y) and that can be constrained,
 #      here with an "Or" constraint.
 class Predicate(Expression):
+    """
+    All constraints in Numberjack extend the this class. It provides accessors
+    to get information about the predicate trees and the variables the
+    constraints constrain.
+    """  # FIXME add doc about creating subclasses for custom constraints
 
     def __init__(self, vars, op):
         Expression.__init__(self, op)
@@ -1334,104 +1408,67 @@ class Predicate(Expression):
         #self.children = [child for child in children]
         self.children = flatten(children)
 
-    ## Returns a string representing the initial definition of the Predicate
-    # @return String representation of original predicate definition
-    #
-    #    Returns a string that represents the initial definition of the Predicate
-    #    and all its children.
-    #
-    # \code
-    #    var1 = Variable(0, 10)
-    #    constraint = var1 < 10
-    #    model = Model(constraint)
-    #    solver = Solver(model)
-    #    solver.solve()
-    #    .
-    #    .
-    #    print constraint.initial()
-    #    >>>(x0 in {0..10} < 10)
-    # \endcode
-    #
     def initial(self):
+        """
+        Returns a string representing the initial definition of the content of
+        the predicate and all its children. For example:
+
+        .. code-block:: python
+
+            var1 = Variable(0, 10)
+            constraint = var1 < 10
+            print constraint.initial()
+            >>> (x0 < 10)
+
+        :rtype: str
+        """
         save_str = Expression.__str__
         Expression.__str__ = Expression.initial
         output = self.__str__()
         Expression.__str__ = save_str
         return output
 
-    ## Returns a string representing the current representation of the predicate
-    # @param solver solver from which current domains of leaves will be sourced
-    # @return String representation of current predicate state
-    #
-    #    Returns a string that represents the current value of the predicate and its'
-    #    children in the specified solver. If no solver is specified then the solver
-    #    that has loaded the expression the solver most recently is used.
-    #
-    # \code
-    #    var1 = Variable(0, 10)
-    #    constraint = var1 < 10
-    #    model = Model(constraint)
-    #    solver = Solver(model)
-    #    solver.solve()
-    #    .
-    #    .
-    #    print constraint.domain()
-    #    >>> (x0 in {0..9} < 10)
-    # \endcode
-    #
     def domain(self, solver=None):
+        """
+        Returns a string representing the current domain of the predicate.
+
+        :param `NBJ_STD_Solver` solver: If specified, the solver from which the
+            state will be sourced, if `None` then the most recently loaded
+            solver is used.
+        :rtype: str
+        """
         save_str = Expression.__str__
         Expression.__str__ = lambda x: x.domain(solver)
         output = self.__str__()
         Expression.__str__ = save_str
         return output
 
-    ## Returns a string representing the current solution of the predicate
-    # @param solver solver from which current domains of leaves will be sourced
-    # @return String representation of the current predicate solution
-    #
-    #    Returns a string that represents the current solution of the predicate and its'
-    #    children in the specified solver. If no solver is specified then the solver
-    #    that has loaded the expression the solver most recently is used.
-    #
-    # \code
-    #    var1 = Variable(0, 10)
-    #    constraint = var1 < 10
-    #    model = Model(constraint)
-    #    solver = Solver(model)
-    #    solver.solve()
-    #    .
-    #    .
-    #    print constraint.solution()
-    #    >>> (0 < 10)
-    # \endcode
-    #
     def solution(self, solver=None):
+        """
+        .. deprecated:: 1.1
+           Instead you should use :func:`Expression.get_value` and call
+           :func:`str` on that.
+
+        Returns a string containing the valuation of the predicate.
+
+        :param `NBJ_STD_Solver` solver: If specified, the solver from which the
+            state will be sourced, if `None` then the most recently loaded
+            solver is used.
+        :rtype: str
+        """
         save_str = Expression.__str__
         Expression.__str__ = lambda x: x.solution(solver)
         output = self.__str__()
         Expression.__str__ = save_str
         return output
 
-    ## Returns a string representing the name of the Predicate
-    # @return String representation of predicate definition
-    #
-    #    Returns a string that represents the name of the Predicate
-    #    and the name of all its children.
-    #
-    # \code
-    #    var1 = Variable(0, 10)
-    #    constraint = var1 < 10
-    #    model = Model(constraint)
-    #    solver = Solver(model)
-    #    solver.solve()
-    #    .
-    #    .
-    #    print constraint.name()
-    #    >>>(x0 < 10)
-    # \endcode
-    #
     def name(self):
+        """
+        Returns a string that represents the name of the Predicate and the name
+        of all its children.
+
+        :rtype: str
+        """
         return self.__str__()
 
     def __str__(self):
@@ -1442,13 +1479,12 @@ class Predicate(Expression):
         return output
 
 
-## Class that all binary predicates inherit from
-#
-#    All binary predicates such as And, LessThan and GreaterThan extend this
-#    class. They are separated from the base Predicate class to facilitate
-#    ease of print representations of the predicates.
-#
 class BinPredicate(Predicate):
+    """
+    All binary predicates such as And, LessThan and GreaterThan extend this
+    class. They are separated from the base Predicate class to facilitate
+    ease of print representations of the predicates.
+    """
 
     def __init__(self, vars, op):
         Predicate.__init__(self, vars, op)
@@ -1471,61 +1507,52 @@ class BinPredicate(Predicate):
             return int(eval(str(x) + ' ' + self.get_symbol() + ' ' + str(y)))
 
 
-## And expression
-#
-# \note
-#   - Top-level: 'And' Constraint
-#   - Nested: Equal to the truth value of the 'And' relation
-#
-# \code
-#    var1 = Variable() :- Binary variable
-#    var2 = Variable() :- Binary variable
-#
-#    model.add(var1 & var2) :- Post var1 And var2 constraint
-#
-#    var1 = Variable() :- Binary variable
-#    var2 = Variable() :- Binary variable
-#    var3 = Variable() :- Binary variable
-#
-#    model.add( var3 == (var1 & var2) ) :- Used as an expression
-# \endcode
-#
 class And(BinPredicate):
+    """
+    Logical 'and' expression. Can be used at both the top-level to specify an
+    'and' constraint, or reified to equal the truth value of the relation.
+
+    .. code-block:: python
+
+        var1 = Variable()  # Binary variable
+        var2 = Variable()  # Binary variable
+
+        model.add(var1 & var2)  # Post var1 And var2 constraint
+
+        var1 = Variable()  # Binary variable
+        var2 = Variable()  # Binary variable
+        var3 = Variable()  # Binary variable
+
+        model.add( var3 == (var1 & var2) )  # Used as an expression
+    """
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "and")
-        self.lb = min(self.get_lb(0), self.get_lb(1))    #SDG: initialize lb,ub
+        self.lb = min(self.get_lb(0), self.get_lb(1))
         self.ub = min(self.get_ub(0), self.get_ub(1))
 
     def get_symbol(self):
         return '&'
 
-## @defgroup cons_group Constraint list
-# The list of constraints defined in Numberjack
-#  @{
-#
 
-
-## Or expression
-#
-# \note
-#   - Top-level: 'Or' Constraint
-#   - Nested: Equal to the truth value of the 'Or' relation
-#
-# \code
-#    var1 = Variable() :- Binary variable
-#    var2 = Variable() :- Binary variable
-#
-#    model.add(var1 | var2) :- Post var1 Or var2 constraint
-#
-#    var1 = Variable() :- Binary variable
-#    var2 = Variable() :- Binary variable
-#    var3 = Variable() :- Binary variable
-#
-#    model.add( var3 == (var1 | var2) ) :- Used as an expression
-# \endcode
-#
 class Or(BinPredicate):
+    """
+    Logical 'or' expression. Can be used at both the top-level to specify an
+    'or' constraint, or reified to equal the truth value of the relation.
+
+    .. code-block:: python
+
+        var1 = Variable()  # Binary variable
+        var2 = Variable()  # Binary variable
+
+        model.add(var1 | var2)  # Post var1 Or var2 constraint
+
+        var1 = Variable()  # Binary variable
+        var2 = Variable()  # Binary variable
+        var3 = Variable()  # Binary variable
+
+        model.add( var3 == (var1 | var2) )  # Used as an expression
+    """
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "or")
         self.lb = max(self.get_lb(0), self.get_lb(1))    #SDG: initialize lb,ub
@@ -1535,26 +1562,25 @@ class Or(BinPredicate):
         return 'or'
 
 
-## Div expression
-#
-# \note
-#   - Top-level: Can not be used as top-level Constraint
-#   - Nested: Equal to the integral division of the operands
-#
-# \warning Can not be used with all solvers
-#
-#    Div expression can be used to divide two expressions or an expression and
-#    a constraint.
-#
-# \code
-#    var1 = Variable(0, 10)
-#    var2 = Variable(0, 100)
-#
-#    divexp1 = var2 / var1
-#    divexp2 = var2 / 10
-# \endcode
-#
 class Div(BinPredicate):
+    """
+    Division expression to equal the integral division of the two operands.
+    Cannot be used as a top-level constraint.
+
+    .. code-block:: python
+
+        var1 = Variable(0, 10)
+        var2 = Variable(0, 100)
+
+        divexp1 = var2 / var1
+        divexp2 = var2 / 10
+
+    .. warning::
+
+        Cannot be used with all solvers and
+        :class:`.ConstraintNotSupportedError` will be raised when loading the
+        model if this is the case.
+    """
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "div")
@@ -1576,26 +1602,25 @@ class Div(BinPredicate):
         return '/'
 
 
-## Mul expression
-#
-# \note
-#   - Top-level: Can not be used as top-level Constraint
-#   - Nested: Equal to the multiplication of the operands
-#
-# \warning Can not be used with all solvers
-#
-#    Mul expression can be used to multiply two expressions or an expression and
-#    a constraint.
-#
-# \code
-#    var1 = Variable(0, 10)
-#    var2 = Variable(0, 100)
-#
-#    mulxp1 = var2 * var1
-#    mulexp2 = var2 * 10
-# \endcode
-#
 class Mul(BinPredicate):
+    """
+    Multiplication expression to equal the multiplication of the two operands.
+    Cannot be used as a top-level constraint.
+
+    .. code-block:: python
+
+        var1 = Variable(0, 10)
+        var2 = Variable(0, 100)
+
+        mulxp1 = var2 * var1
+        mulexp2 = var2 * 10
+
+    .. warning::
+
+        Cannot be used with all solvers and
+        :class:`.ConstraintNotSupportedError` will be raised when loading the
+        model if this is the case.
+    """
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "mul")
@@ -1607,27 +1632,31 @@ class Mul(BinPredicate):
         return '*'
 
 
-## Mod expression
-# \note
-#   - Top-level: Can not be used as top-level Constraint
-#   - Nested: Equal to the modulo of the operands
-#
-#    Mod expression can be used to modulo two expressions or an expression and
-#    a constraint.
-#
-#    For MIP and SAT, the constraint is encoded such that the remainder takes
-#    the sign of the numerator, as per the C standard. This differs from Python
-#    where the remainder takes the sign of the denominator.
-#
-# \code
-#    var1 = Variable(0, 10)
-#    var2 = Variable(0, 100)
-#
-#    modexp1 = var2 % var1
-#    modexp2 = var2 % 10
-# \endcode
-#
 class Mod(BinPredicate):
+    """
+    Modulus expression to equal the modulo two expressions or an expression and
+    a constraint. Cannot be used as a top-level constraint.
+
+    .. code-block:: python
+
+        var1 = Variable(0, 10)
+        var2 = Variable(0, 100)
+
+        modexp1 = var2 % var1
+        modexp2 = var2 % 10
+
+    .. note::
+
+        For MIP and SAT, the constraint is encoded such that the remainder takes
+        the sign of the numerator, as per the C standard. This differs from
+        Python where the remainder takes the sign of the denominator.
+
+    .. warning::
+
+        Cannot be used with all solvers and
+        :class:`.ConstraintNotSupportedError` will be raised when loading the
+        model if this is the case.
+    """
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "mod")
@@ -1643,28 +1672,23 @@ class Mod(BinPredicate):
         return '%'
 
 
-## Equal expression
-#
-# \note
-#   - Top-level: Equality Constraint
-#   - Nested: Equal to the truth value of the Equality relation between the arguments
-#
-#    Eq expression can be used to create an equality expression between two
-#    expressions or an expression and a constraint. It can be used as either
-#    a hard constraint or as an expression.
-#
-# \code
-#    var1 = Variable(0, 10)
-#    var2 = Variable(0, 100)
-#    var3 = Variable()
-#
-#    model.add(var1 == var2)
-#    model.add(var1 == 5)
-#
-#    model.add( var3 == (var1 == var2) )
-# \endcode
-#
 class Eq(BinPredicate):
+    """
+    Equality expression between two expressions, or an expression and a
+    constant. It can be used as either a top-level hard constraint or reified
+    as a sub-expression.
+
+    .. code-block:: python
+
+        var1 = Variable(0, 10)
+        var2 = Variable(0, 100)
+        var3 = Variable()
+
+        model.add(var1 == var2)
+        model.add(var1 == 5)
+
+        model.add( var3 == (var1 == var2) )
+    """
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "eq")
@@ -1676,28 +1700,23 @@ class Eq(BinPredicate):
         return '=='
 
 
-## Not Equal expression
-#
-# \note
-#   - Top-level: Disequality Constraint
-#   - Nested: Equal to the truth value of the Disequality relation between the arguments
-#
-#    Neq expression can be used to create an inequality expression between two
-#    expressions or an expression and a constraint. It can be used as either
-#    a hard constraint or as an expression.
-#
-# \code
-#    var1 = Variable(0, 10)
-#    var2 = Variable(0, 100)
-#    var3 = Variable()
-#
-#    model.add(var1 != var2)
-#    model.add(var1 != 5)
-#
-#    model.add( var3 != (var1 != var2) )
-# \endcode
-#
 class Ne(BinPredicate):
+    """
+    Disequality expression between two expressions, or an expression and a
+    constant. It can be used as either a top-level hard constraint or reified as
+    a sub-expression.
+
+    .. code-block:: python
+
+        var1 = Variable(0, 10)
+        var2 = Variable(0, 100)
+        var3 = Variable()
+
+        model.add(var1 != var2)
+        model.add(var1 != 5)
+
+        model.add( var3 != (var1 != var2) )
+    """
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "ne")
@@ -1709,28 +1728,23 @@ class Ne(BinPredicate):
         return '!='  #SDG: operator '=/=' does not belong to python language
 
 
-## Less than expression
-#
-# \note
-#   - Top-level: Less than Constraint
-#   - Nested: Equal to the truth value of the less than relation between the arguments
-#
-#    Lt expression can be used to create an less than expression between two
-#    expressions or an expression and a constraint. It can be used as either
-#    a hard constraint or as an expression.
-#
-# \code
-#    var1 = Variable(0, 10)
-#    var2 = Variable(0, 100)
-#    var3 = Variable()
-#
-#    model.add(var1 < var2)
-#    model.add(var1 < 5)
-#
-#    model.add( var3 < (var1 < var2) )
-# \endcode
-#
 class Lt(BinPredicate):
+    """
+    Less-than expression between two expressions, or an expression and a
+    constant. It can be used as either a top-level hard constraint or reified as
+    a sub-expression.
+
+    .. code-block:: python
+
+        var1 = Variable(0, 10)
+        var2 = Variable(0, 100)
+        var3 = Variable()
+
+        model.add(var1 < var2)
+        model.add(var1 < 5)
+
+        model.add( var3 < (var1 < var2) )
+    """
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "lt")
@@ -1742,28 +1756,23 @@ class Lt(BinPredicate):
         return '<'
 
 
-## Greater than expression
-#
-# \note
-#   - Top-level: Greater than Constraint
-#   - Nested: Equal to the truth value of the Greater than relation between the arguments
-#
-#    Gt expression can be used to create an greater than expression between two
-#    expressions or an expression and a constraint. It can be used as either
-#    a hard constraint or as an expression.
-#
-# \code
-#    var1 = Variable(0, 10)
-#    var2 = Variable(0, 100)
-#    var3 = Variable()
-#
-#    model.add(var1 > var2)
-#    model.add(var1 > 5)
-#
-#    model.add( var3 > (var1 > var2) )
-# \endcode
-#
 class Gt(BinPredicate):
+    """
+    Greater-than expression between two expressions, or an expression and a
+    constant. It can be used as either a top-level hard constraint or reified as
+    a sub-expression.
+
+    .. code-block:: python
+
+        var1 = Variable(0, 10)
+        var2 = Variable(0, 100)
+        var3 = Variable()
+
+        model.add(var1 > var2)
+        model.add(var1 > 5)
+
+        model.add( var3 > (var1 > var2) )
+    """
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "gt")
@@ -1775,28 +1784,23 @@ class Gt(BinPredicate):
         return '>'
 
 
-## Less than or equal expression
-#
-# \note
-#   - Top-level: Less or equal than Constraint
-#   - Nested: Equal to the truth value of the less than or equal relation between the arguments
-#
-#    Le expression can be used to create an less than or equal expression between two
-#    expressions or an expression and a constraint. It can be used as either
-#    a hard constraint or as an expression.
-#
-# \code
-#    var1 = Variable(0, 10)
-#    var2 = Variable(0, 100)
-#    var3 = Variable()
-#
-#    model.add(var1 <= var2)
-#    model.add(var1 <= 5)
-#
-#    model.add( var3 <= (var1 <= var2) )
-# \endcode
-#
 class Le(BinPredicate):
+    """
+    Less than or equal expression between two expressions, or an expression and
+    a constant. It can be used as either a top-level hard constraint or reified
+    as a sub-expression.
+
+    .. code-block:: python
+
+        var1 = Variable(0, 10)
+        var2 = Variable(0, 100)
+        var3 = Variable()
+
+        model.add(var1 <= var2)
+        model.add(var1 <= 5)
+
+        model.add( var3 <= (var1 <= var2) )
+    """
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "le")
@@ -1808,28 +1812,23 @@ class Le(BinPredicate):
         return '<='
 
 
-## Greater than or equal expression
-#
-# \note
-#   - Top-level: Greater than or equal Constraint
-#   - Nested: Equal to the truth value of the greater than or equal relation between the arguments
-#
-#    Ge expression can be used to create an greater than or equal expression between two
-#    expressions or an expression and a constraint. It can be used as either
-#    a hard constraint or as an expression.
-#
-# \code
-#    var1 = Variable(0, 10)
-#    var2 = Variable(0, 100)
-#    var3 = Variable()
-#
-#    model.add(var1 >= var2)
-#    model.add(var1 >= 5)
-#
-#    model.add( var3 >= (var1 >= var2) )
-# \endcode
-#
 class Ge(BinPredicate):
+    """
+    Greater than or equal expression between two expressions, or an expression
+    and a constant. It can be used as either a top-level hard constraint or
+    reified as a sub-expression.
+
+    .. code-block:: python
+
+        var1 = Variable(0, 10)
+        var2 = Variable(0, 100)
+        var3 = Variable()
+
+        model.add(var1 >= var2)
+        model.add(var1 >= 5)
+
+        model.add( var3 >= (var1 >= var2) )
+    """
 
     def __init__(self, vars):
         BinPredicate.__init__(self, vars, "ge")
@@ -1841,22 +1840,16 @@ class Ge(BinPredicate):
         return '>='
 
 
-## Negate expression
-#
-# \note
-#   - Top-level: Cannot be used as a top level predicate
-#   - Nested: Expression representing the negation of its' argument
-#
-#    Neg expression, it is used to negate another expression. It is equivalent
-#    to multiplying by -1.
-#
-# \code
-#    var = Variable(1, 10)
-#
-#    model.add(-var < 3)
-# \endcode
-#
 class Neg(Predicate):
+    """
+    Negate expression, used to negate another expression. It is equivalent to
+    multiplying by -1.
+
+    .. code-block:: python
+
+        var = Variable(1, 10)
+        model.add(-var < 3)
+    """
 
     def __init__(self, vars):
         Predicate.__init__(self, vars, "neg")
@@ -1876,17 +1869,16 @@ class Neg(Predicate):
         return [self.children[0] * -1]
 
 
-## Absolute expression
-#
-#    An expression which represents the absolute value of a variable.
-#
-# \code
-#	var = Variable(-5, 5)
-#
-#	model.add(Abs(var) < 3)
-# \endcode
-#
 class Abs(Predicate):
+    """
+    Absolute expression, represents the absolute value of an expression or
+    variable.
+
+    .. code-block:: python
+
+        var = Variable(-5, 5)
+        model.add(Abs(var) < 3)
+    """
 
     def __init__(self, vars):
         Predicate.__init__(self, [vars], "Abs")
@@ -1904,56 +1896,53 @@ class Abs(Predicate):
         return [Max([self.children[0], Neg([self.children[0]])])]
 
 
-## Table constraint
-#
-# \note
-#   - Top-level: Table constrint
-#   - Nested: Cannot be used as a nested predicate
-#
-#    Table constraint used to handle list of allowed or forbidden tuples.
-#
 class Table(Predicate):
+    """
+    Table constraint explicityly specifying the list of allowed or forbidden
+    tuples. Must be used as a top-level constraint, it cannot be used as a
+    sub-expression.
 
-    ## Table constraint constructor
-    # @param vars variables to be constrained by the constraint
-    # @param tuples tuples used for the table constraint
-    # @param type type of table constraint, e.g. support of conflict
+    :param list vars: the variables to be constrained by the constraint.
+    :param tuples: list of tuples used for the table constraint.
+    :param type: type of table constraint, either support of conflict
+    """
+
     def __init__(self, vars, tuples=[], type='support'):
         Predicate.__init__(self, vars, "Table")
         self.parameters = [[tuple for tuple in tuples], type]
         self.lb = None  #SDG: initial lb/ub undefined
         self.ub = None
 
-    ## Adds another support tuple to the list of tuples
-    # @param tuple tuple to be added
-    #
-    #    Adds in a support tuple to the list of tuples if the Table constraint
-    #    is of type support. If the table constraint is of type conflict then
-    #    in the provided tuple is a conflict tuple in the tuple list it is removed.
-    #
     def addSupport(self, tuple):
+        """
+        Adds in a support tuple to the list of tuples, if the Table constraint is
+        of type support. If the table constraint is of type conflict then if the
+        provided tuple is a conflict tuple in the tuple list, it is removed.
 
+        :param tuple: tuple to be added.
+        """
         if self.parameters[1] == 'support':
             self.parameters[0].append(tuple)
         else:
             self.parameters[0].remove(tuple)
 
-    ## Adds another conflict tuple to the list of tuples
-    # @param tuple tuple to be added
-    #
-    #    Adds in a conflict tuple to the list of tuples if the Table constraint
-    #    is of type conflict. If the table constraint is of type support then
-    #    in the provided tuple is a support tuple in the tuple list it is removed.
-    #
     def addConflict(self, tuple):
+        """
+        Adds in a conflict tuple to the list of tuples, if the Table constraint
+        is of type conflict. If the table constraint is of type support then if
+        the provided tuple is a support tuple in the tuple list, it is removed.
 
+        :param tuple: tuple to be added.
+        """
         if self.parameters[1] != 'support':
             self.parameters[0].append(tuple)
         else:
             self.parameters[0].remove(tuple)
 
-    ## Prints the table of tuples
     def printTable(self):
+        """
+        Prints the table of tuples to standard output.
+        """
         print self.parameters[1]
         for var in self.children:
             print var,
@@ -1963,19 +1952,27 @@ class Table(Predicate):
         return self.operator + "([" + ",".join([str(var) for var in self.children]) + "]," + str(self.parameters[0]) + ",'" + self.parameters[1] + "')"
 
 
-## Sum constraint
-#
-# \note
-#   - Top-level: Cannot be used as a top level constraint
-#   - Nested: Expression representing the sum of the predicates linear coefficients
-#
-#    Sum Constraint with linear coefficients.
-#
 class Sum(Predicate):
+    """
+    Sum expression with linear coefficients. Numberjack will detect inline sum
+    expressions to extract the sum expression. For example, the following three
+    statements are equivalent however the last one requires the least amount of
+    overhead by Numberjack.
 
-    ## Sum constraint constructor
-    # @param vars variables to be summed
-    # @param coefs list of coefficients ([1,1,..1] by default)
+    .. code-block:: python
+
+        2*a + b + 0.5*c + 3*d == e
+        Sum([2*a, b, 0.5*c, 3*d]) == e
+        Sum([a,b,c,d], [2, 1, 0.5, 3]) == e
+
+    .. note::
+
+        Cannot be used as a top-level constraint, but can be used as the objective funcion.
+
+    :param vars: the variables to be summed.
+    :param coefs: list of coefficients, which is [1,1,..,1] by default.
+    """
+
     def __init__(self, vars, coefs=None):
         Predicate.__init__(self, vars, "Sum")
 
@@ -1988,10 +1985,8 @@ class Sum(Predicate):
         self.ub = sum(c*self.get_ub(i) if (c >= 0) else c*self.get_lb(i) for i,c in enumerate(coefs))
 
     def close(self):
+        # This handles the scalar constraint, i.e. with weights
 
-        """
-        This handles the scalar constraint, i.e. with weights
-        """
         Predicate.close(self)
 
         def extract_sum(var, coef):
@@ -2087,15 +2082,18 @@ class Sum(Predicate):
         return [addition([(child if coef is 1 else (child * Variable(coef,coef,str(coef)))) for child, coef in zip(self.children, self.parameters[0])] + [Variable(e,e,str(e)) for e in self.parameters[1:] if e is not 0])]
 
 
-## All-Different Constraint
-#
-# \note
-#   - Top-level: All Different Constraint
-#   - Nested: Cannot be used as a nested predicate
-#
-#    All-Different Constraint on a list of Expressions
-#
 class AllDiff(Predicate):
+    """
+    All-different constraint on a list of :class:`.Expression`, enforces that
+    each takes a different value.
+
+    :param vars: the variables or expressions which must take different values.
+        This should be a :class:`.VarArray` or `list` with at least two items.
+
+    .. note::
+
+        Can only be used as a top-level constraint, not reified.
+    """
 
     def __init__(self, vars, type=None):
         Predicate.__init__(self, vars, "AllDiff")
@@ -2110,59 +2108,54 @@ class AllDiff(Predicate):
     #    return " AllDiff(" + " ".join(map(str, self.children)) + " ) "
 
 
-## All-Different Except 0 Constraint
-#
-# \note
-#   - Top-level: Enforces that each expression take a different value, except
-#     those which take the value 0.
-#   - Nested: Cannot be used as a nested predicate
-#
-#    All-Different Constraint on a list of Expressions
-#
 class AllDiffExcept0(Predicate):
+    """
+    All-different except zero constraint on a list of :class:`.Expression`,
+    enforces that each takes a different value, except those which take the
+    value 0.
+
+    :param vs: the variables or expressions which must take different values.
+        This should be a :class:`.VarArray` or `list` with at least two items.
+
+    .. note::
+
+        Can only be used as a top-level constraint, not reified.
+    """
 
     def __init__(self, vs):
         Predicate.__init__(self, vs, "AllDiffExcept0")
+        if len(vs) < 2:
+            raise InvalidConstraintSpecification("AllDiff requires a list of at least 2 expressions.")
 
     def decompose(self):
         from itertools import combinations
         return [Disjunction([x == 0, y == 0, x != y]) for x, y in combinations(self.children, 2)]
 
 
-## Global Cardinality Constraint
-#
-# \note
-#   - Top-level: Cardinality Constraint Constraint
-#   - Nested: Cannot be used as a nested predicate
-#
-#    Global Cardinality Constraint on a list of Expressions
-#
 class Gcc(Predicate):
+    """
+    The Global Cardinality Constraint limits the number of times that certain
+    values can be used within a set of variables. For example, we might want the
+    value 1 to occur at least once and at most twice, the value 2 to occur
+    exactly twice, the value 3 at most four times, and so on.
 
-    ## Global Cardinality constraint constructor
-    # @param vars variables
-    # @param cards dictionary: value -> pairs of integers (l,u)
-    #
-    # The cardinalities connot be Variables.
-    # The parameter cards is a dictionary mapping a set of values
-    # to lower and upper bounds. For instance:
-    #
-    # \code
-    #X = VarArray(5,1,4)
-    #cards = {1:(1,2), 2:(2,2), 3:(0,3), 4:(1,2)}
-    #model = Model( Gcc(X,cards) )
-    #print model
-    #>>> assign:
-    #>>>   x0 in {1..4}
-    #>>>   x1 in {1..4}
-    #>>>   x2 in {1..4}
-    #>>>   x3 in {1..4}
-    #>>>   x4 in {1..4}
-    #>>>
-    #>>> subject to:
-    #>>>   Gcc(x0 x1 x2 x3 x4 | 1 in [1,2] 2 in [2,2] 3 in [0,3] 4 in [1,2] )
-    # \endcode
-    #
+    :param vars: the variables which are being constrained. This should be a
+        :class:`.VarArray` or `list` with at least two items.
+    :param dict cards: A dictionary mapping each constrained value to a two item
+        tuple for the lower and upper bounds on the number of occurrences of
+        that value.
+
+    .. code-block:: python
+
+        X = VarArray(5, 1, 4)
+        cards = {1: (1, 2), 2: (2, 2), 3: (0, 3), 4: (1, 2)}
+        model = Model(Gcc(X,cards))
+
+    .. note::
+
+        Can only be used as a top-level constraint, not reified.
+    """
+
     def __init__(self, vars, cards):
         Predicate.__init__(self, vars, "Gcc")
         values = cards.keys()
@@ -2194,15 +2187,17 @@ class Gcc(Predicate):
         return decomp
 
 
-## Max Constraint
-#
-# \note
-#   - Top-level: Cannot be used as a top level constraint
-#   - Nested: Expression representing the maximum of its arguments
-#
-# Predicate holding the maximum value of a set of Variables
-#
 class Max(Predicate):
+    """
+    The maximum value of a set of Variables.
+
+    :param vars: the variables or expressions. This should be a
+        :class:`.VarArray` or `list` with at least two items.
+
+    .. note::
+
+        Cannot be used as a top-level constraint, only as a sub-expression.
+    """
 
     def __init__(self, vars):
         Predicate.__init__(self, vars, "Max")
@@ -2228,15 +2223,17 @@ class Max(Predicate):
     #    return " MAX ( " + " ".join(map(str, self.children)) + " ) "
 
 
-## Min Constraint
-#
-# \note
-#   - Top-level: Cannot be used as a top level constraint
-#   - Nested: Expression representing the minimum of its arguments
-#
-# Predicate holding the maximum value of a set of Variables
-#
 class Min(Predicate):
+    """
+    The minimum value of a set of Variables.
+
+    :param vars: the variables or expressions. This should be a
+        :class:`.VarArray` or `list` with at least two items.
+
+    .. note::
+
+        Cannot be used as a top-level constraint, only as a sub-expression.
+    """
     def __init__(self, vars):
         Predicate.__init__(self, vars, "Min")
         #SDG:  initial bounds
@@ -2261,27 +2258,27 @@ class Min(Predicate):
     #    return " MIN ( " + " ".join(map(str, self.children)) + " ) "
 
 
-## Element Constraint
-#
-# \note
-#   - Top-level: Cannot be used as a top level constraint
-#   - Nested: Element constraint
-#
-# Given an integer Variable \e index and a VarArray \e vars,
-# \e Element is the Predicate holding the value of the variable at index \e index of the array \e vars.
-#
-# \code
-#vars = VarArray(5,1,4,'var')
-#index = Variable(0,4)
-#elt1 = Element(vars, index)
-#elt2 = vars[index]
-#print elt1
-#>>> Element(var0, var1, var2, var3, var4, x)
-#print elt2
-#>>> Element(var0, var1, var2, var3, var4, x)
-# \endcode
-#
 class Element(Predicate):
+    """
+    Given an integer Variable \e index and a VarArray \e vars, Element is the
+    Predicate holding the value of the variable at index `index` of the array
+    `vars`.
+
+    :param vars: the variables or expressions. This should be a
+        :class:`.VarArray` or `list` with at least two items.
+
+    .. code-block:: python
+
+        vars = VarArray(5, 1, 4)
+        index = Variable(0, 4)
+        elt1 = Element(vars, index)
+        elt2 = vars[index]
+
+    .. note::
+
+        Cannot be used as a top-level constraint, only as a sub-expression.
+    """
+
     def __init__(self, vars, index):
         children = list(vars)
         children.append(index)
@@ -2327,8 +2324,19 @@ class Clause(Predicate):
         return ret_str + ' )'
 
 
-## Less Lexicographic Ordering Constraint
 class LessLex(Predicate):
+    """
+    Less-than lexicographic ordering constraint between two lists of
+    expressions.
+
+    :param vars_1: the fist list of variables or expressions.
+    :param vars_1: the second list of variables or expressions.
+
+    .. note::
+
+        Can only be used as a top-level constraint, not reified.
+    """
+
     def __init__(self, vars_1, vars_2):
         children = list(vars_1)
         children.extend(vars_2)
@@ -2348,8 +2356,19 @@ class LessLex(Predicate):
         return toprint + ']'
 
 
-## Leq Lexicographic Ordering Constraint
 class LeqLex(Predicate):
+    """
+    Less-than-or-equal lexicographic ordering constraint between two lists of
+    expressions.
+
+    :param vars_1: the fist list of variables or expressions.
+    :param vars_1: the second list of variables or expressions.
+
+    .. note::
+
+        Can only be used as a top-level constraint, not reified.
+    """
+
     def __init__(self, vars_1, vars_2):
         children = list(vars_1)
         children.extend(vars_2)
@@ -2369,11 +2388,14 @@ class LeqLex(Predicate):
         return toprint + ']'
 
 
-## Maximisation objective function
-#
-# Sets the goal of search to be the maximisation of its' argument
-#
 class Maximise(Predicate):
+    """
+    Maximisation objective function, sets the goal of search to be the
+    maximisation of its' arguments.
+
+    :param vars: The :class:`.Variable` or :class:`.Expression` to be maximized.
+    """
+
     def __init__(self, vars):
         Predicate.__init__(self, [vars], "Maximise")
         self.lb = None  #SDG: initial lb/ub undefined
@@ -2383,16 +2405,21 @@ class Maximise(Predicate):
     #    return " Maximise ( " + " ".join(map(str, self.children)) + " ) "
 
 
-## Alias for American spelling
 def Maximize(var):
+    """
+    Alias for American spelling of :class:`.Maximise`.
+    """
     return Maximise(var)
 
 
-## Minimisation objective function
-#
-# Sets the goal of search to be the minimisation of its' argument
-#
 class Minimise(Predicate):
+    """
+    Minimisation objective function, sets the goal of search to be the
+    minimisation of its' arguments.
+
+    :param vars: The :class:`.Variable` or :class:`.Expression` to be minimized.
+    """
+
     def __init__(self, vars):
         Predicate.__init__(self, [vars], "Minimise")
         self.lb = None  #SDG: initial lb/ub undefined
@@ -2402,13 +2429,21 @@ class Minimise(Predicate):
     #    return " Minimise ( " + " ".join(map(str, self.children)) + " ) "
 
 
-## Alias for American spelling
 def Minimize(var):
+    """
+    Alias for American spelling of :class:`.Minimise`.
+    """
     return Minimise(var)
-## @}
 
 
 class Disjunction(Predicate):
+    """
+    Disjunction specifying that at least one of the sub-expressions should be
+    true. This can be a top-level constraint or reified as a sub-expression.
+
+    :param vars: the variables or expressions. This should be a
+        :class:`.VarArray` or `list` with at least two items.
+    """
 
     def __init__(self, vars):
         Predicate.__init__(self, vars, "OR")
@@ -2420,6 +2455,14 @@ class Disjunction(Predicate):
 
 
 class Conjunction(Predicate):
+    """
+    Conjunction specifying that all the sub-expressions should be true. This
+    should only be used as a reified sub-expression, otherwise, there is an
+    implicity conjunction across all top-level constraints anyway.
+
+    :param vars: the variables or expressions. This should be a
+        :class:`.VarArray` or `list` with at least two items.
+    """
 
     def __init__(self, vars):
         Predicate.__init__(self, vars, "AND")
@@ -2430,33 +2473,45 @@ class Conjunction(Predicate):
         return [Sum(self.children) == len(self.children)]
 
 
-class Convex(Predicate):
-    def __init__(self, vars):
-        Predicate.__init__(self, [var for var in vars], "Convex")
-        self.lb = None  #SDG: initial lb/ub undefined
-        self.ub = None
+# BH (2014/10/15): disabled as it appears to be buggy and not used anywhere.
+# class Convex(Predicate):
+#     def __init__(self, vars):
+#         Predicate.__init__(self, [var for var in vars], "Convex")
+#         self.lb = None  #SDG: initial lb/ub undefined
+#         self.ub = None
 
-    def __str__(self):
-        return "[" + " ".join(map(str, self.children)) + "] is row-convex"
+#     def __str__(self):
+#         return "[" + " ".join(map(str, self.children)) + "] is row-convex"
 
-    def decompose(self):
-        ### BUGGY!!
+#     def decompose(self):
+#         ### BUGGY!!
 
-        print "Decomposing Row convexity constraint", self
-        X = self.children
-        n = len(X)
-        first = Variable(n)
-        last = Variable(n)
-        decomposition = [X[i] <= (first <= i) for i in range(n)]
-        decomposition.extend([X[i] <= (last >= i) for i in range(n)])
-        decomposition.extend([((first <= i) & (i <= last)) <= X[i] for i in range(n)])
-        decomposition.append(first <= last)
+#         print "Decomposing Row convexity constraint", self
+#         X = self.children
+#         n = len(X)
+#         first = Variable(n)
+#         last = Variable(n)
+#         decomposition = [X[i] <= (first <= i) for i in range(n)]
+#         decomposition.extend([X[i] <= (last >= i) for i in range(n)])
+#         decomposition.extend([((first <= i) & (i <= last)) <= X[i] for i in range(n)])
+#         decomposition.append(first <= last)
 
-        print VarArray(decomposition)
-        return decomposition
+#         print VarArray(decomposition)
+#         return decomposition
 
 
 class Cardinality(Predicate):
+    """
+    Counts the number of expressions which have been assigned a specific value.
+
+    :param vars: the variables or expressions. This should be a
+        :class:`.VarArray` or `list` with at least two items.
+    :param int value: the value for which the cardinality of is being counted.
+
+    .. note::
+
+        Cannot be used as a top-level constraint, only as a sub-expression.
+    """
     def __init__(self, vars, value):
         Predicate.__init__(self, [var for var in vars], "Card")
         self.parameters = [value]
@@ -2473,30 +2528,24 @@ class Cardinality(Predicate):
         return [Sum([x == val for x in X])]
 
 
-class Cmp2(BinPredicate):
-    ## expression equal to -1 if x_0 < x_1, 1 if x_1 < x_0 and 0 otherwise
-    def __init__(self, vars):
-        BinPredicate.__init__(self, vars, "Cmp")
+# BH (2014/10/15): disabled as it does not appear to be used anywhere
+# class Cmp2(BinPredicate):
+#     ## expression equal to -1 if x_0 < x_1, 1 if x_1 < x_0 and 0 otherwise
+#     def __init__(self, vars):
+#         BinPredicate.__init__(self, vars, "Cmp")
 
-    def get_symbol(self):
-        return 'cmp'
+#     def get_symbol(self):
+#         return 'cmp'
 
-    def decompose(self):
-        X = self.children
-        return [(X[1] < X[0]) - (X[0] < X[1])]
+#     def decompose(self):
+#         X = self.children
+#         return [(X[1] < X[0]) - (X[0] < X[1])]
 
 
 ## @defgroup sched_group Scheduling constructs
 # The scheduling constructs and constraints
 #  @{
 #
-
-'''
-class Job(VarArray):
-    def __init__(self, L):
-        VarArray.__init__(self, n)
-'''
-
 
 ## A special class for simple representations of scheduling tasks.
 #
@@ -2515,6 +2564,26 @@ class Job(VarArray):
 #    time of the task.
 #
 class Task(Expression):
+    """
+    The Task class allows for simplified modeling of tasks in scheduling
+    applications. It encapsulates the earliest start time, latest end time
+    (makespan), and duration. The following tables shows example calls to the constructor
+    which results in different kinds of matrices.
+
+    .. code-block:: python
+
+        Task()  # creates a Task with an earliest start time of 0, latest end
+                # time of 1, and duration 1
+        Task(ub)  # creates a Task with an earliest start time of 0, latest end
+                  # time of 'ub', and duration 1
+        Task(ub, dur)  # creates a Task with an earliest start time of 0,
+                       # latest end time of 'ub', and duration 'dur'
+        Task(lb, ub, dur)  # creates a Task with an earliest start time of 0,
+                           # latest end time of 'ub', and duration 'dur'
+
+    When the model is solved, :func:`Numberjack.Expression.get_value` returns
+    the start time of the task.
+    """
 
     def __init__(self, arg1=None, arg2=None, arg3=None):
 
@@ -2547,6 +2616,15 @@ class Task(Expression):
             return 't' + str(ident) + ': [' + str(self.get_min()) + ':' + str(self.duration) + ':' + str(self.get_max() + self.duration) + ']'
 
     def __lt__(self, pred):
+        """
+        Creates a precedence expression on the task. Can be used to specify
+        precedence between two tasks or that a task has finished before a
+        certain time.
+
+        :param pred: if `pred` is an `int` then constrains that the task is
+            finished by `pred`, if `pred` is another :class:`.Task` instance,
+            then creates a top-level :class:`.Precedence` constraint.
+        """
         if type(pred) is int:
             return Le([self, pred - self.duration])
         return Precedence(self, pred, self.duration)
@@ -2563,8 +2641,15 @@ class Task(Expression):
         self.ub = makespan - self.duration
 
 
-## Precedence Constraint
 class Precedence(Predicate):
+    """
+    Precedence constraint enforces a certain gap between the start time of two
+    tasks. Equivalent to `task_i + duration <= task_j`.
+
+    :param Task task_i: the first task.
+    :param Task task_j: the second task.
+    :param int dur: the gap to maintain between the two tasks.
+    """
     def __init__(self, task_i, task_j, dur):
         Predicate.__init__(self, [task_i, task_j], "Precedence")
         self.parameters = [dur]
@@ -2578,8 +2663,19 @@ class Precedence(Predicate):
         return str(self.children[0]) + ' + ' + str(self.parameters[0]) + ' <= ' + str(self.children[1])
 
 
-## Binary disjunctive Constraint
 class NoOverlap(Predicate):
+    """
+    Binary disjunctive constraint enforces that two tasks do not overlap.
+    Equivalent to `(task_i + duration_i <= task_j) | (task_j + duration_j <=
+    task_i)` .
+
+    :param Task task_i: the first task.
+    :param Task task_j: the second task.
+    :param int dur_i: the duration of the first task, if `None` then
+        `task_i.duration` will be used.
+    :param int dur_j: the duration of the second task, if `None` then
+        `task_j.duration` will be used.
+    """
 
     def __init__(self, task_i, task_j, dur_i=None, dur_j=None):
         if dur_i == None:
@@ -2599,32 +2695,15 @@ class NoOverlap(Predicate):
         return str(self.children[0]) + ' + ' + str(self.parameters[0]) + ' <= ' + str(self.children[1]) + ' OR ' + str(self.children[1]) + ' + ' + str(self.parameters[1]) + ' <= ' + str(self.children[0])
 
 
-'''
-## Not sure what that is?
-class Interval(list):
-
-    def __init__(self, lhs, rhs):
-        list.__init__(self)
-        self.lhs = lhs
-        self.rhs = rhs
-
-    def __contains__(self, y):
-        if type(y) is not types.IntType and type(y) is not types.FloatType:
-            constraint = (y >= self.lhs) & (y <= self.rhs)
-            self.append(constraint)
-            return constraint
-        else:
-            constraint = (self.lhs <= y) & (self.rhs >= y)
-            self.append(constraint)
-            return constraint
-
-    def isin(self, y):
-        return self.__contains__(y)
-'''
-
-
-## Unary resource constraint
 class UnaryResource(list):
+    """
+    Unary resource constraint ensures that only one of the specified list of
+    tasks are running at each time point. An optional distance between tasks can
+    be specified also.
+
+    :param arg: a list of :class:`.Task` instances.
+    :param int distance: optional distance between tasks.
+    """
 
     def __init__(self, arg=[], distance=0):
         list.__init__(self, [NoOverlap(arg[i], arg[j], arg[i].duration + distance, arg[j].duration + distance) for i in range(1, len(arg)) for j in range(i)])
@@ -2632,6 +2711,12 @@ class UnaryResource(list):
         self.distance = distance
 
     def add(self, new_task):
+        """
+        Add an additional task to the existing list of tasks obeying this unary
+        resource.
+
+        :param Task new_task: the additional task to include.
+        """
         for task in self.tasks:
             self.append(NoOverlap(new_task, task, new_task.duration + self.distance, task.duration + self.distance))
         self.tasks.append(new_task)
@@ -2640,22 +2725,22 @@ class UnaryResource(list):
         return "[" + " ".join(map(str, self.tasks)) + "] share a unary resource"  # "+" ".join(map(str, self))
 
 
-class UnaryResourceB(Predicate):
-    def __init__(self, tasks, distance=0):
-        Predicate.__init__(self, [task for task in tasks], "UnaryResource")
-        self.distance = distance
+# BH (2014/10/15): disabled as it does not appear to be used anywhere and
+# appears to duplicate UnaryResource
+# class UnaryResourceB(Predicate):
+#     def __init__(self, tasks, distance=0):
+#         Predicate.__init__(self, [task for task in tasks], "UnaryResource")
+#         self.distance = distance
 
-    def add(self, new_task):
-        self.children.append(new_task)
+#     def add(self, new_task):
+#         self.children.append(new_task)
 
-    def __str__(self):
-        return "[" + " ".join(map(str, self.children)) + "] share a unary resource"
+#     def __str__(self):
+#         return "[" + " ".join(map(str, self.children)) + "] share a unary resource"
 
-    def decompose(self):
-        return [NoOverlap(task1, task2)  # , task1.duration+self.distance, task2.duration+self.distance)
-                for task1, task2 in pair_of(self.children)]
-
-## @}
+#     def decompose(self):
+#         return [NoOverlap(task1, task2)  # , task1.duration+self.distance, task2.duration+self.distance)
+#                 for task1, task2 in pair_of(self.children)]
 
 
 class ParamList(dict):
@@ -2667,6 +2752,42 @@ class ParamList(dict):
 
 
 def input(default):
+    """
+    Read command line arguments from the user. This is useful to establish some
+    default parameters of your model and solving process, and to subsequently
+    allow these to be easily changed by specifying a command line argument.
+
+    The `default` argument allows you to specify the list of allowed options, as
+    well as their default values. Any option given on the command line that is
+    not present in this list will raise an error. Values specified on the
+    command line will be coerced into the same data type as is given for that
+    option in `default`.
+
+    :param dict default: a dictionary of the valid options and their default
+        values.
+    :return: a dictionary of the options from `default`, possibly with updated
+        values from the command line.
+    :rtype: dict
+
+    For example, if launching I can change the default parameters of a model
+    like so:
+
+    .. code-block:: bash
+
+        python numberjackfile.py -solver MiniSat -N 10
+
+    .. code-block:: python
+
+        # numberjackfile.py
+        default = {'N': 5, 'solver': 'Mistral', 'tcutoff': 30}
+        param = input(default)
+        # param will be a dict {'N': 10, 'solver': 'MiniSat', 'tcutoff': 30}
+
+    .. deprecated:: 1.1
+
+        This function will be renamed or replaced in 2.0 to avoid the naming
+        clash with the builtin input function when imported with `*`.
+    """
     import sys
 
     param_list = ParamList(default)
@@ -2789,6 +2910,15 @@ load_in_decompositions()
 
 
 class Solution(list):
+    """
+    Class which will extract a list of the solution values for a given list of
+    variables. Solution values are order by the order in which the variables are
+    given in `vars`. This functionality is equivalent to calling
+    :func:`Expression.get_value` on each variable, but it is just wrapped here.
+
+    :param vars: a Matrix, VarArray, or list of variables to extract the
+        solution for.
+    """
     def __init__(self, vars):
         list.__init__(self)
         if issubclass(type(vars), Matrix):
@@ -2829,14 +2959,21 @@ class Nogood(object):
         return self.solver.print_clause(self.clause)
 
 
-## @defgroup sol_group Solving methods
-# The Solvers
-#  @{
-#
-
-## Generic Solver Class
 keep_alive = []
 class NBJ_STD_Solver(object):
+    """
+        Generic solver class which will be subclassed by the solver interfaces.
+        Provides common functionality which will be used in each of the solver
+        interfaces.
+
+        .. note::
+
+            The user should not need to instantiate this class, instead
+            :func:`Numberjack.Model.load` should be used to return an instance
+            of a subclass. However the following methods can be used on that
+            instance.
+    """
+
     def __init__(self, Library, Wrapper, model=None, X=None, FD=False,
                  clause_limit=-1, encoding=None):
         self.decomposition_store = []
@@ -2946,7 +3083,8 @@ class NBJ_STD_Solver(object):
         return var
 
     def getEncodingConfiguration(self, enc_config):
-        "Returns the C++ EncodingConfiguration equivalent of enc_config from the wrapper."
+        # Returns the C++ EncodingConfiguration equivalent of enc_config from
+        # the wrapper.
         if not self.EncodingConfiguration:
             raise UnsupportedSolverFunction(self.Library, "EncodingConfiguration", "This solver does not support custom encoding settings.")
 
@@ -3077,11 +3215,16 @@ class NBJ_STD_Solver(object):
         else:
             raise ConstraintNotSupportedError(expr.get_operator(), self.Library)
 
-    ##@name Solving methods
-    # @{
-
-    ## Solves the extracted Model
     def solve(self):
+        """
+        Calls solve on the underlying solver.
+
+        Captures :exc:`KeyboardInterrupt` or :exc:`SystemExit` signals and
+        returns None in this case.
+
+        :return: `True` if the solver found a satisfiable solution, `False`
+            otherwise.
+        """
         try:
             if self.solver.solve() == SAT:
                 return True
@@ -3090,8 +3233,16 @@ class NBJ_STD_Solver(object):
             print 'Program Interrupted'
             return
 
-    ## Solves using restarts
     def solveAndRestart(self, policy=GEOMETRIC, base=64, factor=1.3, decay=0.0, reinit=-1):
+        """
+        Calls solve with restarts on the underlying solver.
+
+        .. deprecated:: 1.1
+           Restarting is the default in most underlying solvers, currently only
+           Mistral version 1.55 will not perform restarts unless started with
+           this method. Instead you should use :func:`solve` which will use
+           restarts by default in other solvers.
+        """
         if reinit == -1:
             if self.solver.solveAndRestart(policy, base, factor, decay) == SAT:
                 return True
@@ -3100,47 +3251,59 @@ class NBJ_STD_Solver(object):
                 return True
         return False
 
-    ## Initialise structures for a depth first search
     def startNewSearch(self):
+        "Initialise structures for a depth first search."
         self.solver.startNewSearch()
 
-    ## Search for the next solution
     def getNextSolution(self):
+        "Search for the next solution"
         return self.solver.getNextSolution()
 
-    ## A generator which will yield true until no other solution exists
     def solutions(self):
+        "A generator which will yield `True` until no other solution exists."
         while self.getNextSolution():
             yield True  # Could return something more useful??
 
-    ## @}
-
     def next(self, exp, v):
+        # \internal used to get the next value in the domain of 'exp' after v
         #return self.solver.next(exp.var_list[self.solver_id-1], v)
         return exp.var_list[self.solver_id - 1].next(v)
 
     ##@name Search programming methods
     # @{
 
-    ## Tell the solver to reach a fixed point
-    #@return False if an inconsistency is found, True otherwise
     def propagate(self):
+        """
+        Tell the solver to reach a fixed point.
+
+        :return: `False` if an inconsistency is found, `True` otherwise.
+        """
         return self.solver.propagate()
 
-    ## Tell the solver to save the current state.
     def save(self):
+        "Tell the solver to save the current state."
         self.solver.save()
 
-    ## Tell the solver to restore its state to the one last enqueued by 'save()'
     def undo(self, bj=1):
+        """
+        Tell the solver to restore its state to the one last enqueued by
+        'save()'
+        """
         return self.solver.undo(bj)
 
-    ## Tell the solver to add a constraint in the current state (it should be unary for now)
     def post(self, exp):
+        """
+        Tell the solver to add a constraint in the current state.
+
+        :param exp: should be a unary constraint, for example `x == 5`.
+        """
         self.solver.post(exp.operator, exp.children[0].var_list[self.solver_id - 1], exp.children[1])
 
-    ## Tell the solver to post the negation of the last decision in the current states
     def deduce(self, exp=None):
+        """
+        Tell the solver to post the negation of the last decision in the current
+        states.
+        """
         if exp is None:
             self.solver.deduce()
         else:
@@ -3160,9 +3323,12 @@ class NBJ_STD_Solver(object):
     def branch_right(self):
         return self.solver.branch_right()
 
-    ## Resets the data structure of the solver to the initial state
-    # @param full Boolean stating if the top-level deduction should be undone too
     def reset(self, full=False):
+        """
+        Resets the data structure of the solver to the initial state.
+
+        :param bool full: whether the top-level deduction should be undone too.
+        """
         self.solver.reset(full)
 
     ## @}
@@ -3217,8 +3383,14 @@ class NBJ_STD_Solver(object):
     ##@name Parameter tuning methods
     # @{
 
-    ## Sets the variable and value heuristics
     def setHeuristic(self, arg1, arg2='No', arg3=0):
+        """
+        Sets the variable and value heuristics.
+
+        .. note::
+            Currently only supports setting the heuristics for Mistral solvers
+            but a generic method for all solvers is in the works.
+        """
         var_name = arg1
         val_name = arg2
         randomization = arg3
@@ -3233,46 +3405,91 @@ class NBJ_STD_Solver(object):
             print 'c legal value orderings: ', val_heuristics
         self.solver.setHeuristic(str(var_name), str(val_name), randomization)
 
-    ## Sets a limit on the number of failures encountered before aborting search
     def setFailureLimit(self, cutoff):
+        """
+        Sets a limit on the number of failures encountered before aborting
+        search.
+        """
         self.solver.setFailureLimit(cutoff)
 
-    ## Sets a limit on the CPU time before aborting search
     def setTimeLimit(self, cutoff):
+        """
+        Sets a limit on the CPU time before aborting search.
+        """
         self.solver.setTimeLimit(cutoff)
 
-    ## Sets a limit on the number of nodes explored before aborting search
     def setNodeLimit(self, cutoff):
+        """
+        Sets a limit on the number of nodes explored before aborting search.
+        """
         self.solver.setNodeLimit(cutoff)
 
-    ## Sets the verbosity level of the solver
     def setVerbosity(self, degree):
+        """
+        Sets the verbosity level of the solver.
+        """
         self.verbosity = max(0, degree)
         self.solver.setVerbosity(degree)
 
-    ## Sets the number of threads a solver should use.
     def setThreadCount(self, num_threads):
+        """
+        Sets the number of threads a solver should use.
+        """
         f = getattr(self.solver, 'setThreadCount', None)
         if f:
             f(num_threads)
         else:
             if self.verbosity > 0:
-                print >> sys.stderr, "Warning: this solver does not support the ability to specify a thread count."
+                print >> sys.stderr, "Warning: this solver does not support " \
+                    "the ability to specify a thread count."
 
-    ## Sets the target relative optimality gap tolerance 
     def setOptimalityGap(self, gap):
+        """
+        Sets the target relative optimality gap tolerance.
+        """
         if hasattr(self.solver, 'setOptimalityGap'):
             return self.solver.setOptimalityGap(gap)
         else:
-            raise UnsupportedSolverFunction(self.Library, "setOptimalityGap", "This solver does not support setting the optimility gap.")
+            raise UnsupportedSolverFunction(
+                self.Library, "setOptimalityGap", "This solver does not support"
+                " setting the optimility gap.")
         return None
 
-    ## Sets the initial random seed
     def setRandomSeed(self, seed):
+        """
+        Sets the initial random seed.
+        """
         self.solver.setRandomSeed(seed)
 
-    ##SDG: Sets an option in toulbar2 whose name is passed as the first parameter, and value as a second one
+    def setWorkMem(self, mb):
+        """
+        Set the limit of working memory, only used for CPLEX.
+        """
+        if hasattr(self.solver, 'setWorkMem'):
+            return self.solver.setWorkMem(mb)
+        else:
+            raise UnsupportedSolverFunction(
+                self.Library, "setWorkMem", "This solver does not support"
+                " setting the work memory.")
+        return None
+
+    def getWorkMem(self):
+        """
+        Get the limit of working memory, only used for CPLEX.
+        """
+        if hasattr(self.solver, 'getWorkMem'):
+            return self.solver.getWorkMem()
+        else:
+            raise UnsupportedSolverFunction(
+                self.Library, "getWorkMem", "This solver does not support"
+                " getting the work memory.")
+        return None
+
     def setOption(self,func,param=None):
+        """
+        Sets an option in Toulbar2 whose name is passed as the first parameter,
+        and value as a second one.
+        """
         try:
             function = getattr(self.solver,func)
         except AttributeError:
@@ -3352,121 +3569,268 @@ class NBJ_STD_Solver(object):
     ##@name Accessors
     # @{
 
-    ## Extract a Solution object from the solver
     def get_solution(self):
+        """
+        Extract a :class:`.Solution` object from the solver representing the
+        list of assigned values.
+
+        :rtype: :class:`.Solution`
+        """
         self.solver.store_solution()
         solution = Solution(self.variables)
         return solution
 
-    ## Returns True iff the solver found a solution and proved its optimality
     def is_opt(self):
+        """
+        Returns `True` if the solver found a solution and proved its
+        optimality, `False` otherwise.
+        """
         return self.solver.is_opt()
 
-    ## Returns True iff the solver found a solution
     def is_sat(self):
+        "Returns `True` if the solver found a solution, `False` otherwise."
         return self.solver.is_sat()
 
-    ## Returns True iff the solver proved unsatisfiability
     def is_unsat(self):
+        """
+        Returns `True` if the solver proved unsatisfiability, `False` otherwise.
+        """
         return self.solver.is_unsat()
 
-    ##SDG: Returns the current best solution cost
     def getOptimum(self):
-        return self.solver.getOptimum()
+        """
+        Returns the current best solution cost from Toulbar2.
+
+        :raises UnsupportedSolverFunction: if called on a solver other than
+            Toulbar2.
+        """
+        if hasattr(self.solver, 'getOptimum'):
+            return self.solver.getOptimum()
+        else:
+            raise UnsupportedSolverFunction(
+                self.Library, "getOptimum", "This solver does not support "
+                "getOptimum, this is a Toulbar2 function only.")
 
     def getOptimalityGap(self):
+        """
+        Returns the optimality gap from the solver. Valid for MIP solvers only.
+
+        :raises UnsupportedSolverFunction: if called on a non MIP solver.
+        """
         if hasattr(self.solver, 'getOptimalityGap'):
             return self.solver.getOptimalityGap()
         else:
-            raise UnsupportedSolverFunction(self.Library, "getOptimalityGap", "This solver does not support getting the optimility gap.")
-        return None
+            raise UnsupportedSolverFunction(
+                self.Library, "getOptimalityGap", "This solver does not "
+                "support getting the optimility gap.")
 
-    ## Returns the number of backtracks performed during the last search
     def getBacktracks(self):
+        "Returns the number of backtracks performed during the last search."
         return self.solver.getBacktracks()
 
-    ## Returns the number of nodes explored during the last search
     def getNodes(self):
+        "Returns the number of nodes explored during the last search."
         return self.solver.getNodes()
 
-    ## Returns the number of failures encountered during the last search
     def getFailures(self):
+        "Returns the number of failures encountered during the last search."
         return self.solver.getFailures()
 
-    ## Returns the number of constraint propagations performed during the last search
     def getPropags(self):
+        """
+        Returns the number of constraint propagations performed during the last
+        search.
+        """
         return self.solver.getPropags()
 
-    ## Returns the CPU time required for the last search
     def getTime(self):
+        "Returns the CPU time required for the last search."
         return self.solver.getTime()
 
     ## @}
 
     def getChecks(self):
+        "Returns the number of constraint checks. for the last search."
         return self.solver.getChecks()
 
     def printStatistics(self):
+        """
+        Asks the solver to print some basic statistics about its last search.
+
+        .. deprecated:: 1.1
+        """
         print ''
         self.solver.printStatistics()
         print ''
 
     def getNumVariables(self):
+        """
+        Get the number of variables that have been created in the underlying
+        solver. This figure can be different to the number of variables that you
+        created in your model. For SAT and MIP solvers, this figure will be the
+        number of Boolean variables which had to be created during the encoding
+        step, including any auxiliary variables.
+        """
         return self.solver.getNumVariables()
 
     def getNumConstraints(self):
+        """
+        Get the number of constraints that have been created in the underlying
+        solver. This figure can be different to the number of constraints that
+        you created in your model. For SAT solvers it will be the number of CNF
+        clauses created by the encoding, for MIP solvers it will be the number
+        of linear expressions created.
+        """
         return self.solver.getNumConstraints()
 
     def load_xml(self, file, type=4):
+        """
+        This function only allows you to load an XCSP instance into the Mistral
+        solver. You should use the :mod:`Numberjack.XCSP` module to build a
+        generic Numberjack model from an XCSP instance, which can be loaded with
+        other underlying solvers.
+
+        .. deprecated:: 1.1
+            Use :mod:`Numberjack.XCSP` instead.
+        """
         self.solver.load_xml(file, type)
 
     def load_mps(self, filename, extension):
+        """
+        Asks the underlying MIP solver to load an MPS file.
+
+        :param filename: the path to the file.
+        :param extension: the file's extension.
+        :raises UnsupportedSolverFunction: if called on a non MIP solver.
+        """
+        if not hasattr(self.solver, 'load_mps'):
+            raise UnsupportedSolverFunction(
+                str(type(self)), "load_mps", "Please load the model using a "
+                "MIP solver to use this functionality.")
         self.solver.load_mps(filename, extension)
 
     def load_gmpl(self, filename, data=None):
+        """
+        Asks the underlying MIP solver to load a GMPL file, possibly with a
+        separate data file.
+
+        :param filename: the path to the file.
+        :param data: optional path to a data file.
+        :raises UnsupportedSolverFunction: if called on a non MIP solver.
+        """
+        if not hasattr(self.solver, 'load_gmpl'):
+            raise UnsupportedSolverFunction(
+                str(type(self)), "load_gmpl", "Please load the model using a "
+                "MIP solver to use this functionality.")
         if data == None:
             self.solver.load_gmpl(filename)
         else:
             self.solver.load_gmpl(filename, data)
 
     def load_lp(self, filename, epsilon):
+        """
+        Asks the underlying MIP solver to load an LP file, possibly with a
+        separate data file.
+
+        :param filename: the path to the file.
+        :param epsilon: epsilon
+        :raises UnsupportedSolverFunction: if called on a non MIP solver.
+        """
+        if not hasattr(self.solver, 'load_lp'):
+            raise UnsupportedSolverFunction(
+                str(type(self)), "load_lp", "Please load the model using a "
+                "MIP solver to use this functionality.")
         self.solver.load_lp(filename, epsilon)
 
     def shuffle_cnf(self, *args, **kwargs):
+        """
+        Shuffle the internal CNF representation before writing it to a file.
+        This renames the variables, shuffles their order in each clause, and
+        shuffles the ordering of the clauses. This currently has no affect on
+        the built-in MiniSat or WalkSat solvers since clauses are added directly
+        via their API when they are generated but can be used with any of the
+        other external file based SAT solvers. This should be called before
+        :meth:`.output_cnf`.
+
+        :param int seed: The seed for the random number generator.
+        :raises UnsupportedSolverFunction: if called on a non SAT-based solver.
+        """
         if hasattr(self.solver, 'shuffle_cnf'):
             self.solver.shuffle_cnf(*args, **kwargs)
         else:
-            raise UnsupportedSolverFunction(str(type(self)), "shuffle_cnf", "Please load the model using a SAT solver to use this functionality.")
+            raise UnsupportedSolverFunction(
+                str(type(self)), "shuffle_cnf", "Please load the model using "
+                "a SAT solver to use this functionality.")
 
     def output_cnf(self, filename):
+        """
+        Output the CNF representation of a model to a file. The model must have
+        been loaded with a SAT-based solver.
+
+        :param str filename: The filename of where to output the CNF file.
+        :raises UnsupportedSolverFunction: if called on a non SAT-based solver.
+        """
         from Numberjack.solvers.SatWrapper import SatWrapperSolver as sws
         if not issubclass(type(self.solver), sws):
-            raise UnsupportedSolverFunction(str(type(self)), "output_cnf", "Please load the model using a SAT solver to use this functionality.")
+            raise UnsupportedSolverFunction(
+                str(type(self)), "output_cnf", "Please load the model using a "
+                "SAT solver to use this functionality.")
         self.solver.output_cnf(filename)
 
     def output_lp(self, filename):
+        """
+        Output the LP representation of a model to a file. The model must have
+        been loaded with a MIP-based solver.
+
+        :param str filename: The filename of where to output the LP file.
+        :raises UnsupportedSolverFunction: if called on a non MIP-based solver.
+        """
         if hasattr(self.solver, 'output_lp'):
             if not filename.endswith(".lp"):
                 filname = "%s.lp" % filename
             self.solver.output_lp(filename)
         else:
-            raise UnsupportedSolverFunction(str(type(self)), "output_lp", "This solver does not support outputing LP files.")
+            raise UnsupportedSolverFunction(
+                str(type(self)), "output_lp", "This solver does not support "
+                "outputing LP files.")
 
     def output_mps(self, filename):
+        """
+        Output the MPS representation of a model to a file. The model must have
+        been loaded with a MIP-based solver.
+
+        :param str filename: The filename of where to output the MPS file.
+        :raises UnsupportedSolverFunction: if called on a non MIP-based solver.
+        """
         if hasattr(self.solver, 'output_mps'):
             if not filename.endswith(".mps"):
                 filname = "%s.mps" % filename
             self.solver.output_mps(filename)
         else:
-            raise UnsupportedSolverFunction(str(type(self)), "output_mps", "This solver does not support outputing MPS files.")
+            raise UnsupportedSolverFunction(
+                str(type(self)), "output_mps", "This solver does not support "
+                "outputing MPS files.")
 
     def num_vars(self):
-        return self.solver.num_vars()
+        """
+        .. deprecated:: 1.1
+            Use :meth:`.getNumVariables` intead.
+        """
+        if hasattr(self.solver, 'num_vars'):
+            return self.solver.num_vars()
+
+        raise UnsupportedSolverFunction(
+            str(type(self)), "num_vars", "This functionality has been "
+            "deprecated, use getNumVariables.")
 
     def extract_graph(self):
         self.solver.extract_graph()
 
     def numNodes(self):
+        """
+        .. deprecated:: 1.1
+            Use :meth:`.getNodes` intead.
+        """
         return self.solver.numNodes()
 
     def degree(self, var):
@@ -3493,6 +3857,26 @@ class NBJ_STD_Solver(object):
         return feats
 
     def get_features(self):
+        """
+        Compute and return the 36 CPHydra features. The feature set includes 32
+        static features regarding the contraints, domains, etc, and 4 dynamic
+        features about weights, nodes, propagations computed after a 2 second
+        run of Mistral. Note that these can only be compute when the XCSP
+        instance has been loaded directly by Mistral like in the following
+        example:
+
+        .. code-block:: python
+
+            model = Model()
+            solver = model.load('Mistral')
+            solver.load_xml(xml_filename)
+            features = solver.get_features()
+
+        .. deprecated:: 1.1
+
+            This will be replaced with more extensive and flexible functionality
+            in future releases.
+        """
         feats = {}
         for i in range(36):
             feats[self.solver.get_feature_name(i)] = self.solver.get_feature(i)
@@ -3508,18 +3892,11 @@ class NBJ_STD_Solver(object):
         if self.free_memory:
             self.free_memory(self.solver)
 
-##  @}
-
 
 def enum(*sequential):
     enums = dict(zip(sequential, (2 ** i for i in range(len(sequential)))))
     return type('Enum', (), enums)
 
-
-## @defgroup enc_config Encoding Configuration
-#  Encoding Configuration
-#  @{
-#
 
 # This enum ordering must be the same as that specified in the enums
 # EncodingConfiguration::AMOEncoding and AllDiffEncoding in SatWrapper.hpp
@@ -3527,10 +3904,41 @@ AMOEncoding = enum('Pairwise', 'Ladder')
 AllDiffEncoding = enum('PairwiseDecomp', 'LadderAMO', 'PigeonHole')
 
 
-## Generic Solver Class
 class EncodingConfiguration(object):
+    """
+    Specifies a configuration for the SAT encoding that expressions will take
+    when translated to conjunctive normal form for the SAT solver. Support for
+    configuring the MIP encoding could be added later.
 
-    def __init__(self, direct=True, order=True, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise, alldiff_encoding=AllDiffEncoding.PairwiseDecomp):
+    At least one of ``direct`` or ``order`` should be ``True``. If both are set
+    to ``True``, then the domain will be encoded using both representations and
+    chanelled between each other. The default is to have both enabled,
+    corresponding to the so called regular encoding.
+
+    At least one of ``conflict`` or ``support`` should be ``True``, these
+    specify which form of a constraint is encoded into CNF.
+
+    :param bool direct: Whether the direct (or sparse) encoding of domains
+        should be generated.
+    :param bool order: Whether the order encoding of the domains should be
+        generated.
+    :param bool conflict: Whether the conflict clauses of a constraint should be
+        generated.
+    :param bool support: Whether the support clauses of a constraint should be
+        generated.
+    :param int amo_encoding: The at-most-one encoding to be used. An enum is
+        defined with the supported possibilities: ``AMOEncoding.Pairwise``, and
+        ``AMOEncoding.Ladder``.
+    :param int alldiff_encoding: The encoding used when encoding all-different
+        constraints. The possibilites are defined in the ``AllDiffEncoding``
+        enum and can be binary or'd with each other to be passed as a single
+        int, like so: ``AllDiffEncoding.PairwiseDecomp |
+        AllDiffEncoding.LadderAMO | AllDiffEncoding.PigeonHole``.
+    """
+
+    def __init__(self, direct=True, order=True, conflict=True, support=False,
+                 amo_encoding=AMOEncoding.Pairwise,
+                 alldiff_encoding=AllDiffEncoding.PairwiseDecomp):
         # Domain encodings
         self.direct = direct
         self.order = order
@@ -3547,14 +3955,20 @@ class EncodingConfiguration(object):
 
         # Check validity of the encoding config
         if not self.direct and not self.order:
-            raise InvalidEncodingException("Domains must be encoded using at least one encoding: direct|order.")
+            raise InvalidEncodingException(
+                "Domains must be encoded using at least one encoding: "
+                "direct|order.")
 
         if not self.conflict and not self.support:
-            raise InvalidEncodingException("Constraints must be encoded using at least one encoding: conflict|support.")
+            raise InvalidEncodingException(
+                "Constraints must be encoded using at least one encoding: "
+                "conflict|support.")
 
         if not self.amo_encoding & AMOEncoding.Pairwise and \
            not self.amo_encoding & AMOEncoding.Ladder:
-            raise InvalidEncodingException("Invalid at-most-one encoding specified: %s" % (str(self.amo_encoding)))
+            raise InvalidEncodingException(
+                "Invalid at-most-one encoding specified: %s" %
+                (str(self.amo_encoding)))
 
         # if self.amo_encoding & AMOEncoding.Pairwise and not self.direct:
         #     raise InvalidEncodingException("Domains must be encoded using the direct encoding if using the pairwise AMO encoding.")
@@ -3597,5 +4011,3 @@ NJEncodings = {
     "pairwise_directorder_pigeon": EncodingConfiguration(direct=True, order=True, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise, alldiff_encoding=AllDiffEncoding.PairwiseDecomp | AllDiffEncoding.PigeonHole),
     "ladder_directorder_pigeon": EncodingConfiguration(direct=True, order=True, conflict=True, support=False, amo_encoding=AMOEncoding.Pairwise, alldiff_encoding=AllDiffEncoding.LadderAMO | AllDiffEncoding.PigeonHole),
 }
-
-##  @}

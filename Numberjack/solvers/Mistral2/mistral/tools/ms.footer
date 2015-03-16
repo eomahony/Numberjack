@@ -1,0 +1,473 @@
+
+  if(!heu) {
+    std::cout << " " << parameters.prefix_comment << " Warning, there is no known heuristic \"" << var_ordering << "/" << branching << "\"" << std::endl;
+  }
+					
+  return heu;
+}
+
+Mistral::RestartPolicy *Mistral::Solver::restart_factory(std::string rpolicy) {
+  RestartPolicy *pol;
+  if(rpolicy == "luby") pol = new Luby(); 
+  else if(rpolicy == "geom") pol = new Geometric(); 
+  else pol = new NoRestart();
+  return pol;
+}
+
+
+void Mistral::Solver::initialise_random_seed(const int seed) {
+  usrand(seed);
+}
+
+
+void Mistral::Solver::set_learning_on() {
+
+  parameters.backjump = true;
+  if(!base) {
+    base = new ConstraintClauseBase(variables);
+    add(Constraint(base));
+    //add(base);
+  }
+}
+
+void Mistral::Solver::set_time_limit(const double limit) {
+  if(limit > 0) {
+    parameters.limit = 1;
+    parameters.time_limit = limit;
+  }
+}
+
+
+void Mistral::Solver::check_constraint_graph_integrity() {
+  // for each constraint, check if the set of active variables corresponds to unbound vars
+  for(unsigned int i=0; i<constraints.size; ++i) {
+    //if(constraints[i].is_active())
+    constraints[i].check_active();
+  }
+
+  // for each variable, check that
+  // 1/ no constraint is listed twice
+  // 2/ for each constraint in the list for this var:
+  //   a/ the index of the constraint for that var corresponds to the rank of var in its scope
+  //   b/ the constraint has at least 2 unbound vars, or does not enforce nfc1
+  BitSet cons_list(0, constraints.size, BitSet::empt);
+  int trig, cons;
+  Constraint c;
+  Variable *scope;
+  for(unsigned int i=0; i<variables.size; ++i) {
+    cons_list.clear();
+
+    for(trig = _VALUE_; trig<=_DOMAIN_; ++trig) {
+
+      for(cons = constraint_graph[i].on[trig].size; --cons>=0;) {
+
+	c = constraint_graph[i].on[trig][cons];
+
+	if(cons_list.contain(c.id())) {
+
+	  std::cout << "Warning: " << c << " is listed at least twice: " 
+		    << std::endl << constraint_graph[i].on[0] 
+		    << std::endl << constraint_graph[i].on[1] 
+		    << std::endl << constraint_graph[i].on[2] << std::endl;
+
+	  exit(1);
+	    
+	} else {
+	  cons_list.add(c.id());
+	}
+
+	scope = c.get_scope();
+	  
+	if(scope[c.index()].id() != (int)i) {
+
+	  std::cout << "Warning: incorrect variable indexing: " 
+		    << scope[c.index()] << "'s " << c
+		    << " is posted on " << variables[i] << std::endl;
+
+	  exit(1);
+
+	}
+
+	if(c.rank() != cons) {
+
+	  std::cout << "Warning: incorrect list indexing: " << c << " is " 
+		    << cons << "th in the list of " << variables[i] 
+		    << ", but indexed " << c.rank() << "th." << std::endl;  
+
+	  exit(1);
+	}
+      }
+    }
+  }
+}
+
+
+
+Mistral::SolverCmdLine::SolverCmdLine(const std::string& message,
+				      const char delimiter,
+				      const std::string& version,
+				      bool helpAndVersion)
+  : CmdLine(message, delimiter, version, helpAndVersion) {
+  initialise();
+}
+    
+Mistral::SolverCmdLine::~SolverCmdLine() {
+
+  delete fileArg;
+  delete seedArg;
+  delete timeArg;
+  //delete printArg;
+  // delete printsolArg;
+  delete printstaArg;
+  delete printmodArg;
+  delete printparArg;
+  delete printinsArg;
+  delete verbosityArg;
+  delete randomizationArg;
+  delete rewriteArg;
+  delete restartArg;
+  delete factorArg;
+  delete baseArg;
+  delete decayArg;
+  delete forgetArg;
+  delete incrementArg;
+  delete learningArg;
+  delete branchingArg;
+  delete orderingArg;
+  delete pcommentArg;
+  delete pstatArg;
+  delete pobjectiveArg;
+  delete psolutionArg;
+  delete poutcomeArg;
+
+  delete r_allowed;
+  delete bo_allowed;
+}
+
+void Mistral::SolverCmdLine::initialise() {
+
+  // INPUT FILE
+  fileArg = new TCLAP::ValueArg<std::string>("f","file","instance file",true,"data/example.opb","string");
+  add( *fileArg );
+
+  // COMMENT INDICATOR
+  pcommentArg = new TCLAP::ValueArg<std::string>("","prefix_comment","output comments prefix",false,"c","string");
+  add( *pcommentArg );
+  // STATS INDICATOR
+  pstatArg = new TCLAP::ValueArg<std::string>("","prefix_stat","output stats prefix",false,"d","string");
+  add( *pstatArg );
+  // NEW OBJ INDICATOR
+  pobjectiveArg = new TCLAP::ValueArg<std::string>("","prefix_obj","output new objective prefix",false,"o","string");
+  add( *pobjectiveArg );
+  // SOLUTION INDICATOR
+  psolutionArg = new TCLAP::ValueArg<std::string>("","prefix_sol","output solution prefix",false,"v","string");
+  add( *psolutionArg );
+  // OUTCOME INDICATOR
+  poutcomeArg = new TCLAP::ValueArg<std::string>("","prefix_res","output search outcome prefix",false,"s","string");
+  add( *poutcomeArg );
+
+  // TIME LIMIT
+  timeArg = new TCLAP::ValueArg<double>("t","time_limit","time limit",false,0,"double");
+  add( *timeArg );
+
+
+
+  // // PRINTING OPTIONS
+  // std::vector<std::string> pallowed;
+  // pallowed.push_back("params");
+  // pallowed.push_back("instance");
+  // pallowed.push_back("model");
+  // pallowed.push_back("sol");
+  // pallowed.push_back("stat");
+  // TCLAP::ValuesConstraint<std::string> p_allowed( pallowed );
+  // printArg = new TCLAP::MultiArg<std::string>("p","print","objects to print",false,&p_allowed);
+  // add( *printArg );
+
+  // VERBOSITY LEVEL
+  verbosityArg = new TCLAP::ValueArg<int>("v","verbosity","verbosity level",false,1,"int");
+  add( *verbosityArg );
+    
+  // RANDOM SEED
+  seedArg = new TCLAP::ValueArg<int>("s","seed","random seed",false,12345,"int");
+  add( *seedArg );
+    
+  // HEURISTIC RANDOMIZATION
+  randomizationArg = new TCLAP::ValueArg<int>("z","randomization","randomization level",false,0,"int");
+  add( *randomizationArg );
+    
+  // WHETHER WE USE REWRITING OPTIONS
+  rewriteArg = new TCLAP::SwitchArg("w","rewrite","use rewriting during preprocessing", false);
+  add( *rewriteArg );
+
+  // WHETHER WE WANT TO FIND ALL SOLUTIONS
+  allsolArg = new TCLAP::SwitchArg("a","all","find all solutions", false);
+  add( *allsolArg );
+    
+  // RESTART POLICY
+  std::vector<std::string> rallowed;
+  rallowed.push_back("no");
+  rallowed.push_back("geom");
+  rallowed.push_back("luby");
+  r_allowed = new TCLAP::ValuesConstraint<std::string>( rallowed );
+  restartArg = new TCLAP::ValueArg<std::string>("r","restart","restart policy",false,"geom",r_allowed);
+  add( *restartArg );
+    
+  // RESTART FACTOR
+  factorArg = new TCLAP::ValueArg<double>("m","factor","restart factor",false,1.05,"double");
+  add( *factorArg );
+    
+  // RESTART BASE
+  baseArg = new TCLAP::ValueArg<int>("e","base","restart base",false,200,"int");
+  add( *baseArg );
+    
+  // DECAY FACTOR
+  decayArg = new TCLAP::ValueArg<double>("d","decay","decay factor",false,.96,"double");
+  add( *decayArg );
+    
+  // FORGETFULNESS
+  forgetArg = new TCLAP::ValueArg<double>("g","forget","clause forgetfulness",false,.75,"double");
+  add( *forgetArg );
+    
+  // ACTIVITY INCREMENT
+  incrementArg = new TCLAP::ValueArg<double>("i","increment","activity increment",false,.012,"double");
+  add( *incrementArg );
+    
+  // USE CLAUSE LEARNING
+  learningArg = new TCLAP::SwitchArg("l","learning","Switch on clause learning (CDCL)", false);
+  add( *learningArg );
+
+
+  // PRINT MODEL
+  printmodArg = new TCLAP::SwitchArg("", "print_mod","Print the model", false);
+  add( *printmodArg );
+    
+  // PRINT STATISTICS
+  printstaArg = new TCLAP::SwitchArg("", "print_sta","Print the statistics", false);
+  add( *printstaArg );
+
+  // PRINT INSTANCE
+  printinsArg = new TCLAP::SwitchArg("", "print_ins","Print the instance", false);
+  add( *printinsArg );
+
+  // PRINT PARAMETERS
+  printparArg = new TCLAP::SwitchArg("", "print_par","Print the parameters", false);
+  add( *printparArg );
+
+  // PRINT SOLUTION
+  printsolArg = new TCLAP::SwitchArg("", "print_sol", "Print the solution, if found", false);
+  add( *printsolArg );
+
+  // VARIABLE ORDERING
+  std::vector<std::string> voallowed;
+  voallowed.push_back("dom/deg");
+  voallowed.push_back("dom/wdeg");
+  voallowed.push_back("dom/gwdeg");
+  voallowed.push_back("dom/pruning");
+  voallowed.push_back("dom/activity");
+  voallowed.push_back("activity");
+  voallowed.push_back("neighbor");
+  voallowed.push_back("mindomain");
+  voallowed.push_back("maxdegree");
+  voallowed.push_back("lexicographic");
+  voallowed.push_back("input_order");
+  voallowed.push_back("first_fail");
+  voallowed.push_back("anti_first_fail");
+  voallowed.push_back("smallest");
+  voallowed.push_back("largest");
+  voallowed.push_back("occurrence");
+  voallowed.push_back("most_constrained");
+  voallowed.push_back("max_regret");
+
+  vo_allowed = new TCLAP::ValuesConstraint<std::string>( voallowed );
+  orderingArg = new TCLAP::ValueArg<std::string>("c","choice","variable selection",false,"dom/gwdeg",vo_allowed);
+  add( *orderingArg ); 
+
+  // VALUE ORDERING
+  std::vector<std::string> boallowed;
+  boallowed.push_back("minval");
+  boallowed.push_back("maxval");
+  boallowed.push_back("minweight");
+  boallowed.push_back("maxweight");
+  boallowed.push_back("halfsplit");
+  boallowed.push_back("random");
+  boallowed.push_back("randminmax");
+  boallowed.push_back("guided");
+  boallowed.push_back("minweight+guided");
+  boallowed.push_back("maxweight+guided");
+  boallowed.push_back("minval+guided");
+  boallowed.push_back("maxval+guided");
+  boallowed.push_back("random+guided");
+
+  boallowed.push_back("indomain_min");
+  boallowed.push_back("indomain_max");
+  boallowed.push_back("indomain_middle");
+  boallowed.push_back("indomain_median");
+  boallowed.push_back("indomain_random");
+  boallowed.push_back("indomain_split");
+  boallowed.push_back("indomain_reverse_split");
+  boallowed.push_back("indomain_interval");
+
+  bo_allowed = new TCLAP::ValuesConstraint<std::string>( boallowed );
+  branchingArg = new TCLAP::ValueArg<std::string>("b","branching","value ordering",false,"minval+guided",bo_allowed);
+  add( *branchingArg );    
+
+}
+
+
+void Mistral::SolverCmdLine::set_parameters(Mistral::Solver& s) {
+
+  s.parameters.verbosity = verbosityArg->getValue();
+  s.parameters.restart_factor = factorArg->getValue();
+  s.parameters.restart_base = baseArg->getValue();
+  s.parameters.restart_limit = s.parameters.restart_base;
+  s.parameters.time_limit = timeArg->getValue();
+  s.parameters.activity_decay = decayArg->getValue();
+  s.parameters.backjump = learningArg->getValue();
+  s.parameters.activity_increment = incrementArg->getValue();
+  s.parameters.forgetfulness = forgetArg->getValue();
+  s.parameters.prefix_comment = pcommentArg->getValue();
+  s.parameters.prefix_statistics = pstatArg->getValue();
+  s.parameters.prefix_objective = pobjectiveArg->getValue();
+  s.parameters.prefix_solution = psolutionArg->getValue();
+  s.parameters.prefix_outcome = poutcomeArg->getValue();
+  //s.parameters.find_all = allsolArg->getValue();
+}
+
+std::string Mistral::SolverCmdLine::get_value_ordering() {
+  return branchingArg->getValue();
+}
+
+std::string Mistral::SolverCmdLine::get_variable_ordering() {
+  return orderingArg->getValue();
+}
+
+std::string Mistral::SolverCmdLine::get_restart_policy() {
+  return restartArg->getValue();
+}
+
+std::string Mistral::SolverCmdLine::get_filename() {
+  return fileArg->getValue(); //.c_str();
+}
+
+int Mistral::SolverCmdLine::get_seed() { 
+  return seedArg->getValue();
+}
+
+int Mistral::SolverCmdLine::get_randomization() { 
+  return randomizationArg->getValue();
+}
+
+bool Mistral::SolverCmdLine::print_model() {
+  //init_print();
+  return printmodArg->getValue();
+  //return true;
+}
+
+bool Mistral::SolverCmdLine::print_solution() {
+  //init_print();
+  return printsolArg->getValue();
+  //return true;
+}
+
+bool Mistral::SolverCmdLine::print_parameters() {
+  //init_print();
+  return printparArg->getValue();
+  //return true;
+}
+
+bool Mistral::SolverCmdLine::print_instance() {
+  //init_print();
+  return printinsArg->getValue();
+  //return true;
+}
+
+bool Mistral::SolverCmdLine::print_statistics() {
+  //init_print();
+  return printstaArg->getValue();
+  //return true;
+}
+
+bool Mistral::SolverCmdLine::use_rewrite() {
+  return rewriteArg->getValue();
+}
+
+bool Mistral::SolverCmdLine::enumerate_solutions() {
+  return allsolArg->getValue();
+}
+
+#ifdef _CHECK_NOGOOD
+
+void Mistral::Solver::store_reason(Explanation *expl, Atom a) {
+  Explanation::iterator stop;
+  Explanation::iterator lit = expl->get_reason_for(a, ((a != NULL_ATOM) ? assignment_level[a] : level), stop);
+  
+  Vector< Literal > ng;
+  while(lit < stop) {
+    ng.add(*lit);
+    ++lit;
+  }
+  
+  if(a != NULL_ATOM) {
+
+    Literal l = literal(variables[a]);
+
+    // if(l == 83) {
+    //   std::cout << variables[a].get_domain() << " " << a << std::endl;
+    //   exit(1);
+    // }
+
+    ng.add(l);
+  }
+
+  if(expl->is_clause()) nogood_origin.add(NULL);
+  else nogood_origin.add(expl);
+  nogood_clause.add(ng);
+  atom.add(a);
+  node_num.add(statistics.num_filterings);
+}
+
+void Mistral::Solver::store_nogood(Vector< Literal >& lc) {
+  atom.add(NULL_ATOM);
+  node_num.add(statistics.num_filterings);
+  nogood_clause.add(lc);
+  nogood_origin.add(NULL);
+}
+
+
+void Mistral::Solver::read_solution(const char* fname) {
+  std::ifstream fsol(fname);
+
+  int val;
+  int nvars = 0;
+  fsol >> nvars;
+
+  while(nvars--) {
+    fsol >> val;
+    solution.add(val);
+  }
+}
+
+void Mistral::Solver::check_nogoods() {
+  for(int i=0; i<nogood_clause.size; ++i) {
+    std::cout << "check " << node_num[i] << " " << atom[i] << " " << nogood_clause[i].size << " " << nogood_clause[i] << " produced by ";
+    std::cout << " " << ((int*)(nogood_origin[i])) << " ";
+    std::cout.flush();
+
+    if(nogood_origin[i]) 
+      std::cout << nogood_origin[i];
+    else
+      std::cout << "learning";
+
+    bool ok = false;
+    for(int j=0; j<nogood_clause[i].size; ++j) {
+      ok |= (solution[UNSIGNED(nogood_clause[i][j])] == SIGN(nogood_clause[i][j]));
+    }
+
+    if(!ok) {
+      std::cout << " WRONG NOGOOD!!\n";
+      exit(1);
+    }
+    std::cout << " ok\n";
+  }
+}
+#endif

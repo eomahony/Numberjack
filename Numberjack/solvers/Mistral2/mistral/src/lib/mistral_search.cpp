@@ -19,6 +19,7 @@
   The author can be contacted electronically at emmanuel.hebrard@gmail.com.
 */
 
+#include <limits>
 
 #include <mistral_search.hpp>
 
@@ -67,6 +68,11 @@ Mistral::ConsolidateListener::ConsolidateListener(Mistral::Solver *s)
 	constraints[scope[j].id()].add(c);
       }
     }
+  }
+
+  id_obj = -1;
+  if(solver->objective) {
+    id_obj = solver->objective->objective.id();
   }
 
   //std::cout << constraints[66] << std::endl;
@@ -125,6 +131,12 @@ void Mistral::ConsolidateListener::notify_change(const int idx) {
     //std::cout << constraints[idx][i] << std::endl;
     constraints[idx][i].consolidate_var();
     //std::cout << constraints[idx][i] << std::endl;
+  }
+
+  //std::cout << "IDX=" << idx << " IDO=" << id_obj << std::endl;
+
+  if(idx==id_obj) {
+    solver->objective->objective = X;
   }
 
   //std::cout << "END REACT TO CHANGE ON " << solver->variables[idx] << std::endl;
@@ -229,6 +241,9 @@ void Mistral::HeuristicPoolManager::notify_restart(const double prog) {
 
 Mistral::RestartPolicy::RestartPolicy(const unsigned int b) {
   base = b;
+}
+
+Mistral::RestartPolicy::~RestartPolicy() {
 }
 
 Mistral::NoRestart::NoRestart() 
@@ -356,7 +371,7 @@ std::ostream& operator<<(std::ostream& os, Mistral::SuccessListener& x) {
   return x.display(os);
 }
 
-std::ostream& operator<<(std::ostream& os, Mistral::FailureListener& x) {
+std::ostream& operator<<(std::ostream& os, Mistral::BacktrackListener& x) {
   return x.display(os);
 }
 
@@ -380,7 +395,7 @@ std::ostream& operator<<(std::ostream& os, Mistral::VariableListener& x) {
 //   return x->display(os);
 // }
 
-// std::ostream& operator<<(std::ostream& os, Mistral::FailureListener* x) {
+// std::ostream& operator<<(std::ostream& os, Mistral::BacktrackListener* x) {
 //   return x->display(os);
 // }
 
@@ -502,6 +517,55 @@ std::ostream& Mistral::FailureCountManager::display(std::ostream& os, const bool
       return os;
     }    
 
+
+
+std::ostream& Mistral::ConflictCountManager::display(std::ostream& os, const bool all) const {
+      
+      int *all_variables = new int[variable_weight.size];
+
+      int w, 
+	xwidth; //, // = log10(solver->variables[variable_weight.size-1].id()),
+	//cwidth; // = log10(solver->constraints[constraint_weight.size-1].id());
+    
+      for(unsigned int i=0; i<variable_weight.size; ++i) {
+	all_variables[i] = i;
+
+	// w = log10(variable_weight[i]);
+	// if(w>xwidth) xwidth = w;
+
+      }
+
+      weight_sorting_array = variable_weight.stack_;
+      qsort(all_variables, variable_weight.size, sizeof(int), decreasing_weight);
+
+
+      os << " c variable weight: \n c id: ";
+      for(unsigned int i=0; i<variable_weight.size; ++i) {
+	if(all || solver->sequence.contain(all_variables[i])) {
+	  xwidth = log10(variable_weight[all_variables[i]]);
+	  w = log10(all_variables[i]);
+	  if(w>xwidth) xwidth = w;
+
+	  os << std::setw(xwidth) << all_variables[i] << " ";
+	}
+      }
+      os << "\n c va: ";
+      for(unsigned int i=0; i<variable_weight.size; ++i) {
+	if(all || solver->sequence.contain(all_variables[i])) {
+	  xwidth = log10(variable_weight[all_variables[i]]);
+	  w = log10(all_variables[i]);
+	  if(w>xwidth) xwidth = w;
+	  
+	  os << std::setw(xwidth) << variable_weight[all_variables[i]] << " ";
+	}
+      }
+      os << std::endl;
+
+      delete [] all_variables;
+
+      return os;
+    }    
+
 std::ostream& Mistral::PruningCountManager::display(std::ostream& os, const bool all) const {
       
       int *all_variables = new int[variable_weight.size];
@@ -554,6 +618,7 @@ std::ostream& Mistral::PruningCountManager::display(std::ostream& os, const bool
 Mistral::LearningActivityManager::LearningActivityManager(Solver *s) : solver(s) {
   weight_unit = solver->parameters.activity_increment;
   decay = solver->parameters.activity_decay;
+  max_weight = std::numeric_limits<int>::max();
   
   var_activity.initialise(solver->variables.size, solver->variables.size, 0);
   lit_activity.initialise(2*solver->variables.size, 2*solver->variables.size, 0);
@@ -563,30 +628,128 @@ Mistral::LearningActivityManager::LearningActivityManager(Solver *s) : solver(s)
   while(i--) {
     cons[i].initialise_activity(lit_activity.stack_, var_activity.stack_, weight_unit);
   }
+
+  max_activity = 0;
+  i = var_activity.size;
+  while(i--) {
+    if(var_activity[i]>max_activity)
+      max_activity = var_activity[i];
+  }
+
+#ifdef _DEBUG_ACTIVITY
+  for(int a=0; a<solver->variables.size; ++a) {
+    std::cout << "init x" << a << " (" << lit_activity[NEG(a)] << "/" << lit_activity[POS(a)] << ")/" << var_activity[a]
+	       << std::endl; 
+  }
+#endif
   
-  solver->lit_activity = lit_activity.stack_;
-  solver->var_activity = var_activity.stack_;
+  //solver->lit_activity = lit_activity.stack_;
+  //solver->var_activity = var_activity.stack_;
   
-  solver->add((DecisionListener*)this);
+  solver->add((BacktrackListener*)this);
 }
 
 Mistral::LearningActivityManager::~LearningActivityManager() {
-  solver->remove((DecisionListener*)this);
+  solver->remove((BacktrackListener*)this);
 }
 
 
-void Mistral::LearningActivityManager::notify_decision() {
+void Mistral::LearningActivityManager::notify_backtrack() {
 
       // //std::cout << "d " << lit_activity.stack_ << " " << lit_activity[0] << " " << lit_activity[1] << std::endl;
 
-      if(decay > 0 && decay < 1) {
-      	int i=var_activity.size;
-      	while(i--) var_activity[i] *= decay;
-      	// i=lit_activity.size;
-      	// while(i--) lit_activity[i] *= decay;
-      }
 
-  //solver->parameters.activity_increment *= (2.0-decay);
+#ifdef _DEBUG_ACTIVITY
+  std::cout << "NOTIFY BACKTRACK!" << std::endl;
+  std::cout << std::endl;
+#endif
+
+  int i;
+  Literal q;
+  Atom a;
+
+  weight_unit /= decay;
+  if(max_weight - weight_unit <= max_activity) {
+    // risk of double overflow
+
+#ifdef _DEBUG_ACTIVITY
+    std::cout << "\n RISK OF OVERFLOW (" << max_activity << " + " << weight_unit << " >= " << max_weight << ")\n";
+#endif
+
+    i=lit_activity.size;
+    while(i--) lit_activity[i] /= max_activity;
+
+    i=var_activity.size;
+    while(i--) {
+#ifdef _DEBUG_ACTIVITY
+      std::cout << "x" << i << " (" << lit_activity[NEG(i)] << "/" << lit_activity[POS(i)] << ")/" << var_activity[i] << " -> " 
+		<< (lit_activity[POS(i)]+lit_activity[NEG(i)]) << std::endl;
+#endif
+      var_activity[i] = lit_activity[POS(i)]+lit_activity[NEG(i)];
+    }
+   
+
+
+    weight_unit = 1.0/decay;
+    max_activity = 1.0;
+  }
+  i = solver->visited_literals.size;
+  while(i--) {
+
+#ifdef _DEBUG_ACTIVITY
+    std::cout << "\n UPDATE ACTIVITY BECAUSE OF LITERAL " << q << ":\n";
+#endif
+
+    q = solver->visited_literals[i];
+    Atom a = UNSIGNED(q);
+
+#ifdef _DEBUG_ACTIVITY
+    std::cout << "x" << a << " (" << lit_activity[NEG(a)] << "/" << lit_activity[POS(a)] << ")/" << var_activity[a]
+     	      << " -> " ;     
+#endif
+
+    lit_activity[q] += weight_unit;
+    var_activity[a] += weight_unit;
+    if(var_activity[a] > max_activity)
+      max_activity = var_activity[a];
+
+    
+#ifdef _DEBUG_ACTIVITY
+    std::cout << " (" << lit_activity[NEG(a)] << "/" << lit_activity[POS(a)] << ")/" << var_activity[a]
+     	      << std::endl ; 
+#endif
+
+  }
+//   //std::cout << std::endl ; 
+
+
+// #else
+
+//       if(decay > 0 && decay < 1) {
+//       	int i=var_activity.size;
+//       	while(i--) {
+
+// // #ifdef _DEBUG_ACTIVITY
+// // 	  int a = i;
+// // 	  std::cout << "decay x" << a << " (" << lit_activity[NEG(a)] << "/" << lit_activity[POS(a)] << ")/" << var_activity[a]
+// // 		 << " -> ";
+// // #endif
+
+// 	  var_activity[i] *= decay;
+
+// // #ifdef _DEBUG_ACTIVITY
+// // 	  std::cout << " (" << lit_activity[NEG(a)] << "/" << lit_activity[POS(a)] << ")/" << var_activity[a]
+// // 		    << std::endl;
+// // #endif
+
+// 	}
+//       	// i=lit_activity.size;
+//       	// while(i--) lit_activity[i] *= decay;
+//       }
+
+//   //solver->parameters.activity_increment *= (2.0-decay);
+
+// #endif
 
 }
 

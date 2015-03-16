@@ -1396,16 +1396,822 @@ namespace FlatZinc {
         s.add( AllDiff(iv) );
     }
 
+    /*
+    %-----------------------------------------------------------------------------%
+    % Requires at least 'n' variables in 'x' to take the value 'v'.
+    %-----------------------------------------------------------------------------%
+
+    predicate at_least_int(int: n, array[int] of var int: x, int: v) =
+        sum(i in index_set(x)) ( bool2int(x[i] == v) ) >= n;
+     */
+    void p_at_least_int(Solver& s, FlatZincModel& m,
+    		const ConExpr& ce, AST::Node* ann) {
+
+    	int n= ce[0]->getInt(), v = ce[2]->getInt();
+    	Vector< Variable > iv = arg2intvarargs(s, m, ce[1]);
+
+    	int size = iv.size;
+
+    	if (size){
+
+    		VarArray subsequence;
+    		for (int i=0; i < size; ++i)
+    		{
+    			subsequence.add(iv[i]==v);
+    			//s.add( Free(subsequence.back()));
+    		}
+
+    		s.add( BoolSum(subsequence) >= n);
+    	}
+    }
+
+
+    /*    	%-----------------------------------------------------------------------------%
+        	% Requires at most 'n' variables in 'x' to take the value 'v'.
+        	%-----------------------------------------------------------------------------%
+
+        	predicate at_most_int(int: n, array[int] of var int: x, int: v) %=
+        	%    sum(i in index_set(x)) ( bool2int(x[i] == v) ) <= n;
+     */
+
+    void p_at_most_int(Solver& s, FlatZincModel& m,
+    		const ConExpr& ce, AST::Node* ann) {
+
+    	int n= ce[0]->getInt(), v = ce[2]->getInt();
+    	Vector< Variable > iv = arg2intvarargs(s, m, ce[1]);
+
+    	int size = iv.size;
+
+    	if (size){
+
+    		VarArray subsequence;
+    		for (int i=0; i < size; ++i)
+    		{
+    			subsequence.add(iv[i]==v);
+    			//s.add( Free(subsequence.back()));
+    		}
+
+    		s.add( BoolSum(subsequence) <= n);
+    	}
+    }
+
+
+    /*
+     *
+     %-----------------------------------------------------------------------------%
+    % Constrains 'c' to be the number of occurrences of 'y' in 'x'.
+    %-----------------------------------------------------------------------------%
+
+    predicate count_eq(array[int] of var int: x, var int: y, var int: c) =
+        c = sum(i in index_set(x)) ( bool2int(x[i] == y) );
+
+    %-----------------------------------------------------------------------------%
+    %-----------------------------------------------------------------------------%
+     */
+    void p_count_eq(Solver& s, FlatZincModel& m,
+    		const ConExpr& ce, AST::Node* ann) {
+
+    	//std::cout << "count_eq" << std::endl;
+    	Vector< Variable > x = arg2intvarargs(s, m, ce[0]);
+    	int size = x.size;
+    	if (size){
+    		VarArray subsequence;
+    		if (ce[1]->isInt() ){
+    			int y = ce[1]->getInt();
+    			for (int i=0; i < size; ++i)
+    			{
+    				subsequence.add(x[i]==y);
+    				//s.add( Free(subsequence.back()));
+    			}
+    		}
+    		else
+    		{
+    			//Variable y = ce[1]->getIntVar();
+    			Variable y = getIntVar(s,m,ce[1]);
+
+    			for (int i=0; i < size; ++i)
+    			{
+    				subsequence.add(y==x[i]);
+    				//s.add( Free(subsequence.back()));
+    			}
+    		}
+
+
+    		if (ce[2]->isInt() )
+    			//s.add( BoolSum(subsequence, ce[2]->getInt(), ce[2]->getInt()));
+    			s.add( BoolSum(subsequence) ==  ce[2]->getInt());
+    		else
+    			//s.add( BoolSum(subsequence) == ce[2]->getIntVar());
+    			s.add( BoolSum(subsequence) == getIntVar(s,m,ce[2]));
+    	}
+    }
+
+
+    //Reified count_eq
+    //predicate count_eq_reif(array[int] of var int: x, var int: y, var int: c,  var bool: b);
+    void p_count_eq_reif(Solver& s, FlatZincModel& m,
+    		const ConExpr& ce, AST::Node* ann) {
+
+    	//std::cout << "p_count_eq_reif" << std::endl;
+
+    	Vector< Variable > x = arg2intvarargs(s, m, ce[0]);
+    	int size = x.size;
+    	if (size){
+    		VarArray subsequence;
+    		if (ce[1]->isInt() ){
+    			int y = ce[1]->getInt();
+    			for (int i=0; i < size; ++i)
+    			{
+    				subsequence.add(x[i]==y);
+    				//s.add( Free(subsequence.back()));
+    			}
+    		}
+    		else
+    		{
+    			//Variable y = ce[1]->getIntVar();
+    			Variable y = getIntVar(s,m,ce[1]);
+
+    			for (int i=0; i < size; ++i)
+    			{
+    				subsequence.add(y==x[i]);
+    				//s.add( Free(subsequence.back()));
+    			}
+    		}
+
+    		if (ce[3]->isBool() ){
+
+
+    			int is_true = ce[3]->getBool();
+    			if (is_true){
+    				if (ce[2]->isInt() )
+    					//s.add( BoolSum(subsequence, ce[2]->getInt(), ce[2]->getInt()));
+    					s.add( BoolSum(subsequence) ==  ce[2]->getInt());
+    				else
+    					//s.add( BoolSum(subsequence) == ce[2]->getIntVar());
+    					s.add( BoolSum(subsequence) == getIntVar(s,m,ce[2]));
+    			}
+    			else {
+
+    				if (ce[2]->isInt() )
+    					//s.add( BoolSum(subsequence, ce[2]->getInt(), ce[2]->getInt()));
+    					s.add( BoolSum(subsequence) !=  ce[2]->getInt());
+    				else
+    					//s.add( BoolSum(subsequence) == ce[2]->getIntVar());
+    					s.add( BoolSum(subsequence) != getIntVar(s,m,ce[2]));
+    			}
+    		}
+    		else {
+    			if (ce[2]->isInt() )
+    				//s.add( BoolSum(subsequence, ce[2]->getInt(), ce[2]->getInt()));
+    				s.add( (BoolSum(subsequence) ==  ce[2]->getInt() ) == getBoolVar(s,m,ce[3]) );
+    			else
+    				//s.add( BoolSum(subsequence) == ce[2]->getIntVar());
+    				s.add( (BoolSum(subsequence) == getIntVar(s,m,ce[2])) == getBoolVar(s,m,ce[3]));
+    		}
+
+    	}
+    }
+
+
+
+    /*
+    %-----------------------------------------------------------------------------%
+    % Constrains 'c' to be greater than or equal to the number of occurrences of
+    % 'y' in 'x'.
+    %-----------------------------------------------------------------------------%
+
+    predicate count_geq(array[int] of var int: x, var int: y, var int: c) =
+        c >= sum(i in index_set(x)) ( bool2int(x[i] == y) );
+
+    %-----------------------------------------------------------------------------%
+    %-----------------------------------------------------------------------------%
+     */
+    void p_count_geq(Solver& s, FlatZincModel& m,
+    		const ConExpr& ce, AST::Node* ann) {
+
+    	//std::cout << "count_eq" << std::endl;
+    	Vector< Variable > x = arg2intvarargs(s, m, ce[0]);
+    	int size = x.size;
+    	if (size){
+    		VarArray subsequence;
+    		if (ce[1]->isInt() ){
+    			int y = ce[1]->getInt();
+    			for (int i=0; i < size; ++i)
+    			{
+    				subsequence.add(x[i]==y);
+    				//s.add( Free(subsequence.back()));
+    			}
+    		}
+    		else
+    		{
+    			Variable y = getIntVar(s,m,ce[1]); //ce[1]->getIntVar();
+    			for (int i=0; i < size; ++i)
+    			{
+    				subsequence.add(y==x[i]);
+    				//s.add( Free(subsequence.back()));
+    			}
+    		}
+
+    		if (ce[2]->isInt() )
+    			s.add( BoolSum(subsequence) <= ce[2]->getInt());
+    		else
+    			s.add( BoolSum(subsequence) <= getIntVar(s,m,ce[2])); //ce[2]->getIntVar());
+    	}
+    }
+
+    /*
+    %-----------------------------------------------------------------------------%
+    % Constrains 'c' to be strictly greater than the number of occurrences of 'y'
+    % in 'x'.
+    %-----------------------------------------------------------------------------%
+
+    predicate count_gt(array[int] of var int: x, var int: y, var int: c) =
+        c > sum(i in index_set(x)) ( bool2int(x[i] == y) );
+
+    %-----------------------------------------------------------------------------%
+    %-----------------------------------------------------------------------------%
+     */
+    void p_count_gt(Solver& s, FlatZincModel& m,
+    		const ConExpr& ce, AST::Node* ann) {
+
+    	//std::cout << "count_eq" << std::endl;
+    	Vector< Variable > x = arg2intvarargs(s, m, ce[0]);
+    	int size = x.size;
+    	if (size){
+    		VarArray subsequence;
+    		if (ce[1]->isInt() ){
+    			int y = ce[1]->getInt();
+    			for (int i=0; i < size; ++i)
+    			{
+    				subsequence.add(x[i]==y);
+    				//s.add( Free(subsequence.back()));
+    			}
+    		}
+    		else
+    		{
+    			Variable y =getIntVar(s,m,ce[1]);  //ce[1]->getIntVar();
+    			for (int i=0; i < size; ++i)
+    			{
+    				subsequence.add(y==x[i]);
+    				//s.add( Free(subsequence.back()));
+    			}
+    		}
+
+
+
+    		if (ce[2]->isInt() )
+    			s.add( BoolSum(subsequence) < ce[2]->getInt());
+    		else
+    			s.add( BoolSum(subsequence) < getIntVar(s,m,ce[2])); //ce[2]->getIntVar());
+    	}
+    }
+
+    /*
+    %-----------------------------------------------------------------------------%
+    % Constrains 'c' to be less than or equal to the number of occurrences of
+    % 'y' in 'x'.
+    %-----------------------------------------------------------------------------%
+
+    predicate count_leq(array[int] of var int: x, var int: y, var int: c) =
+        c <= sum(i in index_set(x)) ( bool2int(x[i] == y) );
+
+    %-----------------------------------------------------------------------------%
+    %-----------------------------------------------------------------------------%
+     */
+
+    void p_count_leq(Solver& s, FlatZincModel& m,
+    		const ConExpr& ce, AST::Node* ann) {
+
+    	//std::cout << "count_eq" << std::endl;
+    	Vector< Variable > x = arg2intvarargs(s, m, ce[0]);
+    	int size = x.size;
+    	if (size){
+    		VarArray subsequence;
+    		if (ce[1]->isInt() ){
+    			int y = ce[1]->getInt();
+    			for (int i=0; i < size; ++i)
+    			{
+    				subsequence.add(x[i]==y);
+    				s.add(subsequence.back());
+    			}
+    		}
+    		else
+    		{
+    			Variable y =getIntVar(s,m,ce[1]); // ce[1]->getIntVar();
+    			for (int i=0; i < size; ++i)
+    			{
+    				subsequence.add(y==x[i]);
+    				//s.add( Free(subsequence.back()));
+    			}
+    		}
+
+
+
+    		if (ce[2]->isInt() )
+    			s.add( BoolSum(subsequence) >= ce[2]->getInt());
+    		else
+    			s.add( BoolSum(subsequence) >= getIntVar(s,m,ce[2])); //ce[2]->getIntVar());
+    	}
+    }
+
+    /*
+    %-----------------------------------------------------------------------------%
+    % Constrains 'c' to be strictly less than the number of occurrences of 'y'
+    % in 'x'.
+    %-----------------------------------------------------------------------------%
+
+    predicate count_lt(array[int] of var int: x, var int: y, var int: c) ;% =
+    %    c < sum(i in index_set(x)) ( bool2int(x[i] == y) );
+
+    %-----------------------------------------------------------------------------%
+    %-----------------------------------------------------------------------------%
+     */
+
+    void p_count_lt(Solver& s, FlatZincModel& m,
+    		const ConExpr& ce, AST::Node* ann) {
+
+    	//std::cout << "count_eq" << std::endl;
+    	Vector< Variable > x = arg2intvarargs(s, m, ce[0]);
+    	int size = x.size;
+    	if (size){
+    		VarArray subsequence;
+    		if (ce[1]->isInt() ){
+    			int y = ce[1]->getInt();
+    			for (int i=0; i < size; ++i)
+    			{
+    				subsequence.add(x[i]==y);
+    				//s.add(Free(subsequence.back()));
+    			}
+    		}
+    		else
+    		{
+    			Variable y = getIntVar(s,m,ce[1]); //ce[1]->getIntVar();
+    			for (int i=0; i < size; ++i)
+    			{
+    				subsequence.add(y==x[i]);
+    				//s.add(Free(subsequence.back()));
+    			}
+    		}
+
+
+
+    		if (ce[2]->isInt() )
+    			s.add( BoolSum(subsequence) > ce[2]->getInt());
+    		else
+    			s.add( BoolSum(subsequence) > getIntVar(s,m,ce[2]));//ce[2]->getIntVar());
+    	}
+    }
+
+    /*
+    %-----------------------------------------------------------------------------%
+    % Constrains 'c' to not be the number of occurrences of 'y' in 'x'.
+    %-----------------------------------------------------------------------------%
+
+    predicate count_neq(array[int] of var int: x, var int: y, var int: c) ;%=
+    %    c != sum(i in index_set(x)) ( bool2int(x[i] == y) );
+
+    %-----------------------------------------------------------------------------%
+    %-----------------------------------------------------------------------------%
+     */
+
+    void p_count_neq(Solver& s, FlatZincModel& m,
+    		const ConExpr& ce, AST::Node* ann) {
+
+    	//std::cout << "count_eq" << std::endl;
+    	Vector< Variable > x = arg2intvarargs(s, m, ce[0]);
+    	int size = x.size;
+    	if (size){
+    		VarArray subsequence;
+    		if (ce[1]->isInt() ){
+    			int y = ce[1]->getInt();
+    			for (int i=0; i < size; ++i)
+    			{
+    				subsequence.add(x[i]==y);
+    				//s.add( Free(subsequence.back()));
+    			}
+    		}
+    		else
+    		{
+    			Variable y = getIntVar(s,m,ce[1]); //ce[1]->getIntVar();
+    			for (int i=0; i < size; ++i)
+    			{
+    				subsequence.add(y==x[i]);
+    				//s.add( Free(subsequence.back()));
+    			}
+    		}
+
+
+
+    		if (ce[2]->isInt() )
+    			s.add( BoolSum(subsequence) != ce[2]->getInt());
+    		else
+    			s.add( BoolSum(subsequence) != getIntVar(s,m,ce[2])); //ce[2]->getIntVar());
+    	}
+    }
+
+
+
+
+    /* All variablmes should be equal!
+     * predicate all_equal_int(array[int] of var int: x) =
+    	forall(i, j in index_set(x) where i < j) ( x[i] = x[j] );
+     */
+
+    void p_all_equal_int(Solver& s, FlatZincModel& m,
+    		const ConExpr& ce, AST::Node* ann) {
+
+    	Vector< Variable > iv = arg2intvarargs(s, m, ce[0]);
+
+    	int size = iv.size;
+
+    	if (size){
+    		for (int i=1; i < size; ++i)
+    		{
+    			s.add(iv[i]==iv[0]);
+    		}
+    	}
+    }
+
+
     /* cumulative */
+    //#define _DEBUG_CUMULATIVE
+    
+    Vector<Variable> demand;
+
+    int largest_demand(const void *x_, const void *y_) {
+      int x = *((int*)x_);
+      int y = *((int*)y_);
+      if(demand[x].get_min() > demand[y].get_min())
+        return 1;
+      else if(demand[x].get_min() < demand[y].get_min())
+        return -1;
+      return 0;
+    }
+
+
+
+    void p_disjunctive(Solver& s, 
+                       Vector<Variable>& start, 
+                       Vector<Variable>& dur) {
+      
+      int n = start.size;
+      for(int i=0; i<n-1; ++i) {
+    	  for(int j=i+1; j<n; ++j) {
+    		  //Check if it's already a Precedence!
+    		  if (start[i].get_min()+dur[i].get_min() >start[j].get_min()){
+    			  s.add(Precedence(start[j], dur[j].get_min() , start[i]));
+    		  }
+    		  else
+    			  if (start[j].get_min()+dur[j].get_min() >start[i].get_min()){
+    				  s.add(Precedence(start[i], dur[i].get_min() , start[j]));
+    			  }
+    			  else{
+    				  s.add(Free(ReifiedDisjunctive(start[i], start[j], dur[i].get_min(), dur[j].get_min())));
+    			  }
+    	  }
+      }
+    }
+    
+    
+    void p_cumulative_flow(Solver& s, 
+                           Vector<Variable>& start, 
+                           Vector<Variable>& dur,
+                           Vector<Variable> req,
+                           Variable cap, 
+                           int horizon) {
+
+      int n = start.size;
+      Variable **flow = new Variable*[n+1];
+      for(int i=0; i<=n; ++i) {
+        flow[i] = new Variable[n+1];
+      }
+
+      for(int i=0; i<n; ++i) {
+        flow[i][n] = Variable(0, req[i].get_max());
+        flow[n][i] = Variable(0, req[i].get_max());
+        for(int j=i+1; j<n; ++j) {
+          // for each pair of tasks, create a variable for the amount flow going from ti to tj
+          int mf = (req[i].get_max()>req[j].get_max() ? req[j].get_max() : req[i].get_max());
+          flow[i][j] = Variable(0, mf);
+          flow[j][i] = Variable(0, mf);
+          // the flow can go only in one direction 
+          s.add((flow[i][j]<=0) || (flow[j][i]<=0));
+        }
+      }
+      
+      // flow conservation constraints
+      Vector<Variable> outflow;
+      Vector<Variable> inflow;
+      for(int i=0; i<n; ++i) {
+        for(int j=0; j<=n; ++j) {
+          if(i != j) {
+            outflow.add(flow[i][j]);
+            inflow.add(flow[j][i]);
+          }
+        }
+        if(req[i].is_ground()) {
+          s.add(Sum(outflow, req[i].get_min(), req[i].get_max()));
+          s.add(Sum(inflow, req[i].get_min(), req[i].get_max()));
+        } else {
+          s.add(Sum(outflow) == req[i]);
+          s.add(Sum(inflow) == req[i]);
+        }
+        outflow.clear();
+        inflow.clear();
+      }
+      for(int j=0; j<n; ++j) {
+        outflow.add(flow[n][j]);
+        inflow.add(flow[j][n]);
+      }
+
+      if(cap.is_ground()) {
+        s.add(Sum(outflow, cap.get_min(), cap.get_max()));
+        s.add(Sum(inflow, cap.get_min(), cap.get_max()));
+      } else {
+        s.add(Sum(outflow) == cap);
+        s.add(Sum(inflow) == cap);
+      }
+    
+      // There can be a flow going from i to j only if i precedes j
+      for(int i=0; i<n; ++i) {
+        for(int j=0; j<n; ++j) {
+          if(i != j) {
+            if(dur[i].is_ground())
+              s.add( (flow[i][j]>0) <= (start[i]+dur[i].get_min() <= start[j]) );
+            else
+              s.add( (flow[i][j]>0) <= ((start[i]+dur[i]) <= start[j]) );
+          }
+        }
+      }
+
+      for(int i=0; i<=n; ++i) {
+        delete [] flow[i];
+      }
+      delete [] flow;
+    }
+
+    void p_cumulative_discretization(Solver& s, 
+                                     Vector<Variable>& start, 
+                                     Vector<Variable>& dur,
+                                     Vector<Variable> req,
+                                     Variable cap, 
+                                     int horizon) {
+
+      Variable     in_process;
+      Vector<Variable>  scope;
+      //Vector<Variable> cstart;
+      Vector<int>      demand;
+      int        process_time;
+      int               total;
+      int             min_req;
+      int             Boolean;
+      // post a sum constraint for each time point
+      for(int t=0; t<=horizon; ++t) {
+        //std::cout << " - time=" << t << ":" ; //<< std::endl;
+
+        demand.clear();
+        scope.clear();
+        total = 0;
+        Boolean = true;
+        min_req = Mistral::INFTY;
+        for(int i=0; i<start.size; ++i) {
+          if(start[i].get_min() <= t && start[i].get_max()+dur[i].get_max() >= t) {
+            total += req[i].get_max();
+            if(min_req > req[i].get_min()) {
+              min_req = req[i].get_min();
+            }
+
+            // this tasks can be in process at time t
+            if(dur[i].is_ground()) {
+              process_time = dur[i].get_min();
+              // constant duration
+              if(start[i].get_max()>t) {
+                if(start[i].get_min()+process_time<t) {
+
+                  if(process_time==1) {
+                    in_process = (start[i] == t);
+                  } else {
+                    in_process = (Member(start[i], t-process_time+1, t));
+                  }
+
+                  //in_process = ((start[i] <= t) && (start[i] > t-process_time));
+                  //std::cout << "  -task t" << i << " is in process if it start before or at " 
+                  //          << t << " and ends after or at " << t << ": " << in_process << " ";
+                } else {
+                  // must finish at t or after
+                  in_process = (start[i] <= t);
+                  //std::cout << "  -task t" << i << " is in process if it start before or at " 
+                  //          << t << ": " << in_process << " ";
+                }
+              } else if(start[i].get_min()+process_time<t) {
+                in_process = (start[i] >= t-process_time);
+                //std::cout << "  -task t" << i << " is in process if it ends after or at " << t << ": " << in_process << " ";
+              }
+            } else {
+              // TODO: tasks with variable durations
+              report_unsupported("p_cumulative");
+            }
+            if(req[i].is_ground()) {
+              //std::cout << "the demand is fixed: " << req[i].get_min() << std::endl;
+              scope.add(in_process);
+              demand.add(req[i].get_min());
+            } else {
+              //std::cout << "the demand is variable: " << req[i].get_domain() << std::endl;
+              scope.add((in_process * req[i]));
+              demand.add(1);
+              if(req[i].get_max()>1) {
+                Boolean = false;
+              }
+            }
+          } else {
+            //std::cout << "  -task t" << i << " cannot be in process\n";
+          }
+        }
+        
+        //std::cout << scope.size << " / " << start.size << std::endl;
+        //std::cout << scope.size << " > 1 AND " << total << " >? " << cap.get_min() << " " << Boolean << std::endl;
+
+        if(scope.size>1 && total>cap.get_min()) {
+          if(cap.is_ground()) {
+            if(Boolean) {
+              // check if this is in fact a clause
+              if(2*min_req > cap.get_max()) {
+                s.add(BoolSum(scope,-Mistral::INFTY,1));
+              } else {
+                s.add(BoolSum(scope,demand,-Mistral::INFTY,cap.get_min()));
+              }
+            }
+            else
+              s.add(Sum(scope,demand,-Mistral::INFTY,cap.get_min()));
+          } else {
+            scope.add(cap);
+            demand.add(-1);
+            s.add(Sum(scope,demand,-Mistral::INFTY,0));
+          }
+        }
+      }
+    }
+
     void p_cumulative(Solver& s, FlatZincModel& m,
                       const ConExpr& ce, AST::Node* ann) {
 
-      report_unsupported("p_cumulative");
-      // vector<Variable> start = arg2intvarargs(s, m, ce[0]);
-      // vector<Variable> dur = arg2intvarargs(s, m, ce[1]);
-      // vector<Variable> req = arg2intvarargs(s, m, ce[2]);
-      // Variable cap = getIntVar(s, m, ce[3]);
-      // post_cumulative(s, start, dur, req, cap);
+      
+      
+      Vector<Variable> start = arg2intvarargs(s, m, ce[0]);
+      Vector<Variable> dur = arg2intvarargs(s, m, ce[1]);
+      Vector<Variable> req = arg2intvarargs(s, m, ce[2]);
+      Variable cap = getIntVar(s, m, ce[3]);
+
+
+ 
+
+
+      if(start.size != dur.size || start.size != req.size) {
+        std::cout << " c Warning: wrong arguments for Cumulative - exiting\n";
+        exit(0);
+      }
+
+ 
+      int orig=INFTY, horizon = 0, ddate, rdate, unit_req=true, unit_dur=true, disjunctive=false, same_req=true, same_dur=true, var_dur=false, var_req=false;
+      //
+
+      for(int i=0; i<start.size; ++i) {
+        ddate = start[i].get_max() + dur[i].get_max();
+        if(horizon<ddate) {
+          horizon = ddate;
+        }
+        rdate = start[i].get_min();
+        if(orig>rdate) {
+          orig = rdate;
+        }
+        if(!req[i].is_ground())
+          var_req = true;
+        if(!dur[i].is_ground())
+          var_dur = true;
+        if(req[i].get_max() > 1)
+          unit_req = false;
+        if(dur[i].get_max() > 1)
+          unit_dur = false;
+        if(same_dur && (!dur[i].is_ground() || (i && dur[i-1].get_min() != dur[i].get_min())))
+          same_dur = false;
+        if(same_req && (!req[i].is_ground() || (i && req[i-1].get_min() != req[i].get_min())))
+          same_req = false;
+
+
+        // if(!dur[i].is_ground() || !req[i].is_ground()) {
+        //   simple = false;
+        // }
+      }
+
+      
+#ifdef _DEBUG_CUMULATIVE
+      std::cout << "\nhorizon  = " << horizon << std::endl
+                << "capacity = " << cap << std::endl
+                << "tasks    = " << start.size << std::endl;
+#endif
+
+      int *order = new int[start.size];
+      for(int i=0; i<start.size; ++i) {
+        order[i] = i;
+      }
+      demand.copy(req);
+      qsort(order, start.size, sizeof(int), largest_demand);
+      demand.neutralise();
+
+      if(start.size>1 && req[order[0]].get_min()+req[order[1]].get_min()>cap.get_max()) {
+        disjunctive = true;
+      }
+
+
+#ifdef _DEBUG_CUMULATIVE
+      for(int i=0; i<start.size; ++i) {
+        int oi = order[i];
+        std::cout << "           [" << start[oi].get_min() <<  ".." 
+                  <<  start[oi].get_max()+dur[oi].get_max() << "]";
+        if(dur[oi].is_ground())
+          std::cout << " p=" << dur[oi].get_max() ;
+        else
+          std::cout << " p=" << dur[oi].get_domain() ;
+        if(req[oi].is_ground())
+          std::cout << " r=" << req[oi].get_max() ;
+        else
+          std::cout << " r=" << req[oi].get_domain() ;
+        std::cout << std::endl;
+      }
+      //exit(1);
+#endif
+
+      int size_discretization = horizon*start.size;
+      int size_flow = start.size*start.size*cap.get_max();
+
+
+      if(unit_dur && disjunctive) {
+
+#ifdef _DEBUG_CUMULATIVE
+        std::cout << "this is an alldiff" << std::endl;
+#endif
+
+        s.add(AllDiff(start));
+      } else if(unit_dur && unit_req) {
+
+#ifdef _DEBUG_CUMULATIVE
+        std::cout << "this is a gcc" << std::endl;
+#endif
+
+        int *lb = new int[horizon-orig];
+        int *ub = new int[horizon-orig];
+        for(int i=orig; i<horizon; ++i) {
+          lb[i-orig] = cap.get_min();
+          ub[i-orig] = cap.get_max();
+        }
+        s.add(Occurrences(start, orig, horizon-1, lb, ub));
+      } else if(disjunctive && !var_dur) {
+
+#ifdef _DEBUG_CUMULATIVE
+        if(same_dur) {
+          std::cout << "this is an interdistance" << std::endl;
+        } else {
+          std::cout << "this is a disjunctive" << std::endl;
+        }
+#endif
+
+        p_disjunctive(s, start, dur);
+      } else {
+        
+#ifdef _DEBUG_CUMULATIVE
+        if(same_dur && same_req) {
+          std::cout << "this is a symmetric cumulative" << std::endl;
+        } else if(same_dur) {
+          std::cout << "this is a cumulative will equal processing times" << std::endl;
+        } else if(same_req) {
+          std::cout << "this is a cumulative will equal demands" << std::endl;
+        } else {
+          std::cout << "this is a general cumulative" << std::endl;
+        }
+        
+        std::cout << "size of the time-discretization encoding = " << size_discretization << std::endl;
+        std::cout << "size of the flow encoding = " << size_flow << std::endl;
+#endif
+  
+        if(size_flow < size_discretization || var_dur) {
+          p_cumulative_flow(s, start, dur, req, cap, horizon);
+        } else {
+          p_cumulative_discretization(s, start, dur, req, cap, horizon);
+        }
+
+
+      }
+
+    }
+
+
+    /* global cardinality constraint */
+    void p_distribute(Solver& s, FlatZincModel& m,
+                      const ConExpr& ce, AST::Node* ann) {
+      
+      std::cout << "GLOBAL CARDINALITY!!\n";
+      exit(1);
+
     }
 
     /* coercion constraints */
@@ -2291,8 +3097,21 @@ namespace FlatZinc {
         registry().add("array_var_bool_element", &p_array_var_bool_element);
         registry().add("array_bool_element", &p_array_bool_element);
 
+        //Add here Mistral redefinitions of global constraints
+        registry().add("distribute", &p_distribute);
         registry().add("all_different_int", &p_all_different);
-        //registry().add("cumulative", &p_cumulative);
+        registry().add("all_equal_int", &p_all_equal_int);
+        registry().add("at_most_int", &p_at_most_int);
+        registry().add("at_least_int", &p_at_least_int);
+        registry().add("count_eq", &p_count_eq);
+        registry().add("count_eq_reif", &p_count_eq_reif);
+        registry().add("count_geq", &p_count_geq);
+        registry().add("count_gt", &p_count_gt);
+        registry().add("count_leq", &p_count_leq);
+        registry().add("count_lt", &p_count_lt);
+        registry().add("count_neq", &p_count_neq);
+
+        registry().add("cumulative", &p_cumulative);
 
         registry().add("bool2int", &p_bool2int);
 

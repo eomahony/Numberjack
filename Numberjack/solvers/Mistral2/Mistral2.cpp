@@ -1373,7 +1373,8 @@ Mistral2Solver::Mistral2Solver()
 #endif
 
   solver = new Mistral::Solver();
-  solver->parameters.verbosity = 2; 
+  solver->parameters.verbosity = 2;
+  solver->consolidate();
 
   //_search_goal = NULL;
   

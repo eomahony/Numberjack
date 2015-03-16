@@ -53,6 +53,7 @@ class Minion_IntVar(Minion_Expression):
         elif len(args) == 2:
             if hasattr(args[0], "__iter__"):
                 self.domain, self.nbj_ident = args
+                self.lb, self.ub = min(self.domain), max(self.domain)
             else:
                 self.lb, self.ub = args
                 self.nbj_ident = -1
@@ -61,6 +62,11 @@ class Minion_IntVar(Minion_Expression):
 
     def add(self, solver, toplevel):
         if self.lb == self.ub:
+            if self.lb is None or self.ub is None:
+                raise Exception(
+                    "Error Minion_IntVar.add was called on a variable without "
+                    " a lower bound or upper bound. nbj_ident:%d" %
+                    self.nbj_ident)
             self.value = self.lb
             return str(self.lb)
 

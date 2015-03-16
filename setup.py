@@ -580,7 +580,6 @@ if solversubsetnames:
     extensions = [allsolvers[s] for s in solversubsetnames]
 
 
-
 long_desc = """Numberjack is a modelling package written in Python for
 constraint programming and combinatorial optimization. Python benefits from a
 large and active programming community, Numberjack is therefore a perfect tool
@@ -593,7 +592,7 @@ lic = "License :: OSI Approved :: " \
 
 setup(
     name='Numberjack',
-    version='1.1.0',
+    version='1.1.1',
     author='Numberjack Developers',
     packages=['Numberjack', 'Numberjack.solvers'],
     ext_modules=extensions,

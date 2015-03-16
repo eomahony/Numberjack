@@ -169,13 +169,21 @@ def get_solver_home(solvername):
 # ------------------------------ Extensions ------------------------------
 
 
+def listextfiles(folder, extension=".cpp"):
+    ret = []
+    for bn in os.listdir(folder):
+        if os.path.splitext(bn)[1] == extension:
+            ret.append(os.path.join(folder, bn))
+    return ret
+
+
 mistralsrc = 'Numberjack/solvers/Mistral/mistral/lib/src'
 mistral = Extension(
     '_Mistral',
     sources=[
         'Numberjack/solvers/Mistral.i',
         'Numberjack/solvers/Mistral/Mistral.cpp',
-    ] + [os.path.join(mistralsrc, bn) for bn in os.listdir(mistralsrc)],
+    ] + listextfiles(mistralsrc),
     swig_opts=[
         '-modern', '-c++',
         '-INumberjack/solvers/Mistral',
@@ -202,7 +210,7 @@ mistral2 = Extension(
     sources=[
         'Numberjack/solvers/Mistral2.i',
         'Numberjack/solvers/Mistral2/Mistral2.cpp',
-    ] + [os.path.join(mistral2src, bn) for bn in os.listdir(mistral2src)],
+    ] + listextfiles(mistral2src),
     swig_opts=[
         '-modern', '-c++',
         '-INumberjack/solvers/Mistral2',
@@ -217,7 +225,7 @@ mistral2 = Extension(
     # define_macros=[('_UNIX', None)],
     extra_compile_args=EXTRA_COMPILE_ARGS +
     ['-fPIC', '-Wno-unused-label', '-fexceptions', '-Wno-overloaded-virtual',
-     '-Wno-unused-variable', '-Wno-parentheses',
+     '-Wno-unused-variable', '-Wno-parentheses', '-Wno-reorder',
      '-Wno-delete-non-virtual-dtor'],
     extra_link_args=EXTRA_LINK_ARGS,
 )
@@ -230,7 +238,7 @@ toulbar2 = Extension(
     sources=[
         'Numberjack/solvers/Toulbar2.i',
         'Numberjack/solvers/Toulbar2/Toulbar2.cpp',
-    ] + [os.path.join(toulbar2src, bn) for bn in os.listdir(toulbar2src)],
+    ] + listextfiles(toulbar2src),
     swig_opts=[
         '-modern', '-c++',
         '-INumberjack/solvers/Toulbar2',

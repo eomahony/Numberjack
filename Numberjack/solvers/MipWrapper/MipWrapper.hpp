@@ -4,6 +4,7 @@
 //#define _DEBUGWRAP 1
 
 #ifdef _DEBUGWRAP
+#include <stdio.h>
 #define DBG(fmt, args...) printf("%s:%d "fmt,__FILE__,__LINE__,args)
 #else
 #define DBG(fmt, args...) ;

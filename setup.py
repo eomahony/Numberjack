@@ -412,7 +412,7 @@ if cplexhome:
         language='c++',
         define_macros=[('_UNIX', None), ('NDEBUG', None), ('IL_STD', None)],
         extra_compile_args=EXTRA_COMPILE_ARGS +
-        ['-O', '-fPIC', '-fexceptions', '-Qunused-arguments'] +
+        ['-O', '-fPIC', '-fexceptions'] +
         ["-fno-strict-aliasing"] if sys.platform.startswith('linux') else [],
         libraries=['concert', 'ilocplex', 'cplex', 'm', 'pthread'],
         extra_link_args=EXTRA_LINK_ARGS,
@@ -462,7 +462,7 @@ if gurobihome:
         library_dirs=[gurobilibdir],
         libraries=get_gurobi_libs(),
         extra_compile_args=EXTRA_COMPILE_ARGS +
-        ['-fPIC', '-fexceptions', '-Qunused-arguments'],
+        ['-fPIC', '-fexceptions'],
         extra_link_args=EXTRA_LINK_ARGS,
         language='c++',
     )

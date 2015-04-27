@@ -126,8 +126,8 @@ int GurobiSolver::solve(){
     model->optimize();
     optimstatus = model->get(GRB_IntAttr_Status);
  
-    if( optimstatus == GRB_OPTIMAL ) return SAT;
-    else if( optimstatus == GRB_INFEASIBLE) return UNSAT;
+    if( optimstatus == GRB_OPTIMAL || optimstatus == GRB_SUBOPTIMAL ) return SAT;
+    else if( optimstatus == GRB_INFEASIBLE ) return UNSAT;
     else return UNKNOWN;
 }
 
@@ -155,10 +155,11 @@ void GurobiSolver::setVerbosity(const int degree){
 }
 
 bool GurobiSolver::is_sat(){
-    return !(model->get(GRB_IntAttr_Status) == GRB_INFEASIBLE);
+    return (model->get(GRB_IntAttr_Status) == GRB_OPTIMAL || (model->get(GRB_IntAttr_Status) == GRB_SUBOPTIMAL) );
 }
 
 bool GurobiSolver::is_unsat(){
+    return (model->get(GRB_IntAttr_Status) == GRB_INFEASIBLE);
     return ! is_sat();
 }
 
@@ -196,8 +197,13 @@ double GurobiSolver::getOptimalityGap(){
 double GurobiSolver::get_value(void *ptr){
     int index = *(int*)(ptr);
     if(index >= 0 && index < variables->size()){
-        GRBVar v = variables->at(index);
-        return v.get(GRB_DoubleAttr_X);
+        try {
+            GRBVar v = variables->at(index);
+            return v.get(GRB_DoubleAttr_X);
+        } catch (GRBException e) {
+            std::cout << "Gurobi exception getting value: " << e.getErrorCode() << std::endl;
+            std::cout << e.getMessage() << std::endl;
+        }
     }
     return 0.0;
 }

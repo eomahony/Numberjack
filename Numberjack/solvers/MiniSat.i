@@ -1,5 +1,5 @@
 %module(package="Numberjack.solvers") MiniSat
-%import(module="SatWrapper") "SatWrapper.hpp"
+%import(module="Numberjack.solvers.SatWrapper") "SatWrapper.hpp"
 
 %{
 #include "MiniSat.hpp"

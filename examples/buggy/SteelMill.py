@@ -35,10 +35,10 @@ def solve(param):
     solver.setVerbosity(param['verbose'])
     solver.setTimeLimit(param['tcutoff'])
     solver.solve()
-    print "Orders:\n", orders
-    print "Colours:\n", colours
-    print "Slabs:\n", slabs
-    print 'Nodes:', solver.getNodes(), ' Time:', solver.getTime()
+    print("Orders:\n", orders)
+    print("Colours:\n", colours)
+    print("Slabs:\n", slabs)
+    print('Nodes:', solver.getNodes(), ' Time:', solver.getTime())
 
 
 class SteelMillData:
@@ -54,7 +54,7 @@ class SteelMillData:
     def get(self, name):
         if hasattr(self, name):
             return getattr(self, name)
-        print "No Such Data!"
+        print("No Such Data!")
         return None
 
 

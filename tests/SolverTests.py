@@ -32,7 +32,7 @@ class Test(unittest.TestCase):
         This is a quick test of the ability of the variable to backtrack properly
         '''
         # Removal test
-        var = Variable(range(0,10))
+        var = Variable(list(range(0,10)))
         assert(var.can_be_instantiated_to(5))
         var.backtrack_stamp()
         var.remove_value(5)
@@ -41,7 +41,7 @@ class Test(unittest.TestCase):
         assert(var.can_be_instantiated_to(5))
         
         # Assignment test
-        var = Variable(range(0,10))
+        var = Variable(list(range(0,10)))
         assert(not var.get_is_instantiated())
         var.backtrack_stamp()
         var.set_value(5)
@@ -54,7 +54,7 @@ class Test(unittest.TestCase):
         
     def testEqual(self):
         var1 = Variable([0])
-        var2 = Variable(range(0,1))
+        var2 = Variable(list(range(0,1)))
         
         model = NativeModel()
         
@@ -65,8 +65,8 @@ class Test(unittest.TestCase):
 
 
     def testStupid_not_eq(self):
-        var1 = Variable(range(0,3))
-        var2 = Variable(range(0,3))
+        var1 = Variable(list(range(0,3)))
+        var2 = Variable(list(range(0,3)))
         
         model = NativeModel()
         model.add_variable((var1, var2))
@@ -78,8 +78,8 @@ class Test(unittest.TestCase):
         assert(var1.get_value() != var2.get_value())
         
     def testPropogationHandler(self):
-        var1 = Variable(range(0,3))
-        var2 = Variable(range(0,3))
+        var1 = Variable(list(range(0,3)))
+        var2 = Variable(list(range(0,3)))
         
         neq = NotEqual((var1, var2)).repr_con
         
@@ -101,7 +101,7 @@ class Test(unittest.TestCase):
         
                 
     def testNot_eq_test2(self):
-        var1, var2, var3 = (Variable(range(0,3)) for x in range(0,3))
+        var1, var2, var3 = (Variable(list(range(0,3))) for x in range(0,3))
         
         model = NativeModel()
         model.add_variable((var1, var2, var3))
@@ -126,7 +126,7 @@ class Test(unittest.TestCase):
         assert(solver.solve()) 
         
     def testGEQ(self):
-        var1, var2, var3 = (Variable(range(0,3)) for x in range(0,3))
+        var1, var2, var3 = (Variable(list(range(0,3))) for x in range(0,3))
         model = NativeModel()
         model.add_variable((var1, var2, var3))
         
@@ -140,7 +140,7 @@ class Test(unittest.TestCase):
         #print "%d %d %d " % (var1.get_value(), var2.get_value(), var3.get_value())
         
     def testLEQ(self):
-        var1, var2, var3 = (Variable(range(0,3)) for x in range(0,3))
+        var1, var2, var3 = (Variable(list(range(0,3))) for x in range(0,3))
         model = NativeModel()
         model.add_variable((var1, var2, var3))
         
@@ -157,7 +157,7 @@ class Test(unittest.TestCase):
         #print "%d %d %d " % (var1.get_value(), var2.get_value(), var3.get_value())
         
     def testLT(self):
-        var1, var2, var3 = (Variable(range(0,3)) for x in range(0,3))
+        var1, var2, var3 = (Variable(list(range(0,3))) for x in range(0,3))
         model = NativeModel()
         model.add_variable((var1, var2, var3))
         
@@ -171,7 +171,7 @@ class Test(unittest.TestCase):
         #print "%d %d %d " % (var1.get_value(), var2.get_value(), var3.get_value())
         
     def testGT(self):
-        var1, var2, var3 = (Variable(range(0,3)) for x in range(0,3))
+        var1, var2, var3 = (Variable(list(range(0,3))) for x in range(0,3))
         model = NativeModel()
         model.add_variable((var1, var2, var3))
         
@@ -185,7 +185,7 @@ class Test(unittest.TestCase):
         #print "%d %d %d " % (var1.get_value(), var2.get_value(), var3.get_value())
         
     def testPlus(self):
-        var1, var2 = (Variable(range(0,4)), Variable(range(0,4)))
+        var1, var2 = (Variable(list(range(0,4))), Variable(list(range(0,4))))
       
         model = NativeModel()
         model.add_variable((var1, var2))
@@ -198,7 +198,7 @@ class Test(unittest.TestCase):
         #print "%d %d " % (var1.get_value(), var2.get_value())
         
     def testMinus(self):
-        var1, var2 = (Variable(range(0,4)), Variable(range(0,4)))
+        var1, var2 = (Variable(list(range(0,4))), Variable(list(range(0,4))))
         
         model = NativeModel()
         model.add_variable((var1, var2))
@@ -209,7 +209,7 @@ class Test(unittest.TestCase):
         assert(solver.solve())
         
     def testTimes(self):
-        var1, var2 = (Variable(range(1,4)), Variable(range(0,4)))
+        var1, var2 = (Variable(list(range(1,4))), Variable(list(range(0,4))))
         
         model = NativeModel()
         
@@ -219,7 +219,7 @@ class Test(unittest.TestCase):
         assert(solver.solve())
         
     def testVariableBounds(self):
-        var = Variable(range(0,10))
+        var = Variable(list(range(0,10)))
         
         assert(var.get_lower() == 0)
         assert(var.get_upper() == 9)
@@ -240,9 +240,9 @@ class Test(unittest.TestCase):
         assert(var.get_upper() == 9)
         
     def testSum(self):
-        var1 = Variable(range(0,3))
-        var2 = Variable(range(0,3))
-        var3 = Variable(range(3,5))
+        var1 = Variable(list(range(0,3)))
+        var2 = Variable(list(range(0,3)))
+        var3 = Variable(list(range(3,5)))
         
         model = NativeModel()
         
@@ -266,9 +266,9 @@ class Test(unittest.TestCase):
         #print "%d %d %d" % (var1.get_value(), var2.get_value(), var3.get_value())
         
     def testWeightedSum(self):
-        var1 = Variable(range(2,3))
-        var2 = Variable(range(2,3))
-        var3 = Variable(range(3,10))
+        var1 = Variable(list(range(2,3)))
+        var2 = Variable(list(range(2,3)))
+        var3 = Variable(list(range(3,10)))
         
         model = NativeModel()
         
@@ -295,10 +295,10 @@ class Test(unittest.TestCase):
         #print "%d %d %d" % (var1.get_value(), var2.get_value(), var3.get_value())
         
     def testSumAgain(self):
-        var1 = Variable(range(1,5))
-        var2 = Variable(range(1,5))
-        var3 = Variable(range(1,10))
-        var4 = Variable(range(1,10))
+        var1 = Variable(list(range(1,5)))
+        var2 = Variable(list(range(1,5)))
+        var3 = Variable(list(range(1,10)))
+        var4 = Variable(list(range(1,10)))
         
         sum1 = Sum(((var1, var2),(2,2)))
         sum2 = Sum((var3, var4))
@@ -314,10 +314,10 @@ class Test(unittest.TestCase):
         assert( solver.solve() )
         
     def testSumAgainLeq(self):
-        var1 = Variable(range(1,5))
-        var2 = Variable(range(1,5))
-        var3 = Variable(range(1,10))
-        var4 = Variable(range(1,10))
+        var1 = Variable(list(range(1,5)))
+        var2 = Variable(list(range(1,5)))
+        var3 = Variable(list(range(1,10)))
+        var4 = Variable(list(range(1,10)))
         
         sum1 = Sum(((var1, var2),(2,2)))
         sum2 = Sum((var3, var4))
@@ -333,11 +333,11 @@ class Test(unittest.TestCase):
         assert( solver.solve() )
         
     def testSumConstant(self):
-         obj1 = Variable(range(0,6))
-         obj2 = Variable(range(0,8))
-         obj3 = Variable(range(0,11))
+         obj1 = Variable(list(range(0,6)))
+         obj2 = Variable(list(range(0,8)))
+         obj3 = Variable(list(range(0,11)))
     
-         capacity = Variable(range(34,35))
+         capacity = Variable(list(range(34,35)))
          volumes = [7, 5, 3]
     
          model = NativeModel()
@@ -373,7 +373,7 @@ class Test(unittest.TestCase):
         #assert( var1.find([1,3,4], 2)[0] == 0)
         
     def testSumProp(self):
-        var1, var2, var3, var4 = (Variable(range(1,5)) for x in range(0,4))
+        var1, var2, var3, var4 = (Variable(list(range(1,5))) for x in range(0,4))
         
         var3 = Variable([1,10])
         var4 = Variable([2,10])
@@ -394,7 +394,7 @@ class Test(unittest.TestCase):
         assert(var1.get_value() + var2.get_value() == var3.get_value() + var4.get_value()*2)
         
     def testVarExtractionNeq(self):
-        var1, var2 = (Variable(range(0,3)) for x in range(0,2))
+        var1, var2 = (Variable(list(range(0,3))) for x in range(0,2))
         model = NativeModel()
         model.add_constraint(NotEqual((var1, var2)))
         solver = Solver(model)
@@ -402,9 +402,9 @@ class Test(unittest.TestCase):
         #print [v.get_value() for v in (var1, var2)]
         
     def testVarExtractionWSum(self):
-        var1 = Variable(range(2,3))
-        var2 = Variable(range(2,3))
-        var3 = Variable(range(3,10))
+        var1 = Variable(list(range(2,3)))
+        var2 = Variable(list(range(2,3)))
+        var3 = Variable(list(range(3,10)))
         model = NativeModel()  
         
         model.add_constraint(Equal((Sum(((var1, var2), (2,1))), var3)))
@@ -420,8 +420,8 @@ class Test(unittest.TestCase):
     '''
         
     def testOperatorOVerloading(self):
-        var1 = Variable(range(0,4))
-        var2 = Variable(range(0,4))
+        var1 = Variable(list(range(0,4)))
+        var2 = Variable(list(range(0,4)))
         
         model = NativeModel()
         model.add_constraint(var1 != var2)
@@ -431,7 +431,7 @@ class Test(unittest.TestCase):
         
     def testEqualOver(self):
         var1 = Variable([0])
-        var2 = Variable(range(0,1))
+        var2 = Variable(list(range(0,1)))
         
         model = NativeModel()
         
@@ -442,8 +442,8 @@ class Test(unittest.TestCase):
 
 
     def testStupid_not_eqOver(self):
-        var1 = Variable(range(0,3))
-        var2 = Variable(range(0,3))
+        var1 = Variable(list(range(0,3)))
+        var2 = Variable(list(range(0,3)))
         
         model = NativeModel()
         model.add_constraint(var1 != var2)
@@ -455,7 +455,7 @@ class Test(unittest.TestCase):
         
         
     def testGEQOver(self):
-        var1, var2, var3 = (Variable(range(0,3)) for x in range(0,3))
+        var1, var2, var3 = (Variable(list(range(0,3))) for x in range(0,3))
         model = NativeModel()
         
         model.add_constraint(var1 >= var2)
@@ -468,7 +468,7 @@ class Test(unittest.TestCase):
         #print "%d %d %d " % (var1.get_value(), var2.get_value(), var3.get_value())
         
     def testLEQOver(self):
-        var1, var2, var3 = (Variable(range(0,3)) for x in range(0,3))
+        var1, var2, var3 = (Variable(list(range(0,3))) for x in range(0,3))
         model = NativeModel()
         
         model.add_constraint(var1 <= var2)
@@ -484,7 +484,7 @@ class Test(unittest.TestCase):
         #print "%d %d %d " % (var1.get_value(), var2.get_value(), var3.get_value())
         
     def testLTOver(self):
-        var1, var2, var3 = (Variable(range(0,3)) for x in range(0,3))
+        var1, var2, var3 = (Variable(list(range(0,3))) for x in range(0,3))
         model = NativeModel()
         
         model.add_constraint(var1 < var2)
@@ -497,7 +497,7 @@ class Test(unittest.TestCase):
         #print "%d %d %d " % (var1.get_value(), var2.get_value(), var3.get_value())
         
     def testGTOver(self):
-        var1, var2, var3 = (Variable(range(0,3)) for x in range(0,3))
+        var1, var2, var3 = (Variable(list(range(0,3))) for x in range(0,3))
         model = NativeModel()
         
         model.add_constraint(var1 < var2)
@@ -510,7 +510,7 @@ class Test(unittest.TestCase):
         #print "%d %d %d " % (var1.get_value(), var2.get_value(), var3.get_value())
         
     def testPlusOver(self):
-        var1, var2 = (Variable(range(0,4)), Variable(range(0,4)))
+        var1, var2 = (Variable(list(range(0,4))), Variable(list(range(0,4))))
       
         model = NativeModel()
         
@@ -522,7 +522,7 @@ class Test(unittest.TestCase):
         #print "%d %d " % (var1.get_value(), var2.get_value())
         
     def testMinusOver(self):
-        var1, var2 = (Variable(range(0,4)), Variable(range(0,4)))
+        var1, var2 = (Variable(list(range(0,4))), Variable(list(range(0,4))))
         
         model = NativeModel()
         
@@ -532,7 +532,7 @@ class Test(unittest.TestCase):
         assert(solver.solve())
         
     def testTimesOver(self):
-        var1, var2 = (Variable(range(1,4)), Variable(range(0,4)))
+        var1, var2 = (Variable(list(range(1,4))), Variable(list(range(0,4))))
         
         model = NativeModel()
         
@@ -542,7 +542,7 @@ class Test(unittest.TestCase):
         assert(solver.solve())
         
     def testMinusOverNativeModelOp(self):
-        var1, var2 = (Variable(range(0,4)), Variable(range(0,4)))
+        var1, var2 = (Variable(list(range(0,4))), Variable(list(range(0,4))))
         
         model = NativeModel()
         
@@ -552,7 +552,7 @@ class Test(unittest.TestCase):
         assert(solver.solve())
         
     def testTimesOverNativeModelOp(self):
-        var1, var2 = (Variable(range(1,4)), Variable(range(0,4)))
+        var1, var2 = (Variable(list(range(1,4))), Variable(list(range(0,4))))
         
         model = NativeModel()
         

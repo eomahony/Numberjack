@@ -30,7 +30,7 @@ Numberjack directory, followed by `python setup.py install`. This requires the
 following to be installed:
 
 * python-dev
-* swig
+* swig (3.X)
 * libxml2-dev
 * zlib1g-dev 
 * libgmp-dev

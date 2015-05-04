@@ -8,6 +8,10 @@ from Numberjack import *
 import unittest
 
 
+def cmp(a, b):
+    return (a > b) - (a < b)
+
+
 class LinearBinTest:
     def __init__(self):
         self.functs = {"__eq__": [0],

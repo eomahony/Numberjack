@@ -6,7 +6,7 @@ LUBY, GEOMETRIC = 0, 1
 MAXCOST = 100000000
 
 from .solvers import available_solvers
-import exceptions
+# import exceptions
 import datetime
 import types
 import sys
@@ -22,7 +22,7 @@ var_heuristics = ['No', 'MinDomain', 'Lex', 'AntiLex', 'MaxDegree', 'MinDomainMi
 def flatten(x):
     result = []
     for el in x:
-        if hasattr(el, "__iter__") and not isinstance(el, basestring) and not issubclass(type(el), Expression):
+        if hasattr(el, "__iter__") and not isinstance(el, str) and not issubclass(type(el), Expression):
             result.extend(flatten(el))
         else:
             result.append(el)
@@ -37,7 +37,7 @@ def numeric(x):
 # Numberjack exceptions:
 
 
-class ConstraintNotSupportedError(exceptions.Exception):
+class ConstraintNotSupportedError(Exception):
     """
     Raised if the solver being loaded does not support the constraint, and no
     decomposition is available for the constraint. For example in the case of
@@ -52,21 +52,21 @@ class ConstraintNotSupportedError(exceptions.Exception):
         return "ERROR: Constraint %s not supported by solver %s and no decomposition is available." % (self.value, self.solver)
 
 
-class UnsupportedSolverFunction(exceptions.Exception):
+class UnsupportedSolverFunction(Exception):
     """
     Raised if a solver does not support a particular API call.
     """
 
     def __init__(self, solver, func_name, msg=""):
         self.solver = solver
-        self.func_name = func_name
+        self.__name__ = func_name
         self.msg = msg
 
     def __str__(self):
-        return "ERROR: The solver %s does not support the function '%s'. %s" % (self.solver, self.func_name, self.msg)
+        return "ERROR: The solver %s does not support the function '%s'. %s" % (self.solver, self.__name__, self.msg)
 
 
-class InvalidEncodingException(exceptions.Exception):
+class InvalidEncodingException(Exception):
     """
     Raised if an invalid encoding was specified, for example if no domain
     encoding is turned on.
@@ -79,7 +79,7 @@ class InvalidEncodingException(exceptions.Exception):
         return "ERROR: Invalid encoding configuration. %s" % self.msg
 
 
-class InvalidConstraintSpecification(exceptions.Exception):
+class InvalidConstraintSpecification(Exception):
     """
     Raised in the case of the invalid use of a constraint.
     """
@@ -91,7 +91,7 @@ class InvalidConstraintSpecification(exceptions.Exception):
         return "ERROR: Invalid constraint specification. %s" % self.msg
 
 
-class ModelSizeError(exceptions.Exception):
+class ModelSizeError(Exception):
     """
     Raised if the size of a model has grown excessively large when decomposing
     some constraints for a solver.
@@ -126,7 +126,7 @@ class Domain(list):
             self.is_bound = True
         self.current = -1
 
-    def next(self):
+    def __next__(self):
         """
         \internal
         Returns the next value when iterating
@@ -325,7 +325,7 @@ class Expression(object):
         if self.has_children():
             for child in self.children:
                 tc = type(child)
-                if tc not in [int, long, float, str, bool]:
+                if tc not in [int, int, float, str, bool]:
                     child.close()
 
     def get_domain(self, solver=None):
@@ -344,7 +344,7 @@ class Expression(object):
                 solver = self.solver
             lb, ub = self.get_min(solver), self.get_max(solver)
             if self.get_size(solver) == (ub - lb + 1):
-                dom = range(lb, ub + 1)
+                dom = list(range(lb, ub + 1))
             else:
                 # we should make that more efficient by using the underlying
                 # solvers to iterate
@@ -577,6 +577,9 @@ class Expression(object):
         else:
             return v in self.domain_
 
+    def __hash__(self):
+        return id(self)
+
 
 class Model(object):
     """
@@ -660,7 +663,7 @@ class Model(object):
         ## \internal - add the Expression tree to the model and assign identifiers to the nodes
         # this expression is new, choose an identifiant for it
         te = type(exp)
-        if te not in [int, long, float, str, bool]:
+        if te not in [int, int, float, str, bool]:
             ## THIS IS BUGGY, WE CANNOT ADD THE SAME VARIABLE TO SEVERAL MODELS
             if exp.ident == -1:
             #if exp.mod != self:
@@ -735,13 +738,13 @@ class Model(object):
                         return
                     # replace [Predicate(obj,..),Eq(Sum([obj]+vars, [+-1]+coefs),expr)] by [Predicate(Sum(vars+[expr],[-+]coefs+[-1]),..),Eq(0,0)]
                     # and [Predicate(obj,..),Eq(expr,Sum([obj]+vars, [+-1]+coefs))] by [Predicate(Sum(vars+[expr],[-+]coefs+[-1]),..),Eq(0,0)]
-                    objconstr = filter(lambda expr: issubclass(type(expr), Eq) and ((issubclass(type(expr.children[0]), Sum) and any(map(lambda u: expr.children[0].children[u] is objvar, xrange(len(expr.children[0].children))))) or (issubclass(type(expr.children[1]), Sum) and any(map(lambda u: expr.children[1].children[u] is objvar, xrange(len(expr.children[1].children)))))), self.__expressions)
+                    objconstr = [expr for expr in self.__expressions if issubclass(type(expr), Eq) and ((issubclass(type(expr.children[0]), Sum) and any([expr.children[0].children[u] is objvar for u in range(len(expr.children[0].children))])) or (issubclass(type(expr.children[1]), Sum) and any([expr.children[1].children[u] is objvar for u in range(len(expr.children[1].children))])))]
                     if (len(objconstr)==1):
                         if issubclass(type(objconstr[0].children[0]), Sum):
                             mysum = 0
                         else:
                             mysum = 1
-                        pos = filter(lambda u: objconstr[0].children[mysum].children[u] is objvar, xrange(len(objconstr[0].children[mysum].children)))[0]
+                        pos = filter(lambda u: objconstr[0].children[mysum].children[u] is objvar, range(len(objconstr[0].children[mysum].children)))[0]
                         coefobj = objconstr[0].children[mysum].parameters[0][pos]
                         if (coefobj != -1 and coefobj != 1):
                             return
@@ -752,7 +755,7 @@ class Model(object):
                             objconstr[0].children[mysum].children.append(Variable(coefeq,coefeq,str(coefeq)) if issubclass(type(coefeq), int) else coefeq)
                             objconstr[0].children[mysum].parameters[0].append(-1)
                         if (coefobj==1):
-                            for u in xrange(len(objconstr[0].children[mysum].children)):
+                            for u in range(len(objconstr[0].children[mysum].children)):
                                 objconstr[0].children[mysum].parameters[0][u] = -objconstr[0].children[mysum].parameters[0][u]
                         objexpr.children[j] = objconstr[0].children[mysum]
                         #print "REPLACE",objvar,"by",objexpr.children[j],"in",objexpr
@@ -764,7 +767,7 @@ class Model(object):
                     else:
                         # replace [Predicate(obj,..),Eq(obj,expr)] by [Predicate(expr,..),Eq(0,0)]
                         # and [Predicate(obj,..),Eq(expr,obj)] by [Predicate(expr,..),Eq(0,0)]
-                        objconstr = filter(lambda expr: issubclass(type(expr), Eq) and ((expr.children[0] is objvar) or (expr.children[1] is objvar)), self.__expressions)
+                        objconstr = [expr for expr in self.__expressions if issubclass(type(expr), Eq) and ((expr.children[0] is objvar) or (expr.children[1] is objvar))]
                         if (len(objconstr)==1):
                             if (objconstr[0].children[0] is objvar):
                                 objexpr.children[j] = objconstr[0].children[1]
@@ -778,9 +781,9 @@ class Model(object):
                             if issubclass(type(objexpr.children[j]), Expression): objexpr.children[j].close()
                         elif minimization is not None:
                             # ONLY in the objective function: replace [Predicate(obj,..),Table([obj]+vars,tuples,'support')] by [Predicate(Function(vars,dict),..), Table([],[],'support')]
-                            objconstr = filter(lambda expr: issubclass(type(expr), Table) and any(map(lambda u: expr.children[u] is objvar, xrange(len(expr.children)))) and (expr.parameters[1] == 'support'), self.__expressions)
+                            objconstr = [expr for expr in self.__expressions if issubclass(type(expr), Table) and any([expr.children[u] is objvar for u in range(len(expr.children))]) and (expr.parameters[1] == 'support')]
                             if (len(objconstr)==1):
-                                pos = filter(lambda u: objconstr[0].children[u] is objvar, xrange(len(objconstr[0].children)))[0]
+                                pos = filter(lambda u: objconstr[0].children[u] is objvar, range(len(objconstr[0].children)))[0]
                                 dictionary = {}
                                 for t in objconstr[0].parameters[0]:
                                     mytuple = t[:pos]+t[pos+1:]
@@ -798,12 +801,12 @@ class Model(object):
                     for j,var in enumerate(objvar.children):
                         rec_functional(objvar, var, j, minimization)
 
-            objexpr = filter(lambda expr: issubclass(type(expr), Minimise) or issubclass(type(expr), Maximise), self.__expressions)
+            objexpr = [expr for expr in self.__expressions if issubclass(type(expr), Minimise) or issubclass(type(expr), Maximise)]
             if (len(objexpr)==1 and issubclass(type(objexpr[0].children[0]), Expression) and objexpr[0].children[0].is_var()):
                 objvar = objexpr[0].children[0]
 
                 # replace Eq('objective',obj) or Eq('obj',obj) by Eq(0,0)  #SDG: VERY HUGLY!!! (avoid creating an objective variable just for Minizinc output purposes)
-                objconstr = filter(lambda expr: issubclass(type(expr), Eq) and expr.children[0].is_var() and (expr.children[0].name()=='objective' or expr.children[0].name()=='obj') and (expr.children[1] is objvar), self.__expressions)
+                objconstr = [expr for expr in self.__expressions if issubclass(type(expr), Eq) and expr.children[0].is_var() and (expr.children[0].name()=='objective' or expr.children[0].name()=='obj') and (expr.children[1] is objvar)]
                 if (len(objconstr)==1):
                     objconstr[0].children[0] = Variable(0,0,'0')
                     objconstr[0].children[1] = 0
@@ -975,9 +978,9 @@ class Variable(Expression):
 
         tlb = type(lb)
         tub = type(ub)
-        if tlb not in [int, long, float, str]:
+        if tlb not in [int, int, float, str]:
             raise TypeError("Warning lower bound of %s is not an int or a float or a string" % name)
-        elif tub not in [int, long, float, str]:
+        elif tub not in [int, int, float, str]:
             raise TypeError("Warning upper bound of %s is not an int or a float or a string" % name)
         elif type(name) is not str:
             raise TypeError("Warning name variable is not a string")
@@ -1329,6 +1332,8 @@ class Matrix(list):
                 return aux
             else:
                 return Element(self.flat, (i[0] * len(self.col)) + i[1])
+        elif type(i) is slice:
+            return list.__getitem__(self.row, i)
         else:
             return MatrixWrapper(i, self)
 
@@ -1943,10 +1948,10 @@ class Table(Predicate):
         """
         Prints the table of tuples to standard output.
         """
-        print self.parameters[1]
+        print(self.parameters[1])
         for var in self.children:
-            print var,
-        print '\n (' + self.parameters[1] + ')', self.parameters[0]
+            print(var, end=' ')
+        print('\n (' + self.parameters[1] + ')', self.parameters[0])
 
     def __str__(self):      #SDG: pretty print of Table Predicate
         return self.operator + "([" + ",".join([str(var) for var in self.children]) + "]," + str(self.parameters[0]) + ",'" + self.parameters[1] + "')"
@@ -2006,11 +2011,11 @@ class Sum(Predicate):
                     return res
                 elif var.operator == "mul":
                     if (var.get_children()[0].operator == "var" and
-                        (type(var.get_children()[1]) == types.IntType or
-                         type(var.get_children()[1]) == types.FloatType)):
+                        (type(var.get_children()[1]) == int or
+                         type(var.get_children()[1]) == float)):
                         return [(var.get_children()[0], var.get_children()[1] * coef)]
-                    elif (type(var.get_children()[1]) == types.IntType or
-                         type(var.get_children()[1]) == types.FloatType):
+                    elif (type(var.get_children()[1]) == int or
+                         type(var.get_children()[1]) == float):
 
                         return [(new_var, new_coef * var.get_children()[1] * coef)
                             for (new_var, new_coef) in extract_sum(var.get_children()[0], 1)]
@@ -2031,7 +2036,7 @@ class Sum(Predicate):
         for (var, coef) in zip(self.children, self.parameters[0]):
             list = extract_sum(var, coef)
             for (nVar, nCoef) in list:
-                if type(nVar) == types.IntType or type(nVar) == types.FloatType:
+                if type(nVar) == int or type(nVar) == float:
                     offset += (nVar * nCoef)
                 else:
                     if nVar in set_vars:
@@ -2158,7 +2163,7 @@ class Gcc(Predicate):
 
     def __init__(self, vars, cards):
         Predicate.__init__(self, vars, "Gcc")
-        values = cards.keys()
+        values = list(cards.keys())
         values.sort()
         lb = []
         ub = []
@@ -2832,36 +2837,36 @@ def input(default):
             #print 'new option', option
 
             if option != 'end_argument':
-                if not param_list.has_key(option):
+                if option not in param_list:
 
                     #print 'unknwn option'
                     if option == 'h' or option == '-h' or option == 'help' or option == '-help':
                         #print 'help'
-                        the_keys = param_list.keys()
+                        the_keys = list(param_list.keys())
                         the_keys.sort()
                         for key in the_keys:
-                            print ('-' + key).ljust(20) + ":",
+                            print(('-' + key).ljust(20) + ":", end=' ')
                             if type(param_list[key]) == int:
-                                print 'int'.ljust(14),
+                                print('int'.ljust(14), end=' ')
                             if type(param_list[key]) == float:
-                                print 'float'.ljust(14),
+                                print('float'.ljust(14), end=' ')
                             elif type(param_list[key]) == str:
-                                print 'string'.ljust(14),
+                                print('string'.ljust(14), end=' ')
                             elif hasattr(param_list[key], '__iter__'):
-                                print 'list',
+                                print('list', end=' ')
                                 if len(param_list[key]) > 0:
                                     if type(param_list[key][0]) == int:
-                                        print 'of int   ',
+                                        print('of int   ', end=' ')
                                     elif type(param_list[key][0]) == float:
-                                        print 'of float ',
+                                        print('of float ', end=' ')
                                     else:
-                                        print 'of string',
+                                        print('of string', end=' ')
                                 else:
-                                    print 'of string',
-                            print ' (default=' + str(param_list[key]) + ')'
+                                    print('of string', end=' ')
+                            print(' (default=' + str(param_list[key]) + ')')
                         exit(1)
                     else:
-                        print 'Warning: wrong parameter name, ignoring arguments following', option
+                        print('Warning: wrong parameter name, ignoring arguments following', option)
                 else:
                     #print 'fine option init param list'
                     params = []
@@ -2890,7 +2895,7 @@ def total_seconds(td):
 
 
 def load_in_decompositions():
-    import Decomp
+    from . import Decomp
 
     # First add the constraints
     for attr_name in dir(Decomp):
@@ -2939,7 +2944,7 @@ class Solution(list):
             return self.dico[i]
 
     def __contains__(self, x):
-        return self.dico.has_key(x)
+        return x in self.dico
 
     def __str__(self):
         if len(self) == 0:
@@ -3042,7 +3047,7 @@ class NBJ_STD_Solver(object):
                 self.solver.add(self.load_expr(expr))
             self.load_time = total_seconds(datetime.datetime.now() - loadstart)
 
-            if X != None:
+            if X is not None:
                 self.variables = VarArray(flatten(X))
                 var_array = self.ExpArray()
                 for x in self.variables:
@@ -3099,12 +3104,12 @@ class NBJ_STD_Solver(object):
         return self.enc_config_cache[enc_config]
 
     def load_expr(self, expr):
-        #print 'load', expr , expr.get_lb() if issubclass(type(expr),Expression) else None, expr.get_ub() if issubclass(type(expr),Expression) else None   #SDG: VERY USEFUL FOR DEBUGGING
+        # print('load', expr , expr.get_lb() if issubclass(type(expr),Expression) else None, expr.get_ub() if issubclass(type(expr),Expression) else None)   #SDG: VERY USEFUL FOR DEBUGGING
         if type(expr) is str:
             return self.model.string_map[expr]
         if type(expr) is bool:
             return int(expr)
-        if type(expr) in [int, long, float]:
+        if type(expr) in [int, int, float]:
             # It is a constant, handle appropriatly
             return expr
         #if not expr.has_children():
@@ -3181,8 +3186,8 @@ class NBJ_STD_Solver(object):
                 try:
                     var = factory(*arguments)
                 except NotImplementedError as e:
-                    print >> sys.stderr, "Error the solver does not support this expression:", str(expr)
-                    print >> sys.stderr, "Type:", type(expr), "Children:", str(expr.children), "Params:", str(getattr(expr, 'parameters', None))
+                    print("Error the solver does not support this expression:", str(expr), file=sys.stderr)
+                    print("Type:", type(expr), "Children:", str(expr.children), "Params:", str(getattr(expr, 'parameters', None)), file=sys.stderr)
                     raise e
 
                 if expr.encoding:
@@ -3230,7 +3235,7 @@ class NBJ_STD_Solver(object):
                 return True
             return False
         except (KeyboardInterrupt, SystemExit):
-            print 'Program Interrupted'
+            print('Program Interrupted')
             return
 
     def solveAndRestart(self, policy=GEOMETRIC, base=64, factor=1.3, decay=0.0, reinit=-1):
@@ -3311,7 +3316,7 @@ class NBJ_STD_Solver(object):
 
     def deduce_print(self, lvl):
         x = self.variables[self.solver.get_decision_id()]
-        print lvl * ' ', x.domain(self)
+        print(lvl * ' ', x.domain(self))
         self.solver.deduce()
 
     ## Follow a 'left' branch in a binary serach tree (eq. to save() + post())
@@ -3369,12 +3374,12 @@ class NBJ_STD_Solver(object):
             lit += str(val)
             return lit
 
-        print '(',
+        print('(', end=' ')
         for i in range(self.solver.get_nogood_size()):
             if i > 0:
-                print 'or',
-            print get_literal(i),
-        print ')'
+                print('or', end=' ')
+            print(get_literal(i), end=' ')
+        print(')')
 
     def sacPreprocess(self, type):
         self.solver.sacPreprocess(type)
@@ -3398,11 +3403,11 @@ class NBJ_STD_Solver(object):
             randomization = val_name
             val_name = 'No'
         if var_name not in var_heuristics:
-            print 'c Warning: "' + var_name + '" unknown, use MinDomain instead'
-            print 'c legal variable orderings: ', var_heuristics
+            print('c Warning: "' + var_name + '" unknown, use MinDomain instead')
+            print('c legal variable orderings: ', var_heuristics)
         if val_name not in val_heuristics:
-            print 'c Warning: "' + val_name + '" unknown, use Lex instead'
-            print 'c legal value orderings: ', val_heuristics
+            print('c Warning: "' + val_name + '" unknown, use Lex instead')
+            print('c legal value orderings: ', val_heuristics)
         self.solver.setHeuristic(str(var_name), str(val_name), randomization)
 
     def setFailureLimit(self, cutoff):
@@ -3440,8 +3445,8 @@ class NBJ_STD_Solver(object):
             f(num_threads)
         else:
             if self.verbosity > 0:
-                print >> sys.stderr, "Warning: this solver does not support " \
-                    "the ability to specify a thread count."
+                print("Warning: this solver does not support " \
+                    "the ability to specify a thread count.", file=sys.stderr)
 
     def setOptimalityGap(self, gap):
         """
@@ -3493,7 +3498,7 @@ class NBJ_STD_Solver(object):
         try:
             function = getattr(self.solver,func)
         except AttributeError:
-            print "Warning: "+func+" option does not exist in this solver!"
+            print("Warning: "+func+" option does not exist in this solver!")
         else:
             if param is None:
                 function()
@@ -3659,9 +3664,9 @@ class NBJ_STD_Solver(object):
 
         .. deprecated:: 1.1
         """
-        print ''
+        print('')
         self.solver.printStatistics()
-        print ''
+        print('')
 
     def getNumVariables(self):
         """
@@ -3894,7 +3899,7 @@ class NBJ_STD_Solver(object):
 
 
 def enum(*sequential):
-    enums = dict(zip(sequential, (2 ** i for i in range(len(sequential)))))
+    enums = dict(list(zip(sequential, (2 ** i for i in range(len(sequential))))))
     return type('Enum', (), enums)
 
 

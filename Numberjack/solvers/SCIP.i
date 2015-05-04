@@ -1,5 +1,5 @@
 %module(package="Numberjack.solvers") SCIP 
-%import(module="MipWrapper") "MipWrapper.hpp"
+%import(module="Numberjack.solvers.MipWrapper") "MipWrapper.hpp"
 
 %{
 #include <vector>

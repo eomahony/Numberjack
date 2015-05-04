@@ -50,8 +50,8 @@ class WareHouseParser:
         self.FixedCost = int(lines[2][6:-2])
         self.WareHouseCosts = [self.FixedCost for val in range(self.NumberOfWarehouses)]
         self.SupplyCost = eval("[" +
-                               " ".join((map((lambda a: a[:-1]+","),
-                                        lines[4:-1]))) +
+                               " ".join((list(map((lambda a: a[:-1]+","),
+                                        lines[4:-1])))) +
                                "]")
         # There was a fixed capacity for all the warehouse problems
         self.Capacity = [4 for val in range(self.NumberOfWarehouses)]
@@ -59,7 +59,7 @@ class WareHouseParser:
     def get(self, name):
         if hasattr(self, name):
             return getattr(self, name)
-        print name + " \t No Such Data!"
+        print(name + " \t No Such Data!")
         return None
 
 
@@ -67,4 +67,4 @@ default = {'solver': 'Mistral', 'data': 'data/cap44.dat.txt', 'cutoff': 50000, '
 
 if __name__ == '__main__':
     param = input(default)
-    print solve(param)
+    print(solve(param))

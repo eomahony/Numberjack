@@ -9,7 +9,7 @@ from Numberjack import *
 
 
 def get_model(N):
-    sum_val = N * (N * N + 1) / 2  # This is what all the columns, rows and diagonals must add up tp
+    sum_val = N * (N * N + 1) // 2  # This is what all the columns, rows and diagonals must add up tp
 
     square = Matrix(N, N, 1, N * N)
     model = Model(
@@ -49,4 +49,4 @@ default = {'solver': 'Mistral', 'N': 4, 'var': 'MinDomain',
 
 if __name__ == '__main__':
     param = input(default)
-    print solve(param)
+    print(solve(param))

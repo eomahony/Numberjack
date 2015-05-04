@@ -1,5 +1,5 @@
 %module(package="Numberjack.solvers") CPLEX
-%import(module="MipWrapper") "MipWrapper.hpp"
+%import(module="Numberjack.solvers.MipWrapper") "MipWrapper.hpp"
 
 %{
 #include <iostream>

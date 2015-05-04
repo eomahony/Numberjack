@@ -42,12 +42,12 @@ def mixed1(param):
     solver.solve()
 
     if solver.is_sat():
-        print v1.get_value(), v2.get_value(), v3.get_value()
-        print [v.get_value() for v in variables]
+        print(v1.get_value(), v2.get_value(), v3.get_value())
+        print([v.get_value() for v in variables])
     elif solver.is_unsat():
-        print "UNSATISFIABLE"
+        print("UNSATISFIABLE")
     else:
-        print "UNKNOWN"
+        print("UNKNOWN")
 
 
 def mixed2(param):
@@ -59,11 +59,11 @@ def mixed2(param):
     solver.solve()
 
     if solver.is_sat():
-        print xs
+        print(xs)
     elif solver.is_unsat():
-        print "UNSATISFIABLE"
+        print("UNSATISFIABLE")
     else:
-        print "UNKNOWN"
+        print("UNKNOWN")
 
 
 if __name__ == "__main__":

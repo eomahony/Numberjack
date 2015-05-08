@@ -763,6 +763,8 @@ public:
   void setUpperBounds(Mistral2ExpArray& vars, 
 		      Mistral2IntArray& vals);
   void setRestartNogood();
+	
+	void printPython();
 
   // statistics methods
   bool is_opt();

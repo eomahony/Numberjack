@@ -1840,3 +1840,10 @@ int Mistral2Solver::getRandomNumber()
 {
   return Mistral::randint(0xffffffff);
 }
+
+void Mistral2Solver::printPython()
+{
+	solver->consolidate();
+	solver->display(std::cout);
+}
+

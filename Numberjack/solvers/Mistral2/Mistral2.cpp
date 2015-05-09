@@ -710,6 +710,56 @@ Mistral2_Expression* Mistral2_Sum::add(Mistral2Solver *solver, bool top_level){
   return this;
 }
 
+
+
+Mistral2_OrderedSum::Mistral2_OrderedSum(Mistral2ExpArray& vars, 
+			   const int l, const int u)
+  : Mistral2_Expression() 
+{
+#ifdef _DEBUGWRAP
+  std::cout << "creating ordered sum" << std::endl;
+#endif
+  _vars = vars;
+  _lb = l;
+  _ub = u;
+}
+
+
+Mistral2_OrderedSum::~Mistral2_OrderedSum(){
+#ifdef _DEBUGWRAP
+  std::cout << "delete ordered sum" << std::endl;
+#endif
+}
+
+
+Mistral2_Expression* Mistral2_OrderedSum::add(Mistral2Solver *solver, bool top_level){
+	if(!has_been_added()) {
+#ifdef _DEBUGWRAP
+		std::cout << "add ordered sum constraint" << std::endl;
+#endif
+		_solver = solver;
+    
+		// _v * _w + o = _x
+		// _v * _w - _x = -o 
+    
+		int i, n=_vars.size();  
+		Mistral::VarArray scope(n);
+
+		for(i=0; i<n; ++i) {
+			_vars.get_item(i)->add(_solver,false);
+			scope[i] = _vars.get_item(i)->_self;
+		}
+
+		_self = OSum(scope, _lb, _ub);
+    
+		if( top_level ) {
+			_solver->solver->add( _self );
+		} 
+	}
+
+  return this;
+}
+
 /**
  * Binary constraints
  */

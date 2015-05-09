@@ -498,6 +498,50 @@ public:
   virtual Mistral2_Expression* add(Mistral2Solver *solver, bool top_level);
 };
 
+
+/**
+ * Ordered sum expression
+ */
+class Mistral2_OrderedSum: public Mistral2_Expression
+{
+
+private:
+
+  /**
+   * Variables in the scope of the constraint
+   */
+  Mistral2ExpArray _vars;
+  
+  int _lb;
+	int _ub;
+
+
+public:
+  
+  /**
+   * Create an ordered sum expression object 
+   */
+  Mistral2_OrderedSum( Mistral2ExpArray& vars, 
+	       const int l, const int u);
+
+  /**
+   * Destructor
+   */
+  virtual ~Mistral2_OrderedSum();
+  
+  /**
+   * Add the ordered sum to the solver
+   *
+   * see Expression:add()
+   *
+   * @return This method needs to return an expression that will represent the
+   * value of the ordered sum in the underlying solver
+   * be it an intermediate variable or otherwise. [todo, currently only useable at top level]
+   */
+  virtual Mistral2_Expression* add(Mistral2Solver *solver, bool top_level);
+};
+
+
 /**
  * Class that all binary and unary expressions inherit from
  */

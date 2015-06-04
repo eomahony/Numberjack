@@ -2206,10 +2206,13 @@ class Max(Predicate):
         self.ub = max(self.get_ub(i) for i in range(len(vars)))
 
     def get_min(self, solver=None):
-        return max([x.get_min(solver) for x in self.children])
+        return max([x.get_min(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
 
     def get_max(self, solver=None):
-        return max([x.get_max(solver) for x in self.children])
+        return max([x.get_max(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
+
+    def get_value(self, solver=None):
+        return max([x.get_value(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
 
     def decompose(self):
         X = self.children
@@ -2241,10 +2244,13 @@ class Min(Predicate):
         self.ub = min(self.get_ub(i) for i in range(len(vars)))
 
     def get_min(self, solver=None):
-        return min([x.get_min(solver) for x in self.children])
+        return min([x.get_min(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
 
     def get_max(self, solver=None):
-        return min([x.get_max(solver) for x in self.children])
+        return min([x.get_max(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
+
+    def get_value(self, solver=None):
+        return min([x.get_value(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
 
     def decompose(self):
         X = self.children

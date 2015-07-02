@@ -1973,16 +1973,16 @@ class Sum(Predicate):
     :param coefs: list of coefficients, which is [1,1,..,1] by default.
     """
 
-    def __init__(self, vars, coefs=None):
+    def __init__(self, vars, coefs=None, offset=0):
         Predicate.__init__(self, vars, "Sum")
 
         if coefs is None:
             coefs = [1 for var in self.children]
 
-        self.parameters = [coefs, 0]
+        self.parameters = [coefs, offset]
         #SDG: initial bounds
-        self.lb = sum(c*self.get_lb(i) if (c >= 0) else c*self.get_ub(i) for i,c in enumerate(coefs))
-        self.ub = sum(c*self.get_ub(i) if (c >= 0) else c*self.get_lb(i) for i,c in enumerate(coefs))
+        self.lb = sum(c*self.get_lb(i) if (c >= 0) else c*self.get_ub(i) for i,c in enumerate(coefs)) + offset
+        self.ub = sum(c*self.get_ub(i) if (c >= 0) else c*self.get_lb(i) for i,c in enumerate(coefs)) + offset
 
     def close(self):
         # This handles the scalar constraint, i.e. with weights

@@ -755,6 +755,11 @@ Mistral::Clause* Mistral::ConstraintClauseBase::update_watcher(const int cw,
 	std::cout << "    ok! (satisfied)" << std::endl;
 #endif
 
+	clause[1] = r;
+	clause[j] = p;
+	is_watched_by[p].remove(cw);
+	is_watched_by[r].add(cl);
+
 	break;
       }
     }

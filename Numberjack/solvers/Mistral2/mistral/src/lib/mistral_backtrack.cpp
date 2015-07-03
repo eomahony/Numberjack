@@ -423,6 +423,28 @@ int Mistral::Constraint::rank() {
   return propagator->index[rank];
 }
 
+void Mistral::Constraint::weight_conflict(double unit, Vector<double>& weights) {
+  if(!empty()) { // if the backtrack comes from the objective function, there is no culprit
+    if(global()) {
+      ((GlobalConstraint*)propagator)->weight_conflict(unit, weights);
+    } else {
+      Variable *scope = get_scope();
+      int idx;
+      int i = arity();
+      while(i--) {
+	idx = scope[i].id();
+	if(idx>=0) { // this is for constants (which hade id -1)
+	  weights[idx] += unit
+#ifdef _DIV_ARITY
+	    / (binary() ? 2.0 : 3.0)
+#endif
+	    ;
+	}
+      }   
+    }
+  }
+}
+
 
 void Mistral::Environment::_restore_() {
   

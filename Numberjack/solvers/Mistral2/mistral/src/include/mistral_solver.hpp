@@ -196,6 +196,8 @@ namespace Mistral {
     /// 
     unsigned long int num_amsc_explanations;
 
+    /// 
+    unsigned long int num_branch_on_large_domains;
     
     /// timestamp
     double creation_time;
@@ -366,7 +368,7 @@ namespace Mistral {
   class SolutionListener;
   class RestartListener;
   class SuccessListener;
-  class FailureListener;
+  class BacktrackListener;
   class DecisionListener;
   class VariableListener;
   class ConstraintListener;
@@ -474,14 +476,15 @@ namespace Mistral {
     // Vector< int > reason_index;
     //Vector< DomainExplanation* > reason_for;
     Vector< Literal > learnt_clause;
+    Vector< Literal > visited_literals;
     BitSet visited;
     int num_search_variables;
 
     ConstraintClauseBase *base;
     // Vector< double > lit_activity;
     // Vector< double > var_activity;
-    double * lit_activity;
-    double * var_activity;
+    //double * lit_activity;
+    //double * var_activity;
 
     /// Variable selection and branching
     BranchingHeuristic *heuristic;
@@ -493,7 +496,7 @@ namespace Mistral {
     Vector<SolutionListener*>     solution_triggers;
     Vector<RestartListener*>       restart_triggers;
     Vector<SuccessListener*>       success_triggers;
-    Vector<FailureListener*>       failure_triggers;
+    Vector<BacktrackListener*>   backtrack_triggers;
     Vector<DecisionListener*>     decision_triggers;
     Vector<VariableListener*>     variable_triggers;
     Vector<ConstraintListener*> constraint_triggers;
@@ -502,6 +505,8 @@ namespace Mistral {
     Constraint culprit;
     /// the constraint-index of the last wiped_out variable in the culprit constraint (-1 otherwise)
     int wiped_idx;
+    /// keep the index of the variable that produced the last conflict
+    int prev_wiped_idx;
     /// the overall-index of the variable responsible for the last trigger before a failure
     int wiper_idx;
 
@@ -536,9 +541,9 @@ namespace Mistral {
 
       void release(const int id) {
 	if((unsigned int)id == allocation.size) {
-	  do {
-	    size = allocation.pop();
-	  } while(size < 0);
+	  //do {
+	  size = allocation.pop();
+	  //} while(size < 0);
 	} else {
 	  allocation[id-1] = -1;
 	}
@@ -616,7 +621,7 @@ namespace Mistral {
     void add(SolutionListener* l);
     void add(RestartListener* l);
     void add(SuccessListener* l);
-    void add(FailureListener* l);
+    void add(BacktrackListener* l);
     void add(DecisionListener* l);
     void add(VariableListener* l);
     void add(ConstraintListener* l);
@@ -624,7 +629,7 @@ namespace Mistral {
     void remove(SolutionListener* l);
     void remove(RestartListener* l);
     void remove(SuccessListener* l);
-    void remove(FailureListener* l);
+    void remove(BacktrackListener* l);
     void remove(DecisionListener* l);
     void remove(VariableListener* l);
     void remove(ConstraintListener* l);
@@ -661,7 +666,7 @@ namespace Mistral {
 
     /*!@name Propagation accessors*/
     //@{
-    void notify_failure();
+    void notify_backtrack();
     void notify_success();
     void notify_decision();
     void notify_restart(const double prog);
@@ -860,7 +865,7 @@ namespace Mistral {
     TCLAP::SwitchArg             *printmodArg;
     TCLAP::SwitchArg             *printinsArg;
     TCLAP::SwitchArg             *printstaArg;
-    TCLAP::ValueArg<std::string> *commentArg;
+    //TCLAP::ValueArg<std::string> *commentArg;
     TCLAP::ValueArg<std::string> *pcommentArg;
     TCLAP::ValueArg<std::string> *pstatArg;
     TCLAP::ValueArg<std::string> *pobjectiveArg;

@@ -1,9 +1,9 @@
-Mistral 2.0 is a new, however very buggy version of Mistral. The old version is still available here: http://homepages.laas.fr/ehebrard/Software.html
+Mistral 2.0 is a new, however a buggy version of Mistral. The old version is still available here: http://homepages.laas.fr/ehebrard/Software.html
 
 
 Main authors:
 
-- Core of the solver (including all the bugs)
+- Core of the solver
 Emmanuel Hebrard 
 LAAS-CNRS - Toulouse, France
 

@@ -34,6 +34,12 @@ Numberjack. If you add one of these solvers after already installing Numberjack,
 please reinstall Numberjack to enable the new interface.
 
 
+.. note:: The `-E` flag may need to be added to sudo if you are setting
+    environmental variables and installing where administrator privileges are
+    required. For example: `sudo -E pip install numberjack` or
+    `sudo -E python setup.py install`.
+
+
 Gurobi Optimizer
 ^^^^^^^^^^^^^^^^
 

@@ -117,19 +117,19 @@ namespace Mistral {
     std::ostream& display(std::ostream& os) { os << "success-L"; return os; }    
   };
 
-  /*! \class FailureListener
-    \brief FailureListener Class
+  /*! \class BacktrackListener
+    \brief BacktrackListener Class
 
     * Called whenever the solver restarts *
     
     This is used to implement procedures triggered on failed propagation steps
   */
-  class FailureListener {
+  class BacktrackListener {
   public:
     int fid;
-    virtual void notify_failure() = 0;
+    virtual void notify_backtrack() = 0;
 
-    std::ostream& display(std::ostream& os) { os << "failure-L"; return os; }    
+    std::ostream& display(std::ostream& os) { os << "backtrack-L"; return os; }    
   };
 
   /*! \class ConstraintListener
@@ -170,14 +170,14 @@ namespace Mistral {
   std::ostream& operator<<(std::ostream& os, DecisionListener& x);
   std::ostream& operator<<(std::ostream& os, RestartListener& x);
   std::ostream& operator<<(std::ostream& os, SuccessListener& x);
-  std::ostream& operator<<(std::ostream& os, FailureListener& x);
+  std::ostream& operator<<(std::ostream& os, BacktrackListener& x);
   std::ostream& operator<<(std::ostream& os, ConstraintListener& x);
   std::ostream& operator<<(std::ostream& os, VariableListener& x);
 
   // std::ostream& operator<<(std::ostream& os, DecisionListener* x);
   // std::ostream& operator<<(std::ostream& os, RestartListener* x);
   // std::ostream& operator<<(std::ostream& os, SuccessListener* x);
-  // std::ostream& operator<<(std::ostream& os, FailureListener* x);
+  // std::ostream& operator<<(std::ostream& os, BacktrackListener* x);
   // std::ostream& operator<<(std::ostream& os, ConstraintListener* x);
   // std::ostream& operator<<(std::ostream& os, VariableListener* x);
 
@@ -311,19 +311,20 @@ namespace Mistral {
 
 
 
-  /*! \class FailureCountManager
+  /*! \class FailureCountanager
     \brief FailureCountManager Class
 
     * Listener interface for weighted degree *
     * Counts the number of failures for each constraint *
   */
   //template< float DECAY > 
-  class FailureCountManager : public FailureListener, public ConstraintListener {
+  class FailureCountManager : public BacktrackListener, public ConstraintListener {
 
   public:
 
     Solver *solver;
     double weight_unit;
+
 
     /*\ TODO: make it a variable listener \*/
     Vector<double> constraint_weight;
@@ -331,6 +332,8 @@ namespace Mistral {
 
     //FailureCountManager(Solver *s, void *a=NULL) : solver(s) {// }
     FailureCountManager(Solver *s) : solver(s) {// }
+
+      //std::cout << "OLD" << std::endl;
 
       weight_unit = solver->parameters.activity_increment;
       
@@ -359,14 +362,14 @@ namespace Mistral {
       // std::cout << std::endl;
 
 
-      solver->add((FailureListener*)this);
+      solver->add((BacktrackListener*)this);
       solver->add((ConstraintListener*)this);
     }
 
     virtual ~FailureCountManager() {// }
 
       solver->remove((ConstraintListener*)this);
-      solver->remove((FailureListener*)this);
+      solver->remove((BacktrackListener*)this);
     }
 
     double *get_variable_weight() { return variable_weight.stack_; }   
@@ -405,7 +408,7 @@ namespace Mistral {
     }
   
 
-    virtual void notify_failure() {
+    virtual void notify_backtrack() {
       int i;
       Constraint con = solver->culprit;
 
@@ -416,7 +419,8 @@ namespace Mistral {
 	Variable *scope = con.get_scope();
 	int idx;
 	i = con.arity();
-	++constraint_weight[con.id()];
+	//++constraint_weight[con.id()];
+	constraint_weight[con.id()] += weight_unit;
 	while(i--) {
 	  idx = scope[i].id();
 	  if(idx>=0) {
@@ -457,6 +461,113 @@ namespace Mistral {
       while(variable_weight.size < solver->variables.size) {
 	variable_weight.add(weight_unit*solver->variables[variable_weight.size].get_degree());
       }
+    }
+
+    virtual std::ostream& display(std::ostream& os, const bool all) const ;
+// {
+      
+//       int *all_variables = new int[variable_weight.size];
+//       int *all_constraints = new int[constraint_weight.size];
+
+//       for(unsigned int i=0; i<variable_weight.size; ++i) {
+// 	all_variables[i] = i;
+//       }
+
+//       for(unsigned int i=0; i<constraint_weight.size; ++i) {
+// 	all_constraints[i] = i;
+//       }
+
+//       weight_sorting_array = variable_weight.stack_;
+//       qsort(all_variables, variable_weight.size, sizeof(int), decreasing_weight);
+
+//       weight_sorting_array = constraint_weight.stack_;
+//       qsort(all_constraints, constraint_weight.size, sizeof(int), decreasing_weight);
+
+//       for(unsigned int i=0; i<variable_weight.size; ++i) {
+// 	os << std::setw(5) << solver->variables[all_variables[i]] << " ";
+//       }
+//       os << std::endl;
+//       for(unsigned int i=0; i<variable_weight.size; ++i) {
+// 	os << std::setw(5) << variable_weight[i] << " ";
+//       }
+//       os << std::endl;
+
+//      for(unsigned int i=0; i<constraint_weight.size; ++i) {
+// 	os << std::setw(5) << solver->constraints[all_constraints[i]] << " ";
+//       }
+//       os << std::endl;
+//       for(unsigned int i=0; i<constraint_weight.size; ++i) {
+// 	os << std::setw(5) << constraint_weight[i] << " ";
+//       }
+//       os << std::endl;
+
+//     }    
+
+  };
+
+
+
+  /*! \class ConflictCountManager
+    \brief ConflictCountManager Class
+
+    * Listener interface for a kind of weighted degree *
+    * Failed constraints weight variables with an aribtrary policy *
+  */
+  //template< float DECAY > 
+  class ConflictCountManager : public BacktrackListener {
+
+  public:
+
+    Solver *solver;
+    double weight_unit;
+
+
+    /*\ TODO: make it a variable listener \*/
+    //Vector<double> constraint_weight;
+    Vector<double> variable_weight;
+
+    //ConflictCountManager(Solver *s, void *a=NULL) : solver(s) {// }
+    ConflictCountManager(Solver *s) : solver(s) {// }
+
+      //std::cout << "NEW" << std::endl;
+
+      weight_unit = solver->parameters.activity_increment;
+      
+      variable_weight.initialise(solver->variables.size, solver->variables.size);
+
+      for(unsigned int i=0; i<solver->variables.size; ++i) {
+	variable_weight[i] = 0;
+      // 	variable_weight.add(weight_unit * solver->variables[i].get_degree());
+      }
+      Variable *scope;
+      int arity, j;
+      for(unsigned int i=0; i<solver->constraints.size; ++i) {
+	arity = solver->constraints[i].arity();
+	scope = solver->constraints[i].get_scope();
+	for(j=0; j<arity; ++j) if(!scope[j].is_ground()) {
+	    variable_weight[scope[j].id()] += weight_unit/(double)arity;
+	  }
+      }
+
+      solver->add((BacktrackListener*)this);
+      solver->add((ConstraintListener*)this);
+    }
+
+    virtual ~ConflictCountManager() {
+      solver->remove((ConstraintListener*)this);
+      solver->remove((BacktrackListener*)this);
+    }
+
+    double *get_variable_weight() { return variable_weight.stack_; }   
+    double **get_value_weight() { return NULL; }
+    double *get_bound_weight() { return NULL; }
+  
+
+    virtual void notify_backtrack() {
+      int i;
+      Constraint con = solver->culprit;
+
+      con.weight_conflict(weight_unit, variable_weight);
     }
 
     virtual std::ostream& display(std::ostream& os, const bool all) const ;
@@ -577,12 +688,14 @@ namespace Mistral {
     * Listener interface for ABS *
     * Activitys the number of times each variable was visited when computing a nogood *
     */
-  class LearningActivityManager : public DecisionListener {
+  class LearningActivityManager : public BacktrackListener {
 
   public:
 
     Solver *solver;
     double weight_unit;
+    double max_activity;
+    double max_weight;
 
     Vector<double> var_activity;
     Vector<double> lit_activity;
@@ -618,7 +731,7 @@ namespace Mistral {
     double *get_bound_weight() { return lit_activity.stack_; }
     double **get_value_weight() { return NULL; }
 
-    virtual void notify_decision() ;//{
+    virtual void notify_backtrack() ;//{
 
     //   //std::cout << "d " << lit_activity.stack_ << " " << lit_activity[0] << " " << lit_activity[1] << std::endl;
 
@@ -643,7 +756,7 @@ namespace Mistral {
 //     * Listener interface for Impact *
 //     * NB: this is a simplified version of Impact, where only the impact of left vs right branches are distinguished
 //   */
-//   class ImpactManager : public FailureListener, public SuccessListener, public DecisionListener, public VariableListener {
+//   class ImpactManager : public BacktrackListener, public SuccessListener, public DecisionListener, public VariableListener {
 
 //   public:
 
@@ -690,7 +803,7 @@ namespace Mistral {
 // 	avg_right_branches[i] = solver->variables[i].get_size();
 //       }
 
-//       solver->add((FailureListener*)this);
+//       solver->add((BacktrackListener*)this);
 //       solver->add((SuccessListener*)this);
 //       solver->add((DecisionListener*)this);
 //       solver->add((VariableListener*)this);
@@ -701,7 +814,7 @@ namespace Mistral {
 //       solver->remove((VariableListener*)this);
 //       solver->remove((SuccessListener*)this);
 //       solver->remove((DecisionListener*)this);
-//       solver->remove((FailureListener*)this);
+//       solver->remove((BacktrackListener*)this);
 //     }
 
 //     double *get_variable_weight() { return variable_weight.stack_; }   
@@ -849,7 +962,7 @@ namespace Mistral {
 //       left = 0;
 //     }
 
-//     virtual void notify_failure() {
+//     virtual void notify_backtrack() {
 //       // propagation produced a wipe-out
 //       // - check if it was after a left or a right branch
 //       // - find out what was the decision/refutation
@@ -861,7 +974,7 @@ namespace Mistral {
 // 	dec = solver->decisions.back().var.id();
 
 // #ifdef _DEBUG_IMPACT
-// 	std::cout << " notified of failure after a left branch on " << solver->variables[dec] << "\n";
+// 	std::cout << " notified of backtrack after a left branch on " << solver->variables[dec] << "\n";
 // 	std::cout << " ==> left-weight[" << solver->variables[dec] << "] was " << left_weight[dec] ;
 // #endif
 
@@ -893,7 +1006,7 @@ namespace Mistral {
 // 	avg_right_branches[dec] = (avg_right_branches[dec]*(double)(num_probes[dec]) + (double)(num_right_branches[dec]))/((double)(++num_probes[dec]));
 
 // #ifdef _DEBUG_IMPACT
-// 	std::cout << " notified of failure after the " << (num_right_branches[dec]) 
+// 	std::cout << " notified of backtrack after the " << (num_right_branches[dec]) 
 // 		  << "th right branch on " << solver->variables[dec] << "\n";
 // 	std::cout << " ==> right-weight[" << solver->variables[dec] << "] was " << rwb
 // 		  << " now " << right_weight[dec] << std::endl;
@@ -979,7 +1092,7 @@ namespace Mistral {
     * NB: this is a simplified version of Impact, where only the impact of left vs right branches are distinguished
   */
 #define INIT_IMPACT .001
-  class ImpactManager : public FailureListener, public SuccessListener, public DecisionListener, public VariableListener {
+  class ImpactManager : public BacktrackListener, public SuccessListener, public DecisionListener, public VariableListener {
 
   public:
 
@@ -1028,7 +1141,7 @@ namespace Mistral {
 	variable_weight[i] = avg_branches[i] * impact[i] ;
       }
 
-      solver->add((FailureListener*)this);
+      solver->add((BacktrackListener*)this);
       solver->add((SuccessListener*)this);
       solver->add((DecisionListener*)this);
       solver->add((VariableListener*)this);
@@ -1039,7 +1152,7 @@ namespace Mistral {
       solver->remove((VariableListener*)this);
       solver->remove((SuccessListener*)this);
       solver->remove((DecisionListener*)this);
-      solver->remove((FailureListener*)this);
+      solver->remove((BacktrackListener*)this);
     }
 
     double *get_variable_weight() { return variable_weight.stack_; }   
@@ -1127,7 +1240,7 @@ namespace Mistral {
       left = 0;
     }
       
-    virtual void notify_failure() {
+    virtual void notify_backtrack() {
       // propagation produced a wipe-out
       // - check if it was after a left or a right branch
       // - find out what was the decision/refutation
@@ -1139,7 +1252,7 @@ namespace Mistral {
 	dec = solver->decisions.back().var.id();
 
 #ifdef _DEBUG_IMPACT
-	std::cout << " notified of failure after the " << num_probes[dec] << " left branch on " << solver->variables[dec] << "\n";
+	std::cout << " notified of backtrack after the " << num_probes[dec] << " left branch on " << solver->variables[dec] << "\n";
 	std::cout << " ==> left-weight[" << solver->variables[dec] << "] was " << impact[dec] ;
 #endif
 
@@ -1167,7 +1280,7 @@ namespace Mistral {
 	avg_branches[dec] = (avg_branches[dec]*(double)(tot_fails[dec]) + (double)(num_probes[dec]))/((double)(++tot_fails[dec]));
 
 #ifdef _DEBUG_IMPACT
-	std::cout << " notified of failure after a right branch on " << solver->variables[dec] << "\n";
+	std::cout << " notified of backtrack after a right branch on " << solver->variables[dec] << "\n";
 	std::cout << " ==> num branches on " << solver->variables[dec] << " was " << nbr
 		  << " now " << avg_branches[dec] << std::endl;
 #endif
@@ -1196,7 +1309,7 @@ namespace Mistral {
 
   //   * Listener interface for progress saving *
   // */
-  // class ProgressSavingManager : public FailureListener {
+  // class ProgressSavingManager : public BacktrackListener {
 
   // public:
 
@@ -1215,14 +1328,14 @@ namespace Mistral {
   //     for(unsigned int i=0; i<solver->variables.size; ++i) {
   // 	progress.add(solver->variables[i].get_min());
   //     }
-  //     solver->add((FailureListener*)this);
+  //     solver->add((BacktrackListener*)this);
   //   }
 
   //   virtual ~ProgressSavingManager() {
-  //     solver->remove((FailureListener*)this);
+  //     solver->remove((BacktrackListener*)this);
   //   }
 
-  //    virtual void notify_failure() {
+  //    virtual void notify_backtrack() {
 
   //   }
   // };
@@ -1233,7 +1346,7 @@ namespace Mistral {
 
   //   * Listener interface for progress saving *
   // */
-  // class GuidedSearchManager : public FailureListener {
+  // class GuidedSearchManager : public BacktrackListener {
 
   // public:
 
@@ -1251,14 +1364,14 @@ namespace Mistral {
   //     for(unsigned int i=0; i<solver->variables.size; ++i) {
   // 	progress.add(solver->variables[i].get_min());
   //     }
-  //     solver->add((FailureListener*)this);
+  //     solver->add((BacktrackListener*)this);
   //   }
 
   //   virtual ~GuidedSearchManager() {
-  //     solver->remove((FailureListener*)this);
+  //     solver->remove((BacktrackListener*)this);
   //   }
 
-  //    virtual void notify_failure() {
+  //    virtual void notify_backtrack() {
 
   //   }
   // };
@@ -1276,6 +1389,8 @@ namespace Mistral {
     unsigned int base;
     
     RestartPolicy(const unsigned int b=256);
+    virtual ~RestartPolicy();
+
     virtual void reset(unsigned int& limit) = 0;
     virtual void initialise(unsigned int& limit) = 0;
     
@@ -1426,6 +1541,10 @@ namespace Mistral {
 
     GenericHeuristic(Solver *s) 
       : BranchingHeuristic(s) {
+
+      //std::cout << (int*)(s) << std::endl;
+      //std::cout << s << std::endl;
+
       var.initialise(s);
       choice = ValSelector(s,var.get_value_weight(),var.get_bound_weight());
     }
@@ -1747,7 +1866,7 @@ namespace Mistral {
     //   }
     // }
 
-    virtual std::ostream& display(std::ostream& os) {
+    virtual std::ostream& display(std::ostream& os) const {
       //GenericDVO< Aggregator< VarComparator >, RAND, WeightManager >::manager->display(os, false);
       return GenericDVO< Aggregator< VarComparator >, RAND, WeightManager >::display(os); //, RAND, GenericDVO< Aggregator< VarComparator >, RAND, WeightManager >::manager->get_variable_weight());
     }
@@ -1850,7 +1969,7 @@ namespace Mistral {
     Solver                                      *solver;
     VarStack < Variable, ReversibleNum<int> > *sequence;
     Vector< Vector< Constraint > >          constraints;
-
+    int                                          id_obj;
 
     ConsolidateListener(Solver *s);
     virtual ~ConsolidateListener();
@@ -3036,7 +3155,7 @@ namespace Mistral {
     
     AnyValue() {}
     AnyValue(Solver *s, double **vw, double *bw) {}
-    void initialise(double **vw, double *bw) {}
+    void initialise(Solver *s, double **vw, double *bw) {}
     //AnyValue(Solver *s, void *a) {}
     virtual ~AnyValue() {};
     
@@ -3068,12 +3187,18 @@ namespace Mistral {
     
     MinValue() {}
     MinValue(Solver *s, double **vw, double *bw) {}
-    void initialise(double **vw, double *bw) {}
+    void initialise(Solver *s, double **vw, double *bw) {}
     //MinValue(Solver *s, void *a) {}
     virtual ~MinValue() {};
     
     inline Decision make(Variable x) {
+
+      //std::cout << "(MV) make a decision on " << x << " in " << x.get_domain() << std::endl;
+
       Decision d(x, Decision::ASSIGNMENT, x.get_min());
+
+      //std::cout << d << std::endl;
+
       return d;
     }
 
@@ -3100,7 +3225,7 @@ namespace Mistral {
     
     MaxValue() {}
     MaxValue(Solver *s, double **vw, double *bw) {}
-    void initialise(double **vw, double *bw) {}
+    void initialise(Solver *s, double **vw, double *bw) {}
     //MaxValue(Solver *s, void *a) {}
     virtual ~MaxValue() {};
     
@@ -3132,7 +3257,7 @@ namespace Mistral {
     
     MiddleValue() {}
     MiddleValue(Solver *s, double **vw, double *bw) {}
-    void initialise(double **vw, double *bw) {}
+    void initialise(Solver *s, double **vw, double *bw) {}
     //MiddleValue(Solver *s, void *a) {}
     virtual ~MiddleValue() {};
     
@@ -3166,7 +3291,7 @@ namespace Mistral {
     
     MedianValue() {}
     MedianValue(Solver *s, double **vw, double *bw) {}
-    void initialise(double **vw, double *bw) {}
+    void initialise(Solver *s, double **vw, double *bw) {}
     virtual ~MedianValue() {};
     
     inline Decision make(Variable x) {
@@ -3210,11 +3335,14 @@ namespace Mistral {
     
     HalfSplit() {}
     HalfSplit(Solver *s, double **vw, double *bw) {}
-    void initialise(double **vw, double *bw) {}
+    void initialise(Solver *s, double **vw, double *bw) {}
     //HalfSplit(Solver *s, void *a) {}
     virtual ~HalfSplit() {};
     
     inline Decision make(Variable x) {
+
+      //std::cout << "(HS) make a decision on " << x << " in " << x.get_domain() << std::endl;
+
       Decision d(x, Decision::UPPERBOUND, (x.get_min()+x.get_max())/2);
       return d;
     }
@@ -3231,6 +3359,7 @@ namespace Mistral {
   std::ostream& operator<<(std::ostream& os, HalfSplit* x);
 
 
+
   /*! \class ReverseSplit
     \brief  Class ReverseSplit
 
@@ -3242,7 +3371,7 @@ namespace Mistral {
     
     ReverseSplit() {}
     ReverseSplit(Solver *s, double **vw, double *bw) {}
-    void initialise(double **vw, double *bw) {}
+    void initialise(Solver *s, double **vw, double *bw) {}
     //ReverseSplit(Solver *s, void *a) {}
     virtual ~ReverseSplit() {};
     
@@ -3274,7 +3403,7 @@ namespace Mistral {
     
     RandomSplit() {}
     RandomSplit(Solver *s, double **vw, double *bw) {}
-    void initialise(double **vw, double *bw) {}
+    void initialise(Solver *s, double **vw, double *bw) {}
     //RandomSplit(Solver *s, void *a) {}
     virtual ~RandomSplit() {};
     
@@ -3307,7 +3436,7 @@ namespace Mistral {
     
     RandomMinMax() {}
     RandomMinMax(Solver *s, double **vw, double *bw) {}
-    void initialise(double **vw, double *bw) {}
+    void initialise(Solver *s, double **vw, double *bw) {}
     //RandomMinMax(Solver *s, void *a) {}
     virtual ~RandomMinMax() {};
     
@@ -3340,7 +3469,7 @@ namespace Mistral {
     
     RandomValue() {}
     RandomValue(Solver *s, double **vw, double *bw) {}
-    void initialise(double **vw, double *bw) {}
+    void initialise(Solver *s, double **vw, double *bw) {}
     virtual ~RandomValue() {};
     
     inline Decision make(Variable x) {
@@ -3386,9 +3515,9 @@ namespace Mistral {
     
     MinWeightValue() {}
     MinWeightValue(Solver *s, double **vw, double *bw) {
-      initialise(vw, bw);
+      initialise(s, vw, bw);
     }
-    void initialise(double **vw, double *bw) {
+    void initialise(Solver *s, double **vw, double *bw) {
       weight = vw;
     }
     //MinWeightValue(Solver *s, void *a) { weight = (double**)a; }
@@ -3441,9 +3570,9 @@ namespace Mistral {
     
     MaxWeightValue() {}
     MaxWeightValue(Solver *s, double **vw, double *bw) {
-      initialise(vw, bw);
+      initialise(s, vw, bw);
     }
-    void initialise(double **vw, double *bw) {
+    void initialise(Solver *s, double **vw, double *bw) {
       weight = vw;
     }
     //MaxWeightValue(Solver *s, void *a) { weight = (double**)a; }
@@ -3497,9 +3626,9 @@ namespace Mistral {
     
     MinWeightBound() {}
     MinWeightBound(Solver *s, double **vw, double *bw) {
-      initialise(vw, bw);
+      initialise(s, vw, bw);
     }
-    void initialise(double **vw, double *bw) {
+    void initialise(Solver *s, double **vw, double *bw) {
       weight = bw;
     }
     //MinWeightBound(Solver *s, void *a) { weight = (double**)a; }
@@ -3575,32 +3704,17 @@ namespace Mistral {
     Default init_choice;
     
     int cool;
-    //int cool;
 
     Guided() {cool=150;}
-    Guided(Solver *s, double **vw, double *bw) { solver=s; initialise(vw, bw); cool=150;}
-    void initialise(double **vw, double *bw) { init_choice.initialise(vw, bw); }
+    Guided(Solver *s, double **vw, double *bw) { initialise(s, vw, bw); cool=150;}
+    void initialise(Solver *s, double **vw, double *bw) { solver=s, init_choice.initialise(s, vw, bw); }
     virtual ~Guided() {};
     
     inline Decision make(Variable x) {
-      // Decision d;
-      
-      // int val, num_sol = solver->statistics.num_solutions;
-
-      // if(cool < num_sol) {
-      // 	num_sol = num_sol - cool + 1;
-      // 	val = solver->last_solution_lb[x.id()];
-      // 	if(val != -INFTY && x.contain(val) && randint(num_sol))
-      // 	  d = Decision(x, Decision::ASSIGNMENT, val);
-      // }
-      
-      // if(d.is_void()) {
-      // 	d = init_choice.make(x);
-      // }
-      // return d;
 
 
-
+      //std::cout << "(G) make a decision on " << x << " in " << x.get_domain() << std::endl;
+ 
       Decision d;
       
       int val = solver->last_solution_lb[x.id()];
@@ -3609,19 +3723,10 @@ namespace Mistral {
       } else
 	d = init_choice.make(x);
  
+      //std::cout << d << std::endl;
+
       return d;
 
-      // //if(cool < 3+solver->statistics.num_solutions) {
-      // //int cool = 3+solver->statistics.num_solutions;
-      // // 	std::cout << cool <<std::endl;
-      // // }
-
-      // if(val == -INFTY || !x.contain(val) || !randint(cool)
-      // 	 ) 
-      // 	d = init_choice.make(x);
-      // else 
-      // 	d = Decision(x, Decision::ASSIGNMENT, val);
-      // return d;
     }
     
     std::ostream& display(std::ostream& os) const {
@@ -3645,7 +3750,7 @@ namespace Mistral {
 
 
 
-  /*! \class Guided
+  /*! \class GuidedSplit
     \brief  Class GuidedSplit
 
     Restricts the variable to the half that contains the solution value
@@ -3659,18 +3764,24 @@ namespace Mistral {
     Default init_choice;
     
     GuidedSplit() {}
-    GuidedSplit(Solver *s, double **vw, double *bw) { solver=s; initialise(vw, bw); }
-    void initialise(double **vw, double *bw) { init_choice.initialise(vw, bw); }
+    GuidedSplit(Solver *s, double **vw, double *bw) { initialise(s, vw, bw); }
+    void initialise(Solver *s, double **vw, double *bw) { solver=s; init_choice.initialise(s, vw, bw); }
     virtual ~GuidedSplit() {};
     
     inline Decision make(Variable x) {
+
+      //std::cout << "(GS) make a decision on " << x << " in " << x.get_domain() << std::endl;
+
       int val = solver->last_solution_lb[x.id()];
       Decision d;
       if(val == -INFTY || !x.contain(val)) 
 	d = init_choice.make(x);
       else {
 	int half = (x.get_min()+x.get_max())/2;
-	d = Decision(x, (half < val ? Decision::LOWERBOUND : Decision::UPPERBOUND), half);
+	if(half < val)
+	  d = Decision(x, Decision::LOWERBOUND, half);
+	else
+	  d = Decision(x, Decision::UPPERBOUND, half);
       }
       return d;
     }
@@ -3696,6 +3807,92 @@ namespace Mistral {
 
 
 
+  /*! \class ConditionalOnSize
+    \brief  Class ConditionalOnSize
+
+    - uses range_branching if the domain size is continuous and larger than threshold 
+    - uses fd_branching otherwise
+  */
+  template< class RangeBranching, class FDBranching >
+  class ConditionalOnSize {
+    
+  public: 
+    
+    Solver *solver;
+    RangeBranching range_branching;
+    FDBranching fd_branching;
+
+    int threshold;
+    
+    ConditionalOnSize() {}
+    ConditionalOnSize(Solver *s, double **vw, double *bw) { initialise(s, vw, bw); }
+    void initialise(Solver *s, double **vw, double *bw) {
+
+      //std::cout << "initialise COS" << std::endl;
+      //std::cout << (int*)s << std::endl;
+
+      solver=s; 
+
+      //std::cout << (int*)solver << std::endl;
+      //std::cout << solver << std::endl;
+
+
+      threshold=10; 
+      range_branching.initialise(solver, vw, bw); 
+      fd_branching.initialise(solver, vw, bw);  
+    }
+    virtual ~ConditionalOnSize() {};
+    
+    inline Decision make(Variable x) {
+
+
+      //std::cout << "(COS) make a decision on " << x << " in " << x.get_domain() << std::endl;
+
+      Decision d;
+      if(x.is_range() && x.get_size()>=threshold) {
+
+	//std::cout << "  -> RANGE!\n";
+
+	d = range_branching.make(x);
+      } else {
+
+	//std::cout << "  -> FD!\n";
+	
+
+	d = fd_branching.make(x);
+      }
+
+
+      //std::cout << "  ==> " << d << std::endl;
+
+      return d;
+    }
+    
+    std::ostream& display(std::ostream& os) const {
+      os << "uses ";
+      range_branching.display(os);
+      os << " on large intervals and ";
+      fd_branching.display(os); 
+      os << " otherwise";
+      return os;
+    }
+    
+  };
+
+
+  template< class RangeBranching, class FDBranching >
+  std::ostream& operator<<(std::ostream& os, ConditionalOnSize< RangeBranching, FDBranching >& x) {
+    return x.display(os);
+  }
+
+  template< class RangeBranching, class FDBranching >
+  std::ostream& operator<<(std::ostream& os, ConditionalOnSize< RangeBranching, FDBranching >* x) {
+    return x->display(os);
+  }
+
+
+
+
 #define NEG(a) ((2*a))
 #define POS(a) ((2*a+1))
   /*! \class BoolMinWeightValue
@@ -3713,9 +3910,9 @@ namespace Mistral {
     
     BoolMinWeightValue() {}
     BoolMinWeightValue(Solver *s, double **vw, double *bw) {
-      initialise(vw, bw);
+      initialise(s, vw, bw);
     }
-    void initialise(double **vw, double *bw) {
+    void initialise(Solver *s, double **vw, double *bw) {
       weight = bw;
     }
     // BoolMinWeightValue(Solver *s, void *a) {
@@ -3763,9 +3960,9 @@ namespace Mistral {
     
     BoolMaxWeightValue() {}
     BoolMaxWeightValue(Solver *s, double **vw, double *bw) {
-      initialise(vw, bw);
+      initialise(s, vw, bw);
     }
-    void initialise(double **vw, double *bw) {
+    void initialise(Solver *s, double **vw, double *bw) {
       weight = bw;
     }
     // BoolMaxWeightValue(Solver *s, void *a) {

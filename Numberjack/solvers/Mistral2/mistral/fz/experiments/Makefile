@@ -1,6 +1,6 @@
 all:
 	cd ..; make
-	cp ../mistral-fz bin/
+	cp ../mistral-fzn bin/
 
 clean:
 	rm -rf results/* bin/*

@@ -33,6 +33,8 @@
 #include <string.h>
 #include <limits.h>
 
+#include <mistral_global.hpp>
+
 
 #ifndef __STRUCTURE_HPP
 #define __STRUCTURE_HPP
@@ -392,16 +394,17 @@ const int NOVAL = (int)((~(unsigned int)0)/2);
 
     Vector(const int n)
     {
-      capacity = n;
-      size = n;
-      if( capacity ) {
-	//stack_ = (DATA_TYPE*) malloc(capacity*sizeof(DATA_TYPE));
-	stack_ = new DATA_TYPE[capacity];
-	//int f = sizeof(DATA_TYPE)/sizeof(int);
-	//std::fill((int*)stack_, (int*)stack_+(capacity*f), 0);
-	std::fill(stack_, stack_+capacity, (DATA_TYPE)0);
-      }
-      else stack_ = NULL;
+		initialise(n);
+	//       capacity = n;
+	//       size = n;
+	//       if( capacity ) {
+	// //stack_ = (DATA_TYPE*) malloc(capacity*sizeof(DATA_TYPE));
+	// stack_ = new DATA_TYPE[capacity];
+	// //int f = sizeof(DATA_TYPE)/sizeof(int);
+	// //std::fill((int*)stack_, (int*)stack_+(capacity*f), 0);
+	// std::fill(stack_, stack_+capacity, (DATA_TYPE)0);
+	//       }
+	//       else stack_ = NULL;
     }
     //@}
 
@@ -2012,6 +2015,8 @@ template < int N, class T >
      bool safe_contain(const int elt) const ;
 
      bool contain(const int elt) const ;
+	 
+	 int get_index(const int elt) const ;
   
      bool empty()const ;
 
@@ -2053,6 +2058,8 @@ template < int N, class T >
      void init_add(const int elt) ;
 
      void add(const int elt) ;
+	 
+	 void set(const int elt, const int idx) ;
 
      void safe_add(const int elt) ;
 
@@ -2070,6 +2077,7 @@ template < int N, class T >
     /*!@name Miscellaneous*/
     //@{
     std::ostream& display(std::ostream& os) const;
+	std::string to_str() const;
     // std::ostream& display(std::ostream& os) const {
     //   int min =  INFTY;
     //   int max = -INFTY;
@@ -2096,6 +2104,106 @@ template < int N, class T >
     // }
     //@}
   };
+  
+  
+  
+  class Graph {
+	
+  public:
+
+  	int       capacity;
+  	IntStack      node;
+  	IntStack *neighbor;
+	
+  	Graph() {}
+	
+  	Graph(const int n) {
+  		initialise(n);
+  	}
+	
+  	Graph(const Graph& g) {
+				
+  		initialise(g.capacity,g.size() == g.capacity);
+		if(g.size() != g.capacity)
+			for(int i=0; i<g.node.size; ++i) { node.add(g.node[i]); }
+		for(int x=0; x<capacity; ++x) {
+			for(int i=0; i<g.neighbor[x].size; ++i) {
+				neighbor[x].add(g.neighbor[x][i]);
+			}
+		}
+		
+  	}
+	
+  	virtual void initialise(const int n, bool full=true) {
+  		capacity = n;
+  		node.initialise(0,capacity-1,capacity,full);
+  		neighbor = new IntStack[n];
+  		for(int i=0; i<n; ++i) {
+  			neighbor[i].initialise(0, capacity-1, capacity, false);
+  		}
+  	}
+	
+  	virtual ~Graph() {
+  		delete [] neighbor;
+  	}
+	
+  	int size() const { return node.size; }
+	
+  	void clear() { 
+  		while(!node.empty()) { 
+  			neighbor[node.pop()].clear(); 
+  		} 
+  	}
+	
+  	void add_node(const int x) {
+  		node.add(x);
+  	}
+	
+  	void add_directed(const int x, const int y) {
+  		neighbor[x].add(y);
+  	}
+	
+  	void add_undirected(const int x, const int y) {
+  		neighbor[x].add(y);
+  		neighbor[y].add(x);
+  	}
+	
+  	bool exist_arc(const int x, const int y) const {
+  		return neighbor[x].contain(y);
+  	}
+	
+  	int degree(const int x) const {
+  		return neighbor[x].size;
+  	}
+	
+  	int get_neighbor(const int x, const int i) const {
+  		return neighbor[x][i];
+  	}
+	
+  	int get_next_neighbor(const int x, const int y) const {
+  		return neighbor[x].next(y);
+  	}
+	
+  	int get_prev_neighbor(const int x, const int y) const {
+  		return neighbor[x].prev(y);
+  	}
+	
+  	std::ostream& display(std::ostream& os) const {
+  		for(int i=0; i<node.size; ++i) {
+  			os << node[i] << ": ";
+  			neighbor[node[i]].display(os);
+  			os << std::endl;
+  		}
+  		return os;
+  	}
+	
+  };
+
+
+  std::ostream& operator<< (std::ostream& os, const Graph& x);
+
+  std::ostream& operator<< (std::ostream& os, const Graph* x);
+  
 
 
 
@@ -4947,7 +5055,9 @@ template < int N, class T >
 	WORD_TYPE masked_ub = (full >> (CACHE - (ub & CACHE)));
 	
 	if( i == j ) {
+
 	  table[i] |= (masked_lb & masked_ub);
+	  
 	} else {
 	  
 	  if( i >= pos_words ) {
@@ -5125,6 +5235,39 @@ template < int N, class T >
       }
       os << "}";
       return os;
+    }
+	
+    std::string to_str() const {
+			    std::ostringstream oss;
+				oss << "{";
+				//std::string rstr = std::string("{");
+      if( !empty() ) {
+	int last = NOVAL, cur=min(), aft;
+
+	bool flag=false;
+	do{
+	  aft = next(cur);
+
+	  if(aft != cur+1 || cur != last+1) {
+	    if( flag )
+	      //rstr += std::string(",");
+			oss << ",";
+
+  	    oss << (int)cur;
+
+	    flag = true;
+	  } else if(flag) {
+	    //rstr += std::string("..");
+		  oss << "..";
+	    flag = false;
+	  }
+	  last = cur;
+	  cur = aft;
+	} while( cur != NOVAL && cur != last );
+      }
+      //rstr += std::string("}");
+	  oss << "}";
+      return oss.str();
     }
 
     void  print_bits(std::ostream & os) const 

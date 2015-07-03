@@ -77,16 +77,13 @@ int main(int argc, char *argv[])
   double cpu_time = get_run_time() ;
 
 #ifdef _VERBOSE_PARSER
-  std::cout << " c Parse: ";
+  std::cout << " " << s.parameters.prefix_comment << " Parse: ";
 #endif
 
   FlatZinc::Printer p;
   FlatZinc::FlatZincModel *fm = 0L;
 
   fm = parse(cmd.get_filename(), s, p);
-
-  FlatZinc::SolutionPrinter *sp = new FlatZinc::SolutionPrinter(&p, fm, &s);
-  s.add(sp);
 
   if( !fm ) return 0;
   double parse_time = get_run_time() - cpu_time;
@@ -96,15 +93,23 @@ int main(int argc, char *argv[])
   cout << " " << s.parameters.prefix_statistics << " PARSETIME " << parse_time << std::endl;
 
 
+
+
+  FlatZinc::SolutionPrinter *sp = new FlatZinc::SolutionPrinter(&p, fm, &s);
+  s.add(sp);
+
+
   if(s.parameters.time_limit>0) std::cout << " " << s.parameters.prefix_statistics 
 					  << " CUTOFF " << s.parameters.time_limit << std::endl;
 
 
   // set flatzinc model options
-  fm->set_strategy(cmd.get_variable_ordering(), cmd.get_value_ordering(), cmd.get_restart_policy());
+
+  fm->set_strategy(cmd.get_variable_ordering(), cmd.get_value_ordering(), cmd.get_randomization(), cmd.get_restart_policy());
   fm->set_display_model(cmd.print_model());
   fm->set_display_solution(cmd.print_solution());
   fm->set_annotations(annotationArg.getValue());
+  //fm->set_annotations(false);
   fm->set_rewriting(cmd.use_rewrite());
   fm->set_simple_rewriting(simple_rewriteArg.getValue());
   fm->set_parity_processing(parityArg.getValue());

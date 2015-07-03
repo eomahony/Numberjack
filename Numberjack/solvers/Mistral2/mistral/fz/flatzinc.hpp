@@ -273,6 +273,7 @@ protected:
 	BranchingHeuristic *_option_heuristic;
   std::string _variable_ordering;
   std::string _value_ordering;
+  int _randomization;
   //std::string _restart_policy;
 
 	RestartPolicy *_option_policy;
@@ -370,7 +371,7 @@ public:
 	void set_parameters(SolverParameters& p);
 
 	/// setup parameters from the command line
-	void set_strategy(std::string var_o, std::string val_o, std::string r_pol);
+  void set_strategy(std::string var_o, std::string val_o, const int rand, std::string r_pol);
 
 	/// setup the rewriting step
 	void set_rewriting(const bool on);
@@ -510,7 +511,8 @@ FlatZincModel* parse(std::istream& is,
     // }
 
     SolutionPrinter(Printer *p, FlatZincModel *fm, Mistral::Solver *s);
-    
+    virtual ~SolutionPrinter();    
+
     virtual void notify_solution() ;
     //{
     //   fm_->print(std::cout, *p_);

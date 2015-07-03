@@ -1163,7 +1163,7 @@ class VarArray(list):
         Syntactic sugar for the equality constraint `X == Y`.
 
         :param VarArray other: Another VarArray of the same length.
-        :rtype: A list of equality (:class:`Eq`) expressions. 
+        :rtype: A list of equality (:class:`Eq`) expressions.
         """
         return [Eq((x, y)) for x, y in zip(self, other)]
 
@@ -1988,16 +1988,16 @@ class Sum(Predicate):
     :param coefs: list of coefficients, which is [1,1,..,1] by default.
     """
 
-    def __init__(self, vars, coefs=None):
+    def __init__(self, vars, coefs=None, offset=0):
         Predicate.__init__(self, vars, "Sum")
 
         if coefs is None:
             coefs = [1 for var in self.children]
 
-        self.parameters = [coefs, 0]
+        self.parameters = [coefs, offset]
         #SDG: initial bounds
-        self.lb = sum(c*self.get_lb(i) if (c >= 0) else c*self.get_ub(i) for i,c in enumerate(coefs))
-        self.ub = sum(c*self.get_ub(i) if (c >= 0) else c*self.get_lb(i) for i,c in enumerate(coefs))
+        self.lb = sum(c*self.get_lb(i) if (c >= 0) else c*self.get_ub(i) for i,c in enumerate(coefs)) + offset
+        self.ub = sum(c*self.get_ub(i) if (c >= 0) else c*self.get_lb(i) for i,c in enumerate(coefs)) + offset
 
     def close(self):
         # This handles the scalar constraint, i.e. with weights
@@ -2221,10 +2221,13 @@ class Max(Predicate):
         self.ub = max(self.get_ub(i) for i in range(len(vars)))
 
     def get_min(self, solver=None):
-        return max([x.get_min(solver) for x in self.children])
+        return max([x.get_min(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
 
     def get_max(self, solver=None):
-        return max([x.get_max(solver) for x in self.children])
+        return max([x.get_max(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
+
+    def get_value(self, solver=None):
+        return max([x.get_value(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
 
     def decompose(self):
         X = self.children
@@ -2256,10 +2259,13 @@ class Min(Predicate):
         self.ub = min(self.get_ub(i) for i in range(len(vars)))
 
     def get_min(self, solver=None):
-        return min([x.get_min(solver) for x in self.children])
+        return min([x.get_min(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
 
     def get_max(self, solver=None):
-        return min([x.get_max(solver) for x in self.children])
+        return min([x.get_max(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
+
+    def get_value(self, solver=None):
+        return min([x.get_value(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
 
     def decompose(self):
         X = self.children
@@ -2406,7 +2412,7 @@ class LeqLex(Predicate):
 class Maximise(Predicate):
     """
     Maximisation objective function, sets the goal of search to be the
-    maximisation of its' arguments.
+    maximisation of its arguments.
 
     :param vars: The :class:`.Variable` or :class:`.Expression` to be maximized.
     """
@@ -2430,7 +2436,7 @@ def Maximize(var):
 class Minimise(Predicate):
     """
     Minimisation objective function, sets the goal of search to be the
-    minimisation of its' arguments.
+    minimisation of its arguments.
 
     :param vars: The :class:`.Variable` or :class:`.Expression` to be minimized.
     """
@@ -3474,6 +3480,30 @@ class NBJ_STD_Solver(object):
         Sets the initial random seed.
         """
         self.solver.setRandomSeed(seed)
+
+    def setWorkMem(self, mb):
+        """
+        Set the limit of working memory, only used for CPLEX.
+        """
+        if hasattr(self.solver, 'setWorkMem'):
+            return self.solver.setWorkMem(mb)
+        else:
+            raise UnsupportedSolverFunction(
+                self.Library, "setWorkMem", "This solver does not support"
+                " setting the work memory.")
+        return None
+
+    def getWorkMem(self):
+        """
+        Get the limit of working memory, only used for CPLEX.
+        """
+        if hasattr(self.solver, 'getWorkMem'):
+            return self.solver.getWorkMem()
+        else:
+            raise UnsupportedSolverFunction(
+                self.Library, "getWorkMem", "This solver does not support"
+                " getting the work memory.")
+        return None
 
     def setOption(self,func,param=None):
         """

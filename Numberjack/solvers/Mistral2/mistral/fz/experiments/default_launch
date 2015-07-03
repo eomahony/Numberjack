@@ -1,1 +1,2 @@
-tools/launch.py -key test -solverdir solvers -file data/filters_fzn.txt -timelimit 1000 -j2 -seed 100 1001 200
+tools/launch.py -key opt_test -solverdir solvers -file data/all_opt.txt -timelimit 10 -j2 -seed 100 1001 200
+tools/launch.py -key sat_test -solverdir solvers -file data/all_sat.txt -timelimit 10 -j2 -seed 100 1001 200

@@ -36,6 +36,8 @@ public:
     void setThreadCount(const int nr_threads);
     void setVerbosity(const int degree);
     void setRandomSeed(const int seed);
+    void setWorkMem(const int mb);
+    int getWorkMem();
 
     bool is_opt();
     bool is_sat();

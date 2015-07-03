@@ -17,9 +17,12 @@ int main( int argc, char** argv )
 
   Instance jsp(params);
   
-  jsp.print(std::cout);
-  jsp.printStats(std::cout);
-
+  std::cout << std::endl;
+  
+	jsp.print(std::cout);
+  
+	jsp.printStats(std::cout);
+  params.print(std::cout);
 
 
   SchedulingSolver *solver;
@@ -33,7 +36,7 @@ int main( int argc, char** argv )
     else solver = new C_max_Model(&jsp, &params, &stats);
   } else if(params.Objective == "tardiness") {
     std::cout << "c Minimising Tardiness" << std::endl;
-    solver = new L_sum_Model(jsp, &params, -1);
+    solver = new L_sum_Model(&jsp, &params, &stats);
   } // else if(params.Objective == "depth") {
   //   std::cout << "c Minimising Depth" << std::endl;
   //   solver = new Depth_Model(jsp, &params, jsp.getMakespanUpperBound());
@@ -45,6 +48,9 @@ int main( int argc, char** argv )
     std::cout << "c unknown objective, exiting" << std::endl;
     exit(1);
   }
+	
+	solver->setup();
+	
 
   // SchedulingSolver solver(model, &params, &stats);
   usrand(params.Seed);
@@ -52,43 +58,16 @@ int main( int argc, char** argv )
   solver->consolidate();
 
   //std::cout << solver << std::endl;
-
-  // solver.print(std::cout);
-  // //exit(1);
-
-  // params.print(std::cout);  
-  // model->printStats(std::cout);  
-  // stats.print(std::cout, "INIT");  
-
-
-  // //if
-  // //solver.jtl_presolve();
-
-  // //exit(1);
-
-  // if(solver.status == UNKNOWN) 
   
   solver->dichotomic_search();
   
-  // else if( solver.status == SAT ) {
-  //   std::cout << "c Solved while building!" << std::endl;
-  //   exit(1);
-    
-  // } else if( solver.status == UNSAT ) {
-  //   std::cout << "c Found inconsistent while building!" << std::endl;
-  //   exit(1);
 
-  // }
-      
-
-  // stats.print(std::cout, "DS");
-
-  // if(!stats.solved()) {
-  //   if(params.Algorithm == "bnb")
-  //     solver.branch_and_bound();
-  //   else if(params.Algorithm == "lns")
-  //     solver.large_neighborhood_search();
-  // }
+  if(!stats.solved()) {
+    if(params.Algorithm == "bnb")
+      solver->branch_and_bound();
+    //else if(params.Algorithm == "lns")
+    //solver.large_neighborhood_search();
+  }
 
   stats.print(std::cout, "");  
   std::cout << "s " << (stats.num_solutions ? "SATISFIABLE" : "UNSATISFIABLE") 
@@ -96,12 +75,9 @@ int main( int argc, char** argv )
 
 
 #ifdef _PROFILING
-  //solver->statistics.print_profile(std::cout);
   std::cout << solver->statistics.total_propag_time << std::endl;
 #endif
 
-  // delete mod
-  // delete model;
 
 }
   

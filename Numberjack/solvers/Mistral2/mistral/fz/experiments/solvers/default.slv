@@ -1,0 +1,1 @@
+bin/mistral-fzn -t 100 -c dom/gwdeg --print_sta -f BENCHNAME 

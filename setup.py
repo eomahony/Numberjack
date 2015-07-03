@@ -43,7 +43,8 @@ disabled_extensions = []  # The names of solver interfaces which have been
 
 if sys.platform == 'darwin':
     EXTRA_COMPILE_ARGS.extend([
-        '-stdlib=libstdc++', '-Wno-shorten-64-to-32',
+        # '-stdlib=libstdc++',
+        '-Wno-shorten-64-to-32',
         '-arch', 'x86_64',  # force 64bit only builds on Mac
 
         # ignore warning about swig code

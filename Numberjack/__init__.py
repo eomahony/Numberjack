@@ -1162,7 +1162,7 @@ class VarArray(list):
         Syntactic sugar for the equality constraint `X == Y`.
 
         :param VarArray other: Another VarArray of the same length.
-        :rtype: A list of equality (:class:`Eq`) expressions. 
+        :rtype: A list of equality (:class:`Eq`) expressions.
         """
         return [Eq((x, y)) for x, y in zip(self, other)]
 
@@ -2397,7 +2397,7 @@ class LeqLex(Predicate):
 class Maximise(Predicate):
     """
     Maximisation objective function, sets the goal of search to be the
-    maximisation of its' arguments.
+    maximisation of its arguments.
 
     :param vars: The :class:`.Variable` or :class:`.Expression` to be maximized.
     """
@@ -2421,7 +2421,7 @@ def Maximize(var):
 class Minimise(Predicate):
     """
     Minimisation objective function, sets the goal of search to be the
-    minimisation of its' arguments.
+    minimisation of its arguments.
 
     :param vars: The :class:`.Variable` or :class:`.Expression` to be minimized.
     """

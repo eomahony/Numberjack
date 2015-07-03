@@ -392,42 +392,24 @@ Gecode_Expression* Gecode_AllDiff::add(GecodeSolver *solver, bool top_level) {
         std::cout << "add an alldiff constraint" << std::endl;
 #endif
 
-        _solver = solver;
-        std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
-        exit(1);
-
         if(!top_level){
-            std::cerr << "AllDiff sub-expression not supported." << std::endl;
+            std::cerr << "AllDiff sub-expression not supported by this solver." << std::endl;
             exit(1);
         }
 
-        int n=_vars.size();
-        for(int i = 0; i < n; ++i)
+        _solver = solver;
+        int n = _vars.size();
+        Gecode::IntVarArgs gcvars(n);
+        for(int i=0; i<n; ++i){
             _vars.set_item(i, _vars.get_item(i)->add(solver, false));
+            gcvars[i] = _vars.get_item(i)->getGecodeVar();
+        }
 
         if(n==2) {
-            // solver->gecodespace->rel(*(solver->gecodespace), _vars[0]->FIXME, IRT_NQ, _vars[1]->FIXME);
+            Gecode::rel(*(solver->gecodespace), _vars.get_item(0)->getGecodeVar() != _vars.get_item(1)->getGecodeVar());
         } else {
-            // solver->gecodespace->distinct(*(solver->gecodespace), FIXMEVARIABLES);
+            Gecode::distinct(*(solver->gecodespace), gcvars);
         }
-//         } else {
-//             Mistral::VarArray scope(n);
-//             for(i=0; i<n; ++i) scope[i] = _vars.get_item(i)->_self;
-//             _self = AllDiff(scope);
-//         }
-
-//         if(top_level) {
-// #ifdef _DEBUGWRAP
-//             std::cout << "\tAdding at top level" << std::endl;
-// #endif
-//             _solver->solver->add( _self );
-//         } else {
-// #ifdef _DEBUGWRAP
-//             std::cout << "\tAdding within tree AllDiff constraint NOT A GOOD IDEA" <<std::endl;
-// #endif
-//             exit(1);
-//         }
-
     }
     return this;
 }

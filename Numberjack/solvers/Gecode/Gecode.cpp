@@ -600,11 +600,12 @@ Gecode_Sum::Gecode_Sum(GecodeExpArray& vars,
                        const int offset)
     : Gecode_Expression() {
 #ifdef _DEBUGWRAP
-    std::cout << "creating sum" << std::endl;
+    std::cout << "creating sum A" << std::endl;
 #endif
     _vars = vars;
     _weights = weights;
     _offset = offset;
+    initialise();
 }
 
 Gecode_Sum::Gecode_Sum(Gecode_Expression *arg1,
@@ -613,12 +614,13 @@ Gecode_Sum::Gecode_Sum(Gecode_Expression *arg1,
                        const int offset)
     : Gecode_Expression() {
 #ifdef _DEBUGWRAP
-    std::cout << "creating sum" << std::endl;
+    std::cout << "creating sum B" << std::endl;
 #endif
     _vars.add(arg1);
     _vars.add(arg2);
     _weights = w;
     _offset = offset;
+    initialise();
 }
 
 Gecode_Sum::Gecode_Sum(Gecode_Expression *arg,
@@ -626,16 +628,20 @@ Gecode_Sum::Gecode_Sum(Gecode_Expression *arg,
                        const int offset)
     : Gecode_Expression() {
 #ifdef _DEBUGWRAP
-    std::cout << "creating sum" << std::endl;
+    std::cout << "creating sum C" << std::endl;
 #endif
     _vars.add(arg);
     _weights = w;
     _offset = offset;
+    initialise();
 }
 
 Gecode_Sum::Gecode_Sum()
     : Gecode_Expression() {
     _offset = 0;
+#ifdef _DEBUGWRAP
+    std::cout << "creating sum D" << std::endl;
+#endif
 }
 
 Gecode_Sum::~Gecode_Sum() {
@@ -648,12 +654,31 @@ void Gecode_Sum::addVar(Gecode_Expression* v) {
 #ifdef _DEBUGWRAP
     std::cout << "adding variable" << std::endl;
 #endif
+    _vars.add(v);
 }
 
 void Gecode_Sum::addWeight(const int w) {
 #ifdef _DEBUGWRAP
     std::cout << "adding weight" << std::endl;
 #endif
+    _weights.add(w);
+}
+
+void Gecode_Sum::initialise(){
+    int w;
+    _lb = _offset;
+    _ub = _offset;
+    for(unsigned int i = 0; i < _vars.size(); ++i) {
+        w = _weights.get_item(i);
+        if( w > 0 ) {
+            _lb += (w * _vars.get_item(i)->get_min());
+            _ub += (w * _vars.get_item(i)->get_max());
+        } else {
+            _ub += (w * _vars.get_item(i)->get_min());
+            _lb += (w * _vars.get_item(i)->get_max());
+        }
+    }
+    std::cout << "init bounds of sum to " << _lb << ".." << _ub << std::endl;
 }
 
 Gecode_Expression* Gecode_Sum::add(GecodeSolver *solver, bool top_level) {
@@ -662,53 +687,48 @@ Gecode_Expression* Gecode_Sum::add(GecodeSolver *solver, bool top_level) {
         std::cout << "add sum constraint" << std::endl;
 #endif
         _solver = solver;
-        std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
-        exit(1);
 
-        // _v * _w + o = _x
-        // _v * _w - _x = -o
+        int i, n=_vars.size();
+        Gecode::IntVarArgs x(_offset == 0 ? n : n + 1);
+        Gecode::IntArgs w(_offset == 0 ? n : n + 1);
+        bool weighted = false;
 
+        for(i=0; i<n; ++i) {
+            _vars.set_item(i, _vars.get_item(i)->add(_solver,false));
+            if(_weights.size() > i) w[i] = _weights.get_item(i);
+            else w[i] = 1;
+            x[i] = _vars.get_item(i)->getGecodeVar();
 
-        // int i, n=_vars.size();
-        // Mistral::VarArray scope(n);
-        // Mistral::Vector<int> w(n);
-        // bool weighted = false;
-        // bool boolean = true;
+            if(w[i] != 1) weighted = true;
+        }
 
+        if(_offset!=0){  // Create a dummy constant variable to model the offset
+            Gecode::IntVar dummy1(*(solver->gecodespace), 1, 1);
+            x[n] = dummy1;
+            w[n] = _offset;
+        }
 
-        // for(i=0; i<n; ++i) {
-
-        //     _vars.get_item(i)->add(_solver,false);
-        //     if(_weights.size() > i)
-        //         w[i] = _weights.get_item(i);
-        //     else
-        //         w[i] = 1;
-        //     scope[i] = _vars.get_item(i)->_self;
-
-        //     if(w[i] != 1) weighted = true;
-        //     if(!scope[i].is_boolean()) boolean = false;
-        // }
-        // //w[n] = _weights.get_item(n);
-
-
-        // if(boolean) {
-        //     if(weighted)
-        //         _self = BoolSum(scope, w);
-        //     else
-        //         _self = BoolSum(scope, w);
-        // } else {
-        //     if(weighted)
-        //         _self = Sum(scope, w, -Mistral::INFTY, Mistral::INFTY, _offset);
-        //     else
-        //         _self = Sum(scope, w, -Mistral::INFTY, Mistral::INFTY, _offset);
-        // }
-
-        // if( top_level ) {
-        //     _solver->solver->add( _self );
-        // }
+        Gecode_Expression *aux = new Gecode_Expression(_lb, _ub);
+        aux = aux->add(solver, false);
+        if(weighted){
+            Gecode::linear(*(solver->gecodespace), w, x, Gecode::IRT_EQ, aux->getGecodeVar());
+        } else {
+            Gecode::linear(*(solver->gecodespace), x, Gecode::IRT_EQ, aux->getGecodeVar());
+        }
+        return aux;
     }
 
     return this;
+}
+
+int Gecode_Sum::get_value() const {
+    int val=_offset, i, n=_vars.size(), w;
+    for(i=0; i<n; ++i) {
+        if(_weights.size() > i) w = _weights.get_item(i);
+        else w = 1;
+        val += w * _vars.get_item(i)->getGecodeVar().val();
+    }
+    return val;
 }
 
 /**

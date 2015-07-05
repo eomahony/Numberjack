@@ -27,7 +27,7 @@ public:
     void add(T arg) {
         _array.push_back(arg);
     }
-    T& get_item(const int i) {
+    const T& get_item(const int i) const {
         return _array[i];
     }
     void set_item(const int i, T item) {
@@ -254,7 +254,7 @@ public:
     /**
      * Returns the value of the variable
      */
-    int get_value() const;
+    virtual int get_value() const;
 
     /**
      * Returns the current size of the domain
@@ -642,6 +642,16 @@ public:
      * Destructor
      */
     virtual ~Gecode_Sum();
+
+    /**
+     * Initialise internal bounds.
+     */
+    virtual void initialise();
+
+    /**
+     * Get the value of the expression after solving.
+     */
+    virtual int get_value() const;
 
     /**
      * Add the weighted sum to the solver

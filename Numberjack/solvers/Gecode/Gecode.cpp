@@ -16,8 +16,6 @@ Gecode_Expression::Gecode_Expression() {
     _solver = NULL;
     _gcvarid = -1;
     _vartype = BOOLVAR;
-    // Mistral::Variable x(0,1);
-    // _self = x;
 }
 
 Gecode_Expression::Gecode_Expression(const int nval) {
@@ -30,8 +28,6 @@ Gecode_Expression::Gecode_Expression(const int nval) {
     _gcvarid = -1;
     _vartype = INTVARNVAL;
     _nval = nval;
-    // Mistral::Variable x(0,nval-1);
-    // _self = x;
 }
 
 Gecode_Expression::Gecode_Expression(const int lb, const int ub) {
@@ -44,8 +40,6 @@ Gecode_Expression::Gecode_Expression(const int lb, const int ub) {
     _gcvarid = -1;
     _vartype = INTVARBOUNDS;
     _lb = lb; _ub = ub;
-    // Mistral::Variable x(lb,ub);
-    // _self = x;
 }
 
 Gecode_Expression::Gecode_Expression(GecodeIntArray& vals) {
@@ -69,8 +63,7 @@ int Gecode_Expression::getVariableId() const {
     std::cout << "return identity of expression" << std::endl;
 #endif
 
-    // return _self.id() ;
-    return 0;
+    return _gcvarid;
 }
 
 int Gecode_Expression::get_value() const {
@@ -80,12 +73,12 @@ int Gecode_Expression::get_value() const {
 #endif
 
     if(_solver != NULL && _gcvarid >= 0){
-        std::cout << "get value for variable id " << _gcvarid << std::endl;
+        // std::cout << "get value for variable id " << _gcvarid << std::endl;
         try {
-            std::cout << "var:" << _solver->gecodespace->getVar(_gcvarid) << std::endl;
+            // std::cout << "var:" << _solver->gecodespace->getVar(_gcvarid) << std::endl;
             return _solver->gecodespace->getVar(_gcvarid).val();
         } catch(Gecode::Int::ValOfUnassignedVar e){
-            std::cout << "ignore unassigned var" << std::endl;
+            std::cout << "ERROR asked for value of unassigned var. FIXME" << std::endl;
         }
     }
     return -1;
@@ -175,17 +168,9 @@ Gecode_Expression* Gecode_Expression::add(GecodeSolver *solver, bool top_level) 
 
 #ifdef _DEBUGWRAP
     std::cout << "add expression to model" << std::endl;
+    if(top_level) std::cout << "\tAdding at top level" << std::endl;
+    else std::cout << "\tAdding within tree" <<std::endl;
 #endif
-
-    if(top_level) {
-#ifdef _DEBUGWRAP
-        std::cout << "\tAdding at top level" << std::endl;
-#endif
-    } else {
-#ifdef _DEBUGWRAP
-        std::cout << "\tAdding within tree" <<std::endl;
-#endif
-    }
 
     if(!has_been_added()) {
         _solver = solver;
@@ -233,18 +218,6 @@ Gecode_binop::Gecode_binop(Gecode_Expression *var1, int constant)
     _vars[1] = NULL;
     _constant = constant;
 }
-
-// Gecode_binop::Gecode_binop(int constant, Gecode_Expression *var1)
-//   : Gecode_Expression()
-// {
-
-// #ifdef _DEBUGWRAP
-//   std::cout << "creating a binary (constant) operator" << std::endl;
-// #endif
-//   _vars[0] = NULL;
-//   _vars[1] = var1;
-//   _constant = constant;
-// }
 
 
 Gecode_binop::~Gecode_binop() {
@@ -1466,7 +1439,6 @@ GecodeSolver::~GecodeSolver() {
     std::cout << "c (wrapper) delete solver" << std::endl;
 #endif
     delete gecodespace;
-    // delete solver;
 }
 
 void GecodeSolver::add(Gecode_Expression* arg) {
@@ -1475,13 +1447,13 @@ void GecodeSolver::add(Gecode_Expression* arg) {
 #endif
 
     arg->add(this, true);
-
 }
 
 void GecodeSolver::initialise(GecodeExpArray& arg) {
 #ifdef _DEBUGWRAP
     std::cout << "Initialising solver with array of expressions" << std::endl;
 #endif
+    // FIXME add support for specifying decision variables.
 }
 
 void GecodeSolver::initialise() {

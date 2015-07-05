@@ -117,7 +117,15 @@ int Gecode_Expression::get_max() const {
 #ifdef _DEBUGWRAP
     std::cout << "return max of expression" << std::endl;
 #endif
-    // return _self.get_max();
+    if(_vartype == BOOLVAR){
+        return 1;
+    } else if(_vartype == INTVARNVAL){
+        return _nval-1;
+    } else if(_vartype == INTVARBOUNDS){
+        return _ub;
+    } else if(_vartype == INTVARVALUES){
+        if(_vals.size()) return _vals.get_item(_vals.size()-1);
+    }
     return 0;
 }
 
@@ -126,8 +134,15 @@ int Gecode_Expression::get_min() const {
 #ifdef _DEBUGWRAP
     std::cout << "return min of expression" << std::endl;
 #endif
-
-    // return _self.get_min();
+    if(_vartype == BOOLVAR){
+        return 0;
+    } else if(_vartype == INTVARNVAL){
+        return 0;
+    } else if(_vartype == INTVARBOUNDS){
+        return _lb;
+    } else if(_vartype == INTVARVALUES){
+        if(_vals.size()) return _vals.get_item(0);
+    }
     return 0;
 }
 

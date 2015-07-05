@@ -48,6 +48,12 @@ enum VariableType {
     INTVARVALUES=4
 };
 
+enum SATType {
+    UNKNOWN=0,
+    SAT=1,
+    UNSAT=2
+};
+
 /*
 This class acts as a wrapper between the Numberjack and Gecode representations
 of the problem. Gecode will return copies of this object for each
@@ -820,6 +826,9 @@ public:
    The solver itself
 */
 class GecodeSolver {
+
+private:
+    SATType lastsolvestatus;
 
 public:
 

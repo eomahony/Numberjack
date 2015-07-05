@@ -1423,6 +1423,7 @@ GecodeSolver::GecodeSolver() {
 #endif
 
     gecodespace = originalspace = new NJGecodeSpace();
+    lastsolvestatus = UNKNOWN;
     // solver = new Mistral::Solver();
     // solver->parameters.verbosity = 2;
 
@@ -1491,32 +1492,22 @@ int GecodeSolver::solve() {
     // Gecode::branch(*gecodespace, gecodespace->getVar(0), Gecode::INT_VAL_MIN());
     // Gecode::branch(*gecodespace, gecodespace->getGecodeSearchVariables(), Gecode::INT_VAR_MIN_MIN(), Gecode::INT_VAL_SPLIT_MIN());
     std::cout << "first status:" << gecodespace->status() << " solved:" << Gecode::SS_SOLVED << " branch:" << Gecode::SS_BRANCH << std::endl;
+    gecodespace->print();
     Gecode::DFS<NJGecodeSpace> gecodedfs(gecodespace);
     NJGecodeSpace *sol = gecodedfs.next();
+
     // gecodespace->choice();
     // NJGecodeSpace *sol = gecodespace;
     std::cout << "gecodespace:" << gecodespace <<" sol:" << sol << std::endl;
-    std::cout << "solve finished. status:" << sol->status() << std::endl;
-    sol->print();
-
-    gecodespace = sol;
-
-//     solver->consolidate();
-
-
-// #ifdef _DEBUGWRAP
-//     std::cout << solver << std::endl;
-//     solver->parameters.verbosity = 2;
-// #endif
-
-//     _branching_heuristic = solver->heuristic_factory(_var_heuristic_str, _val_heuristic_str, _heuristic_randomization);
-
-//     //if(!_search_goal)
-//     //_search_goal = new Mistral::Goal(Mistral::Goal::SATISFACTION);
-//     _restart_policy = solver->restart_factory(_restart_policy_str);
-
-//     //Mistral::Outcome result =
-//     solver->depth_first_search(solver->variables, _branching_heuristic, _restart_policy, NULL, false); //, _search_goal);
+    std::cout << "solve finished. gecodespace status:" << gecodespace->status() << std::endl;
+    if(sol != NULL){
+        lastsolvestatus = SAT;
+        std::cout << "solve finished. sol status:" << sol->status() << std::endl;
+        sol->print();
+        gecodespace = sol;
+    } else {
+        lastsolvestatus = UNSAT;
+    }
 
     return (is_sat());
 }
@@ -1772,7 +1763,6 @@ bool GecodeSolver::is_sat() {
     std::cout << "returning is satisfied?" <<std::endl;
 #endif
     // return solver->statistics.num_solutions > 0; //solver->statistics.outcome == Mistral::SAT || solver->statistics.outcome == Mistral::OPT;
-    // return false;
     return gecodespace->status() == Gecode::SS_SOLVED;
 }
 
@@ -1780,8 +1770,7 @@ bool GecodeSolver::is_unsat() {
 #ifdef _DEBUGWRAP
     std::cout << "returning is NOT satisfied?" <<std::endl;
 #endif
-    // return solver->statistics.outcome == 0;
-    return false;
+    return lastsolvestatus = UNSAT;
 }
 
 void GecodeSolver::printStatistics() {

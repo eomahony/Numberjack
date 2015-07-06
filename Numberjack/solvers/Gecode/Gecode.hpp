@@ -686,6 +686,12 @@ protected:
      */
     int _constant;
 
+    /**
+     * A function which can perform the binary function of of this subclass,
+     * set by subclasses
+     */
+    int(*binaryopfunc)(int, int);
+
 public:
 
     /**
@@ -695,16 +701,10 @@ public:
         return 1+(_vars[1]==NULL);
     }
 
-    /**
-     *
-     */
-    Gecode_binop(Gecode_Expression *var1,
-                 Gecode_Expression *var2);
-
-    /**
-     *
-     */
+    Gecode_binop(Gecode_Expression *var1, Gecode_Expression *var2);
     Gecode_binop(Gecode_Expression *var1, int int_arg);
+    Gecode_binop(int(*opfunc)(int, int), Gecode_Expression *var1, Gecode_Expression *var2);
+    Gecode_binop(int(*opfunc)(int, int), Gecode_Expression *var1, int int_arg);
 
     /**
      * Destructor
@@ -712,10 +712,16 @@ public:
     virtual ~Gecode_binop();
 
     /**
+     * Initialise internal bounds.
+     */
+    virtual void initialise();
+
+    /**
      *
      */
     virtual Gecode_Expression* add(GecodeSolver *solver, bool top_level) = 0;
 };
+
 
 class Gecode_mul: public Gecode_binop {
 public:

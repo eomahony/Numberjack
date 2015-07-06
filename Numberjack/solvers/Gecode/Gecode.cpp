@@ -220,12 +220,44 @@ Gecode_binop::Gecode_binop(Gecode_Expression *var1, int constant)
     _constant = constant;
 }
 
+Gecode_binop::Gecode_binop(int(*opfunc)(int, int), Gecode_Expression *var1, Gecode_Expression *var2) :
+        binaryopfunc(opfunc){
+    _vars[0] = var1;
+    _vars[1] = var2;
+    initialise();
+}
+
+Gecode_binop::Gecode_binop(int(*opfunc)(int, int), Gecode_Expression *var1, int constant) :
+        binaryopfunc(opfunc) {
+    _vars[0] = var1;
+    _vars[1] = NULL;
+    _constant = constant;
+    initialise();
+}
 
 Gecode_binop::~Gecode_binop() {
 
 #ifdef _DEBUGWRAP
     std::cout << "delete binary operator" << std::endl;
 #endif
+}
+
+void Gecode_binop::initialise() {
+    int lb1 = _vars[0]->get_min(), ub1 = _vars[0]->get_max(), lb2, ub2;
+    if(_vars[1] != NULL){
+        lb2 = _vars[1]->get_min();
+        ub2 = _vars[1]->get_max();
+    } else {
+        lb2 = ub2 = _constant;
+    }
+    std::vector<int> bounds;
+    bounds.push_back(binaryopfunc(lb1, lb2));
+    bounds.push_back(binaryopfunc(lb1, ub2));
+    bounds.push_back(binaryopfunc(ub1, lb2));
+    bounds.push_back(binaryopfunc(ub1, ub2));
+    _lb = *(std::min_element(bounds.begin(), bounds.end()));
+    _ub = *(std::max_element(bounds.begin(), bounds.end()));
+    std::cout << "Initialised bounds of binary operator to " << _lb << ".." << _ub << std::endl;
 }
 
 /**
@@ -734,20 +766,22 @@ int Gecode_Sum::get_value() const {
 /**
  * Binary constraints
  */
+
+int operatorintmul(int a, int b){ return a * b;}
+
 Gecode_mul::Gecode_mul(Gecode_Expression *var1, Gecode_Expression *var2)
-    : Gecode_binop(var1,var2) {
+    : Gecode_binop(operatorintmul, var1, var2) {
 #ifdef _DEBUGWRAP
     std::cout << "creating mul constraint between two variables" << std::endl;
 #endif
 }
 
 Gecode_mul::Gecode_mul(Gecode_Expression *var1, int constant)
-    : Gecode_binop(var1,constant) {
+    : Gecode_binop(operatorintmul, var1, constant) {
 #ifdef _DEBUGWRAP
     std::cout << "creating mul constraint between variable and constant" << std::endl;
 #endif
 }
-
 
 Gecode_mul::~Gecode_mul() {
 #ifdef _DEBUGWRAP
@@ -761,35 +795,38 @@ Gecode_Expression* Gecode_mul::add(GecodeSolver *solver, bool top_level) {
         std::cout << "add mul constraint" << std::endl;
 #endif
 
-        // _solver = solver;
-        std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
-        exit(1);
+        if(top_level) {
+            std::cerr << "Error: mulitply expression not valid at the top-level, it should be used as a sub-expression." << std::endl;
+            exit(1);
+        }
 
-        // _vars[0]->add(_solver,false);
-        // if(_vars[1]) {
-        //     _vars[1]->add(_solver,false);
-        //     _self = (_vars[0]->_self *
-        //              _vars[1]->_self);
-        // } else {
-        //     _self = (_vars[0]->_self *
-        //              _constant);
-        // }
-        // if( top_level )
-        //     _solver->solver->add( _self );
+        _solver = solver;
+        _vars[0] = _vars[0]->add(_solver, false);
+        if(_vars[1] != NULL) _vars[1] = _vars[1]->add(_solver, false);
 
+        Gecode_Expression *r = new Gecode_Expression(_lb, _ub);
+        r = r->add(_solver, false);
+        if(_vars[1] != NULL) {
+            Gecode::rel(*(solver->gecodespace), expr(*(solver->gecodespace), _vars[0]->getGecodeVar() * _vars[1]->getGecodeVar()) == r->getGecodeVar());
+        } else {
+            Gecode::rel(*(solver->gecodespace), expr(*(solver->gecodespace), _vars[0]->getGecodeVar() * _constant) == r->getGecodeVar());
+        }
+        return r;
     }
     return this;
 }
 
+int operatorintdiv(int a, int b){ return a * b;}
+
 Gecode_div::Gecode_div(Gecode_Expression *var1, Gecode_Expression *var2)
-    : Gecode_binop(var1,var2) {
+    : Gecode_binop(operatorintdiv, var1, var2) {
 #ifdef _DEBUGWRAP
     std::cout << "creating div constraint" << std::endl;
 #endif
 }
 
 Gecode_div::Gecode_div(Gecode_Expression *var1, int constant)
-    : Gecode_binop(var1,constant) {
+    : Gecode_binop(operatorintdiv, var1, constant) {
 #ifdef _DEBUGWRAP
     std::cout << "creating div constraint" << std::endl;
 #endif
@@ -808,48 +845,42 @@ Gecode_Expression* Gecode_div::add(GecodeSolver *solver, bool top_level) {
         std::cout << "add div constraint" << std::endl;
 #endif
 
-        // _solver = solver;
-        std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
-        exit(1);
+        if(top_level) {
+            std::cerr << "Error: division expression not valid at the top-level, it should be used as a sub-expression." << std::endl;
+            exit(1);
+        }
 
-        // if(_vars[0]) {
-        //     _vars[0]->add(_solver,false);
+        _solver = solver;
+        _vars[0] = _vars[0]->add(_solver, false);
+        if(_vars[1] != NULL) _vars[1] = _vars[1]->add(_solver, false);
 
-        //     if(_vars[1]) {
-        //         _vars[1]->add(_solver,false);
-        //         _self = (_vars[0]->_self /
-        //                  _vars[1]->_self);
-        //     } else {
-        //         _self = (_vars[0]->_self /
-        //                  _constant);
-        //     }
-        // } else {
-
-        //     std::cout << "Cannot divide constants" << std::endl;
-        //     exit(1);
-
-        // }
-        // if( top_level )
-        //     _solver->solver->add( _self );
-
+        Gecode_Expression *r = new Gecode_Expression(_lb, _ub);
+        r = r->add(_solver, false);
+        if(_vars[1] != NULL) {
+            Gecode::rel(*(solver->gecodespace), expr(*(solver->gecodespace), _vars[0]->getGecodeVar() / _vars[1]->getGecodeVar()) == r->getGecodeVar());
+        } else {
+            Gecode::rel(*(solver->gecodespace), expr(*(solver->gecodespace), _vars[0]->getGecodeVar() / _constant) == r->getGecodeVar());
+        }
+        return r;
     }
     return this;
 }
 
+int operatorintmod(int a, int b){ return a * b;}
+
 Gecode_mod::Gecode_mod(Gecode_Expression *var1, Gecode_Expression *var2)
-    : Gecode_binop(var1,var2) {
+    : Gecode_binop(operatorintmod, var1, var2) {
 #ifdef _DEBUGWRAP
     std::cout << "creating mod predicate" << std::endl;
 #endif
 }
 
 Gecode_mod::Gecode_mod(Gecode_Expression *var1, int constant)
-    : Gecode_binop(var1,constant) {
+    : Gecode_binop(operatorintmod, var1, constant) {
 #ifdef _DEBUGWRAP
     std::cout << "creating mod predicate" << std::endl;
 #endif
 }
-
 
 Gecode_mod::~Gecode_mod() {
 #ifdef _DEBUGWRAP
@@ -863,19 +894,23 @@ Gecode_Expression* Gecode_mod::add(GecodeSolver *solver, bool top_level) {
         std::cout << "add mod predicate" << std::endl;
 #endif
 
-        // _solver = solver;
-        std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
-        exit(1);
+        if(top_level) {
+            std::cerr << "Error: modulo expression not valid at the top-level, it should be used as a sub-expression." << std::endl;
+            exit(1);
+        }
 
-        // _vars[0]->add(_solver,false);
-        // if(_vars[1]) {
-        //     _vars[1]->add(_solver,false);
-        //     _self = (_vars[0]->_self % _vars[1]->_self);
-        // } else {
-        //     _self = (_vars[0]->_self % _constant);
-        // }
-        // if( top_level )
-        //     _solver->solver->add( _self );
+        _solver = solver;
+        _vars[0] = _vars[0]->add(_solver, false);
+        if(_vars[1] != NULL) _vars[1] = _vars[1]->add(_solver, false);
+
+        Gecode_Expression *r = new Gecode_Expression(_lb, _ub);
+        r = r->add(_solver, false);
+        if(_vars[1] != NULL) {
+            Gecode::rel(*(solver->gecodespace), expr(*(solver->gecodespace), _vars[0]->getGecodeVar() % _vars[1]->getGecodeVar()) == r->getGecodeVar());
+        } else {
+            Gecode::rel(*(solver->gecodespace), expr(*(solver->gecodespace), _vars[0]->getGecodeVar() % _constant) == r->getGecodeVar());
+        }
+        return r;
 
     }
     return this;

@@ -519,6 +519,7 @@ Gecode_LeqLex::Gecode_LeqLex( GecodeExpArray& vars )
 #ifdef _DEBUGWRAP
     std::cout << "creating lexleq" << std::endl;
 #endif
+    _vars = vars;
 }
 
 Gecode_LeqLex::~Gecode_LeqLex() {
@@ -532,24 +533,22 @@ Gecode_Expression* Gecode_LeqLex::add(GecodeSolver *solver, bool top_level) {
 #ifdef _DEBUGWRAP
         std::cout << "add leqlex constraint" << std::endl;
 #endif
-
-
-        std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
-        exit(1);
-
-        for(int i = 0; i < _vars.size(); ++i)
+        _solver = solver;
+        int n = _vars.size();
+        Gecode::IntVarArgs left(_vars.size() / 2), right(_vars.size() / 2);
+        for(int i=0; i<n; ++i){
             _vars.set_item(i, _vars.get_item(i)->add(solver, false));
 
-        if(top_level) {
-#ifdef _DEBUGWRAP
-            std::cout << "\tAdding at top level" << std::endl;
-#endif
-        } else {
-#ifdef _DEBUGWRAP
-            std::cout << "\tAdding within tree" <<std::endl;
-#endif
+            if(i<n / 2) left[i] = _vars.get_item(i)->getGecodeVar();
+            else right[i - n / 2] = _vars.get_item(i)->getGecodeVar();
         }
 
+        if(top_level) {
+            lex(*(solver->gecodespace), left, Gecode::IRT_LQ, right);
+        } else {
+            std::cerr << "Error: reified lexicographic constraint not supported with this solver." << std::endl;
+            exit(1);
+        }
     }
     return this;
 }
@@ -560,6 +559,7 @@ Gecode_LessLex::Gecode_LessLex( GecodeExpArray& vars )
 #ifdef _DEBUGWRAP
     std::cout << "creating lexless" << std::endl;
 #endif
+    _vars = vars;
 }
 
 Gecode_LessLex::~Gecode_LessLex() {
@@ -573,23 +573,22 @@ Gecode_Expression* Gecode_LessLex::add(GecodeSolver *solver, bool top_level) {
 #ifdef _DEBUGWRAP
         std::cout << "add lesslex constraint" << std::endl;
 #endif
-
-        std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
-        exit(1);
-
-        for(int i = 0; i < _vars.size(); ++i)
+        _solver = solver;
+        int n = _vars.size();
+        Gecode::IntVarArgs left(_vars.size() / 2), right(_vars.size() / 2);
+        for(int i=0; i<n; ++i){
             _vars.set_item(i, _vars.get_item(i)->add(solver, false));
 
-        if(top_level) {
-#ifdef _DEBUGWRAP
-            std::cout << "\tAdding at top level" << std::endl;
-#endif
-        } else {
-#ifdef _DEBUGWRAP
-            std::cout << "\tAdding within tree" <<std::endl;
-#endif
+            if(i<n / 2) left[i] = _vars.get_item(i)->getGecodeVar();
+            else right[i - n / 2] = _vars.get_item(i)->getGecodeVar();
         }
 
+        if(top_level) {
+            lex(*(solver->gecodespace), left, Gecode::IRT_LE, right);
+        } else {
+            std::cerr << "Error: reified lexicographic constraint not supported with this solver." << std::endl;
+            exit(1);
+        }
     }
     return this;
 }

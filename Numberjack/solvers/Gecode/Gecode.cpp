@@ -431,41 +431,23 @@ Gecode_Expression* Gecode_Gcc::add(GecodeSolver *solver, bool top_level) {
         std::cout << "add gcc constraint" << std::endl;
 #endif
 
-        // _solver = solver;
-        std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
-        exit(1);
+        _solver = solver;
+        int i, n=_vars.size(), m=_vals.size();
+        Gecode::IntVarArgs scope(n);
+        Gecode::IntSetArgs c(m);
+        Gecode::IntArgs v(m);
 
-        // int i, n=_vars.size(), m=_vals.size();
-        // int min_val=_vals.get_item(0);
-        // int max_val=_vals.get_item(m-1);
-        // int M = (max_val - min_val + 1);
-        // Mistral::VarArray scope(n);
+        for(i=0; i<n; i++){
+            _vars.set_item(i, _vars.get_item(i)->add(solver, false));
+            scope[i] = _vars.get_item(i)->getGecodeVar();
+        }
 
-        // int *tmp_lb = new int[M];
-        // int *tmp_ub = new int[M];
+        for(i=0; i<m; i++){
+            c[i] = Gecode::IntSet(_lb_card.get_item(i), _ub_card.get_item(i));
+            v[i] = _vals.get_item(i);
+        }
 
-        // for(i=0; i<n; ++i) {
-        //     _vars.get_item(i)->add(_solver,false);
-        //     scope[i] = _vars.get_item(i)->_self;
-        // }
-
-        // //std::cout << min_val << " to " << max_val << std::endl;
-
-        // for(i=0; i<M; ++i) {
-        //     tmp_lb[i] = _lb_card.get_item(i);
-        //     tmp_ub[i] = _ub_card.get_item(i);
-
-        //     //std::cout << " " << i+min_val << ": in [" << tmp_lb[i] << ".." << tmp_ub[i] << "]\n";
-        // }
-
-        // _self = Occurrences(scope, min_val, max_val, tmp_lb, tmp_ub);
-
-        // if( top_level )
-        //     _solver->solver->add( _self );
-
-        // delete [] tmp_lb;
-        // delete [] tmp_ub;
-
+        count(*(solver->gecodespace), scope, c, v);
     }
 
     return this;

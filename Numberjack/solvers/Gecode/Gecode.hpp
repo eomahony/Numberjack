@@ -74,16 +74,16 @@ protected:
 public:
 
     NJGecodeSpace(void) {
-        std::cout << "In NJGecodeSpace constructor." << std::endl;
+        // std::cout << "In NJGecodeSpace constructor." << std::endl;
         closed = false;
     }
 
     NJGecodeSpace(bool share, NJGecodeSpace& s) : Gecode::Space(share, s), closed(s.closed) {
         // variables.update(*this, share, s.variables);
-        std::cout << "In NJGecodeSpace copy constructor" << std::endl;
-        std::cout << "copying:" << s.gcvariables << std::endl;
+        // std::cout << "In NJGecodeSpace copy constructor" << std::endl;
+        // std::cout << "copying:" << s.gcvariables << std::endl;
         this->gcvariables.update(*this, share, s.gcvariables);
-        std::cout << "newcopy:" << gcvariables << std::endl;
+        // std::cout << "newcopy:" << gcvariables << std::endl;
         // variables.reserve(s.variables.size());
         // for(unsigned int i=0; i<s.variables.size(); i++){
         //     std::cout << "creating copy of var " << s.variables[i] << std::endl;
@@ -94,11 +94,11 @@ public:
         //     x.update(*this, share, s.variables[i]);
         //     variables.push_back(x);
         // }
-        std::cout << "Finished copy constructor" << std::endl;
+        // std::cout << "Finished copy constructor" << std::endl;
     }
 
     virtual Gecode::Space* copy(bool share) {
-        std::cout << "In NJGecodeSpace copy share:" << share << std::endl;
+        // std::cout << "In NJGecodeSpace copy share:" << share << std::endl;
         return new NJGecodeSpace(share, *this);
     }
 
@@ -132,7 +132,7 @@ public:
     }
 
     inline Gecode::IntVar getVar(unsigned int ind){
-        std::cout << "space:" << (this) << " getVar with ind:" << ind << std::endl;
+        // std::cout << "space:" << (this) << " getVar with ind:" << ind << std::endl;
         if(closed){
             if(ind >= gcvariables.size()){
                 std::cerr << "Error: index " << ind << " out of range for variable array in closed model of size " << gcvariables.size() << std::endl;
@@ -155,6 +155,10 @@ public:
         }
         std::cout << "Returning vararry of size " << gcvariables.size() << std::endl;
         return gcvariables;
+    }
+
+    unsigned int getNumVariables() {
+        return variables.size()
     }
 
     void assertNotClosed(){
@@ -180,7 +184,9 @@ public:
         // Gecode::distinct(*this, gcvariables);
         // Gecode::branch(*this, gcvariables, Gecode::INT_VAR_SIZE_MIN(), Gecode::INT_VAL_MIN());
         // Gecode::branch(*this, gcvariables, Gecode::INT_VAR_MIN_MIN(), Gecode::INT_VAL_SPLIT_MIN());
-        Gecode::branch(*this, vars_labeling, Gecode::INT_VAR_MIN_MIN(), Gecode::INT_VAL_SPLIT_MIN());
+        // Gecode::branch(*this, vars_labeling, Gecode::INT_VAR_MIN_MIN(), Gecode::INT_VAL_SPLIT_MIN());
+        // Gecode::branch(*this, vars_labeling, Gecode::INT_VAR_SIZE_MIN(), Gecode::INT_VAL_SPLIT_MIN());
+        Gecode::branch(*this, vars_labeling, Gecode::INT_VAR_AFC_SIZE_MAX(1), Gecode::INT_VAL_SPLIT_MIN());
 
     }
 

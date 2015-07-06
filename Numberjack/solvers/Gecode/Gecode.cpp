@@ -1806,35 +1806,31 @@ void GecodeSolver::setRandomSeed(const int seed) {
 }
 
 bool GecodeSolver::is_opt() {
-#ifdef _DEBUGWRAP
-    std::cout << "returning is_opt()" <<std::endl;
-#endif
-    // return solver->statistics.outcome == 3;
-    return false;
+// #ifdef _DEBUGWRAP
+//     std::cout << "returning is_opt()" <<std::endl;
+// #endif
+    return false;  // FIXME
 }
 
 bool GecodeSolver::is_sat() {
-#ifdef _DEBUGWRAP
-    std::cout << "returning is satisfied?" <<std::endl;
-#endif
-    // return solver->statistics.num_solutions > 0; //solver->statistics.outcome == Mistral::SAT || solver->statistics.outcome == Mistral::OPT;
+// #ifdef _DEBUGWRAP
+//     std::cout << "returning is satisfied?" <<std::endl;
+// #endif
     return gecodespace->status() == Gecode::SS_SOLVED;
 }
 
 bool GecodeSolver::is_unsat() {
-#ifdef _DEBUGWRAP
-    std::cout << "returning is NOT satisfied?" <<std::endl;
-#endif
-    return lastsolvestatus = UNSAT;
+// #ifdef _DEBUGWRAP
+//     std::cout << "returning is NOT satisfied?" <<std::endl;
+// #endif
+    return lastsolvestatus == UNSAT;
 }
 
 void GecodeSolver::printStatistics() {
 #ifdef _DEBUGWRAP
     std::cout << "printing statistics" <<std::endl;
 #endif
-
-    // solver->statistics.print_full(std::cout);
-
+    // FIXME
 }
 
 int GecodeSolver::getBacktracks() {
@@ -1889,8 +1885,7 @@ int GecodeSolver::getNumVariables() {
 #ifdef _DEBUGWRAP
     std::cout << "return number of variables" <<std::endl;
 #endif
-    // return solver->variables.size;
-    return 0;
+    return gecodespace->getNumVariables();
 }
 
 int GecodeSolver::getNumConstraints() {
@@ -1902,6 +1897,6 @@ int GecodeSolver::getNumConstraints() {
 }
 
 int GecodeSolver::getRandomNumber() {
-    // return Mistral::randint(0xffffffff);
+    // why is this here? deprecate
     return 42;
 }

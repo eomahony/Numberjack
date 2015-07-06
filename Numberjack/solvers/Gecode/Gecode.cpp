@@ -1,4 +1,5 @@
 #include "Gecode.hpp"
+#include <limits>
 
 /**************************************************************
  ********************     EXPRESSION        *******************
@@ -477,7 +478,7 @@ Gecode_Element::Gecode_Element( GecodeExpArray& vars )
 #endif
 
     _vars = vars;
-
+    initialise();
 }
 
 Gecode_Element::~Gecode_Element() {
@@ -486,29 +487,47 @@ Gecode_Element::~Gecode_Element() {
 #endif
 }
 
+void Gecode_Element::initialise() {
+    int indexlb, indexub, vmin, vmax, n = _vars.size();
+    indexlb = _vars.get_item(n-1)->get_min();
+    indexub = _vars.get_item(n-1)->get_max();
+    indexlb = indexlb >= 0 ? indexlb : 0;
+    indexub = indexub < n-1 ? indexub : n-1;
+
+    _lb = std::numeric_limits<int>::max();
+    _ub = std::numeric_limits<int>::min();
+    for(unsigned int i=indexlb; i<indexub; ++i) {
+        vmin = _vars.get_item(i)->get_min();
+        vmax = _vars.get_item(i)->get_max();
+
+        if(vmin < _lb) _lb = vmin;
+        if(vmax > _ub) _ub = vmax;
+    }
+    std::cout << "init bounds of element to " << _lb << ".." << _ub << std::endl;
+}
+
 Gecode_Expression* Gecode_Element::add(GecodeSolver *solver, bool top_level) {
     if(!has_been_added()) {
 #ifdef _DEBUGWRAP
         std::cout << "add element constraint" << std::endl;
 #endif
-        // _solver = solver;
-        std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
-        exit(1);
 
-        // int i, n=_vars.size();
-        // Mistral::VarArray scope(n-1);
+        if(top_level) {
+            std::cerr << "Error: element expression not valid at the top-level, it should be used as a sub-expression." << std::endl;
+            exit(1);
+        }
+        _solver = solver;
+        int n = _vars.size();
+        Gecode::IntVarArgs shared(n - 1);
+        for(int i=0; i<n; ++i){
+            _vars.set_item(i, _vars.get_item(i)->add(solver, false));
+            if(i<n-1) shared[i] = _vars.get_item(i)->getGecodeVar();
+        }
 
-
-
-        // for(i=0; i<n-1; ++i) {
-        //     _vars.get_item(i)->add(_solver,false);
-        //     scope[i] = _vars.get_item(i)->_self;
-        // }
-
-        // _vars.get_item(n-1)->add(_solver,false);
-        // Mistral::Variable index = _vars.get_item(n-1)->_self;
-        // _self = scope[index];
-
+        Gecode_Expression *aux = new Gecode_Expression(_lb, _ub);
+        aux = aux->add(solver, false);
+        element(*(solver->gecodespace), shared, _vars.get_item(n-1)->getGecodeVar(), aux->getGecodeVar());
+        return aux;
     }
 
     return this;

@@ -504,6 +504,11 @@ public:
     virtual ~Gecode_Element();
 
     /**
+     * Initialise internal bounds.
+     */
+    virtual void initialise();
+
+    /**
      * Adds the constraint into the underlying solver
      *
      * see Expression::add()

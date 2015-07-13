@@ -69,9 +69,9 @@ int Gecode_Expression::getVariableId() const {
 
 int Gecode_Expression::get_value() const {
 
-#ifdef _DEBUGWRAP
-    std::cout << "return value of expression" << std::endl;
-#endif
+// #ifdef _DEBUGWRAP
+//     std::cout << "return value of expression" << std::endl;
+// #endif
 
     if(_solver != NULL && _gcvarid >= 0){
         // std::cout << "get value for variable id " << _gcvarid << std::endl;
@@ -162,6 +162,11 @@ bool Gecode_Expression::has_been_added() const {
 
 Gecode::IntVar Gecode_Expression::getGecodeVar() const {
     assert(_solver != NULL);
+    if(_gcintrepr.size() > 0) {
+        std::cout << "returning _gcintrepr " << _gcintrepr.size() << std::endl;
+        return _gcintrepr[0];
+    }
+    assert(_gcvarid >= 0);
     return _solver->gecodespace->getVar(_gcvarid);
 }
 
@@ -804,14 +809,11 @@ Gecode_Expression* Gecode_mul::add(GecodeSolver *solver, bool top_level) {
         _vars[0] = _vars[0]->add(_solver, false);
         if(_vars[1] != NULL) _vars[1] = _vars[1]->add(_solver, false);
 
-        Gecode_Expression *r = new Gecode_Expression(_lb, _ub);
-        r = r->add(_solver, false);
         if(_vars[1] != NULL) {
-            Gecode::rel(*(solver->gecodespace), expr(*(solver->gecodespace), _vars[0]->getGecodeVar() * _vars[1]->getGecodeVar()) == r->getGecodeVar());
+            _gcintrepr << expr(*(solver->gecodespace), _vars[0]->getGecodeVar() * _vars[1]->getGecodeVar());
         } else {
-            Gecode::rel(*(solver->gecodespace), expr(*(solver->gecodespace), _vars[0]->getGecodeVar() * _constant) == r->getGecodeVar());
+            _gcintrepr << expr(*(solver->gecodespace), _vars[0]->getGecodeVar() * _constant);
         }
-        return r;
     }
     return this;
 }
@@ -854,14 +856,11 @@ Gecode_Expression* Gecode_div::add(GecodeSolver *solver, bool top_level) {
         _vars[0] = _vars[0]->add(_solver, false);
         if(_vars[1] != NULL) _vars[1] = _vars[1]->add(_solver, false);
 
-        Gecode_Expression *r = new Gecode_Expression(_lb, _ub);
-        r = r->add(_solver, false);
         if(_vars[1] != NULL) {
-            Gecode::rel(*(solver->gecodespace), expr(*(solver->gecodespace), _vars[0]->getGecodeVar() / _vars[1]->getGecodeVar()) == r->getGecodeVar());
+            _gcintrepr << expr(*(solver->gecodespace), _vars[0]->getGecodeVar() / _vars[1]->getGecodeVar());
         } else {
-            Gecode::rel(*(solver->gecodespace), expr(*(solver->gecodespace), _vars[0]->getGecodeVar() / _constant) == r->getGecodeVar());
+            _gcintrepr << expr(*(solver->gecodespace), _vars[0]->getGecodeVar() / _constant);
         }
-        return r;
     }
     return this;
 }
@@ -903,15 +902,11 @@ Gecode_Expression* Gecode_mod::add(GecodeSolver *solver, bool top_level) {
         _vars[0] = _vars[0]->add(_solver, false);
         if(_vars[1] != NULL) _vars[1] = _vars[1]->add(_solver, false);
 
-        Gecode_Expression *r = new Gecode_Expression(_lb, _ub);
-        r = r->add(_solver, false);
         if(_vars[1] != NULL) {
-            Gecode::rel(*(solver->gecodespace), expr(*(solver->gecodespace), _vars[0]->getGecodeVar() % _vars[1]->getGecodeVar()) == r->getGecodeVar());
+            _gcintrepr << expr(*(solver->gecodespace), _vars[0]->getGecodeVar() % _vars[1]->getGecodeVar());
         } else {
-            Gecode::rel(*(solver->gecodespace), expr(*(solver->gecodespace), _vars[0]->getGecodeVar() % _constant) == r->getGecodeVar());
+            _gcintrepr << expr(*(solver->gecodespace), _vars[0]->getGecodeVar() % _constant);
         }
-        return r;
-
     }
     return this;
 }

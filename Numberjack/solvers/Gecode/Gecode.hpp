@@ -158,7 +158,7 @@ public:
     }
 
     unsigned int getNumVariables() {
-        return variables.size()
+        return variables.size();
     }
 
     void assertNotClosed(){
@@ -206,6 +206,10 @@ public:
 */
 class GecodeSolver;
 class Gecode_Expression {
+
+protected:
+    Gecode::IntVarArgs _gcintrepr;
+    // Gecode::BoolVarArgs _gcboolrepr;
 
 public:
 

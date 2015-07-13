@@ -1160,17 +1160,25 @@ Gecode_Expression* Gecode_NoOverlap::add(GecodeSolver *solver, bool top_level) {
 #ifdef _DEBUGWRAP
         std::cout << "add nooverlap constraint" << std::endl;
 #endif
-        // _solver = solver;
-        std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
-        exit(1);
 
-        // _vars[0]->add(_solver,false);
-        // _vars[1]->add(_solver,false);
+        if(!top_level){
+            std::cerr << "NoOverlap sub-expression not supported by this solver." << std::endl;
+            exit(1);
+        }
 
-        // _self = Disjunctive(_vars[0]->_self, _vars[1]->_self, _constant, _bonstant);
+        _solver = solver;
 
-        // if( top_level )
-        //     _solver->solver->add( _self );
+        _vars[0] = _vars[0]->add(_solver, false);
+        _vars[1] = _vars[1]->add(_solver, false);
+
+        Gecode::IntVarArgs scope(2);
+        Gecode::IntArgs durations(2);
+        scope[0] = _vars[0]->getGecodeVar();
+        scope[1] = _vars[1]->getGecodeVar();
+        durations[0] = _constant;
+        durations[1] = _bonstant;
+
+        unary(*(solver->gecodespace), scope, durations);
     }
 
     return this;

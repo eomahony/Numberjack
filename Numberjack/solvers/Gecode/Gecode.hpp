@@ -370,6 +370,11 @@ public:
     virtual ~Gecode_Min();
 
     /**
+     * Initialise internal bounds.
+     */
+    virtual void initialise();
+
+    /**
      * Add the Min expression to the underlying solver
      *
      * See: Expression::add()
@@ -405,6 +410,11 @@ public:
      * Descructor
      */
     virtual ~Gecode_Max();
+
+    /**
+     * Initialise internal bounds.
+     */
+    virtual void initialise();
 
     /**
      * Add the Min expression to the underlying solver

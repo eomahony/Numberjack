@@ -277,7 +277,7 @@ Gecode_Min::Gecode_Min( GecodeExpArray& vars )
 #endif
 
     _vars = vars;
-
+    initialise();
 }
 
 Gecode_Min::Gecode_Min( Gecode_Expression *var1, Gecode_Expression *var2 )
@@ -289,6 +289,21 @@ Gecode_Min::Gecode_Min( Gecode_Expression *var1, Gecode_Expression *var2 )
 
     _vars.add(var1);
     _vars.add(var2);
+    initialise();
+}
+
+void Gecode_Min::initialise(){
+    int vmin, vmax;
+    _lb = std::numeric_limits<int>::max();
+    _ub = std::numeric_limits<int>::max();
+    for(unsigned int i=0; i<_vars.size(); ++i) {
+        vmin = _vars.get_item(i)->get_min();
+        vmax = _vars.get_item(i)->get_max();
+
+        if(vmin < _lb) _lb = vmin;
+        if(vmax < _ub) _ub = vmax;
+    }
+    std::cout << "init bounds of minimum to " << _lb << ".." << _ub << std::endl;
 }
 
 Gecode_Min::~Gecode_Min() {
@@ -304,27 +319,21 @@ Gecode_Expression* Gecode_Min::add(GecodeSolver *solver, bool top_level) {
 #ifdef _DEBUGWRAP
         std::cout << "add a Min constraint to solver" << std::endl;
 #endif
+        if(top_level){
+            std::cerr << "Error: minimum expression not valid at the top-level, it should be used as a sub-expression." << std::endl;
+            exit(1);
+        }
 
-        // _solver = solver;
-        std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
-        exit(1);
+        _solver = solver;
 
-        // int i, n=_vars.size();
-        // for(i=0; i<n; ++i)
-        //     _vars.get_item(i)->add(_solver,false);
+        int i, n=_vars.size();
+        Gecode::IntVarArgs scope(n);
+        for(i=0; i<n; ++i){
+            _vars.set_item(i, _vars.get_item(i)->add(_solver, false));
+            scope[i] = _vars.get_item(i)->getGecodeVar();
+        }
 
-        // if(n == 2) {
-        //     _self = Min(_vars.get_item(0)->_self,
-        //                 _vars.get_item(1)->_self);
-        // } else if(n > 2) {
-        //     Mistral::VarArray scope(n);
-        //     for(i=0; i<n; ++i) scope[i] = _vars.get_item(i)->_self;
-        //     _self = Min(scope);
-        // }
-
-        // if( top_level )
-        //     _solver->solver->add( _self );
-
+        _gcintrepr << expr(*(solver->gecodespace), Gecode::min(scope));
     }
     return this;
 }
@@ -338,6 +347,7 @@ Gecode_Max::Gecode_Max( GecodeExpArray& vars )
 #endif
 
     _vars = vars;
+    initialise();
 }
 
 Gecode_Max::Gecode_Max( Gecode_Expression *var1, Gecode_Expression *var2 )
@@ -349,6 +359,21 @@ Gecode_Max::Gecode_Max( Gecode_Expression *var1, Gecode_Expression *var2 )
 
     _vars.add(var1);
     _vars.add(var2);
+    initialise();
+}
+
+void Gecode_Max::initialise(){
+    int vmin, vmax;
+    _lb = std::numeric_limits<int>::min();
+    _ub = std::numeric_limits<int>::min();
+    for(unsigned int i=0; i<_vars.size(); ++i) {
+        vmin = _vars.get_item(i)->get_min();
+        vmax = _vars.get_item(i)->get_max();
+
+        if(vmin > _lb) _lb = vmin;
+        if(vmax > _ub) _ub = vmax;
+    }
+    std::cout << "init bounds of maximum to " << _lb << ".." << _ub << std::endl;
 }
 
 Gecode_Max::~Gecode_Max() {
@@ -365,26 +390,20 @@ Gecode_Expression* Gecode_Max::add(GecodeSolver *solver, bool top_level) {
         std::cout << "add an Max constraint" << std::endl;
 #endif
 
-        // _solver = solver;
-        std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
-        exit(1);
+        if(top_level){
+            std::cerr << "Error: maximum expression not valid at the top-level, it should be used as a sub-expression." << std::endl;
+            exit(1);
+        }
+        _solver = solver;
 
-        // int i, n=_vars.size();
-        // for(i=0; i<n; ++i)
-        //     _vars.get_item(i)->add(_solver,false);
+        int i, n=_vars.size();
+        Gecode::IntVarArgs scope(n);
+        for(i=0; i<n; ++i){
+            _vars.set_item(i, _vars.get_item(i)->add(_solver, false));
+            scope[i] = _vars.get_item(i)->getGecodeVar();
+        }
 
-        // if(n == 2) {
-        //     _self = Max(_vars.get_item(0)->_self,
-        //                 _vars.get_item(1)->_self);
-        // } else if(n > 2) {
-        //     Mistral::VarArray scope(n);
-        //     for(i=0; i<n; ++i) scope[i] = _vars.get_item(i)->_self;
-        //     _self = Max(scope);
-        // }
-
-        // if( top_level )
-        //     _solver->solver->add( _self );
-
+        _gcintrepr << expr(*(solver->gecodespace), Gecode::max(scope));
     }
     return this;
 }

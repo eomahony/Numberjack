@@ -943,13 +943,8 @@ Gecode_and::Gecode_and(Gecode_Expression *var1,
     : Gecode_binop(var1,constant) {
 #ifdef _DEBUGWRAP
     std::cout << "creating and predicate" << std::endl;
-    std::cout << "I DON'T THINK I SHOULD BE HERE" << std::endl;
+    std::cout << "You should consider a different model if you have a conjunction with a constant." << std::endl;
 #endif
-
-    /**
-     * Should never be in this constructor???
-     */
-
 }
 
 Gecode_and::~Gecode_and() {
@@ -964,22 +959,29 @@ Gecode_Expression* Gecode_and::add(GecodeSolver *solver,
 #ifdef _DEBUGWRAP
         std::cout << "add and constraint" << std::endl;
 #endif
+        _solver = solver;
 
-        // _solver = solver;
-        std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
-        exit(1);
+        if(top_level) {
+            if(_vars[1] != NULL) {
+                _vars[0] = _vars[0]->add(_solver, true);
+                _vars[1] = _vars[1]->add(_solver, true);
+            } else if(_constant) {
+                _vars[0]->add(_solver, true);
+            } else {
+                // Fail, model unsatisfiable
+                solver->gecodespace->fail();
+            }
+        } else {
+            _vars[0] = _vars[0]->add(_solver, false);
 
-        // _vars[0]->add(_solver,false);
-        // if(_vars[1]) {
-        //     _vars[1]->add(_solver,false);
-        //     _self = (_vars[0]->_self && _vars[1]->_self);
-        // } else if(_constant) {
-        //     _self = (_vars[0]->_self == 1);
-        // } else {
-        //     _solver->solver->fail();
-        // }
-        // if( top_level )
-        //     _solver->solver->add( _self );
+            if(_vars[1] != NULL) {
+                _vars[1] = _vars[1]->add(_solver, false);
+                _gcintrepr << expr(*(solver->gecodespace), _vars[0]->getGecodeVar() * _vars[1]->getGecodeVar());
+            
+            } else {
+                _gcintrepr << expr(*(solver->gecodespace), _vars[0]->getGecodeVar() * _constant);
+            }
+        }
 
     }
     return this;

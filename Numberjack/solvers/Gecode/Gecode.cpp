@@ -1012,22 +1012,33 @@ Gecode_Expression* Gecode_or::add(GecodeSolver *solver, bool top_level) {
 #ifdef _DEBUGWRAP
         std::cout << "add or predicate" << std::endl;
 #endif
-        std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
-        exit(1);
+        _solver = solver;
 
-        // bool used = false;
-        // _vars[0]->add(_solver,false);
-        // if(_vars[1]) {
-        //     _vars[1]->add(_solver,false);
-        //     _self = (_vars[0]->_self || _vars[1]->_self);
-        //     used = true;
-        // } else if(_constant == 0) {
-        //     _self = (_vars[0]->_self == 1);
-        //     used = true;
-        // }
-        // if( top_level && used )
-        //     _solver->solver->add( _self );
+        if(top_level) {
+            if(_vars[1] != NULL) {
+                _vars[0] = _vars[0]->add(_solver, false);
+                _vars[1] = _vars[1]->add(_solver, false);
+                std::cout << "created linear sum OR" << std::endl;
+                Gecode::rel(*(solver->gecodespace), expr(*(solver->gecodespace), _vars[0]->getGecodeVar() + _vars[1]->getGecodeVar()) >= 1);
 
+            } else if(_constant) { // OR trivalially satisfied
+            } else {
+                _vars[0]->add(_solver, true);
+            }
+        } else {
+            _vars[0] = _vars[0]->add(_solver, false);
+
+            if(_vars[1] != NULL) {
+                _vars[1] = _vars[1]->add(_solver, false);
+                _gcintrepr << expr(*(solver->gecodespace), _vars[0]->getGecodeVar() + _vars[1]->getGecodeVar() - _vars[0]->getGecodeVar() * _vars[1]->getGecodeVar());
+            } else if(_constant){
+                // trivially satisfied
+                _gcintrepr << Gecode::IntVar(*(solver->gecodespace), 1, 1);
+            } else {
+                // satisfied if _vars[0] is
+                _gcintrepr << _vars[0]->getGecodeVar();
+            }
+        }
     }
     return this;
 }

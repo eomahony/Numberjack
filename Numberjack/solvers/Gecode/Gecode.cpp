@@ -1437,9 +1437,13 @@ Gecode_Expression* Gecode_Minimise::add(GecodeSolver *solver, bool top_level) {
         std::cout << "add minimise objective" << std::endl;
 #endif
 
-        // _solver = solver;
-        std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
-        exit(1);
+        _solver = solver;
+        _solver->isoptimisation = true;
+        _exp = _exp->add(solver, false);
+        solver->gecodespace->setGecodeCostVar(_exp->getGecodeVar());
+
+        // std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
+        // exit(1);
 
         // //std::cout << 11 << std::endl;
 
@@ -1481,19 +1485,14 @@ Gecode_Expression* Gecode_Maximise::add(GecodeSolver *solver, bool top_level) {
 #ifdef _DEBUGWRAP
         std::cout << "add maximise objective" << std::endl;
 #endif
+        _solver = solver;
+        _solver->isoptimisation = true;
+        _exp = _exp->add(solver, false);  
+        solver->gecodespace->setGecodeCostVar(expr(*(solver->gecodespace), _exp->getGecodeVar() * -1));
 
-        // _solver = solver;
-        std::cerr << "Error constraint not supported with this solver, yet." << std::endl;
-        exit(1);
-
-        // // This will be the objective function
-        // _exp = _exp->add(solver, false);
-
-        // if(top_level) {
-        //     _solver->solver->maximize(_exp->_self);
-        //     //_search_goal = new Mistral::Goal(Mistral::Goal::MAXIMIZATION, _exp);
-        // }
-
+        // FIXME should be using a minus view for this instead.
+        // Gecode::Int::MinusView objvarview(_exp->getGecodeVar());
+        // solver->gecodespace->setGecodeCostVar(objvarview);
     }
     return this;
 }
@@ -1509,6 +1508,7 @@ GecodeSolver::GecodeSolver() {
 
     gecodespace = originalspace = new NJGecodeSpace();
     lastsolvestatus = UNKNOWN;
+    isoptimisation = false;
     // solver = new Mistral::Solver();
     // solver->parameters.verbosity = 2;
 
@@ -1578,11 +1578,14 @@ int GecodeSolver::solve() {
     // Gecode::branch(*gecodespace, gecodespace->getGecodeSearchVariables(), Gecode::INT_VAR_MIN_MIN(), Gecode::INT_VAL_SPLIT_MIN());
     std::cout << "first status:" << gecodespace->status() << " solved:" << Gecode::SS_SOLVED << " branch:" << Gecode::SS_BRANCH << std::endl;
     gecodespace->print();
-    Gecode::DFS<NJGecodeSpace> gecodedfs(gecodespace);
-    NJGecodeSpace *sol = gecodedfs.next();
+    NJGecodeSpace *sol = NULL;
+    if(isoptimisation){
+        sol = Gecode::bab(gecodespace);
+    } else {
+        Gecode::DFS<NJGecodeSpace> gecodedfs(gecodespace);
+        sol = gecodedfs.next();
+    }
 
-    // gecodespace->choice();
-    // NJGecodeSpace *sol = gecodespace;
     std::cout << "gecodespace:" << gecodespace <<" sol:" << sol << std::endl;
     std::cout << "solve finished. gecodespace status:" << gecodespace->status() << std::endl;
     if(sol != NULL){

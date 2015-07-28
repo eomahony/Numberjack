@@ -64,25 +64,29 @@ namespace Gecode{
 class Space;
 };
 
-class NJGecodeSpace : public Gecode::Space {
+class NJGecodeSpace : public Gecode::IntMinimizeSpace {
 
 protected:
     Gecode::IntVarArray gcvariables;
+    Gecode::IntVar _costvar;  // for optimization functions
     std::vector<Gecode::IntVar> variables;
-    bool closed;
+    bool closed, hascostvar;
 
 public:
 
     NJGecodeSpace(void) {
         // std::cout << "In NJGecodeSpace constructor." << std::endl;
         closed = false;
+        hascostvar = false;
     }
 
-    NJGecodeSpace(bool share, NJGecodeSpace& s) : Gecode::Space(share, s), closed(s.closed) {
+    NJGecodeSpace(bool share, NJGecodeSpace& s) : Gecode::IntMinimizeSpace(share, s), closed(s.closed) {
         // variables.update(*this, share, s.variables);
         // std::cout << "In NJGecodeSpace copy constructor" << std::endl;
         // std::cout << "copying:" << s.gcvariables << std::endl;
+        this->hascostvar = s.hascostvar;
         this->gcvariables.update(*this, share, s.gcvariables);
+        if(this->hascostvar) this->_costvar.update(*this, share, s._costvar);
         // std::cout << "newcopy:" << gcvariables << std::endl;
         // variables.reserve(s.variables.size());
         // for(unsigned int i=0; i<s.variables.size(); i++){
@@ -153,6 +157,15 @@ public:
         }
         std::cout << "Returning vararry of size " << gcvariables.size() << std::endl;
         return gcvariables;
+    }
+
+    void setGecodeCostVar(Gecode::IntVar c){
+        _costvar = c;
+        hascostvar = true;
+    }
+
+    virtual Gecode::IntVar cost(void) const {
+        return _costvar;
     }
 
     unsigned int getNumVariables() {
@@ -872,6 +885,7 @@ private:
 public:
 
     NJGecodeSpace *gecodespace, *originalspace;
+    bool isoptimisation;
 
     // int first_decision_level;
     // int saved_level;

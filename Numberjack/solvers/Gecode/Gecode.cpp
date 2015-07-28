@@ -163,7 +163,7 @@ bool Gecode_Expression::has_been_added() const {
 Gecode::IntVar Gecode_Expression::getGecodeVar() const {
     assert(_solver != NULL);
     if(_gcintrepr.size() > 0) {
-        std::cout << "returning _gcintrepr " << _gcintrepr.size() << std::endl;
+        // std::cout << "Returning _gcintrepr" << _gcintrepr[0] << std::endl;
         return _gcintrepr[0];
     }
     assert(_gcvarid >= 0);
@@ -262,7 +262,9 @@ void Gecode_binop::initialise() {
     bounds.push_back(binaryopfunc(ub1, ub2));
     _lb = *(std::min_element(bounds.begin(), bounds.end()));
     _ub = *(std::max_element(bounds.begin(), bounds.end()));
+#ifdef _DEBUGWRAP
     std::cout << "Initialised bounds of binary operator to " << _lb << ".." << _ub << std::endl;
+#endif
 }
 
 /**
@@ -303,7 +305,9 @@ void Gecode_Min::initialise(){
         if(vmin < _lb) _lb = vmin;
         if(vmax < _ub) _ub = vmax;
     }
+#ifdef _DEBUGWRAP
     std::cout << "init bounds of minimum to " << _lb << ".." << _ub << std::endl;
+#endif
 }
 
 Gecode_Min::~Gecode_Min() {
@@ -373,7 +377,9 @@ void Gecode_Max::initialise(){
         if(vmin > _lb) _lb = vmin;
         if(vmax > _ub) _ub = vmax;
     }
+#ifdef _DEBUGWRAP
     std::cout << "init bounds of maximum to " << _lb << ".." << _ub << std::endl;
+#endif
 }
 
 Gecode_Max::~Gecode_Max() {
@@ -734,7 +740,9 @@ void Gecode_Sum::initialise(){
             _lb += (w * _vars.get_item(i)->get_max());
         }
     }
+#ifdef _DEBUGWRAP
     std::cout << "init bounds of sum to " << _lb << ".." << _ub << std::endl;
+#endif
 }
 
 Gecode_Expression* Gecode_Sum::add(GecodeSolver *solver, bool top_level) {
@@ -1018,7 +1026,6 @@ Gecode_Expression* Gecode_or::add(GecodeSolver *solver, bool top_level) {
             if(_vars[1] != NULL) {
                 _vars[0] = _vars[0]->add(_solver, false);
                 _vars[1] = _vars[1]->add(_solver, false);
-                std::cout << "created linear sum OR" << std::endl;
                 Gecode::rel(*(solver->gecodespace), expr(*(solver->gecodespace), _vars[0]->getGecodeVar() + _vars[1]->getGecodeVar()) >= 1);
 
             } else if(_constant) { // OR trivalially satisfied
@@ -1074,14 +1081,12 @@ Gecode_Expression* Gecode_eq::add(GecodeSolver *solver, bool top_level) {
         if(_vars[1] != NULL) _vars[1] = _vars[1]->add(_solver, false);
 
         if(top_level){
-            std::cout << "creating rel eq" << std::endl;
             if(_vars[1] != NULL) {
                 Gecode::rel(*(solver->gecodespace), _vars[0]->getGecodeVar() == _vars[1]->getGecodeVar());
             } else {
                 Gecode::rel(*(solver->gecodespace), _vars[0]->getGecodeVar() == _constant);
             }
         } else{  // Reified
-            std::cout << "creating reified rel eq" << std::endl;
             Gecode_Expression *r = new Gecode_IntVar();
             r = r->add(_solver, false);
             if(_vars[1] != NULL) {
@@ -1129,14 +1134,12 @@ Gecode_Expression* Gecode_ne::add(GecodeSolver *solver, bool top_level) {
         if(_vars[1] != NULL) _vars[1] = _vars[1]->add(_solver, false);
 
         if(top_level){
-            std::cout << "creating rel ne" << std::endl;
             if(_vars[1] != NULL) {
                 Gecode::rel(*(solver->gecodespace), _vars[0]->getGecodeVar() != _vars[1]->getGecodeVar());
             } else {
                 Gecode::rel(*(solver->gecodespace), _vars[0]->getGecodeVar() != _constant);
             }
         } else{  // Reified
-            std::cout << "creating reified rel ne" << std::endl;
             Gecode_Expression *r = new Gecode_IntVar();
             r = r->add(_solver, false);
             if(_vars[1] != NULL) {
@@ -1232,14 +1235,12 @@ Gecode_Expression* Gecode_le::add(GecodeSolver *solver, bool top_level) {
         if(_vars[1] != NULL) _vars[1] = _vars[1]->add(_solver, false);
 
         if(top_level){
-            std::cout << "creating rel le" << std::endl;
             if(_vars[1] != NULL) {
                 Gecode::rel(*(solver->gecodespace), _vars[0]->getGecodeVar() <= _vars[1]->getGecodeVar());
             } else {
                 Gecode::rel(*(solver->gecodespace), _vars[0]->getGecodeVar() <= _constant);
             }
         } else{  // Reified
-            std::cout << "creating reified rel le" << std::endl;
             Gecode_Expression *r = new Gecode_IntVar();
             r = r->add(_solver, false);
             if(_vars[1] != NULL) {
@@ -1286,14 +1287,12 @@ Gecode_Expression* Gecode_ge::add(GecodeSolver *solver, bool top_level) {
         if(_vars[1] != NULL) _vars[1] = _vars[1]->add(_solver, false);
 
         if(top_level){
-            std::cout << "creating rel ge" << std::endl;
             if(_vars[1] != NULL) {
                 Gecode::rel(*(solver->gecodespace), _vars[0]->getGecodeVar() >= _vars[1]->getGecodeVar());
             } else {
                 Gecode::rel(*(solver->gecodespace), _vars[0]->getGecodeVar() >= _constant);
             }
         } else{  // Reified
-            std::cout << "creating reified rel ge" << std::endl;
             Gecode_Expression *r = new Gecode_IntVar();
             r = r->add(_solver, false);
             if(_vars[1] != NULL) {
@@ -1342,14 +1341,12 @@ Gecode_Expression* Gecode_lt::add(GecodeSolver *solver, bool top_level) {
         if(_vars[1] != NULL) _vars[1] = _vars[1]->add(_solver, false);
 
         if(top_level){
-            std::cout << "creating rel lt" << std::endl;
             if(_vars[1] != NULL) {
                 Gecode::rel(*(solver->gecodespace), _vars[0]->getGecodeVar() < _vars[1]->getGecodeVar());
             } else {
                 Gecode::rel(*(solver->gecodespace), _vars[0]->getGecodeVar() < _constant);
             }
         } else{  // Reified
-            std::cout << "creating reified rel lt" << std::endl;
             Gecode_Expression *r = new Gecode_IntVar();
             r = r->add(_solver, false);
             if(_vars[1] != NULL) {
@@ -1397,14 +1394,12 @@ Gecode_Expression* Gecode_gt::add(GecodeSolver *solver, bool top_level) {
         if(_vars[1] != NULL) _vars[1] = _vars[1]->add(_solver, false);
 
         if(top_level){
-            std::cout << "creating rel gt" << std::endl;
             if(_vars[1] != NULL) {
                 Gecode::rel(*(solver->gecodespace), _vars[0]->getGecodeVar() > _vars[1]->getGecodeVar());
             } else {
                 Gecode::rel(*(solver->gecodespace), _vars[0]->getGecodeVar() > _constant);
             }
         } else{  // Reified
-            std::cout << "creating reified rel gt" << std::endl;
             Gecode_Expression *r = new Gecode_IntVar();
             r = r->add(_solver, false);
             if(_vars[1] != NULL) {

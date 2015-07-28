@@ -104,23 +104,21 @@ public:
 
     // Returns the index into 'variables' of the new variable
     unsigned int createIntVar(int lb, int ub){
-// #ifdef _DEBUGWRAP
+#ifdef _DEBUGWRAP
         std::cout << "Creating gecode variable with bounds " << lb << ".." << ub << std::endl;
-        std::cout.flush();
-// #endif
+#endif
         assertNotClosed();
 
         Gecode::IntVar x(*this, lb, ub);
-
 
         variables.push_back(x);
         return variables.size() - 1;
     }
 
     unsigned int createIntVar(GecodeIntArray vals){
-// #ifdef _DEBUGWRAP
+#ifdef _DEBUGWRAP
         std::cout << "Creating gecode variable with value set of size " << vals.size() << std::endl;
-// #endif
+#endif
         assertNotClosed();
         int *values = new int[vals.size()];
         for(int i=0; i<vals.size(); i++) values[i] = vals.get_item(i);

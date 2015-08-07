@@ -766,14 +766,45 @@ Gecode_Expression* Gecode_Sum::add(GecodeSolver *solver, bool top_level) {
             if(w[i] != 1) weighted = true;
         }
 
+        if(n == 1){
+            if(_offset == 0 && !weighted){
+                // std::cout << "simplify single item sum 1" << std::endl;
+                return _vars.get_item(0);
+            } else if(_offset != 0 && !weighted){
+                // std::cout << "simplify single item sum 2, offset:" << _offset << std::endl;
+                // std::cout << "gecodevar:" << _vars.get_item(0)->getGecodeVar() << std::endl;
+                _gcintrepr << expr(*(solver->gecodespace), _vars.get_item(0)->getGecodeVar() + _offset);
+                return this;
+            } else if(_offset == 0 && weighted){
+                // std::cout << "simplify single item sum 3, w:" << w[0] << std::endl;
+                _gcintrepr << expr(*(solver->gecodespace), _vars.get_item(0)->getGecodeVar() * w[0]);
+                return this;
+            } else if(_offset != 0 && weighted){
+                // std::cout << "simplify single item sum 4, offset:" << _offset << " w:" << w[0] << std::endl;
+                _gcintrepr << expr(*(solver->gecodespace), _vars.get_item(0)->getGecodeVar() * w[0] + _offset);
+                return this;
+            }
+        } else if(n == 2){
+            if(_offset == 0 && !weighted){
+                // std::cout << "simplify single item sum 5" << std::endl;
+                _gcintrepr << expr(*(solver->gecodespace), _vars.get_item(0)->getGecodeVar() + _vars.get_item(1)->getGecodeVar());
+                return this;
+            }
+        }
+
         if(_offset!=0){  // Create a dummy constant variable to model the offset
             Gecode::IntVar dummy1(*(solver->gecodespace), 1, 1);
             x[n] = dummy1;
             w[n] = _offset;
+            weighted = true;
         }
 
         Gecode_Expression *aux = new Gecode_Expression(_lb, _ub);
         aux = aux->add(solver, false);
+        // std::cout << "lb:" << _lb << " _ub:" << _ub << std::endl;
+        // std::cout << "_offset:" << _offset << std::endl;
+        // std::cout << "w:" << w << std::endl;
+        // std::cout << "x:" << x << std::endl;
         if(weighted){
             Gecode::linear(*(solver->gecodespace), w, x, Gecode::IRT_EQ, aux->getGecodeVar());
         } else {

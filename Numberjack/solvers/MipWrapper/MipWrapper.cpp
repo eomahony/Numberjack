@@ -1583,15 +1583,22 @@ MipWrapper_Expression* MipWrapper_and::add(MipWrapperSolver *solver,
         _vars[0] = _vars[0]->add(solver, false);
         _vars[1] = _vars[1]->add(solver, false);
         if (top_level) {
-            _vars[0]->_lower = 1;
-            _vars[1]->_lower = 1;
+            LinearConstraint *con0 = new LinearConstraint(1, 1);
+            con0->add_coef(_vars[0], 1);
+            solver->_constraints.push_back(con0);
+
+            LinearConstraint *con1 = new LinearConstraint(1, 1);
+            con1->add_coef(_vars[1], 1);
+            solver->_constraints.push_back(con1);
+
         } else {
             MipWrapper_Expression *C = new MipWrapper_IntVar(0, 1);
             C = C->add(solver, false);
             (new MipWrapper_le(C, _vars[0]))->add(solver, true);
             (new MipWrapper_le(C, _vars[1]))->add(solver, true);
 
-            LinearConstraint *con = new LinearConstraint(1, INFINITY);
+            // LinearConstraint *con = new LinearConstraint(1, INFINITY);
+            LinearConstraint *con = new LinearConstraint(0, 1);
             con->add_coef(_vars[0], 1);
             con->add_coef(_vars[1], 1);
             con->add_coef(C, -1);

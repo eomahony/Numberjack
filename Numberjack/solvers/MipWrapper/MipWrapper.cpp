@@ -1737,6 +1737,10 @@ MipWrapperSolver::MipWrapperSolver() {
 
 MipWrapperSolver::~MipWrapperSolver() {
     DBG("Delete a MIP Solver %s\n", "");
+    if(_obj != NULL){
+        delete _obj;
+        _obj = NULL;
+    }
 }
 
 void MipWrapperSolver::add(MipWrapper_Expression* arg) {
@@ -1950,6 +1954,7 @@ void LinearConstraint::add_coef(MipWrapper_Expression* expr, double coef,
     _rhs -= larg->offset * coef;
     for (int i = 0; i < expr->for_linear_size(); ++i)
         add_coef(larg + i, coef, use_encoding);
+    delete larg;
 }
 
 void LinearConstraint::add_coef(LINEAR_ARG* arg_struct, double coef,

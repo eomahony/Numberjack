@@ -62,11 +62,12 @@ class GlobalsATest(unittest.TestCase):
 
     def testAllDiffLargeVarraySucc(self):
         m = Model()
-        varray = [Variable(0, 301) for i in range(300)]
+        N = 300
+        varray = [Variable(1, N) for i in range(N)]
         m.add(AllDiff(varray))
         s = GlobalsATest.solver(m)
         self.assertTrue(s.solve())
-        self.assertTrue(set([i.get_value() for i in varray]) == set(range(0, 300)))
+        self.assertTrue(set([i.get_value() for i in varray]) == set(range(1, N + 1)))
 
     def testAllDiffLargeVarrayFail(self):
         m = Model()

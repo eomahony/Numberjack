@@ -6,6 +6,7 @@ LUBY, GEOMETRIC = 0, 1
 MAXCOST = 100000000
 
 from .solvers import available_solvers
+import weakref
 import exceptions
 import datetime
 import types
@@ -3034,7 +3035,7 @@ class NBJ_STD_Solver(object):
         if model is not None:
             var_array = None
             self.solver_id = model.getSolverId()
-            self.model = model
+            self.model = weakref.proxy(model)
             self.model.close(self)   #SDG: needs to know for which solver the model is built
             if self.EncodingConfiguration:
                 if not encoding:
@@ -3059,7 +3060,7 @@ class NBJ_STD_Solver(object):
                 if var_array.size() > 0:
                     self.solver.initialise(var_array)
             else:
-                self.variables = self.model.variables
+                self.variables = weakref.proxy(self.model.variables)
                 self.solver.initialise()
 
     def add_to_store(self, x):

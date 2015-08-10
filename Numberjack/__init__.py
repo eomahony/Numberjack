@@ -2083,6 +2083,42 @@ class Sum(Predicate):
         return [addition([(child if coef is 1 else (child * Variable(coef,coef,str(coef)))) for child, coef in zip(self.children, self.parameters[0])] + [Variable(e,e,str(e)) for e in self.parameters[1:] if e is not 0])]
 
 
+class OrderedSum(Predicate):
+    """
+    Conjunction of a chain of precedence with a sum expression (without linear coefficients)
+
+    The following:    
+        OrderedSum([a,b,c,d], l, u)
+    
+    is logically equivalent to:
+
+        Sum([a,b,c,d]) >= l
+        Sum([a,b,c,d]) <= u
+        a >= b
+        b >= c
+        c >= d 
+
+    :param vars: the variables to be summed/sequenced.
+    :param l: lower bound of the sum
+    :param u: upper bound of the sum
+    """
+
+    def __init__(self, vars, l, u):
+        Predicate.__init__(self, vars, "OrderedSum")
+
+        self.parameters = [l, u]
+
+    def close(self):
+        Predicate.close(self)
+
+    def __str__(self):
+        #print len(self.children)
+        op = str(self.parameters[0]) + ' <= ('+(self.children[0].__str__())
+        for i in range(1, len(self.children)):
+            op += (' + ' + self.children[i].__str__())
+        return op + ') <= ' + str(self.parameters[1])
+
+
 class AllDiff(Predicate):
     """
     All-different constraint on a list of :class:`.Expression`, enforces that

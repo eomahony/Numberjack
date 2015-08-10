@@ -4883,6 +4883,88 @@ Mistral::Variable Mistral::Parity(Vector< Variable >& args, const int p) {
 }
 
 
+Mistral::OrderedSumExpression::OrderedSumExpression(Vector< Variable >& args, 
+					    const int l, const int u, const int o) 
+  : Expression(args) {
+  lower_bound = l;
+  upper_bound = u;
+}
+
+Mistral::OrderedSumExpression::OrderedSumExpression(std::vector< Variable >& args, 
+					    const int l, const int u, const int o) 
+  : Expression(args) {
+  lower_bound = l;
+  upper_bound = u;
+  offset = o;
+}
+
+
+Mistral::OrderedSumExpression::~OrderedSumExpression() {
+#ifdef _DEBUG_MEMORY
+  std::cout << "c delete osum expression" << std::endl;
+#endif
+}
+  
+// -1 -1 -1: - x - y =  z: 
+// -1 -1  1: - x - y = -z: z = y + x
+// -1  1 -1: - x + y =  z: y = x + z
+// -1  1  1: - x + y = -z: x = y + z
+//  1 -1 -1: + x - y =  z: x = y + z
+//  1 -1  1: + x - y = -z: y = x + z
+//  1  1 -1: + x + y =  z: z = x + y
+//  1  1  1: + x + y = -z: 
+
+void Mistral::OrderedSumExpression::extract_constraint(Solver *s) {
+	s->add(Constraint(new ConstraintOrderedSum(children, lower_bound, upper_bound)));
+}
+
+
+// void Mistral::OrderedSumExpression::initialise_bounds() {
+//   int tlb=0;
+//   int tub=0;
+//
+//   for(unsigned int i=0; i<children.size; ++i) {
+//     tlb += children[i].get_min();
+//     tub += children[i].get_max();
+//   }
+//
+//   if(tlb > lower_bound) lower_bound = tlb;
+//   if(tub < upper_bound) upper_bound = tub;
+// }
+
+void Mistral::OrderedSumExpression::extract_variable(Solver *s) {
+  std::cerr << "Error: OSum constraint can't yet be used as a predicate" << std::endl;
+  exit(0);
+  // initialise_bounds();
+  //
+  // Variable aux(lower_bound+offset, upper_bound+offset, DYN_VAR);
+  // _self = aux;
+  //
+  // _self.initialise(s, 1);
+  // _self = _self.get_var();
+  // children.add(_self);
+}
+
+const char* Mistral::OrderedSumExpression::get_name() const {
+  return "ordered_sum";
+}
+
+void Mistral::OrderedSumExpression::extract_predicate(Solver *s) {
+  std::cerr << "Error: OSum constraint can't yet be used as a predicate" << std::endl;
+  exit(0);
+	//s->add(Constraint(new ConstraintOrderedSum(children, weight, -offset, -offset)));
+}
+
+
+Mistral::Variable Mistral::OSum(Vector< Variable >& args, const int l, const int u, const int offset) {
+  Variable exp( new OrderedSumExpression(args, l, u,offset) );
+  return exp;
+}
+Mistral::Variable Mistral::OSum(std::vector< Variable >& args, const int l, const int u, const int offset) {
+  Variable exp( new OrderedSumExpression(args, l, u,offset) );
+  return exp;
+}
+
 
 
 Mistral::LinearExpression::LinearExpression(Vector< Variable >& args, 
@@ -5159,6 +5241,7 @@ Mistral::Variable Mistral::Sum(std::vector< Variable >& args, std::vector< int >
   Variable exp( new LinearExpression(args, wgts, l, u,offset) );
   return exp;
 }
+
 
 
 Mistral::MinExpression::MinExpression(Vector< Variable >& args) 

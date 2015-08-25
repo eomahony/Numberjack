@@ -3225,7 +3225,9 @@ class NBJ_STD_Solver(object):
                     var = factory(*arguments)
                 except NotImplementedError as e:
                     print >> sys.stderr, "Error the solver does not support this expression:", str(expr)
-                    print >> sys.stderr, "Type:", type(expr), "Children:", str(expr.children), "Params:", str(getattr(expr, 'parameters', None))
+                    print >> sys.stderr, "Type:", type(expr)
+                    print >> sys.stderr, "Children:", str(expr.children), map(type, expr.children)
+                    print >> sys.stderr, "Params:", str(getattr(expr, 'parameters', None))
                     raise e
 
                 if expr.encoding:

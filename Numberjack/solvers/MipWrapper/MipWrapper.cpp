@@ -356,6 +356,14 @@ MipWrapper_mul::MipWrapper_mul(MipWrapper_Expression *arg1, const int arg2) :
     _coef = arg2;
 }
 
+MipWrapper_mul::MipWrapper_mul(MipWrapper_Expression *arg1, const double arg2) :
+    MipWrapper_Expression() {
+    initialise(false);
+    vars[0] = arg1;
+    vars[1] = NULL;
+    _coef = arg2;
+}
+
 MipWrapper_mul::~MipWrapper_mul() {
 }
 

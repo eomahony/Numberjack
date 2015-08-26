@@ -16,7 +16,8 @@ GurobiSolver::GurobiSolver(){
     try {
         env = new GRBEnv();
         model = new GRBModel(*env);
-        variables = new vector<GRBVar>;
+        variables = new vector<GRBVar>();
+        variableptrs = new vector<int*>();
 
         setVerbosity(_verbosity);  // Default to no output
     } catch (GRBException e) {
@@ -28,6 +29,13 @@ GurobiSolver::GurobiSolver(){
 
 GurobiSolver::~GurobiSolver(){
     DBG("Delete wrapped solver %s\n", "");
+
+    for(int i=0; i<variableptrs->size(); i++) delete variableptrs->at(i);
+    variableptrs->clear();
+    delete variableptrs;
+
+    variables->clear();
+    delete variables;
     delete model;
     delete env;
 }
@@ -82,6 +90,7 @@ void GurobiSolver::add_variables_from(LinearConstraint *con, double coef) {
             int *var_id = new int;
             *var_id = variables->size();
             variables->push_back(var_ptr);
+            variableptrs->push_back(var_id);
             con->_variables[i]->_var = (void*) var_id;
         }
     }
@@ -117,6 +126,8 @@ void GurobiSolver::add_in_constraint(LinearConstraint *con, double coef){
         } else if(con->_lhs > -INFINITY) model->addConstr(lin_expr, GRB_GREATER_EQUAL, con->_lhs);
         else if(con->_rhs < INFINITY) model->addConstr(lin_expr, GRB_LESS_EQUAL, con->_rhs);
     }
+    delete[] weights;
+    delete[] vars;
 }
 
 int GurobiSolver::solve(){

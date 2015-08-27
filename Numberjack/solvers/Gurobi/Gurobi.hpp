@@ -16,7 +16,6 @@ private:
 
     GRBEnv *env;
     GRBModel *model;
-    vector<int*> *variableptrs;
     vector<GRBVar> *variables;
     int _verbosity, optimstatus;
     bool has_been_added;

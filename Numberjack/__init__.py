@@ -2601,7 +2601,7 @@ class Cardinality(Predicate):
 #    - M = Task() creates a Task with an earliest start time of 0, latest end time of 1, and duration 1
 #    - M = Task(ub) creates a Task with an earliest start time of 0, latest end time of 'ub', and duration 1
 #    - M = Task(ub, dur) creates a Task with an earliest start time of 0, latest end time of 'ub', and duration 'dur'
-#    - M = Task(lb, ub, dur) creates a Task with an earliest start time of 0, latest end time of 'ub', and duration 'dur'
+#    - M = Task(lb, ub, dur) creates a Task with an earliest start time of 'lb', latest end time of 'ub', and duration 'dur'
 #
 #    When the model is solved, @get_value() returns the start
 #    time of the task.
@@ -2621,7 +2621,7 @@ class Task(Expression):
                   # time of 'ub', and duration 1
         Task(ub, dur)  # creates a Task with an earliest start time of 0,
                        # latest end time of 'ub', and duration 'dur'
-        Task(lb, ub, dur)  # creates a Task with an earliest start time of 0,
+        Task(lb, ub, dur)  # creates a Task with an earliest start time of 'lb',
                            # latest end time of 'ub', and duration 'dur'
 
     When the model is solved, :func:`Numberjack.Expression.get_value` returns

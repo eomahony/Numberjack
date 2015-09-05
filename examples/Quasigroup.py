@@ -12,6 +12,8 @@ def QG(t, a, b, x):
         return (x[x[a, b], b] == x[a, x[a, b]])
     elif t == 7:
         return (x[x[b, a], b] == x[a, x[b, a]])
+    else:
+        raise Exception("Invalid value %s for T, valid range is 3-7." % str(t))
 
 
 def get_model(T, N):

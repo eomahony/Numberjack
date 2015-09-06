@@ -1,4 +1,5 @@
-import Numberjack.solvers.Mistral as Mistral
+import Numberjack.solvers.Mistral as TestSolver
+# import Numberjack.solvers.CPLEX as TestSolver
 import Numberjack.solvers.MiniSat as MiniSat
 
 from LinearTest import LinearTest
@@ -8,9 +9,9 @@ from MiscTest import MiscTest
 from CoreTest import CoreTest
 from SATEncodingTest import SATEncodingTest
 
-LinearTest.solver = Mistral.Solver
-LogicalTest.solver = Mistral.Solver
-MiscTest.solver = Mistral.Solver
-GlobalsATest.solver = Mistral.Solver
-CoreTest.solver = Mistral.Solver
+LinearTest.solver = TestSolver.Solver
+LogicalTest.solver = TestSolver.Solver
+MiscTest.solver = TestSolver.Solver
+GlobalsATest.solver = TestSolver.Solver
+CoreTest.solver = TestSolver.Solver
 SATEncodingTest.solver = MiniSat.Solver

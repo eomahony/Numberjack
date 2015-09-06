@@ -28,6 +28,9 @@ GurobiSolver::GurobiSolver(){
 
 GurobiSolver::~GurobiSolver(){
     DBG("Delete wrapped solver %s\n", "");
+
+    variables->clear();
+    delete variables;
     delete model;
     delete env;
 }
@@ -117,6 +120,8 @@ void GurobiSolver::add_in_constraint(LinearConstraint *con, double coef){
         } else if(con->_lhs > -INFINITY) model->addConstr(lin_expr, GRB_GREATER_EQUAL, con->_lhs);
         else if(con->_rhs < INFINITY) model->addConstr(lin_expr, GRB_LESS_EQUAL, con->_rhs);
     }
+    delete[] weights;
+    delete[] vars;
 }
 
 int GurobiSolver::solve(){

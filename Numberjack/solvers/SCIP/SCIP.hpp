@@ -18,6 +18,8 @@ class SCIPSolver : public MipWrapperSolver{
 private:
   
   SCIP * _scip;
+  // std::vector<SCIP_VAR *> scipvariables;
+  // std::vector<SCIP_CONS *> scipcons;
   int _verbosity;
   SCIP* get_scip();
   void add_in_constraint(LinearConstraint *con, double coef=0);

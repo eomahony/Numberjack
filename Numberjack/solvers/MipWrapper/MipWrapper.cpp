@@ -356,6 +356,14 @@ MipWrapper_mul::MipWrapper_mul(MipWrapper_Expression *arg1, const int arg2) :
     _coef = arg2;
 }
 
+MipWrapper_mul::MipWrapper_mul(MipWrapper_Expression *arg1, const double arg2) :
+    MipWrapper_Expression() {
+    initialise(false);
+    vars[0] = arg1;
+    vars[1] = NULL;
+    _coef = arg2;
+}
+
 MipWrapper_mul::~MipWrapper_mul() {
 }
 
@@ -1583,15 +1591,22 @@ MipWrapper_Expression* MipWrapper_and::add(MipWrapperSolver *solver,
         _vars[0] = _vars[0]->add(solver, false);
         _vars[1] = _vars[1]->add(solver, false);
         if (top_level) {
-            _vars[0]->_lower = 1;
-            _vars[1]->_lower = 1;
+            LinearConstraint *con0 = new LinearConstraint(1, 1);
+            con0->add_coef(_vars[0], 1);
+            solver->_constraints.push_back(con0);
+
+            LinearConstraint *con1 = new LinearConstraint(1, 1);
+            con1->add_coef(_vars[1], 1);
+            solver->_constraints.push_back(con1);
+
         } else {
             MipWrapper_Expression *C = new MipWrapper_IntVar(0, 1);
             C = C->add(solver, false);
             (new MipWrapper_le(C, _vars[0]))->add(solver, true);
             (new MipWrapper_le(C, _vars[1]))->add(solver, true);
 
-            LinearConstraint *con = new LinearConstraint(1, INFINITY);
+            // LinearConstraint *con = new LinearConstraint(1, INFINITY);
+            LinearConstraint *con = new LinearConstraint(0, 1);
             con->add_coef(_vars[0], 1);
             con->add_coef(_vars[1], 1);
             con->add_coef(C, -1);
@@ -1730,6 +1745,10 @@ MipWrapperSolver::MipWrapperSolver() {
 
 MipWrapperSolver::~MipWrapperSolver() {
     DBG("Delete a MIP Solver %s\n", "");
+    if(_obj != NULL){
+        delete _obj;
+        _obj = NULL;
+    }
 }
 
 void MipWrapperSolver::add(MipWrapper_Expression* arg) {
@@ -1943,6 +1962,7 @@ void LinearConstraint::add_coef(MipWrapper_Expression* expr, double coef,
     _rhs -= larg->offset * coef;
     for (int i = 0; i < expr->for_linear_size(); ++i)
         add_coef(larg + i, coef, use_encoding);
+    delete larg;
 }
 
 void LinearConstraint::add_coef(LINEAR_ARG* arg_struct, double coef,

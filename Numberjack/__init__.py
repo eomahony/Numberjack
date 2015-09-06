@@ -6,6 +6,7 @@ LUBY, GEOMETRIC = 0, 1
 MAXCOST = 100000000
 
 from .solvers import available_solvers
+import weakref
 import exceptions
 import datetime
 import types
@@ -2097,6 +2098,42 @@ class Sum(Predicate):
         return [addition([(child if coef is 1 else (child * Variable(coef,coef,str(coef)))) for child, coef in zip(self.children, self.parameters[0])] + [Variable(e,e,str(e)) for e in self.parameters[1:] if e is not 0])]
 
 
+class OrderedSum(Predicate):
+    """
+    Conjunction of a chain of precedence with a sum expression (without linear coefficients)
+
+    The following:    
+        OrderedSum([a,b,c,d], l, u)
+    
+    is logically equivalent to:
+
+        Sum([a,b,c,d]) >= l
+        Sum([a,b,c,d]) <= u
+        a >= b
+        b >= c
+        c >= d 
+
+    :param vars: the variables to be summed/sequenced.
+    :param l: lower bound of the sum
+    :param u: upper bound of the sum
+    """
+
+    def __init__(self, vars, l, u):
+        Predicate.__init__(self, vars, "OrderedSum")
+
+        self.parameters = [l, u]
+
+    def close(self):
+        Predicate.close(self)
+
+    def __str__(self):
+        #print len(self.children)
+        op = str(self.parameters[0]) + ' <= ('+(self.children[0].__str__())
+        for i in range(1, len(self.children)):
+            op += (' + ' + self.children[i].__str__())
+        return op + ') <= ' + str(self.parameters[1])
+
+
 class AllDiff(Predicate):
     """
     All-different constraint on a list of :class:`.Expression`, enforces that
@@ -2579,7 +2616,7 @@ class Cardinality(Predicate):
 #    - M = Task() creates a Task with an earliest start time of 0, latest end time of 1, and duration 1
 #    - M = Task(ub) creates a Task with an earliest start time of 0, latest end time of 'ub', and duration 1
 #    - M = Task(ub, dur) creates a Task with an earliest start time of 0, latest end time of 'ub', and duration 'dur'
-#    - M = Task(lb, ub, dur) creates a Task with an earliest start time of 0, latest end time of 'ub', and duration 'dur'
+#    - M = Task(lb, ub, dur) creates a Task with an earliest start time of 'lb', latest end time of 'ub', and duration 'dur'
 #
 #    When the model is solved, @get_value() returns the start
 #    time of the task.
@@ -2599,7 +2636,7 @@ class Task(Expression):
                   # time of 'ub', and duration 1
         Task(ub, dur)  # creates a Task with an earliest start time of 0,
                        # latest end time of 'ub', and duration 'dur'
-        Task(lb, ub, dur)  # creates a Task with an earliest start time of 0,
+        Task(lb, ub, dur)  # creates a Task with an earliest start time of 'lb',
                            # latest end time of 'ub', and duration 'dur'
 
     When the model is solved, :func:`Numberjack.Expression.get_value` returns
@@ -3048,7 +3085,7 @@ class NBJ_STD_Solver(object):
         if model is not None:
             var_array = None
             self.solver_id = model.getSolverId()
-            self.model = model
+            self.model = weakref.proxy(model)
             self.model.close(self)   #SDG: needs to know for which solver the model is built
             if self.EncodingConfiguration:
                 if not encoding:
@@ -3073,7 +3110,7 @@ class NBJ_STD_Solver(object):
                 if var_array.size() > 0:
                     self.solver.initialise(var_array)
             else:
-                self.variables = self.model.variables
+                self.variables = weakref.proxy(self.model.variables)
                 self.solver.initialise()
 
     def add_to_store(self, x):
@@ -3202,7 +3239,9 @@ class NBJ_STD_Solver(object):
                     var = factory(*arguments)
                 except NotImplementedError as e:
                     print >> sys.stderr, "Error the solver does not support this expression:", str(expr)
-                    print >> sys.stderr, "Type:", type(expr), "Children:", str(expr.children), "Params:", str(getattr(expr, 'parameters', None))
+                    print >> sys.stderr, "Type:", type(expr)
+                    print >> sys.stderr, "Children:", str(expr.children), map(type, expr.children)
+                    print >> sys.stderr, "Params:", str(getattr(expr, 'parameters', None))
                     raise e
 
                 if expr.encoding:

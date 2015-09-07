@@ -340,7 +340,7 @@ class Expression(object):
         :return: The current domain of the expression.
         :rtype: Domain
         """
-        if self.is_built(solver):
+        if self.is_built(solver) and not isinstance(self.lb, float):
             if solver is None:
                 solver = self.solver
             lb, ub = self.get_min(solver), self.get_max(solver)

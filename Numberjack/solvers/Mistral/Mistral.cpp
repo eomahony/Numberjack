@@ -248,7 +248,7 @@ Mistral_Expression* Mistral_Neg::add(MistralSolver *solver, bool top_level) {
   if(!has_been_added()) {
 
 #ifdef _DEBUGWRAP
-    std::cout << "add an alldiff constraint" << std::endl;
+    std::cout << "add a neg constraint" << std::endl;
 #endif
 
     _solver = solver;
@@ -274,7 +274,7 @@ Mistral_Min::Mistral_Min( MistralExpArray& vars )
   _vars = vars;
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating an alldiff constraint" << std::endl;
+  std::cout << "creating a min constraint" << std::endl;
 #endif
 
 }
@@ -286,7 +286,7 @@ Mistral_Min::Mistral_Min( Mistral_Expression *var1, Mistral_Expression *var2 )
   _vars.add(var2); 
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating a binary alldiff constraint" << std::endl;
+  std::cout << "creating a binary min constraint" << std::endl;
 #endif
 
 }
@@ -295,7 +295,7 @@ Mistral_Min::~Mistral_Min()
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "delete alldiff" << std::endl;
+  std::cout << "delete min" << std::endl;
 #endif
 
 }
@@ -305,7 +305,7 @@ Mistral_Expression* Mistral_Min::add(MistralSolver *solver, bool top_level) {
   if(!has_been_added()) {
 
 #ifdef _DEBUGWRAP
-    std::cout << "add an alldiff constraint" << std::endl;
+    std::cout << "add an min constraint" << std::endl;
 #endif
 
     _solver = solver;
@@ -339,7 +339,7 @@ Mistral_Max::Mistral_Max( MistralExpArray& vars )
   _vars = vars;
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating an alldiff constraint" << std::endl;
+  std::cout << "creating a max constraint" << std::endl;
 #endif
 
 }
@@ -351,7 +351,7 @@ Mistral_Max::Mistral_Max( Mistral_Expression *var1, Mistral_Expression *var2 )
   _vars.add(var2); 
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating a binary alldiff constraint" << std::endl;
+  std::cout << "creating a binary max constraint" << std::endl;
 #endif
 
 }
@@ -360,7 +360,7 @@ Mistral_Max::~Mistral_Max()
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "delete alldiff" << std::endl;
+  std::cout << "delete max" << std::endl;
 #endif
 
 }
@@ -370,7 +370,7 @@ Mistral_Expression* Mistral_Max::add(MistralSolver *solver, bool top_level) {
   if(!has_been_added()) {
 
 #ifdef _DEBUGWRAP
-    std::cout << "add an alldiff constraint" << std::endl;
+    std::cout << "add an max constraint" << std::endl;
 #endif
 
     _solver = solver;
@@ -431,7 +431,7 @@ Mistral_Table::~Mistral_Table()
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "delete alldiff" << std::endl;
+  std::cout << "delete table" << std::endl;
 #endif
 
 }
@@ -525,7 +525,7 @@ Mistral_Expression* Mistral_AllDiff::add(MistralSolver *solver, bool top_level) 
 
     if(n == 2) {
       _self = CSP::_Equal(_vars.get_item(0)->_self,
-			  _vars.get_item(1)->_self, 0);      
+		  										_vars.get_item(1)->_self, 0);      
     } else if(n > 2) {
       BuildObject **scope = new BuildObject*[n+1];
       for(i=0; i<n; ++i) scope[i] = _vars.get_item(i)->_self;

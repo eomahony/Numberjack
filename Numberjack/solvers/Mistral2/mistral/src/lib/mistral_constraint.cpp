@@ -45,7 +45,8 @@
 //#define _DEBUG_CLIQUENOTEQUAL (id == 1)
 //#define _DEBUG_WEIGHT_CONFLICT
 //#define _DEBUG_MUL (id == 4735)
-//#define _DEBUG_WEIGHTEDSUM true
+//#define _DEBUG_ORDEREDSUM true
+//#define _DEBUG_SQUARE true
 
 
 std::ostream& Mistral::operator<< (std::ostream& os, const Mistral::Constraint& x) {
@@ -3031,6 +3032,13 @@ Mistral::PropagationOutcome Mistral::PredicateSquare::propagate(const int change
 
 Mistral::PropagationOutcome Mistral::PredicateSquare::propagate() {      
 	Mistral::PropagationOutcome wiped = CONSISTENT;
+	
+#ifdef _DEBUG_SQUARE
+	if(_DEBUG_SQUARE) {
+		std::cout << "propagate " << scope[0].get_domain() << "^2 = " << scope[1].get_domain() << std::endl;
+	}
+#endif
+	
   
 	if( FAILED(scope[1].set_min(0)) ) wiped = FAILURE(1);
 	else {
@@ -3067,6 +3075,13 @@ Mistral::PropagationOutcome Mistral::PredicateSquare::propagate() {
 				}
 				lb_sq *= lb_sq;
 			}
+			
+#ifdef _DEBUG_SQUARE
+	if(_DEBUG_SQUARE) {
+			std::cout << scope[1].get_domain() << " <- " << "[" << lb_sq << "," << ub_sq <<"]" << std::endl;
+		}
+#endif
+					
 			if( FAILED(scope[1].set_max(ub_sq)) ||
 				FAILED(scope[1].set_min(lb_sq))
 					) wiped = FAILURE(1);
@@ -3076,13 +3091,26 @@ Mistral::PropagationOutcome Mistral::PredicateSquare::propagate() {
 				if(cur_ub_xsq < ub_sq) {
 					// there's something to prune because of x^2 upper bound
 					ub_sr = (int)(sqrt((double)(cur_ub_xsq)));
+					
+#ifdef _DEBUG_SQUARE
+	if(_DEBUG_SQUARE) {
+					std::cout << scope[0].get_domain() << " <= " << ub_sr << std::endl;
+	}
+#endif
+									
 					if( FAILED(scope[0].set_max(ub_sr)) ) wiped = FAILURE(0);
 				}
 				if(IS_OK(wiped)) {
 					int cur_lb_xsq = scope[1].get_min();
 					if(cur_lb_xsq > lb_sq) {
 						// there's something to prune because of x^2 upper bound
-						lb_sr = (int)(ceil(sqrt((double)(cur_ub_xsq))));
+						lb_sr = (int)(ceil(sqrt((double)(cur_lb_xsq))));
+						
+#ifdef _DEBUG_SQUARE
+	if(_DEBUG_SQUARE) {
+						std::cout << scope[0].get_domain() << " >= " << lb_sr << std::endl;
+	}
+#endif						
 						if( FAILED(scope[0].set_min(lb_sr)) ) wiped = FAILURE(0);
 					}
 				}
@@ -10593,8 +10621,8 @@ Mistral::PropagationOutcome Mistral::ConstraintOrderedSum::propagate()
 		, arity=scope.size, max_gap;
 	PropagationOutcome wiped = CONSISTENT;
   
-#ifdef _DEBUG_WEIGHTEDSUM
-	if(_DEBUG_WEIGHTEDSUM) {
+#ifdef _DEBUG_ORDEREDSUM
+	if(_DEBUG_ORDEREDSUM) {
 		std::cout << std::endl << "propagate " << lower_bound << " <= " ;
 		for(i=0; i<arity; ++i) {
 			std::cout << " " << scope[i] << ":" << scope[i].get_domain();
@@ -10618,8 +10646,8 @@ Mistral::PropagationOutcome Mistral::ConstraintOrderedSum::propagate()
     }
 	}
 	
-#ifdef _DEBUG_WEIGHTEDSUM
-	if(_DEBUG_WEIGHTEDSUM) {
+#ifdef _DEBUG_ORDEREDSUM
+	if(_DEBUG_ORDEREDSUM) {
 		for(i=0; i<arity; ++i) {
 			if(i)
 				std::cout << " + [" << lo_bound[i] << "," << up_bound[i] << "] = [" << smin << "," << smax << "] ";
@@ -10644,8 +10672,8 @@ Mistral::PropagationOutcome Mistral::ConstraintOrderedSum::propagate()
       
 		//events.clear();
       
-#ifdef _DEBUG_WEIGHTEDSUM
-		if(_DEBUG_WEIGHTEDSUM) {
+#ifdef _DEBUG_ORDEREDSUM
+		if(_DEBUG_ORDEREDSUM) {
 			std::cout << " [" << smin << "," << smax << "]" << std::endl;
 		}
 #endif
@@ -10700,8 +10728,8 @@ Mistral::PropagationOutcome Mistral::ConstraintOrderedSum::propagate()
 	  	  
 				if( max_gap < (up_bound[i] - lo_bound[i]) ) {
 
-#ifdef _DEBUG_WEIGHTEDSUM
-					if(_DEBUG_WEIGHTEDSUM) {
+#ifdef _DEBUG_ORDEREDSUM
+					if(_DEBUG_ORDEREDSUM) {
 						std::cout << scope[i] << " in " << scope[i].get_domain() << " <= " 
 							<< (lo_bound[i] + max_gap) << " b/c "
 							<< lo_bound[i] 
@@ -10727,8 +10755,8 @@ Mistral::PropagationOutcome Mistral::ConstraintOrderedSum::propagate()
 				
 				if( max_gap < (up_bound[i] - lo_bound[i]) ) {
 
-#ifdef _DEBUG_WEIGHTEDSUM
-					if(_DEBUG_WEIGHTEDSUM) {
+#ifdef _DEBUG_ORDEREDSUM
+					if(_DEBUG_ORDEREDSUM) {
 						std::cout << scope[i] << " in " << scope[i].get_domain() << " >= " 
 							<< (up_bound[i] - max_gap) << " b/c "
 							<< up_bound[i] 
@@ -10752,13 +10780,13 @@ Mistral::PropagationOutcome Mistral::ConstraintOrderedSum::propagate()
 		}
 	}
 
-#ifdef _DEBUG_WEIGHTEDSUM
-	if(_DEBUG_WEIGHTEDSUM) {
+#ifdef _DEBUG_ORDEREDSUM
+	if(_DEBUG_ORDEREDSUM) {
 		std::cout << "result: ";
 		for(i=0; i<arity; ++i) {
 			std::cout << " " << scope[i] << ":" << scope[i].get_domain();
 		}
-		std::cout << std::endl;
+		std::cout << std::endl << (IS_OK(wiped)) << std::endl;
 	}
 #endif
 

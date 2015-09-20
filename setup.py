@@ -592,7 +592,7 @@ lic = "License :: OSI Approved :: " \
 
 setup(
     name='Numberjack',
-    version='1.1.1',
+    version='1.1.3',
     author='Numberjack Developers',
     packages=['Numberjack', 'Numberjack.solvers'],
     ext_modules=extensions,

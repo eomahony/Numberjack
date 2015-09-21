@@ -373,7 +373,7 @@ Mistral2_Expression* Mistral2_AllDiff::add(Mistral2Solver *solver, bool top_leve
       _vars.set_item(i, _vars.get_item(i)->add(solver, false));
     
     if(n==2) {
-      _self = (_vars.get_item(0) != _vars.get_item(1));
+      _self = (_vars.get_item(0)->_self != _vars.get_item(1)->_self);
     } else {
       Mistral::VarArray scope(n);
       for(i=0; i<n; ++i) scope[i] = _vars.get_item(i)->_self;
@@ -1088,11 +1088,11 @@ Mistral2_Expression* Mistral2_ne::add(Mistral2Solver *solver, bool top_level){
     std::cout << "add notequal constraint" << std::endl;
 #endif
 
-    _solver = solver;
-    
+    _solver = solver;		
     _vars[0]->add(_solver,false);
+				
     if(_vars[1]) {
-      _vars[1]->add(_solver,false);   
+			_vars[1]->add(_solver,false);  
       _self = (_vars[0]->_self != _vars[1]->_self);
     } else {
       _self = (_vars[0]->_self != _constant);

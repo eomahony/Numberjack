@@ -29,6 +29,8 @@
 using namespace Mistral;
 using namespace std;
 
+#define _DEBUGMODEL true
+
 
 static ConstraintStore ENVIRONMENT;
 

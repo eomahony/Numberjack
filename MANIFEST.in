@@ -7,6 +7,9 @@ graft examples/data
 # The solver interfaces code
 recursive-include Numberjack/solvers *.cpp *.hpp
 
+# Explicity include SWIG interface files
+include Numberjack/solvers/*.i
+
 # Exclude SWIG generated code
 #exclude Numberjack/solvers/*_wrap.cpp  
 #exclude Numberjack/solvers/*.py

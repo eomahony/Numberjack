@@ -3583,59 +3583,78 @@ void Mistral::PredicateOr::initialise() {
 Mistral::PropagationOutcome Mistral::PredicateOr::propagate(const int changed_idx, 
 							    const Event evt) {      
   Mistral::PropagationOutcome wiped = CONSISTENT;
+	
+	//std::cout << "\n\npropagate " << this << " b/c " << event2str(evt) << " on " << scope[changed_idx] << std::endl;
+	
 
-  if(changed_idx == 2) {
-    if(UB_CHANGED(evt)) {
-      if( FAILED(scope[0].set_domain(0)) ) wiped = FAILURE(0);
-      else if( FAILED(scope[1].set_domain(0)) ) wiped = FAILURE(1);
-    } else {
-      if( scope[1].get_max() == 0 ){
-	if( FAILED(scope[0].remove(0)) ) wiped = FAILURE(0);
-      } else if( scope[0].get_max() == 0 ) {
-	if( FAILED(scope[1].remove(0)) ) wiped = FAILURE(1);
-      }
-    } 
-  } else { // either z is not yet set, or it is a not(x and y) constraint
-    if( scope[2].is_ground() ) {
-      if(UB_CHANGED(evt)) {
-	// it is an "OR" constraint
-	if(FAILED(scope[1-changed_idx].remove(0))) wiped = FAILURE(1-changed_idx);
-      }
-    } else { 
-      if(LB_CHANGED(evt)) {
-	if( FAILED(scope[2].remove(0)) ) wiped = FAILURE(2);
-      } else if(scope[1-changed_idx].is_ground()) {
-	if( FAILED(scope[2].set_domain(0)) ) wiped = FAILURE(2);
-      }
-    }
-  }
+	if(changed_idx == 2) {
+		if(UB_CHANGED(evt)) {
+			if( FAILED(scope[0].set_domain(0)) ) wiped = FAILURE(0);
+			else if( FAILED(scope[1].set_domain(0)) ) wiped = FAILURE(1);
+		} else {
+			if( scope[1].get_max() == 0 ){
+				if( FAILED(scope[0].remove(0)) ) wiped = FAILURE(0);
+			} else if( scope[0].get_max() == 0 ) {
+				if( FAILED(scope[1].remove(0)) ) wiped = FAILURE(1);
+			}
+		} 
+	} else { // either z is not yet set, or it is a not(x and y) constraint
+		// if( scope[2].is_ground() ) {
+		// 	if(UB_CHANGED(evt)) {
+		// 		// it is an "OR" constraint
+		// 		if(FAILED(scope[1-changed_idx].remove(0))) wiped = FAILURE(1-changed_idx);
+		// 	}
+		// } else {
+		// 	if(LB_CHANGED(evt)) {
+		// 		if( FAILED(scope[2].remove(0)) ) wiped = FAILURE(2);
+		// 	} else if(scope[1-changed_idx].is_ground()) {
+		// 		if( FAILED(scope[2].set_domain(0)) ) wiped = FAILURE(2);
+		// 	}
+		// }
+		
+		// THE ABOVE SEEMS COMPLETELY BUGGY ??
+		if( scope[2].is_ground() ) {
+			if( scope[2].get_min() ) {
+				// it is an "OR" constraint
+				if(UB_CHANGED(evt)) {
+					if(FAILED(scope[1-changed_idx].remove(0))) wiped = FAILURE(1-changed_idx);
+				}
+			} // otherwise, it is a "NOR" constraint and that has been dealt with when scope[2] changed
+		} else {
+			if(LB_CHANGED(evt)) {
+				if( FAILED(scope[2].remove(0)) ) wiped = FAILURE(2);
+			} else if(scope[1-changed_idx].is_ground()) {
+				if( FAILED(scope[2].set_domain(scope[1-changed_idx].get_min())) ) wiped = FAILURE(2);
+			}
+		}
+	}
 
   return wiped;
 }
 
 Mistral::PropagationOutcome Mistral::PredicateOr::propagate() {      
   Mistral::PropagationOutcome wiped = CONSISTENT;
-
-  if( scope[2].is_ground() ) {
-    if( scope[2].get_max() == 0 ) {
-      if( FAILED(scope[0].set_domain(0)) ) 
-	wiped = FAILURE(0);
-      else if( FAILED(scope[1].set_domain(0)) ) 
-	wiped = FAILURE(1);
-    } else if( scope[2].get_min() ) {
-      if( scope[1].get_max() == 0 ){
-	if( FAILED(scope[0].remove(0)) ) wiped = FAILURE(0);
-      } else if( scope[0].get_max() == 0 ) {
-	if( FAILED(scope[1].remove(0)) ) wiped = FAILURE(1);
-      }
-    } 
-  } else {
-    if( scope[0].get_min() || scope[1].get_min() ) {
-      if( FAILED(scope[2].remove(0)) ) wiped = FAILURE(2);
-    } else if( !scope[0].get_max() && !scope[1].get_max() ) {
-      if( FAILED(scope[2].set_domain(0)) ) wiped = FAILURE(2);
-    }
-  }
+	
+	if( scope[2].is_ground() ) {
+		if( scope[2].get_max() == 0 ) {
+			if( FAILED(scope[0].set_domain(0)) ) 
+				wiped = FAILURE(0);
+			else if( FAILED(scope[1].set_domain(0)) ) 
+				wiped = FAILURE(1);
+		} else if( scope[2].get_min() ) {
+			if( scope[1].get_max() == 0 ){
+				if( FAILED(scope[0].remove(0)) ) wiped = FAILURE(0);
+			} else if( scope[0].get_max() == 0 ) {
+				if( FAILED(scope[1].remove(0)) ) wiped = FAILURE(1);
+			}
+		} 
+	} else {
+		if( scope[0].get_min() || scope[1].get_min() ) {
+			if( FAILED(scope[2].remove(0)) ) wiped = FAILURE(2);
+		} else if( !scope[0].get_max() && !scope[1].get_max() ) {
+			if( FAILED(scope[2].set_domain(0)) ) wiped = FAILURE(2);
+		}
+	}
 
   return wiped;
 }

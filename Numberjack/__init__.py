@@ -2916,8 +2916,14 @@ def input(default):
 
 
 def pair_of(l):
-    return [pair for k in range(1, len(l)) for pair in zip(l, l[k:])]
+    #return [pair for k in range(1, len(l)) for pair in zip(l, l[k:])]
+    pairs = []
+    for j in range(1,len(l)):
+        for i in range(j):
+            pairs.append((l[i],l[j]))
+    return pairs
 
+    
 
 def value(x):
     return x.get_value()

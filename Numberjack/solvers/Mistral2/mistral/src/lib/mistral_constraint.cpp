@@ -2536,6 +2536,9 @@ Mistral::PropagationOutcome Mistral::PredicateEqual::propagate() {
 
 Mistral::PropagationOutcome Mistral::PredicateEqual::propagate(const int changed_idx, const Event evt) {      
   Mistral::PropagationOutcome wiped = CONSISTENT;
+	//
+	// std::cout << "\n\npropagate " << this << " b/c " << event2str(evt) << " on " << scope[changed_idx] << std::endl
+	// 					<< scope[0].get_domain() << " == " << scope[1].get_domain() << " <=> "<< scope[2].get_domain() << std::endl;
 
   if( changed_idx == 2 ) {
     if( LB_CHANGED(evt) == spin ) {
@@ -2570,7 +2573,13 @@ Mistral::PropagationOutcome Mistral::PredicateEqual::propagate(const int changed
       }
     }
   }
-  
+	//
+	// if(IS_OK(wiped))
+	// 	std::cout
+	// 					<< scope[0].get_domain() << " == " << scope[1].get_domain() << " <=> "<< scope[2].get_domain() << std::endl;
+	//   else
+	// 	std::cout << "fail!" << std::endl;
+	
   return wiped;
 }
 

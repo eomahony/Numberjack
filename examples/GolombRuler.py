@@ -42,6 +42,7 @@ def solve(param):
     if solver.is_sat():
         out = str(marks)
     out += ('\nNodes: ' + str(solver.getNodes()))
+    out += '\nTime: ' + str(solver.getTime())
     return out
 
 

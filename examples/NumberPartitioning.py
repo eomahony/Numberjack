@@ -20,6 +20,7 @@ def get_model(N):
     # A and B will have the same cardinality:
     A = VarArray(N / 2, 1, N)
     B = VarArray(N / 2, 1, N)
+    sumtotal = N*(N+1)/4
 
     model = Model(
         # Each of the numbers 1 to N must be present exactly once.
@@ -28,12 +29,16 @@ def get_model(N):
         # The sum of numbers in A equals the sum of numbers in B.
         Sum(A) == Sum(B),
 
+        Sum(A) == sumtotal,
+        Sum(B) == sumtotal,
+
         # The sum of the squares of numbers in A equals the sum of
         # the squares of numbers in B.
         Sum([x*x for x in A]) == Sum([y*y for y in B])
     )
 
     # Symmetry breaking
+    model += A[0] == 1
     model += A[0] < B[0]
     for i in range(N / 2 - 1):
         model += A[i] < A[i + 1]
@@ -49,15 +54,18 @@ def solve(param):
 
     solver = model.load(param['solver'])
     solver.setVerbosity(param['verbose'])
-    solver.solve()
+    solver.solveAndRestart()
 
     if solver.is_sat():
-        print "A: " + str(A)
-        print "B: " + str(B)
+        a = [x.get_value() for x in A]
+        b = [x.get_value() for x in B]
+        print "A: " + str(A), sum(a)
+        print "B: " + str(B), sum(b)
     elif solver.is_unsat():
         print "Unsatisfiable"
     else:
         print "Timed out"
+    print "%d nodes" % solver.getNodes()
 
 
 if __name__ == '__main__':

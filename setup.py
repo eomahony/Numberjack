@@ -109,7 +109,7 @@ def xml2config(option, path="xml2-config"):
     return shlex.split(stdout.strip())
 
 
-CPLEX, GUROBI, SCIP = "CPLEX", "Gurobi", "SCIP"
+CPLEX, GUROBI, SCIP, GECODE = "CPLEX", "Gurobi", "SCIP", "Gecode"
 
 
 def get_solver_home(solvername):
@@ -160,6 +160,12 @@ def get_solver_home(solvername):
                             cwd=os.getcwd(), shell=True)
                 break
         return scipoptfolder
+
+    elif solvername == GECODE:
+        # Try for environmental variable first
+        env_path = os.getenv('GECODEDIR')
+        if env_path and len(env_path.strip()) > 0:
+            return env_path
 
     else:
         raise RuntimeError("Error unknown solver name '%s'" % solvername)

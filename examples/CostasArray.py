@@ -37,7 +37,7 @@ def solve(param):
     solver.setVerbosity(param['verbose'])
     solver.setTimeLimit(param['tcutoff'])
 
-    solver.solve()
+    solver.solveAndRestart()
 
     out = ''
     if solver.is_sat():

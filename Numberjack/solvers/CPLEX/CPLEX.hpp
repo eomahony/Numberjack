@@ -14,6 +14,7 @@ private:
     IloCplex *cplex;
     IloNumVarArray *variables;
     IloAlgorithm::Status optimstatus;
+    std::vector<int*> variableptrs;
     int _verbosity, var_counter;
     double cplextime;
     bool has_been_added;

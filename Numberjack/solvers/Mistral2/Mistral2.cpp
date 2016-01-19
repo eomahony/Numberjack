@@ -373,7 +373,7 @@ Mistral2_Expression* Mistral2_AllDiff::add(Mistral2Solver *solver, bool top_leve
       _vars.set_item(i, _vars.get_item(i)->add(solver, false));
     
     if(n==2) {
-      _self = (_vars.get_item(0) != _vars.get_item(1));
+      _self = (_vars.get_item(0)->_self != _vars.get_item(1)->_self);
     } else {
       Mistral::VarArray scope(n);
       for(i=0; i<n; ++i) scope[i] = _vars.get_item(i)->_self;
@@ -710,6 +710,56 @@ Mistral2_Expression* Mistral2_Sum::add(Mistral2Solver *solver, bool top_level){
   return this;
 }
 
+
+
+Mistral2_OrderedSum::Mistral2_OrderedSum(Mistral2ExpArray& vars, 
+			   const int l, const int u)
+  : Mistral2_Expression() 
+{
+#ifdef _DEBUGWRAP
+  std::cout << "creating ordered sum" << std::endl;
+#endif
+  _vars = vars;
+  _lb = l;
+  _ub = u;
+}
+
+
+Mistral2_OrderedSum::~Mistral2_OrderedSum(){
+#ifdef _DEBUGWRAP
+  std::cout << "delete ordered sum" << std::endl;
+#endif
+}
+
+
+Mistral2_Expression* Mistral2_OrderedSum::add(Mistral2Solver *solver, bool top_level){
+	if(!has_been_added()) {
+#ifdef _DEBUGWRAP
+		std::cout << "add ordered sum constraint" << std::endl;
+#endif
+		_solver = solver;
+    
+		// _v * _w + o = _x
+		// _v * _w - _x = -o 
+    
+		int i, n=_vars.size();  
+		Mistral::VarArray scope(n);
+
+		for(i=0; i<n; ++i) {
+			_vars.get_item(i)->add(_solver,false);
+			scope[i] = _vars.get_item(i)->_self;
+		}
+
+		_self = OSum(scope, _lb, _ub);
+    
+		if( top_level ) {
+			_solver->solver->add( _self );
+		} 
+	}
+
+  return this;
+}
+
 /**
  * Binary constraints
  */
@@ -1038,11 +1088,11 @@ Mistral2_Expression* Mistral2_ne::add(Mistral2Solver *solver, bool top_level){
     std::cout << "add notequal constraint" << std::endl;
 #endif
 
-    _solver = solver;
-    
+    _solver = solver;		
     _vars[0]->add(_solver,false);
+				
     if(_vars[1]) {
-      _vars[1]->add(_solver,false);   
+			_vars[1]->add(_solver,false);  
       _self = (_vars[0]->_self != _vars[1]->_self);
     } else {
       _self = (_vars[0]->_self != _constant);
@@ -1840,3 +1890,10 @@ int Mistral2Solver::getRandomNumber()
 {
   return Mistral::randint(0xffffffff);
 }
+
+void Mistral2Solver::printPython()
+{
+	solver->consolidate();
+	solver->display(std::cout);
+}
+

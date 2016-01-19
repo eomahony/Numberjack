@@ -10,7 +10,7 @@
  ********************     Solver        ***********************
  **************************************************************/
 
-SCIPSolver::SCIPSolver(){
+SCIPSolver::SCIPSolver() /*: scipvariables(), scipcons() */{
 
   DBG("create a scip solver\n%s", "");
 
@@ -29,7 +29,29 @@ SCIPSolver::SCIPSolver(){
   SCIP_CALL_EXC( SCIPsetObjsense(_scip, SCIP_OBJSENSE_MAXIMIZE) );
 }
 
-SCIPSolver::~SCIPSolver(){ DBG("delete wrapped solver\n%s", ""); }
+SCIPSolver::~SCIPSolver(){
+  DBG("delete wrapped solver\n%s", "");
+
+  // Could not figure out the correct way to release SCIP's memory, kept causing seg faults
+  //
+  // std::cout << "deleting scip varaibles " << scipvariables.size() << std::endl;
+  // for(unsigned int i=0; i<scipvariables.size(); ++i){
+  //   // std::cout << "releasing " << (&scipvariables->at(i)) << std::endl;
+  //   std::cout << "releasing " << (&scipvariables[i]) << std::endl;
+  //   // SCIP_CALL_EXC( SCIPreleaseVar(_scip, &(scipvariables->at(i))) );
+  //   SCIP_CALL_EXC( SCIPreleaseVar(_scip, &scipvariables[i]) );
+  // }
+  // std::cout << "done." << std::endl;
+  // scipvariables.clear();
+  // delete scipvariables;
+
+  //  for (std::vector<SCIP_CONS *>::size_type i = 0; i < scipcons->size(); ++i)
+  //     SCIP_CALL_EXC( SCIPreleaseCons(_scip, &(scipcons->at(i))) );
+  // scipcons->clear();
+  // delete scipcons;
+
+  // SCIP_CALL_EXC( SCIPfree( & _scip) );
+}
 
 SCIP* SCIPSolver::get_scip() {return _scip;}
 
@@ -74,6 +96,7 @@ void SCIPSolver::add_in_constraint(LinearConstraint *con, double coef){
 				  type,
 				  TRUE, FALSE, NULL, NULL, NULL, NULL, NULL) );
       SCIP_CALL_EXC( SCIPaddVar(_scip, var_ptr) );
+      // scipvariables.push_back(var_ptr);
     
       con->_variables[i]->_var = (void*) var_ptr;
       vars[i] = var_ptr;
@@ -94,6 +117,10 @@ void SCIPSolver::add_in_constraint(LinearConstraint *con, double coef){
 					TRUE, TRUE, TRUE, TRUE, TRUE,
 					FALSE, FALSE, FALSE, FALSE, FALSE) );
   SCIP_CALL_EXC( SCIPaddCons(_scip, scip_con) ); 
+  // scipcons->push_back(scip_con);
+
+  delete[] weights;
+  delete[] vars;
 }
 
 int SCIPSolver::solve(){

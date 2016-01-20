@@ -8,7 +8,6 @@ MAXCOST = 100000000
 
 from .solvers import available_solvers
 import weakref
-import exceptions
 import datetime
 import types
 import sys
@@ -16,6 +15,12 @@ import sys
 sys.setrecursionlimit(10000)
 #SDG: needed by the default eval method in BinPredicate
 import operator
+
+# Python3 compatibility fixes
+if sys.version_info[0] > 2:
+    # Python3 does not have a separate `long` type; instead, it only has `int`.
+    # https://www.python.org/dev/peps/pep-0237/
+    long = int
 
 val_heuristics = ['Lex', 'AntiLex', 'Random', 'RandomMinMax', 'DomainSplit', 'RandomSplit', 'Promise', 'Impact', 'No', 'Guided']
 var_heuristics = ['No', 'MinDomain', 'Lex', 'AntiLex', 'MaxDegree', 'MinDomainMinVal', 'Random', 'MinDomainMaxDegree', 'DomainOverDegree', 'DomainOverWDegree', 'DomainOverWLDegree', 'Neighbour', 'Impact', 'ImpactOverDegree', 'ImpactOverWDegree', 'ImpactOverWLDegree', 'Scheduling']
@@ -35,6 +40,33 @@ def numeric(x):
     tx = type(x)
     return tx is int or tx is float
 
+def lt_with_none(x, y):
+    """
+    Emulate the behavior of < in python2, which allows comparison against None with the following semantics:
+        None < None: False
+        None < int: True
+        int < None: False
+    """
+    if y is None:
+        return False
+    elif x is None:
+        return True
+    else:
+        return x < y
+
+def gt_with_none(x, y):
+    """
+    Emulate the behavior of > in python2, which allows comparison against None with the following semantics:
+        None > None: False
+        None > int: False
+        int > None: True
+    """
+    if x is None:
+        return False
+    elif y is None:
+        return True
+    else:
+        return x > y
 
 # Numberjack exceptions:
 
@@ -1060,7 +1092,7 @@ class VarArray(list):
                         name = optarg2
         names = name
         if type(name) is str:
-            names = [name + str(i) for i in range(n)]
+            names = [name + str(i) for i in range(int(n))]
         if domain is None:
             self.__init__([Variable(lb, ub, names[i]) for i in range(n)])
         else:
@@ -1263,7 +1295,7 @@ class Matrix(list):
                     name = optarg3
                 else:
                     ub = optarg3 - 1
-            list.__init__(self, [VarArray(m, lb, ub, name + str(j) + '.') for j in range(n)])
+            list.__init__(self, [VarArray(m, lb, ub, name + str(j) + '.') for j in range(int(n))])
         self.row = self
         self.col = Matrix()
         for column in zip(*self):
@@ -1596,11 +1628,11 @@ class Div(BinPredicate):
             self.lb = min(self.get_lb(0), -1 * self.get_ub(0))   #SDG: Warning! It assumes var2 can be equal to -1 or 1
             self.ub = max(self.get_ub(0), -1 * self.get_lb(0))
         elif (self.get_ub(1) < 0):
-            self.lb = min(self.get_lb(0) / self.get_ub(1), self.get_ub(0) / self.get_ub(1))
-            self.ub = max(self.get_lb(0) / self.get_ub(1), self.get_ub(0) / self.get_ub(1))
+            self.lb = min(self.get_lb(0) // self.get_ub(1), self.get_ub(0) // self.get_ub(1))
+            self.ub = max(self.get_lb(0) // self.get_ub(1), self.get_ub(0) // self.get_ub(1))
         elif (self.get_lb(1) > 0):
-            self.lb = min(self.get_lb(0) / self.get_lb(1), self.get_ub(0) / self.get_lb(1))
-            self.ub = max(self.get_lb(0) / self.get_lb(1), self.get_ub(0) / self.get_lb(1))
+            self.lb = min(self.get_lb(0) // self.get_lb(1), self.get_ub(0) // self.get_lb(1))
+            self.ub = max(self.get_lb(0) // self.get_lb(1), self.get_ub(0) // self.get_lb(1))
         else:
             self.lb = None
             self.ub = None
@@ -1701,7 +1733,9 @@ class Eq(BinPredicate):
         BinPredicate.__init__(self, vars, "eq")
         #SDG: initialize lb,ub
         self.lb = int((self.get_lb(0) == self.get_ub(0)) and (self.get_lb(1) == self.get_ub(1)) and (self.get_lb(0) == self.get_lb(1)))
-        self.ub = int(not((self.get_ub(0) < self.get_lb(1)) or (self.get_lb(0) > self.get_ub(1))))
+        print("ub:", self.get_ub(0), self.get_ub(1))
+        print("lb:", self.get_lb(0), self.get_lb(1))
+        self.ub = int(not(lt_with_none(self.get_ub(0), self.get_lb(1)) or gt_with_none(self.get_lb(0), self.get_ub(1))))
 
     def get_symbol(self):
         return '=='
@@ -2394,7 +2428,7 @@ class LessLex(Predicate):
         self.ub = None
 
     def __str__(self):
-        length = len(self.children) / 2
+        length = len(self.children) // 2
 
         toprint = '[' + str(self.children[0])
         for i in range(1, length):
@@ -2426,7 +2460,7 @@ class LeqLex(Predicate):
         self.ub = None
 
     def __str__(self):
-        length = len(self.children) / 2
+        length = len(self.children) // 2
 
         toprint = '[' + str(self.children[0])
         for i in range(1, length):
@@ -3215,7 +3249,7 @@ class NBJ_STD_Solver(object):
                     arguments = [var_array]
                 if expr.has_parameters():  # != None: # assumes an array of integers
                     for param in expr.parameters:
-                        if hasattr(param, '__iter__'):
+                        if hasattr(param, '__iter__') and not isinstance(param, str): # in python3, strings *do* have an __iter__ method
                             w_array = None
                             if any((type(w) == float for w in param)):
                                 w_array = self.DoubleArray()

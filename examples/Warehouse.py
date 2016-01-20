@@ -11,7 +11,7 @@
 #
 # CSPLib Problem 034 - http://www.csplib.org/Problems/prob034/
 
-
+from __future__ import print_function
 from Numberjack import *
 import re
 
@@ -50,16 +50,16 @@ def solve(param):
 
     if solver.is_sat():
         if solver.is_opt():
-            print "Optimal"
+            print("Optimal")
 
-        print "Total cost: ", str(obj.get_value())
-        print "Nodes:", solver.getNodes()
-        print "SolveTime:", solver.getTime()
+        print("Total cost: ", str(obj.get_value()))
+        print("Nodes:", solver.getNodes())
+        print("SolveTime:", solver.getTime())
 
     elif solver.is_unsat():
-        print "Unsatisfiable"
+        print("Unsatisfiable")
     else:
-        print "Unknown"
+        print("Unknown")
 
 
 class WareHouseParser(object):
@@ -87,7 +87,7 @@ class WareHouseParser(object):
         self.Capacity = [4 for val in range(self.NumberOfWarehouses)]
 
 
-default = {'solver': 'Mistral', 'data': 'data/cap44.dat', 'cutoff': 50000, 'verbose': 1, 'tcutoff': 30}
+default = {'solver': 'Mistral', 'data': 'data/cap44.dat.txt', 'cutoff': 50000, 'verbose': 1, 'tcutoff': 30}
 
 if __name__ == '__main__':
     param = input(default)

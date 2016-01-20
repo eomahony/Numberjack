@@ -1,3 +1,4 @@
+from __future__ import division, print_function
 #import Numberjack
 
 MODELMAXSIZE = 1000000
@@ -212,7 +213,7 @@ class PostBinary(CostFunction):
     def decompose(self):
         obj = Variable(0,max(self.parameters[0]))
         var2size = self.get_children()[1].get_size()
-        return [Table([obj] + self.get_children(), [(w, i / var2size , i % var2size) for i,w in enumerate(self.parameters[0])], 'support'), Minimize(obj)]
+        return [Table([obj] + self.get_children(), [(w, i // var2size , i % var2size) for i,w in enumerate(self.parameters[0])], 'support'), Minimize(obj)]
 
 ## PostTernary Constraint
 # @param var first variable
@@ -241,7 +242,7 @@ class PostTernary(CostFunction):
         obj = Variable(0,max(self.parameters[0]))
         var2size = self.get_children()[1].get_size()
         var3size = self.get_children()[2].get_size()
-        return [Table([obj] + self.get_children(), [(w, i / var2size / var3size , i / var3size, i % var3size) for i,w in enumerate(self.parameters[0])], 'support'), Minimize(obj)]
+        return [Table([obj] + self.get_children(), [(w, i // var2size // var3size , i // var3size, i % var3size) for i,w in enumerate(self.parameters[0])], 'support'), Minimize(obj)]
 
 ## PostWSum Constraint
 #
@@ -420,7 +421,7 @@ def decompose_Element(self):
 
 #SDG: decompose LeqLex and LessLex
 def decompose_LessLex(self):
-    length = len(self.children) / 2
+    length = len(self.children) // 2
     def lexico(vars1,vars2,i):
         if (i == len(vars1)-1):
             return (vars1[i] < vars2[i])
@@ -429,7 +430,7 @@ def decompose_LessLex(self):
     return [lexico(self.children[:length], self.children[length:], 0)]
 
 def decompose_LeqLex(self):
-    length = len(self.children) / 2
+    length = len(self.children) // 2
     def lexico(vars1,vars2,i):
         if (i == len(vars1)-1):
             return (vars1[i] <= vars2[i])

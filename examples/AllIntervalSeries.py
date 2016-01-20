@@ -5,6 +5,7 @@
 # permutation of {1,2,...,n-1}.
 #
 # CSPLib Problem 007 - http://www.csplib.org/Problems/prob007/
+from __future__ import print_function
 
 from Numberjack import *
 
@@ -29,14 +30,14 @@ def solve(param):
     solver.solve()
 
     if solver.is_sat():
-        print "Solution:", str(series)
-        print "Absolute differences:",
-        print [abs(series[i].get_value() - series[i - 1].get_value())
-               for i in range(1, N)]
+        print("Solution:", str(series))
+        print("Absolute differences:")
+        print([abs(series[i].get_value() - series[i - 1].get_value())
+               for i in range(1, N)])
     elif solver.is_unsat():
-        print "Unsatisfiable"
+        print("Unsatisfiable")
     else:
-        print "Timed out"
+        print("Timed out")
 
 
 if __name__ == '__main__':

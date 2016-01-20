@@ -19,7 +19,7 @@
   numberjack.support@gmail.com
 '''
 
-
+from __future__ import print_function
 from distutils.core import setup
 from distutils.extension import Extension
 from distutils.command.build_ext import build_ext as _build_ext

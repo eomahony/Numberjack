@@ -160,6 +160,13 @@ class Domain(list):
             self.is_bound = True
         self.current = -1
 
+    def next(self):
+        """
+        \internal
+        Wrapper for __next__ for python2 compatibility
+        """
+        return self.__next__()
+
     def __next__(self):
         """
         \internal

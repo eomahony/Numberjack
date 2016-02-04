@@ -137,7 +137,7 @@ parameter {
 		exit(2);
 	}
 	name = $6;
-	print "    " name " = VarArray(" isup ",-" MAXINT "," MAXINT ",'" name "')";
+	print "#    " name " = VarArray(" isup ",-" MAXINT "," MAXINT ",'" name "')";
 	if (match($0,"::_output_")) {
 		output[ name ] = isup;
 		outputstring[ name ] = substr($0, RSTART+RLENGTH);
@@ -147,8 +147,9 @@ parameter {
 		sub("::_output_.*","");
 		gsub(" ","");
 		for (i=0; i<isup; i++) {
-			print "    model.add(" name "[" i "] == " $0 "[" i "])";
+			print "#    model.add(" name "[" i "] == " $0 "[" i "])";
 		}
+        print "    " name " = VarArray(" $0 ")";
 	}
 }
 

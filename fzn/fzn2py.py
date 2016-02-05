@@ -299,7 +299,6 @@ def time_remaining(tcutoff):
 def run_solve(model, output_vars, param):
     load_time = datetime.datetime.now()
     encoding = NJEncodings[param['encoding']] if param['encoding'] else None
-    
     solver = model.load(param['solver'], encoding=encoding)
     solver.setVerbosity(param['verbose'])
     time_limit = max(int(param['tcutoff'] - total_seconds(datetime.datetime.now() - load_time)), 1)
@@ -312,11 +311,10 @@ def run_solve(model, output_vars, param):
         solver.setOption('deadEndElimination',param['dee'])
         solver.setOption('btdMode',param['btd'])
         solver.setOption('splitClusterMaxSize',param['rds'])
- 
 ##        uncomment the following lines to save the problem in wcsp format
-        #solver.setOption('nopre')
-        #solver.setOption('lcLevel',0)
-        #solver.setOption("dumpWCSP",2)
+#        solver.setOption('nopre')
+#        solver.setOption('lcLevel',0)
+#        solver.setOption("dumpWCSP",2)
     if param['solver'] == 'Mistral':
         solver.solveAndRestart(param['restart'], param['base'], param['factor'])
     else:

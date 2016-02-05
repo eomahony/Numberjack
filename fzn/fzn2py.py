@@ -297,6 +297,7 @@ def time_remaining(tcutoff):
 
 
 def run_solve(model, output_vars, param):
+    print 'THE MODEL ', model
     load_time = datetime.datetime.now()
     encoding = NJEncodings[param['encoding']] if param['encoding'] else None
     solver = model.load(param['solver'], encoding=encoding)

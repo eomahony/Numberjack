@@ -13,7 +13,6 @@ SATISFACTION, MINIMIZE, MAXIMIZE = 0, 1, -1
 UNKNOWN, SAT, UNSAT = 0, 1, 2
 LUBY, GEOMETRIC = 0, 1
 
-
 class SolverResult(object):
 
     def __init__(self, stdout, obj_factor=MINIMIZE):
@@ -93,27 +92,27 @@ def njportfolio(njfilename, cores, timeout, memlimit):
     threads = []
     configs = []
 
-    configs.append({'solver': 'Mistral', 'var': 'DomainOverWDegree', 'val': 'Lex', 'restart': GEOMETRIC, 'base': 256, 'factor': 1.3})
-    if 'CPLEX' in available:
-        configs.append({'solver': 'CPLEX'})
-    elif 'Gurobi' in available:
-        configs.append({'solver': 'Gurobi'})
-    if 'Toulbar2' in available:
-        configs.append({'solver': 'Toulbar2', 'lds': 1})
-    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': LUBY, 'base': 10000})
+  #  configs.append({'solver': 'Mistral', 'var': 'DomainOverWDegree', 'val': 'Lex', 'restart': GEOMETRIC, 'base': 256, 'factor': 1.3})
+   # if 'CPLEX' in available:
+   #     configs.append({'solver': 'CPLEX'})
+    #elif 'Gurobi' in available:
+  #      configs.append({'solver': 'Gurobi'})
+   # if 'Toulbar2' in available:
+    configs.append({'solver': 'Toulbar2', 'lds': 1})
+    #configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': LUBY, 'base': 10000})
     # configs.append({'solver': 'Toulbar2', 'btd': 3, 'lcLevel': 1, 'rds': 1})
-    configs.append({'solver': 'Mistral', 'dichotomic': 1, 'dichtcutoff': 10, 'base': 10, 'restart': GEOMETRIC, 'base': 256, 'factor': 1.3})
-    configs.append({'solver': 'MiniSat'})
-    configs.append({'solver': 'Mistral', 'var': 'DomainOverWDegree', 'val': 'Lex', 'restart': GEOMETRIC, 'base': 10, 'factor': 1.3})
-    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': GEOMETRIC, 'base': 256, 'factor': 1.5})
-    if 'SCIP' in available:
-        configs.append({'solver': 'SCIP'})
-    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': GEOMETRIC, 'base': 512, 'factor': 2})
-    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': LUBY, 'base': 5000})
-    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': GEOMETRIC, 'base': 512, 'factor': 1.3})
-    configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': LUBY, 'base': 1000})
-    configs.append({'solver': 'Mistral', 'var': 'DomainOverWDegree', 'val': 'Lex', 'restart': GEOMETRIC, 'base': 256, 'factor': 1.5})
-    configs.append({'solver': 'Mistral', 'var': 'DomainOverWLDegree', 'val': 'Lex', 'restart': GEOMETRIC, 'base': 256, 'factor': 1.3})
+    #configs.append({'solver': 'Mistral', 'dichotomic': 1, 'dichtcutoff': 10, 'base': 10, 'restart': GEOMETRIC, 'base': 256, 'factor': 1.3})
+    #configs.append({'solver': 'MiniSat'})
+    #configs.append({'solver': 'Mistral', 'var': 'DomainOverWDegree', 'val': 'Lex', 'restart': GEOMETRIC, 'base': 10, 'factor': 1.3})
+    #configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': GEOMETRIC, 'base': 256, 'factor': 1.5})
+    #if 'SCIP' in available:
+    #   configs.append({'solver': 'SCIP'})
+    #configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': GEOMETRIC, 'base': 512, 'factor': 2})
+    #configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': LUBY, 'base': 5000})
+    #configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': GEOMETRIC, 'base': 512, 'factor': 1.3})
+    #configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': LUBY, 'base': 1000})
+    #configs.append({'solver': 'Mistral', 'var': 'DomainOverWDegree', 'val': 'Lex', 'restart': GEOMETRIC, 'base': 256, 'factor': 1.5})
+    #configs.append({'solver': 'Mistral', 'var': 'DomainOverWLDegree', 'val': 'Lex', 'restart': GEOMETRIC, 'base': 256, 'factor': 1.3})
     configs.reverse()  # Reverse the list so we can just pop().
 
     if cores <= 0 or cores > cpu_count():

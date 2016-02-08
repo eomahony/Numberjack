@@ -1,4 +1,4 @@
-NbW=19 ;
+NbW=19;
 NbS=20;
 fixed=50000;
 SupplyCost=[

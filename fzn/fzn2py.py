@@ -297,7 +297,10 @@ def time_remaining(tcutoff):
 
 
 def run_solve(model, output_vars, param):
-    print 'THE MODEL ', model
+    # make it fail on purpose
+ #   x = Variable(-1000000, 10000000, 'x')
+#    model.add(x == model.variables[0])
+#    param['solver'] = 'Mistral2'
     load_time = datetime.datetime.now()
     encoding = NJEncodings[param['encoding']] if param['encoding'] else None
     solver = model.load(param['solver'], encoding=encoding)

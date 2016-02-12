@@ -316,9 +316,9 @@ def run_solve(model, output_vars, param):
         solver.setOption('btdMode',param['btd'])
         solver.setOption('splitClusterMaxSize',param['rds'])
 ##        uncomment the following lines to save the problem in wcsp format
-        solver.setOption('nopre')
-        solver.setOption('lcLevel',0)
-        solver.setOption("dumpWCSP",2)
+#        solver.setOption('nopre')
+#        solver.setOption('lcLevel',0)
+#        solver.setOption("dumpWCSP",2)
     if param['solver'] == 'Mistral':
         solver.solveAndRestart(param['restart'], param['base'], param['factor'])
     else:

@@ -13,7 +13,7 @@ INC=$(MAINDIR)/src/include
 DOC=$(MAINDIR)/doc
 TCL=$(MAINDIR)/tools/tclap/include
 
-CFLAGS = -I$(INC) -I$(TCL) #-Wall -ffloat-store 
+CFLAGS = -D_DEBUG_AC -D_DEBUG_PROPAGATE -D_DEBUG_SEARCH -I$(INC) -I$(TCL)  #-Wall -ffloat-store 
 LFLAGS = -L$(OBJ)
 
 
@@ -72,5 +72,5 @@ $(MOD)/obj/%.o: $(MOD)/src/%.cpp
 # Examples, one at a time
 %: $(MOD)/obj/%.o $(PLIBOBJ)
 	@echo 'link '$<	
-	$(CCC) $(CFLAGS) $(PLIBOBJ) $< -lm -o $(BIN)/$@ 
+	$(CCC) $(CFLAGS) $(PLIBOBJ) $< -lm -o $(BIN)/$@
 

@@ -39,8 +39,6 @@
 namespace Mistral {
 
 
-
-
   class Solution {
     
   public: 

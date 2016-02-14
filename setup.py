@@ -19,7 +19,7 @@
   numberjack.support@gmail.com
 '''
 
-
+from __future__ import print_function
 from distutils.core import setup
 from distutils.extension import Extension
 from distutils.command.build_ext import build_ext as _build_ext
@@ -591,7 +591,7 @@ lic = "License :: OSI Approved :: " \
 
 setup(
     name='Numberjack',
-    version='1.1.2-a1',
+    version='1.1.4',
     author='Numberjack Developers',
     packages=['Numberjack', 'Numberjack.solvers'],
     ext_modules=extensions,

@@ -3077,6 +3077,31 @@ namespace Mistral {
   Variable Sum(std::vector< Variable >& args, std::vector< int >& wgts, const int l=-INFTY, const int u=INFTY, const int o=0);
 
 
+  class OrderedSumExpression : public Expression {
+
+  public:
+
+    int lower_bound;
+    int upper_bound;
+    int offset;
+
+    OrderedSumExpression(Vector< Variable >& args, const int l, const int u, const int o);
+    OrderedSumExpression(std::vector< Variable >& args, const int l, const int u, const int o);
+    virtual ~OrderedSumExpression();
+    //void initialise_bounds();
+
+    virtual void extract_constraint(Solver*);
+    virtual void extract_variable(Solver*);
+    virtual void extract_predicate(Solver*);
+    virtual const char* get_name() const;
+
+  };
+
+  //Variable Sum(Vector< Variable >& args);
+  Variable OSum(Vector< Variable >& args, const int l=-INFTY, const int u=INFTY, const int o=0);
+  Variable OSum(std::vector< Variable >& args, const int l=-INFTY, const int u=INFTY, const int o=0);
+
+
 
   class ElementExpression : public Expression {
 

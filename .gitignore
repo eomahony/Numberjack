@@ -12,3 +12,4 @@ MANIFEST
 .coverage
 Numberjack/solvers/*.py
 Numberjack/solvers/*_wrap.cpp
+*.bak

@@ -1,4 +1,5 @@
 # Copyright 2009 - 2014 Insight Centre for Data Analytics, UCC
+from __future__ import print_function, division
 
 
 UNSAT, SAT, UNKNOWN, LIMITOUT = 0, 1, 2, 3
@@ -6,7 +7,7 @@ LUBY, GEOMETRIC = 0, 1
 MAXCOST = 100000000
 
 from .solvers import available_solvers
-# import exceptions
+import weakref
 import datetime
 import types
 import sys
@@ -14,6 +15,12 @@ import sys
 sys.setrecursionlimit(10000)
 #SDG: needed by the default eval method in BinPredicate
 import operator
+
+# Python3 compatibility fixes
+if sys.version_info[0] > 2:
+    # Python3 does not have a separate `long` type; instead, it only has `int`.
+    # https://www.python.org/dev/peps/pep-0237/
+    long = int
 
 val_heuristics = ['Lex', 'AntiLex', 'Random', 'RandomMinMax', 'DomainSplit', 'RandomSplit', 'Promise', 'Impact', 'No', 'Guided']
 var_heuristics = ['No', 'MinDomain', 'Lex', 'AntiLex', 'MaxDegree', 'MinDomainMinVal', 'Random', 'MinDomainMaxDegree', 'DomainOverDegree', 'DomainOverWDegree', 'DomainOverWLDegree', 'Neighbour', 'Impact', 'ImpactOverDegree', 'ImpactOverWDegree', 'ImpactOverWLDegree', 'Scheduling']
@@ -33,6 +40,33 @@ def numeric(x):
     tx = type(x)
     return tx is int or tx is float
 
+def lt_with_none(x, y):
+    """
+    Emulate the behavior of < in python2, which allows comparison against None with the following semantics:
+        None < None: False
+        None < int: True
+        int < None: False
+    """
+    if y is None:
+        return False
+    elif x is None:
+        return True
+    else:
+        return x < y
+
+def gt_with_none(x, y):
+    """
+    Emulate the behavior of > in python2, which allows comparison against None with the following semantics:
+        None > None: False
+        None > int: False
+        int > None: True
+    """
+    if x is None:
+        return False
+    elif y is None:
+        return True
+    else:
+        return x > y
 
 # Numberjack exceptions:
 
@@ -125,6 +159,13 @@ class Domain(list):
             list.__init__(self, [arg1, arg2])
             self.is_bound = True
         self.current = -1
+
+    def next(self):
+        """
+        \internal
+        Wrapper for __next__ for python2 compatibility
+        """
+        return self.__next__()
 
     def __next__(self):
         """
@@ -339,7 +380,7 @@ class Expression(object):
         :return: The current domain of the expression.
         :rtype: Domain
         """
-        if self.is_built(solver):
+        if self.is_built(solver) and not isinstance(self.lb, float):
             if solver is None:
                 solver = self.solver
             lb, ub = self.get_min(solver), self.get_max(solver)
@@ -1058,7 +1099,7 @@ class VarArray(list):
                         name = optarg2
         names = name
         if type(name) is str:
-            names = [name + str(i) for i in range(n)]
+            names = [name + str(i) for i in range(int(n))]
         if domain is None:
             self.__init__([Variable(lb, ub, names[i]) for i in range(n)])
         else:
@@ -1165,7 +1206,7 @@ class VarArray(list):
         Syntactic sugar for the equality constraint `X == Y`.
 
         :param VarArray other: Another VarArray of the same length.
-        :rtype: A list of equality (:class:`Eq`) expressions. 
+        :rtype: A list of equality (:class:`Eq`) expressions.
         """
         return [Eq((x, y)) for x, y in zip(self, other)]
 
@@ -1261,7 +1302,7 @@ class Matrix(list):
                     name = optarg3
                 else:
                     ub = optarg3 - 1
-            list.__init__(self, [VarArray(m, lb, ub, name + str(j) + '.') for j in range(n)])
+            list.__init__(self, [VarArray(m, lb, ub, name + str(j) + '.') for j in range(int(n))])
         self.row = self
         self.col = Matrix()
         for column in zip(*self):
@@ -1594,11 +1635,11 @@ class Div(BinPredicate):
             self.lb = min(self.get_lb(0), -1 * self.get_ub(0))   #SDG: Warning! It assumes var2 can be equal to -1 or 1
             self.ub = max(self.get_ub(0), -1 * self.get_lb(0))
         elif (self.get_ub(1) < 0):
-            self.lb = min(self.get_lb(0) / self.get_ub(1), self.get_ub(0) / self.get_ub(1))
-            self.ub = max(self.get_lb(0) / self.get_ub(1), self.get_ub(0) / self.get_ub(1))
+            self.lb = min(self.get_lb(0) // self.get_ub(1), self.get_ub(0) // self.get_ub(1))
+            self.ub = max(self.get_lb(0) // self.get_ub(1), self.get_ub(0) // self.get_ub(1))
         elif (self.get_lb(1) > 0):
-            self.lb = min(self.get_lb(0) / self.get_lb(1), self.get_ub(0) / self.get_lb(1))
-            self.ub = max(self.get_lb(0) / self.get_lb(1), self.get_ub(0) / self.get_lb(1))
+            self.lb = min(self.get_lb(0) // self.get_lb(1), self.get_ub(0) // self.get_lb(1))
+            self.ub = max(self.get_lb(0) // self.get_lb(1), self.get_ub(0) // self.get_lb(1))
         else:
             self.lb = None
             self.ub = None
@@ -1699,7 +1740,9 @@ class Eq(BinPredicate):
         BinPredicate.__init__(self, vars, "eq")
         #SDG: initialize lb,ub
         self.lb = int((self.get_lb(0) == self.get_ub(0)) and (self.get_lb(1) == self.get_ub(1)) and (self.get_lb(0) == self.get_lb(1)))
-        self.ub = int(not((self.get_ub(0) < self.get_lb(1)) or (self.get_lb(0) > self.get_ub(1))))
+        print("ub:", self.get_ub(0), self.get_ub(1))
+        print("lb:", self.get_lb(0), self.get_lb(1))
+        self.ub = int(not(lt_with_none(self.get_ub(0), self.get_lb(1)) or gt_with_none(self.get_lb(0), self.get_ub(1))))
 
     def get_symbol(self):
         return '=='
@@ -1978,16 +2021,16 @@ class Sum(Predicate):
     :param coefs: list of coefficients, which is [1,1,..,1] by default.
     """
 
-    def __init__(self, vars, coefs=None):
+    def __init__(self, vars, coefs=None, offset=0):
         Predicate.__init__(self, vars, "Sum")
 
         if coefs is None:
             coefs = [1 for var in self.children]
 
-        self.parameters = [coefs, 0]
+        self.parameters = [coefs, offset]
         #SDG: initial bounds
-        self.lb = sum(c*self.get_lb(i) if (c >= 0) else c*self.get_ub(i) for i,c in enumerate(coefs))
-        self.ub = sum(c*self.get_ub(i) if (c >= 0) else c*self.get_lb(i) for i,c in enumerate(coefs))
+        self.lb = sum(c*self.get_lb(i) if (c >= 0) else c*self.get_ub(i) for i,c in enumerate(coefs)) + offset
+        self.ub = sum(c*self.get_ub(i) if (c >= 0) else c*self.get_lb(i) for i,c in enumerate(coefs)) + offset
 
     def close(self):
         # This handles the scalar constraint, i.e. with weights
@@ -2085,6 +2128,42 @@ class Sum(Predicate):
             else:
                 return Add([X[0], addition(X[1:])])   #SDG: use specific Add BinPredicate instead of Sum
         return [addition([(child if coef is 1 else (child * Variable(coef,coef,str(coef)))) for child, coef in zip(self.children, self.parameters[0])] + [Variable(e,e,str(e)) for e in self.parameters[1:] if e is not 0])]
+
+
+class OrderedSum(Predicate):
+    """
+    Conjunction of a chain of precedence with a sum expression (without linear coefficients)
+
+    The following:
+        OrderedSum([a,b,c,d], l, u)
+
+    is logically equivalent to:
+
+        Sum([a,b,c,d]) >= l
+        Sum([a,b,c,d]) <= u
+        a >= b
+        b >= c
+        c >= d
+
+    :param vars: the variables to be summed/sequenced.
+    :param l: lower bound of the sum
+    :param u: upper bound of the sum
+    """
+
+    def __init__(self, vars, l, u):
+        Predicate.__init__(self, vars, "OrderedSum")
+
+        self.parameters = [l, u]
+
+    def close(self):
+        Predicate.close(self)
+
+    def __str__(self):
+        #print len(self.children)
+        op = str(self.parameters[0]) + ' <= ('+(self.children[0].__str__())
+        for i in range(1, len(self.children)):
+            op += (' + ' + self.children[i].__str__())
+        return op + ') <= ' + str(self.parameters[1])
 
 
 class AllDiff(Predicate):
@@ -2211,10 +2290,13 @@ class Max(Predicate):
         self.ub = max(self.get_ub(i) for i in range(len(vars)))
 
     def get_min(self, solver=None):
-        return max([x.get_min(solver) for x in self.children])
+        return max([x.get_min(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
 
     def get_max(self, solver=None):
-        return max([x.get_max(solver) for x in self.children])
+        return max([x.get_max(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
+
+    def get_value(self, solver=None):
+        return max([x.get_value(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
 
     def decompose(self):
         X = self.children
@@ -2246,10 +2328,13 @@ class Min(Predicate):
         self.ub = min(self.get_ub(i) for i in range(len(vars)))
 
     def get_min(self, solver=None):
-        return min([x.get_min(solver) for x in self.children])
+        return min([x.get_min(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
 
     def get_max(self, solver=None):
-        return min([x.get_max(solver) for x in self.children])
+        return min([x.get_max(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
+
+    def get_value(self, solver=None):
+        return min([x.get_value(solver) if type(x) not in [int, long, float, str, bool] else x for x in self.children])
 
     def decompose(self):
         X = self.children
@@ -2350,7 +2435,7 @@ class LessLex(Predicate):
         self.ub = None
 
     def __str__(self):
-        length = len(self.children) / 2
+        length = len(self.children) // 2
 
         toprint = '[' + str(self.children[0])
         for i in range(1, length):
@@ -2382,7 +2467,7 @@ class LeqLex(Predicate):
         self.ub = None
 
     def __str__(self):
-        length = len(self.children) / 2
+        length = len(self.children) // 2
 
         toprint = '[' + str(self.children[0])
         for i in range(1, length):
@@ -2396,7 +2481,7 @@ class LeqLex(Predicate):
 class Maximise(Predicate):
     """
     Maximisation objective function, sets the goal of search to be the
-    maximisation of its' arguments.
+    maximisation of its arguments.
 
     :param vars: The :class:`.Variable` or :class:`.Expression` to be maximized.
     """
@@ -2420,7 +2505,7 @@ def Maximize(var):
 class Minimise(Predicate):
     """
     Minimisation objective function, sets the goal of search to be the
-    minimisation of its' arguments.
+    minimisation of its arguments.
 
     :param vars: The :class:`.Variable` or :class:`.Expression` to be minimized.
     """
@@ -2563,7 +2648,7 @@ class Cardinality(Predicate):
 #    - M = Task() creates a Task with an earliest start time of 0, latest end time of 1, and duration 1
 #    - M = Task(ub) creates a Task with an earliest start time of 0, latest end time of 'ub', and duration 1
 #    - M = Task(ub, dur) creates a Task with an earliest start time of 0, latest end time of 'ub', and duration 'dur'
-#    - M = Task(lb, ub, dur) creates a Task with an earliest start time of 0, latest end time of 'ub', and duration 'dur'
+#    - M = Task(lb, ub, dur) creates a Task with an earliest start time of 'lb', latest end time of 'ub', and duration 'dur'
 #
 #    When the model is solved, @get_value() returns the start
 #    time of the task.
@@ -2583,7 +2668,7 @@ class Task(Expression):
                   # time of 'ub', and duration 1
         Task(ub, dur)  # creates a Task with an earliest start time of 0,
                        # latest end time of 'ub', and duration 'dur'
-        Task(lb, ub, dur)  # creates a Task with an earliest start time of 0,
+        Task(lb, ub, dur)  # creates a Task with an earliest start time of 'lb',
                            # latest end time of 'ub', and duration 'dur'
 
     When the model is solved, :func:`Numberjack.Expression.get_value` returns
@@ -2878,7 +2963,13 @@ def input(default):
 
 
 def pair_of(l):
-    return [pair for k in range(1, len(l)) for pair in zip(l, l[k:])]
+    #return [pair for k in range(1, len(l)) for pair in zip(l, l[k:])]
+    pairs = []
+    for j in range(1,len(l)):
+        for i in range(j):
+            pairs.append((l[i],l[j]))
+    return pairs
+
 
 
 def value(x):
@@ -3033,7 +3124,7 @@ class NBJ_STD_Solver(object):
         if model is not None:
             var_array = None
             self.solver_id = model.getSolverId()
-            self.model = model
+            self.model = weakref.proxy(model)
             self.model.close(self)   #SDG: needs to know for which solver the model is built
             if self.EncodingConfiguration:
                 if not encoding:
@@ -3058,7 +3149,7 @@ class NBJ_STD_Solver(object):
                 if var_array.size() > 0:
                     self.solver.initialise(var_array)
             else:
-                self.variables = self.model.variables
+                self.variables = weakref.proxy(self.model.variables)
                 self.solver.initialise()
 
     def add_to_store(self, x):
@@ -3165,7 +3256,7 @@ class NBJ_STD_Solver(object):
                     arguments = [var_array]
                 if expr.has_parameters():  # != None: # assumes an array of integers
                     for param in expr.parameters:
-                        if hasattr(param, '__iter__'):
+                        if hasattr(param, '__iter__') and not isinstance(param, str): # in python3, strings *do* have an __iter__ method
                             w_array = None
                             if any((type(w) == float for w in param)):
                                 w_array = self.DoubleArray()
@@ -3187,7 +3278,9 @@ class NBJ_STD_Solver(object):
                     var = factory(*arguments)
                 except NotImplementedError as e:
                     print("Error the solver does not support this expression:", str(expr), file=sys.stderr)
-                    print("Type:", type(expr), "Children:", str(expr.children), "Params:", str(getattr(expr, 'parameters', None)), file=sys.stderr)
+                    print("Type:", type(expr), file=sys.stderr)
+                    print("Children:", str(expr.children), map(type, expr.children), file=sys.stderr)
+                    print("Params:", str(getattr(expr, 'parameters', None)), file=sys.stderr)
                     raise e
 
                 if expr.encoding:

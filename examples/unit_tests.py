@@ -1,3 +1,4 @@
+from __future__ import print_function
 from Numberjack import *
 import pickle
 import subprocess
@@ -49,7 +50,7 @@ for lib in list(reference.keys()):
                     print(reference[lib][solver])
                     print('now:')
                     print(outcome[lib][solver])
-                    if param['update'] == 'yes': 
+                    if param['update'] == 'yes':
                         print('... saving')
                         reference[lib][solver] = outcome[lib][solver]
                 else:

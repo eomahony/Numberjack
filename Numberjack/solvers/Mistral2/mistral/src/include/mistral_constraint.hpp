@@ -4517,6 +4517,64 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
 
 
 
+  /**********************************************
+   * WeightedSum Constraint
+   **********************************************/
+  /*! \class ConstraintWeightedSum
+    \brief  Constraint on a sum of variables (a1 * x1 + ... + an * xn = total)
+  */
+  class ConstraintOrderedSum : public GlobalConstraint {
+
+  public:
+    /**@name Parameters*/
+    //@{ 
+    // Lower bound of the linear expression
+    int lower_bound;
+
+    // Upper bound of the linear expression
+    int upper_bound;
+
+    // utils for the propagation
+    int *lo_bound;
+    int *up_bound;
+		
+    int *offset_min;
+    int *offset_max;
+    //@}
+
+    /**@name Constructors*/
+    //@{
+    ConstraintOrderedSum(Vector< Variable >& scp,
+			 const int L=0, const int U=0);
+    ConstraintOrderedSum(std::vector< Variable >& scp,
+			 const int L=0, const int U=0);
+    virtual ~ConstraintOrderedSum();
+    virtual Constraint clone() { return Constraint(new ConstraintOrderedSum(scope, lower_bound, upper_bound)); }
+    virtual void initialise();
+		virtual bool rewritable() { return false; }
+    virtual int idempotent() { return 1;}
+    virtual int postponed() { return 1;}
+    virtual int pushed() { return 1;}
+    //virtual void mark_domain();
+		//@}
+
+    /**@name Solving*/
+    //@{
+    virtual int check( const int* sol ) const ;
+    virtual PropagationOutcome propagate();
+    //virtual RewritingOutcome rewrite();
+    //@}
+
+    /**@name Miscellaneous*/
+    //@{  
+    virtual std::ostream& display(std::ostream&) const ;
+    virtual std::string name() const { return "osum="; }
+    //@}
+  };
+
+
+
+
 
   /**********************************************
    * Parity Constraint

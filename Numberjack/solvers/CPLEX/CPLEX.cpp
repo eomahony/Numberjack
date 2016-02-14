@@ -18,6 +18,15 @@ CPLEXSolver::CPLEXSolver() {
 
 CPLEXSolver::~CPLEXSolver() {
     DBG("Delete wrapped solver%s\n", "");
+
+    for(int i=0; i<_constraints.size(); i++) delete _constraints[i];
+    _constraints.clear();
+
+    for(int i=0; i<variableptrs.size(); i++) delete variableptrs[i];
+    variableptrs.clear();
+
+    env->end();
+    delete variables;
     delete cplex;
     delete model;
     delete env;
@@ -65,6 +74,7 @@ void CPLEXSolver::add_in_constraint(LinearConstraint *con, double coef){
             int *var_id = new int;
             *var_id = variables->getSize();
             variables->add(var_ptr);
+            variableptrs.push_back(var_id);
             con->_variables[i]->_var = (void*) var_id;
             
             DBG("Created new variable with id %d. type:%c lb:%f ub:%f coef:%f\n", *var_id, type, con->_variables[i]->_lower, con->_variables[i]->_upper, coef);

@@ -37,6 +37,11 @@
 #include <mistral_structure.hpp>
 
 
+// #define _DEBUG_AC true
+// #define _DEBUG_PROPAGATE true
+// #define _DEBUG_SEARCH true
+
+
 namespace Mistral {
 
 

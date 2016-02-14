@@ -15,6 +15,8 @@ XMLParser_libxml2<MistralCallback> *parser;
 
 const int num_features = 36;
 
+//#define _DEBUGWRAP
+
 /**************************************************************
  ********************     EXPRESSION        *******************
  **************************************************************/
@@ -38,7 +40,7 @@ Mistral_Expression::Mistral_Expression(BuildObject *x)
   _self = x;
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating a variable [" << 0 << ".." << (nval-1) << "]" << std::endl;
+  std::cout << "creating a variable from " << x << std::endl;
 #endif
 
 }
@@ -835,78 +837,78 @@ Mistral_Expression* Mistral_Sum::add(MistralSolver *solver, bool top_level){
   return this;
 }
 
-// Mistral_abs::Mistral_abs(Mistral_Expression *var1)
-//   : Mistral_binop(var1,NULL)
-// {
-//
-// #ifdef _DEBUGWRAP
-//   std::cout << "creating abs" << std::endl;
-// #endif
-//
-// }
-//
-// Mistral_abs::~Mistral_abs(){
-//
-// #ifdef _DEBUGWRAP
-//   std::cout << "delete abs" << std::endl;
-// #endif
-//
-// }
-//
-// Mistral_Expression* Mistral_abs::add(MistralSolver *solver, bool top_level){
-//
-//   if(!has_been_added()) {
-// #ifdef _DEBUGWRAP
-//       std::cout << "add abs constraint" << std::endl;
-// #endif
-//     _solver = solver;
-//
-//     _vars[0]->add(_solver,false);
-// 		_self = CSP::_Abs(_vars[0]->_self);
-//
-//     if( top_level )
-//       _solver->model->add( _self );
-//   }
-//
-//   return this;
-// }
-//
-//
-// Mistral_neg::Mistral_neg(Mistral_Expression *var1)
-//   : Mistral_binop(var1,NULL)
-// {
-//
-// #ifdef _DEBUGWRAP
-//   std::cout << "creating neg" << std::endl;
-// #endif
-//
-// }
-//
-// Mistral_neg::~Mistral_neg(){
-//
-// #ifdef _DEBUGWRAP
-//   std::cout << "delete neg" << std::endl;
-// #endif
-//
-// }
-//
-// Mistral_Expression* Mistral_neg::add(MistralSolver *solver, bool top_level){
-//
-//   if(!has_been_added()) {
-// #ifdef _DEBUGWRAP
-//       std::cout << "add neg constraint" << std::endl;
-// #endif
-//     _solver = solver;
-//
-//     _vars[0]->add(_solver,false);
-// 		_self = CSP::_Neg(_vars[0]->_self);
-//
-//     if( top_level )
-//       _solver->model->add( _self );
-//   }
-//
-//   return this;
-// }
+Mistral_Abs::Mistral_Abs(Mistral_Expression *var1)
+  : Mistral_binop(var1,0)
+{
+
+#ifdef _DEBUGWRAP
+  std::cout << "creating Abs" << std::endl;
+#endif
+
+}
+
+Mistral_Abs::~Mistral_Abs(){
+
+#ifdef _DEBUGWRAP
+  std::cout << "delete Abs" << std::endl;
+#endif
+
+}
+
+Mistral_Expression* Mistral_Abs::add(MistralSolver *solver, bool top_level){
+
+  if(!has_been_added()) {
+#ifdef _DEBUGWRAP
+      std::cout << "add Abs constraint" << std::endl;
+#endif
+    _solver = solver;
+
+    _vars[0]->add(_solver,false);
+		_self = CSP::_Abs(_vars[0]->_self);
+
+    if( top_level )
+      _solver->model->add( _self );
+  }
+
+  return this;
+}
+
+
+Mistral_neg::Mistral_neg(Mistral_Expression *var1)
+  : Mistral_binop(var1,0)
+{
+
+#ifdef _DEBUGWRAP
+  std::cout << "creating neg" << std::endl;
+#endif
+
+}
+
+Mistral_neg::~Mistral_neg(){
+
+#ifdef _DEBUGWRAP
+  std::cout << "delete neg" << std::endl;
+#endif
+
+}
+
+Mistral_Expression* Mistral_neg::add(MistralSolver *solver, bool top_level){
+
+  if(!has_been_added()) {
+#ifdef _DEBUGWRAP
+      std::cout << "add neg constraint" << std::endl;
+#endif
+    _solver = solver;
+
+    _vars[0]->add(_solver,false);
+		_self = CSP::_Negation(_vars[0]->_self);
+
+    if( top_level )
+      _solver->model->add( _self );
+  }
+
+  return this;
+}
 
 
 Mistral_mul::Mistral_mul(Mistral_Expression *var1, Mistral_Expression *var2)

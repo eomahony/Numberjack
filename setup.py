@@ -253,7 +253,7 @@ toulbar2 = Extension(
     language='c++',
     define_macros=[
         ('NUMBERJACK', None),
-        ('BOOST', None), # requires libboost-graph-dev installed
+#        ('BOOST', None), # requires libboost-graph-dev installed
         ('NDEBUG', None),
         ('LINUX', None),
         ('LONGLONG_COST', None),

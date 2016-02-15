@@ -511,7 +511,7 @@ pair<Cost,Cost> Solver::recursiveSolve(Cluster *cluster, Cost lbgood, Cost cub)
             if(cluster == td->getRoot() || cluster == td->getRootRDS()) {
                 if (ToulBar2::verbose>=0 || ToulBar2::showSolutions) {
                     if(!ToulBar2::bayesian) cout << "New solution: " <<  csol << " (" << nbBacktracks << " backtracks, " << nbNodes << " nodes, depth " << store->getDepth() << ")" << endl;
-                    else cout << "New solution: " << csol << " log10like: " << (wcsp->Cost2LogLike(csol) + ToulBar2::markov_log)/Log(10.) << " prob: " << wcsp->Cost2Prob(csol) * Exp(ToulBar2::markov_log) << " (" << nbBacktracks << " backtracks, " << nbNodes << " nodes, depth " << store->getDepth() << ")" << endl;
+                    else cout << "New solution: " << csol << " log10like: " << (wcsp->Cost2LogProb(csol) + ToulBar2::markov_log)/Log(10.) << " prob: " << wcsp->Cost2Prob(csol) * Exp(ToulBar2::markov_log) << " (" << nbBacktracks << " backtracks, " << nbNodes << " nodes, depth " << store->getDepth() << ")" << endl;
                 }
                 if(cluster == td->getRoot()) td->newSolution(csol);
                 else {
@@ -751,3 +751,11 @@ BigInteger Solver::sharpBTD(Cluster *cluster){
         return NbSol;
     }
 }
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

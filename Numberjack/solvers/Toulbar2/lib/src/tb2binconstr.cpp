@@ -194,3 +194,11 @@ pair< pair<Cost,Cost>, pair<Cost,Cost> > BinaryConstraint::getMaxCost(int varInd
     assert(maxcostb >= diffcostb);
     return make_pair(make_pair(maxcosta,diffcosta), make_pair(maxcostb,diffcostb));
 }
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

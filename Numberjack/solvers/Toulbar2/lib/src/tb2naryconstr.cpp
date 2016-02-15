@@ -1028,7 +1028,7 @@ void NaryConstraintMap::project( EnumeratedVariable* x )
                     for (EnumeratedVariable::iterator itv = x->begin(); itv != x->end(); ++itv) {
                         if (markValue.find(*itv) == markValue.end()) {
                             if (ToulBar2::isZ) {
-                                c = wcsp->SumLogLikeCost(c, default_cost + x->getCost(*itv));
+                                c = wcsp->LogSumExp(c, default_cost + x->getCost(*itv));
                             } else if(default_cost + x->getCost(*itv) < c) c = default_cost + x->getCost(*itv);
                         }
                     }
@@ -1046,7 +1046,7 @@ void NaryConstraintMap::project( EnumeratedVariable* x )
                 markValue.insert(val);
                 if (x->canbe(val)) ntuples++;
                 if (ToulBar2::isZ) {
-                    c = wcsp->SumLogLikeCost(c, cnext);
+                    c = wcsp->LogSumExp(c, cnext);
                 } else if(cnext < c) c = cnext;
             }
         }
@@ -1704,5 +1704,10 @@ void NaryConstrie::print(ostream& os) {
     if(f) f->printTrie();
 }
 
-
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
 

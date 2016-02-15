@@ -288,3 +288,11 @@ Cost GrammarConstraint::unary(int ch, int var, Value v) {
     Cost ucost = (v == ch) ? (-deltaCost[var][x->toIndex(v)]) : top;
     return ucost;
 }
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

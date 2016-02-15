@@ -503,11 +503,19 @@ public:
 
     Cost Prob2Cost(TProb p) const;
     TProb Cost2Prob(Cost c) const;
-    TProb Cost2LogLike(Cost c) const;
-    Cost LogLike2Cost(TProb p) const;
-    Cost SumLogLikeCost(Cost c1, Cost c2) const;
-    TProb SumLogLikeCost(TProb logc1, Cost c2) const;
-    TProb SumLogLikeCost(TProb logc1, TProb logc2) const;
+    TProb Cost2LogProb(Cost c) const;
+    Cost LogProb2Cost(TLogProb p) const;
+    Cost LogSumExp(Cost c1, Cost c2) const;
+    TLogProb LogSumExp(TLogProb logc1, Cost c2) const;
+    TLogProb LogSumExp(TLogProb logc1, TLogProb logc2) const;
 };
 
 #endif /*TB2WCSP_HPP_*/
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

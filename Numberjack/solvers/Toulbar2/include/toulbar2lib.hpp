@@ -22,7 +22,7 @@
 class WeightedCSP {
 public:
     static WeightedCSP *makeWeightedCSP(Store *s, Cost upperBound, void *solver = NULL);	///< \brief Weighted CSP factory
-
+    
     virtual ~WeightedCSP() {}
 
     virtual int getIndex() const = 0;       ///< \brief instantiation occurrence number of current WCSP object
@@ -314,11 +314,11 @@ public:
 
     virtual Cost Prob2Cost(TProb p) const =0;
     virtual TProb Cost2Prob(Cost c) const =0;
-    virtual TProb Cost2LogLike(Cost c) const =0;
-    virtual Cost LogLike2Cost(TProb p) const =0;
-    virtual Cost SumLogLikeCost(Cost c1, Cost c2) const =0;
-    virtual TProb SumLogLikeCost(TProb logc1, Cost c2) const =0;
-    virtual TProb SumLogLikeCost(TProb logc1, TProb logc2) const =0;
+    virtual TProb Cost2LogProb(Cost c) const =0;
+    virtual Cost LogProb2Cost(TLogProb p) const =0;
+    virtual Cost LogSumExp(Cost c1, Cost c2) const =0;
+    virtual TLogProb LogSumExp(TLogProb logc1, Cost c2) const =0;
+    virtual TLogProb LogSumExp(TLogProb logc1, TLogProb logc2) const =0;
 
     // -----------------------------------------------------------
     // Internal WCSP functions DO NOT USE THEM
@@ -409,4 +409,15 @@ public:
 
 /// \brief initialization of ToulBar2 global variables (needed by numberjack/toulbar2)
 extern void tb2init();
+/// \brief checks compatibility between selected options of ToulBar2 (needed by numberjack/toulbar2)
+/// \return new initial upper bound (if options assume it is a satisfaction problem instead of optimization)
+extern Cost tb2checkOptions(Cost initialUpperBound);
 #endif /*TOULBAR2LIB_HPP_*/
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

@@ -96,7 +96,7 @@ ofstream ToulBar2::solution_file;
 string ToulBar2::solution_uai_filename;
 string ToulBar2::problemsaved_filename;
 bool ToulBar2::uai_firstoutput;
-TProb ToulBar2::markov_log;
+TLogProb ToulBar2::markov_log;
 bool ToulBar2::xmlflag;
 string ToulBar2::map_file;
 bool ToulBar2::maxsateval;
@@ -104,7 +104,7 @@ bool ToulBar2::uaieval;
 
 int ToulBar2::resolution;
 TProb ToulBar2::errorg;
-TProb ToulBar2::NormFactor;
+TLogProb ToulBar2::NormFactor;
 /// Allele frequencies of founders
 /// - 0: 			equal frequencies
 /// - 1: 			probs depending on the frequencies found in the problem
@@ -142,9 +142,9 @@ int ToulBar2::minProperVarSize;
 int ToulBar2::smallSeparatorSize;
 
 bool ToulBar2::isZ;
-TProb ToulBar2::logZ;
-TProb ToulBar2::logU;
-TProb ToulBar2::logepsilon;
+TLogProb ToulBar2::logZ;
+TLogProb ToulBar2::logU;
+TLogProb ToulBar2::logepsilon;
 int ToulBar2::Berge_Dec=0; // berge decomposition flag  > 0 if wregular found in the problem
 int ToulBar2::nbvar=0; // berge decomposition flag  > 0 if wregular found in the problem
 
@@ -164,6 +164,7 @@ ptrdiff_t ToulBar2::hbfsOpenNodeLimit; // limit on the number of open nodes
 
 bool ToulBar2::verifyOpt;
 Cost ToulBar2::verifiedOptimum;
+
 /// \brief initialization of ToulBar2 global variables needed by numberjack/toulbar2
 void tb2init()
 {
@@ -260,8 +261,8 @@ void tb2init()
     ToulBar2::smallSeparatorSize = 4;
 
     ToulBar2::isZ = false;
-    ToulBar2::logZ = -numeric_limits<TProb>::infinity();
-    ToulBar2::logU = -numeric_limits<TProb>::infinity();
+    ToulBar2::logZ = -numeric_limits<TLogProb>::infinity();
+    ToulBar2::logU = -numeric_limits<TLogProb>::infinity();
     ToulBar2::logepsilon = -Log(1000);
     ToulBar2::Berge_Dec=0;
     ToulBar2::nbvar=0;
@@ -283,6 +284,121 @@ void tb2init()
     ToulBar2::verifiedOptimum = MAX_COST;
 }
 
+/// \brief checks compatibility between selected options of ToulBar2 needed by numberjack/toulbar2
+Cost tb2checkOptions(Cost ub)
+{
+    if (ub <= MIN_COST) ub = MAX_COST;
+
+    if (ToulBar2::approximateCountingBTD && ToulBar2::btdMode != 1)
+    {
+        cout << "Warning! Cannot find an approximation of solution count without BTD." << endl;
+        ToulBar2::approximateCountingBTD = false;
+        ToulBar2::allSolutions = false;
+    }
+    if (ToulBar2::allSolutions && ToulBar2::btdMode == 1 && ub > 1)
+    {
+        cout << "Warning! Cannot find all solutions with BTD-like search methods in optimization (only in satisfaction)." << endl;
+        ub = 1;
+    }
+    if (ToulBar2::allSolutions && ToulBar2::btdMode > 1)
+    {
+        cout << "Warning! Cannot find all solutions with RDS-like search methods." << endl;
+        ToulBar2::allSolutions = false;
+    }
+    if (ToulBar2::allSolutions && ToulBar2::btdMode == 1 && ToulBar2::elimDegree > 0)
+    {
+        //    if (!ToulBar2::uai || ToulBar2::debug) cout << "Warning! Cannot count all solutions with variable elimination during search (except with degree 0 for #BTD)" << endl;
+        ToulBar2::elimDegree = 0;
+    }
+    if (ToulBar2::allSolutions && ToulBar2::btdMode != 1 && ToulBar2::elimDegree >= 0)
+    {
+        //    if (!ToulBar2::uai || ToulBar2::debug) cout << "Warning! Cannot count all solutions with variable elimination during search (except with degree 0 for #BTD)" << endl;
+        ToulBar2::elimDegree = -1;
+    }
+    if (ToulBar2::allSolutions && ToulBar2::elimDegree_preprocessing >= 0)
+    {
+        //    if (!ToulBar2::uai || ToulBar2::debug) cout << "Warning! Cannot count all solutions with generic variable elimination" << endl;
+        ToulBar2::elimDegree_preprocessing = -1;
+    }
+    if (ToulBar2::allSolutions || ToulBar2::isZ) {
+        ToulBar2::DEE = 0;
+    }
+    if (ToulBar2::lds && ToulBar2::btdMode >= 1)
+    {
+        cout << "Warning! Limited Discrepancy Search not compatible with BTD-like search methods." << endl;
+        ToulBar2::lds = 0;
+    }
+    if (ToulBar2::lds && ToulBar2::hbfs)
+    {
+        // cout << "Warning! Hybrid best-first search not compatible with Limited Discrepancy Search." << endl;
+        ToulBar2::hbfs = 0;
+    }
+    if (ToulBar2::hbfs && ToulBar2::btdMode >= 2)
+    {
+        cout << "Warning! Hybrid best-first search not compatible with RDS-like search methods." << endl;
+        ToulBar2::hbfs = 0;
+    }
+    if (ToulBar2::restart>=0 && ToulBar2::btdMode >= 1)
+    {
+        cout << "Warning! Randomized search with restart not compatible with BTD-like search methods." << endl;
+        ToulBar2::restart = -1;
+    }
+    if (!ToulBar2::binaryBranching && ToulBar2::btdMode >= 1)
+    {
+        cout << "Warning! N-ary branching not implemented with BTD-like search methods, use binary branching instead." << endl;
+        ToulBar2::binaryBranching = true;
+    }
+    if (ToulBar2::btdSubTree >= 0 && ToulBar2::btdMode <= 1)
+    {
+        cout << "Warning! Solving only a problem rooted at a given subtree, use Russian Doll Search method for that." << endl;
+        ToulBar2::btdMode = 2;
+    }
+    if (ToulBar2::vac > 1 && ToulBar2::btdMode >= 1)
+    {
+        cout << "Warning! VAC not implemented with BTD-like search methods during search, use VAC in preprocessing only." << endl;
+        ToulBar2::vac = 1;
+    }
+    if (ToulBar2::preprocessFunctional >0 && ToulBar2::LcLevel == LC_NC)
+    {
+        cout << "Warning! Cannot perform functional elimination with NC only." << endl;
+        ToulBar2::preprocessFunctional = 0;
+    }
+    if (ToulBar2::learning && ToulBar2::elimDegree >= 0)
+    {
+        cout << "Warning! Cannot perform variable elimination during search with pseudo-boolean learning." << endl;
+        ToulBar2::elimDegree = -1;
+    }
+    if (ToulBar2::incop_cmd.size() > 0 && (ToulBar2::allSolutions || ToulBar2::isZ)) {
+        cout << "Warning! Cannot use INCOP local search with solution counting or inference tasks." << endl;
+        ToulBar2::incop_cmd = "";
+    }
+    if (!ToulBar2::binaryBranching && ToulBar2::hbfs)
+    {
+        cout << "Warning! N-ary branching not implemented with hybrid best-first search, use binary branching instead (or add -hbfs: parameter)." << endl;
+        ToulBar2::binaryBranching = true;
+    }
+    if (ToulBar2::dichotomicBranching>=2 && ToulBar2::hbfs)
+    {
+        cout << "Warning! Complex dichotomic branching not implemented with hybrid best-first search, use simple dichotomic branching (or add -hbfs: parameter)." << endl;
+        ToulBar2::dichotomicBranching = 1;
+    }
+    if  (ToulBar2::verifyOpt && (ToulBar2::elimDegree >= 0 || ToulBar2::elimDegree_preprocessing >= 0)) {
+        cout << "Warning! Cannot perform variable elimination while verifying that the optimal solution is preserved." << endl;
+        ToulBar2::elimDegree = -1;
+        ToulBar2::elimDegree_preprocessing = -1;
+    }
+    if  (ToulBar2::verifyOpt && ToulBar2::preprocessFunctional > 0) {
+        cout << "Warning! Cannot perform functional elimination while verifying that the optimal solution is preserved." << endl;
+        ToulBar2::preprocessFunctional = 0;
+    }
+    if  (ToulBar2::verifyOpt && ToulBar2::DEE >= 1) {
+        cout << "Warning! Cannot perform dead-end elimination while verifying that the optimal solution is preserved." << endl;
+        ToulBar2::DEE = 0;
+    }
+
+    return ub;
+}
+
 /*
  * WCSP constructors
  *
@@ -296,7 +412,7 @@ WCSP::WCSP(Store *s, Cost upperBound, void *_solver_) :
 #ifdef NUMBERJACK
             isDelayedNaryCtr(false),
 #else
-	        isDelayedNaryCtr(true),
+            isDelayedNaryCtr(true),
 #endif
 	        isPartOfOptimalSolution(0, &s->storeInt), elimOrder(0, &s->storeInt), elimBinOrder(0, &s->storeInt), elimTernOrder(0, &s->storeInt),
 	        maxDegree(-1), elimSpace(0) {
@@ -2586,7 +2702,7 @@ void WCSP::project(Constraint* &ctr_inout, EnumeratedVariable* var) {
                             t[arity] = '\0';
                             String strt(t);
                             Cost c = nctr->eval(strt) + var->getCost(*itv);
-                            if (ToulBar2::isZ) mincost = SumLogLikeCost(mincost,c);
+                            if (ToulBar2::isZ) mincost = LogSumExp(mincost,c);
                             else if (c < mincost) mincost = c;
                         }
                     }
@@ -2620,7 +2736,7 @@ void WCSP::project(Constraint* &ctr_inout, EnumeratedVariable* var) {
                 if (evars[0]->canbe(v0) && evars[1]->canbe(v1)) {
                     for (EnumeratedVariable::iterator itv = var->begin(); itv != var->end(); ++itv) {
                         Cost c = tctr->getCost(evars[0], evars[1], var, v0, v1, *itv) + var->getCost(*itv);
-                        if (ToulBar2::isZ) mincost = SumLogLikeCost(mincost,c);
+                        if (ToulBar2::isZ) mincost = LogSumExp(mincost,c);
                         else if (c < mincost) mincost = c;
                     }
                 }
@@ -2648,7 +2764,7 @@ void WCSP::project(Constraint* &ctr_inout, EnumeratedVariable* var) {
             if (evars[0]->canbe(v0)) {
                 for (EnumeratedVariable::iterator itv = var->begin(); itv != var->end(); ++itv) {
                     Cost c = bctr->getCost(evars[0], var, v0, *itv) + var->getCost(*itv);
-                    if (ToulBar2::isZ) mincost = SumLogLikeCost(mincost,c);
+                    if (ToulBar2::isZ) mincost = LogSumExp(mincost,c);
                     else if (c < mincost) mincost = c;
                 }
             }
@@ -2714,7 +2830,7 @@ void WCSP::variableElimination(EnumeratedVariable* var) {
         if (ToulBar2::isZ) { // add all unary loglike into lowerbound or negCost
             Cost clogz = getUb();
             for (EnumeratedVariable::iterator itv = var->begin(); itv != var->end(); ++itv) {
-                clogz = SumLogLikeCost(clogz, var->getCost(*itv));
+                clogz = LogSumExp(clogz, var->getCost(*itv));
             }
             if (clogz < 0) decreaseLb(clogz);
             else increaseLb(clogz);
@@ -3039,7 +3155,7 @@ void WCSP::setDACOrder(vector<int> &order) {
 
 Cost WCSP::Prob2Cost(TProb p) const {
     if (p == 0.0) return getUb();
-    TProb res = -Log(p) * ToulBar2::NormFactor;
+    TLogProb res = -Log(p) * ToulBar2::NormFactor;
     if (res > to_double(MAX_COST)) {
         cerr << "Overflow when converting probability to cost." << endl;
         exit(EXIT_FAILURE);
@@ -3049,41 +3165,45 @@ Cost WCSP::Prob2Cost(TProb p) const {
     return c;
 }
 
-Cost WCSP::LogLike2Cost(TProb p) const {
-    TProb res = -p * ToulBar2::NormFactor;
+Cost WCSP::LogProb2Cost(TLogProb p) const {
+    TLogProb res = -p * ToulBar2::NormFactor;
     if (res > to_double(MAX_COST/2)) {
         cout << "Warning: converting -loglike/energy " << -p << " to Top\n";
         return getUb();
     }
     else return (Cost) res;
 }
-TProb WCSP::Cost2LogLike(Cost c) const {
+
+TProb WCSP::Cost2LogProb(Cost c) const {
     return -to_double(c) / ToulBar2::NormFactor;
 }
+
 TProb WCSP::Cost2Prob(Cost c) const {
     return Exp(-to_double(c) / ToulBar2::NormFactor);
 }
-Cost  WCSP::SumLogLikeCost(Cost c1, Cost c2) const {
+
+Cost  WCSP::LogSumExp(Cost c1, Cost c2) const {
     if (c1 >= getUb()) return c2;
     else if (c2 >= getUb()) return c1;
-    else if (c1 == c2) return c1+LogLike2Cost(Log(2.));
+    else if (c1 == c2) return c1+LogProb2Cost(Log(2.));
     else {
-        if (c1 < c2) return c1 + LogLike2Cost(Log1p(Exp(Cost2LogLike(c2 - c1))));
-        else return c2 + LogLike2Cost(Log1p(Exp(Cost2LogLike(c1 - c2))));
+        if (c1 < c2) return c1 + LogProb2Cost(Log1p(Exp(Cost2LogProb(c2 - c1))));
+        else return c2 + LogProb2Cost(Log1p(Exp(Cost2LogProb(c1 - c2))));
     }
 }
-TProb WCSP::SumLogLikeCost(TProb logc1, Cost c2) const {
-    TProb logc2 = Cost2LogLike(c2);
-    if (logc1 == -numeric_limits<TProb>::infinity()) return logc2;
+TLogProb WCSP::LogSumExp(TLogProb logc1, Cost c2) const {
+    TLogProb logc2 = Cost2LogProb(c2);
+    if (logc1 == -numeric_limits<TLogProb>::infinity()) return logc2;
     else if (c2 >= getUb()) return logc1;
     else {
         if (logc1 >= logc2) return logc1 + (Log1p(Exp(logc2 - logc1)));
         else return logc2 + (Log1p(Exp(logc1 - logc2)));
     }
 }
-TProb WCSP::SumLogLikeCost(TProb logc1, TProb logc2) const {
-    if (logc1 == -numeric_limits<TProb>::infinity()) return logc2;
-    else if (logc2 == -numeric_limits<TProb>::infinity()) return logc1;
+
+TLogProb WCSP::LogSumExp(TLogProb logc1, TLogProb logc2) const {
+    if (logc1 == -numeric_limits<TLogProb>::infinity()) return logc2;
+    else if (logc2 == -numeric_limits<TLogProb>::infinity()) return logc1;
     else {
         if (logc1 >= logc2) return logc1 + (Log1p(Exp(logc2 - logc1)));
         else return logc2 + (Log1p(Exp(logc1 - logc2)));
@@ -3103,5 +3223,10 @@ void WCSP::visit(int i, vector <int>&revdac, vector <bool>& marked, const vector
     revdac.push_back(i);
 }
 
-
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
 

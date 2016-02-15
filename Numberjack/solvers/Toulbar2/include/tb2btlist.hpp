@@ -220,3 +220,11 @@ template <class T, class V> template <class Q> void StoreStack<T,V>::restore(BTL
 }
 
 #endif /*TB2BTLIST_HPP_*/
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

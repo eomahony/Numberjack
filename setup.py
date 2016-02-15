@@ -233,12 +233,13 @@ extensions.append(mistral2)
 
 
 toulbar2src = 'Numberjack/solvers/Toulbar2/lib/src'
+toulbar2incopsrc = 'Numberjack/solvers/Toulbar2/lib/src/incop'
 toulbar2 = Extension(
     '_Toulbar2',
     sources=[
         'Numberjack/solvers/Toulbar2.i',
         'Numberjack/solvers/Toulbar2/Toulbar2.cpp',
-    ] + listextfiles(toulbar2src),
+    ] + listextfiles(toulbar2src) + listextfiles(toulbar2incopsrc),
     swig_opts=[
         '-modern', '-c++',
         '-INumberjack/solvers/Toulbar2',
@@ -246,11 +247,13 @@ toulbar2 = Extension(
     include_dirs=[
         'Numberjack/solvers/Toulbar2',
         'Numberjack/solvers/Toulbar2/include',
+        'Numberjack/solvers/Toulbar2/include/incop',
     ],
     libraries=['gmp'],
     language='c++',
     define_macros=[
         ('NUMBERJACK', None),
+        ('BOOST', None), # requires libboost-graph-dev installed
         ('NDEBUG', None),
         ('LINUX', None),
         ('LONGLONG_COST', None),

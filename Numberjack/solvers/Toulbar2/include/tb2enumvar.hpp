@@ -41,7 +41,7 @@ public:
     bool enumerated() const {return true;}
 
     unsigned int getDomainInitSize() const {return domain.getInitSize();}
-#ifdef WCSPFORMATONLY
+#if defined(WCSPFORMATONLY) && !defined(NUMBERJACK)
     unsigned int toIndex(Value v) const {return (unsigned int) v;}
     Value toValue(unsigned int idx) const {return idx;}
 #else
@@ -188,3 +188,11 @@ public:
 };
 
 #endif /*TB2ENUMVAR_HPP_*/
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

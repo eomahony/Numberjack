@@ -764,15 +764,15 @@ void WCSP::read_random(int n, int m, vector<int>& p, int seed, bool forceSubModu
 void WCSP::read_uai2008(const char *fileName)
 {
     // Compute the factor that enables to capture the difference in log for probability (1-10^resolution):
-    ToulBar2::NormFactor = (-1.0/Log1p(-Exp10(-(TProb)ToulBar2::resolution)));
-    if (ToulBar2::NormFactor > (Pow( (TProb)2., (TProb)INTEGERBITS)-1)/(TProb)ToulBar2::resolution) {
+    ToulBar2::NormFactor = (-1.0/Log1p(-Exp10(-(TLogProb)ToulBar2::resolution)));
+    if (ToulBar2::NormFactor > (Pow((TProb)2., (TProb)INTEGERBITS)-1)/(TLogProb)ToulBar2::resolution) {
         cerr << "This resolution cannot be ensured on the data type used to represent costs." << endl;
         exit(EXIT_FAILURE);
     } else if (ToulBar2::verbose >= 1) {
         cout << "NormFactor= " << ToulBar2::NormFactor << endl;
     }
 
-    //    Cost inclowerbound = MIN_COST;
+    // Cost inclowerbound = MIN_COST;
     string uaitype;
     ifstream file(fileName);
     if (!file) { cerr << "Could not open file " << fileName << endl; exit(EXIT_FAILURE); }
@@ -941,8 +941,8 @@ void WCSP::read_uai2008(const char *fileName)
             p = costsProb[k];
             Cost cost;
             // ToulBar2::uai is 1 for .uai and 2 for .LG (log domain)
-            if (markov) cost = ((ToulBar2::uai>1)?LogLike2Cost(p - maxp):Prob2Cost(p / maxp));
-            else        cost = ((ToulBar2::uai>1)?LogLike2Cost(p):Prob2Cost(p));
+            if (markov) cost = ((ToulBar2::uai>1)?LogProb2Cost((TLogProb)(p - maxp)):Prob2Cost(p / maxp));
+            else        cost = ((ToulBar2::uai>1)?LogProb2Cost((TLogProb)p):Prob2Cost(p));
             costs[ictr].push_back(cost);
             if(cost < minc) minc = cost;
             if(cost > maxc && cost < getUb()) maxc = cost;
@@ -1088,7 +1088,7 @@ void WCSP::solution_UAI(Cost res, bool opt)
     //	ToulBar2::solution_file << "1" << endl; // we assume a single evidence sample
     if (ToulBar2::showSolutions && !ToulBar2::uaieval) {
         cout << "t " << cpuTime() - ToulBar2::startCpuTime << endl;
-        cout << "s " << (Cost2LogLike(res) + ToulBar2::markov_log)/Log(10.) << endl;
+        cout << "s " << (Cost2LogProb(res) + ToulBar2::markov_log)/Log(10.) << endl;
         cout << numberOfVariables();
         printSolution(cout);
     }
@@ -1483,3 +1483,11 @@ void WCSP::read_qpbo(const char *fileName)
     histogram();
     cout << "Read " << n << " variables, with " << 2 << " values at most, and " << m << " nonzero matrix costs." << endl;
 }
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

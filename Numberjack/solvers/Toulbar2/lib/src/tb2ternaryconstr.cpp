@@ -679,3 +679,11 @@ bool TernaryConstraint::verify() {
 //activate {
 //	xyz = wcsp->newTernaryConstr(x,y,z,this);
 //}
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

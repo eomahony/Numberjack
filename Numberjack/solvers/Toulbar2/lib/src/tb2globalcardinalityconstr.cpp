@@ -277,3 +277,11 @@ void GlobalCardinalityConstraint::print(ostream& os) {
     }
     os << "]";
 }
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

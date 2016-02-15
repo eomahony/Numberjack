@@ -191,3 +191,11 @@ Cost RegularDPConstraint::unary(int ch, int var, Value v) {
         EnumeratedVariable *x = scope[var];	
 	return ucost - deltaCost[var][x->toIndex(v)];
 }
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

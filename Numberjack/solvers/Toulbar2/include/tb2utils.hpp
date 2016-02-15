@@ -151,3 +151,11 @@ T stochastic_selection(T A[], int p, int r, int i) {
 }
 
 #endif /* TB2UTILS_HPP_ */
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

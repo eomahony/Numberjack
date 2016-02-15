@@ -211,3 +211,11 @@ int solveSymMax2SAT(int n, int m, int *posx, int *posy, double *cost, int *sol);
 extern "C" int solvesymmax2sat_(int *n, int *m, int *posx, int *posy, double *cost, int *sol);
 
 #endif /*TB2SOLVER_HPP_*/
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

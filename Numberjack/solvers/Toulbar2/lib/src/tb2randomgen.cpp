@@ -295,3 +295,11 @@ void naryRandom::Input( int in_n, int in_m, vector<int>& p, bool forceSubModular
         }
     }
 }
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

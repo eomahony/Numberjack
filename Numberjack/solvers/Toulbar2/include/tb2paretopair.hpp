@@ -164,3 +164,11 @@ inline bool CSP(ParetoPair lb, ParetoPair ub) {ParetoPair r = ub - lb; return (r
 void initCosts(ParetoPair ub);
 
 #endif /*TB2PARETOPAIR_HPP_*/
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

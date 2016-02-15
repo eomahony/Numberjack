@@ -62,7 +62,7 @@ public:
         index = 0;
         base = 0;
         if (ToulBar2::verbose >= 0) {
-		  cout << indexMax * (sizeof(V) + sizeof(T *)) << " Bytes allocated for " << name << " stack. " << ToulBar2::verbose << endl;
+            cout << indexMax * (sizeof(V) + sizeof(T *)) << " Bytes allocated for " << name << " stack." << endl;
         }
     }
 
@@ -265,3 +265,11 @@ public:
 #define storeIndexList storeDomain
 
 #endif /*TB2STORE_HPP_*/
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

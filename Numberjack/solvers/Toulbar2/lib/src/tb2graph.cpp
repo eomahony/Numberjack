@@ -616,3 +616,11 @@ void Graph::shortest_path_with_potential(int s) {
 
    }
  */
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

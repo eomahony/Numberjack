@@ -571,3 +571,11 @@ bool BinaryConstraint::verify(T getCost, EnumeratedVariable *x, EnumeratedVariab
 }
 
 #endif /*TB2BINCONSTR_HPP_*/
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

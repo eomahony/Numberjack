@@ -265,3 +265,11 @@ Constraint *Constraint::copy()
     wcsp->getCtr(ctrIndex)->deconnect();
     return wcsp->getCtr(ctrIndex);
 }
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

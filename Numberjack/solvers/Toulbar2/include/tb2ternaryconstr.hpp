@@ -1235,3 +1235,11 @@ bool TernaryConstraint::isEAC(T1 getCostWithBinaries, bool functionalY, T2 getFu
 //};
 
 #endif /*TB2TERNARYCONSTR_HPP_*/
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

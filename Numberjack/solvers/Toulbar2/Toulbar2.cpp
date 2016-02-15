@@ -937,6 +937,7 @@ Toulbar2_Expression* Toulbar2_Table::add(Toulbar2Solver *solver, bool top_level)
 Toulbar2Solver::Toulbar2Solver()
 {
   tb2init();
+  tb2checkOptions(MAXCOST);
   ToulBar2::verbose = -1;
   ToulBar2::startCpuTime = cpuTime();
   initCosts(MAXCOST);

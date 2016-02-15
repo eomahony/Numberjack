@@ -486,7 +486,7 @@ def evaluate(expr, assignment):
     elif issubclass(type(expr), Min):
         return min([evaluate(e,assignment) for e in expr.children])
     elif issubclass(type(expr), Sum):
-        return sum([evaluate(e,assignment) * expr.parameters[0][i] for (i,e) in enumerate(expr.children)])
+        return sum([evaluate(e,assignment) * expr.parameters[0][i] for (i,e) in enumerate(expr.children)])  + expr.parameters[1] # AS: these are additional constants that are moved from children to parameters in model.close()
     elif issubclass(type(expr), Function):
         return expr.parameters[0].get(tuple([evaluate(e,assignment) for e in expr.children]), expr.parameters[1])
     elif issubclass(type(expr), Disjunction):

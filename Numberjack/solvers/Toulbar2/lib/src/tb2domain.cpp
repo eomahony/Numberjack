@@ -9,14 +9,12 @@
  * 
  */
 
-Domain::Domain(Value inf, Value sup, StoreStack<BTList<Value>, DLink<Value> *> *s)
-        : BTList<Value>(s), initSize(sup - inf + 1), distanceToZero(inf)
+Domain::Domain(Value inf, Value sup, StoreStack<BTList<Value>, DLink<Value> *> *s) : BTList<Value>(s), initSize(sup - inf + 1), distanceToZero(inf)
 {
     init(inf, sup);
 }
 
-Domain::Domain(Value *d, int dsize, StoreStack<BTList<Value>, DLink<Value> *> *s) 
-        : BTList<Value>(s), initSize(max(d,dsize)-min(d,dsize)+1), distanceToZero(min(d,dsize))
+Domain::Domain(Value *d, int dsize, StoreStack<BTList<Value>, DLink<Value> *> *s) : BTList<Value>(s), initSize(max(d,dsize)-min(d,dsize)+1), distanceToZero(min(d,dsize))
 {
     assert( dsize >= 1 );
     assert( dsize <= MAX_DOMAIN_SIZE );
@@ -29,7 +27,8 @@ Domain::Domain(Value *d, int dsize, StoreStack<BTList<Value>, DLink<Value> *> *s
     }
 }
 
-void Domain::init(Value inf, Value sup) {
+void Domain::init(Value inf, Value sup)
+{
     assert( sup - inf + 1 >= 1 );
     assert( sup - inf + 1 <= MAX_DOMAIN_SIZE );
 #ifdef WCSPFORMATONLY

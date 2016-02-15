@@ -801,52 +801,62 @@ int get_level() {return 0;}
 
   // toulbar2 options
   void debug(const bool debug);
-  void writeSolution(const bool write);
+  void writeSolution(const char* write);
   void showSolutions(const bool show);
-  void dumpWCSP(const int level); 
+  void dumpWCSP(const int level, const char* problem); 
   void nopre();
   void updateUb(const char* newUb);  
 
   void lds(const int maxlds);
   void restart(const long maxrestarts);
+  void hbfs(const long hbfsgloballimit);
+  void hbfsAlpha(const long hbfsalpha);
+  void hbfsBeta(const long hbfsbeta);
+  void hbfsOpenNodeLimit(const long openlimit);
+
   void lcLevel(const int level);
+  void QueueComplexity(const bool queue);
+
   void allSolutions(const bool sol);
   void approximateCountingBTD(const bool aproxim);
+
   void binaryBranching(const bool boost);
   void staticVariableOrdering(const bool staticOrdering);
   void lastConflict(const bool last);
-  void dichotomicBranching(const bool dicho);
+  void dichotomicBranching(const int dicho);
   void sortDomains(const bool sort);
   void weightedDegree(const int wDegree);
+  void weightedTightness(const int wTight);
+  void variableEliminationOrdering(const int order);
   void nbDecisionVars(const int nbDecision);
+  void partialAssign(const char* certificate);
+
   void elimDegree(const int degree);
   void elimDegree_preprocessing(const int degree_prepoc);
   void elimSpaceMaxMB(const int size);
   void costfuncSeparate(const bool separate);
-  void partialAssign(const char* certificate);
   void deadEndElimination(const int level);
   void preprocessTernaryRPC(const int size);
   void preprocessFunctional(const int func);
   void preprocessNary(const int maxnary);
-  void QueueComplexity(const bool queue);
- 
+
   void btdMode(const int mode);
-  void btdRootCluster(const int rCluster);
-  void btdSubTree(const int sTree); 
   void splitClusterMaxSize(const int size);
-  void boostingBTD(const bool boost);
   void maxSeparatorSize(const int size);
   void minProperVarSize(const int size);
+  void boostingBTD(const bool boost);
+  void btdRootCluster(const int rCluster);
+  void btdSubTree(const int sTree); 
 
   void vac(const int depth);
-  void minsumDiffusion(const int min);
+  void vacValueHeuristic(const bool vacVal);
   void costThreshold(const char* cost);
   void costThresholdPre(const char* cost);
   void costMultiplier(const char* cost);
   void singletonConsistency(const bool singleCons);
-  void vacValueHeuristic(const bool vacVal);
+  void minsumDiffusion(const int min);
 
-  void logZ(const bool isZ);
+  void incop(const char* cmd);
 };
 
 #endif // _PYTHON_H

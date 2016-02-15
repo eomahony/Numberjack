@@ -1,9 +1,10 @@
 /*
  * ****** Variable with domain represented by an interval *******
  */
- 
+
 #include "tb2intervar.hpp"
 #include "tb2wcsp.hpp"
+#include "tb2clusters.hpp"
 
 
 /*
@@ -12,8 +13,7 @@
  */
 
 
-IntervalVariable::IntervalVariable(WCSP *w, string n, Value iinf, Value isup) : 
-        Variable(w, n, iinf, isup),
+IntervalVariable::IntervalVariable(WCSP *w, string n, Value iinf, Value isup) : Variable(w, n, iinf, isup),
         infCost(MIN_COST, &w->getStore()->storeCost), supCost(MIN_COST, &w->getStore()->storeCost)
 {
 }
@@ -22,7 +22,7 @@ void IntervalVariable::print(ostream& os)
 {
     os << " [" << inf << "," << sup << "]";
     os << "/" << getDegree();
-	if (ToulBar2::weightedDegree) os << "/" << getWeightedDegree();
+    if (ToulBar2::weightedDegree) os << "/" << getWeightedDegree();
     if (unassigned()) {
         os << " < " << getInfCost() << "," << getSupCost() << " >";
     }
@@ -37,7 +37,7 @@ void IntervalVariable::print(ostream& os)
 void IntervalVariable::projectInfCost(Cost cost)
 {
     infCost += cost;
-	assert(infCost >= MIN_COST);
+    assert(infCost >= MIN_COST);
     if (getInf() == maxCostValue || infCost > maxCost) queueNC();
     if (CUT(infCost + wcsp->getLb(),wcsp->getUb())) increaseFast(getInf() + 1);
 }
@@ -45,7 +45,7 @@ void IntervalVariable::projectInfCost(Cost cost)
 void IntervalVariable::projectSupCost(Cost cost)
 {
     supCost += cost;
-	assert(supCost >= MIN_COST);
+    assert(supCost >= MIN_COST);
     if (getSup() == maxCostValue || supCost > maxCost) queueNC();
     if (CUT(supCost + wcsp->getLb(), wcsp->getUb())) decreaseFast(getSup() - 1);
 }
@@ -72,16 +72,17 @@ bool IntervalVariable::verifyNC()
         cout << *this << " has sup cost not NC!" << endl;
         return false;
     }
-	return true;
+    return true;
 }
 
 void IntervalVariable::increaseFast(Value newInf)
 {
     if (ToulBar2::verbose >= 2) cout << "increase " << getName() << " " << inf << " -> " << newInf << endl;
+    assert(!wcsp->getIsPartOfOptimalSolution() || ((wcsp->getTreeDec())?wcsp->getTreeDec()->getRoot()->getUb():wcsp->getUb()) <= ToulBar2::verifiedOptimum || wcsp->getBestValue(wcspIndex) >= newInf);
     if (newInf > inf) {
-	    if (newInf > sup) {THROWCONTRADICTION;
+        if (newInf > sup) {THROWCONTRADICTION;
         } else {
-		    if (newInf == sup) {assign(newInf);
+            if (newInf == sup) {assign(newInf);
             } else {
                 inf = newInf;
                 infCost = MIN_COST;
@@ -92,13 +93,17 @@ void IntervalVariable::increaseFast(Value newInf)
     }
 }
 
-void IntervalVariable::increase(Value newInf)
+void IntervalVariable::increase(Value newInf, bool isDecision)
 {
     if (ToulBar2::verbose >= 2) cout << "increase " << getName() << " " << inf << " -> " << newInf << endl;
+#ifndef NDEBUG
+    if (isDecision && wcsp->getIsPartOfOptimalSolution() && wcsp->getBestValue(wcspIndex) < newInf) wcsp->setIsPartOfOptimalSolution(false);
+    assert(isDecision || !wcsp->getIsPartOfOptimalSolution() || ((wcsp->getTreeDec())?wcsp->getTreeDec()->getRoot()->getUb():wcsp->getUb()) <= ToulBar2::verifiedOptimum || wcsp->getBestValue(wcspIndex) >= newInf);
+#endif
     if (newInf > inf) {
-	    if (newInf > sup) {THROWCONTRADICTION;
+        if (newInf > sup) {THROWCONTRADICTION;
         } else {
-		    if (newInf == sup) {assign(newInf);
+            if (newInf == sup) {assign(newInf);
             } else {
                 inf = newInf;
                 infCost = MIN_COST;
@@ -113,10 +118,11 @@ void IntervalVariable::increase(Value newInf)
 void IntervalVariable::decreaseFast(Value newSup)
 {
     if (ToulBar2::verbose >= 2) cout << "decrease " << getName() << " " << sup << " -> " << newSup << endl;
+    assert(!wcsp->getIsPartOfOptimalSolution() || ((wcsp->getTreeDec())?wcsp->getTreeDec()->getRoot()->getUb():wcsp->getUb()) <= ToulBar2::verifiedOptimum || wcsp->getBestValue(wcspIndex) <= newSup);
     if (newSup < sup) {
-	    if (newSup < inf) {THROWCONTRADICTION;
+        if (newSup < inf) {THROWCONTRADICTION;
         } else {
-		    if (inf == newSup) {assign(newSup);
+            if (inf == newSup) {assign(newSup);
             } else {
                 sup = newSup;
                 supCost = MIN_COST;
@@ -127,13 +133,17 @@ void IntervalVariable::decreaseFast(Value newSup)
     }
 }
 
-void IntervalVariable::decrease(Value newSup)
+void IntervalVariable::decrease(Value newSup, bool isDecision)
 {
     if (ToulBar2::verbose >= 2) cout << "decrease " << getName() << " " << sup << " -> " << newSup << endl;
+#ifndef NDEBUG
+    if (isDecision && wcsp->getIsPartOfOptimalSolution() && wcsp->getBestValue(wcspIndex) > newSup) wcsp->setIsPartOfOptimalSolution(false);
+    assert(isDecision || !wcsp->getIsPartOfOptimalSolution() || ((wcsp->getTreeDec())?wcsp->getTreeDec()->getRoot()->getUb():wcsp->getUb()) <= ToulBar2::verifiedOptimum || wcsp->getBestValue(wcspIndex) <= newSup);
+#endif
     if (newSup < sup) {
-	    if (newSup < inf) {THROWCONTRADICTION;
+        if (newSup < inf) {THROWCONTRADICTION;
         } else {
-		    if (inf == newSup) {assign(newSup);
+            if (inf == newSup) {assign(newSup);
             } else {
                 sup = newSup;
                 supCost = MIN_COST;
@@ -145,9 +155,13 @@ void IntervalVariable::decrease(Value newSup)
     }
 }
 
-void IntervalVariable::assign(Value newValue)
+void IntervalVariable::assign(Value newValue, bool isDecision)
 {
     if (ToulBar2::verbose >= 2) cout << "assign " << *this << " -> " << newValue << endl;
+#ifndef NDEBUG
+    if (isDecision && wcsp->getIsPartOfOptimalSolution() && wcsp->getBestValue(wcspIndex) != newValue) wcsp->setIsPartOfOptimalSolution(false);
+    assert(isDecision || !wcsp->getIsPartOfOptimalSolution() || ((wcsp->getTreeDec())?wcsp->getTreeDec()->getRoot()->getUb():wcsp->getUb()) <= ToulBar2::verifiedOptimum || wcsp->getBestValue(wcspIndex) == newValue);
+#endif
     if (unassigned() || getValue() != newValue) {
         if (cannotbe(newValue)) THROWCONTRADICTION;
         changeNCBucket(-1);
@@ -155,8 +169,8 @@ void IntervalVariable::assign(Value newValue)
         maxCost = MIN_COST;
         inf = newValue;
         sup = newValue;
-		infCost = MIN_COST;
-		supCost = MIN_COST;
+        infCost = MIN_COST;
+        supCost = MIN_COST;
         if (ToulBar2::setvalue) (*ToulBar2::setvalue)(wcsp->getIndex(), wcspIndex, newValue, wcsp->getSolver());
         for (ConstraintList::iterator iter=constrs.begin(); iter != constrs.end(); ++iter) {
             (*iter).constr->assign((*iter).scopeIndex);
@@ -175,11 +189,11 @@ void IntervalVariable::assignLS(Value newValue, set<Constraint *>& delayedCtrs)
         maxCost = MIN_COST;
         inf = newValue;
         sup = newValue;
-		infCost = MIN_COST;
-		supCost = MIN_COST;
+        infCost = MIN_COST;
+        supCost = MIN_COST;
         if (ToulBar2::setvalue) (*ToulBar2::setvalue)(wcsp->getIndex(), wcspIndex, newValue, wcsp->getSolver());
         for (ConstraintList::iterator iter=constrs.begin(); iter != constrs.end(); ++iter) {
-        	delayedCtrs.insert((*iter).constr);
+            delayedCtrs.insert((*iter).constr);
         }
     }
 }

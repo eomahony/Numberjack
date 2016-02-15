@@ -1,6 +1,6 @@
 /*! @file SimpleGlob.h
 
-    @version 2.8
+    @version 3.6
 
     @brief A cross-platform file globbing library providing the ability to
     expand wildcards in command-line arguments to a list of all matching 
@@ -9,7 +9,6 @@
     definition.
 
     @section features FEATURES
-
     -   MIT Licence allows free use in all software (including GPL and 
         commercial)
     -   multi-platform (Windows 95/98/ME/NT/2K/XP, Linux, Unix)
@@ -23,9 +22,7 @@
         warning level 3 (Windows/VC6) and -Wall (Linux/gcc)
 
     @section usage USAGE
-
     The SimpleGlob class is used by following these steps:
-
     <ol>
     <li> Include the SimpleGlob.h header file
 
@@ -57,11 +54,11 @@
     </ol>
 
     @section licence MIT LICENCE
-
+<pre>
     The licence text below is the boilerplate "MIT Licence" used from:
     http://www.opensource.org/licenses/mit-license.php
 
-    Copyright (c) 2006-2007, Brodie Thiesfield
+    Copyright (c) 2006-2013, Brodie Thiesfield
 
     Permission is hereby granted, free of charge, to any person obtaining a
     copy of this software and associated documentation files (the "Software"),
@@ -80,6 +77,7 @@
     CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
     TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</pre>
 */
 
 #ifndef INCLUDED_SimpleGlob
@@ -151,6 +149,16 @@ enum SG_Error {
 // ---------------------------------------------------------------------------
 // Platform dependent implementations
 
+// if we aren't on Windows and we have ICU available, then enable ICU
+// by default. Define this to 0 to intentially disable it.
+#ifndef SG_HAVE_ICU
+# if !defined(_WIN32) && defined(USTRING_H)
+#   define SG_HAVE_ICU 1
+# else
+#   define SG_HAVE_ICU 0
+# endif
+#endif
+
 // don't include this in documentation as it isn't relevant
 #ifndef DOXYGEN
 
@@ -194,6 +202,7 @@ enum SG_Error {
 #  include <crtdbg.h>
 #  define SG_ASSERT(b)    _ASSERTE(b)
 # else
+#  include <assert.h>
 #  define SG_ASSERT(b)    assert(b)
 # endif
 #else
@@ -210,6 +219,11 @@ public:
     static const wchar_t * strchr(const wchar_t *s, wchar_t c) {
         return ::wcschr(s, c);
     }
+#if SG_HAVE_ICU
+    static const UChar * strchr(const UChar *s, UChar c) {
+        return ::u_strchr(s, c);
+    }
+#endif
 
     static const char * strrchr(const char *s, char c) {
         return (char *) sg_strrchr((const SOCHAR_T *)s, c);
@@ -217,10 +231,18 @@ public:
     static const wchar_t * strrchr(const wchar_t *s, wchar_t c) {
         return ::wcsrchr(s, c);
     }
+#if SG_HAVE_ICU
+    static const UChar * strrchr(const UChar *s, UChar c) {
+        return ::u_strrchr(s, c);
+    }
+#endif
 
     // Note: char strlen returns number of bytes, not characters
     static size_t strlen(const char *s) { return ::strlen(s); }
     static size_t strlen(const wchar_t *s) { return ::wcslen(s); }
+#if SG_HAVE_ICU
+    static size_t strlen(const UChar *s) { return ::u_strlen(s); }
+#endif
 
     static void strcpy_s(char *dst, size_t n, const char *src)  {
         (void) n;
@@ -234,6 +256,11 @@ public:
         ::wcscpy(dst, src);
 #endif
     }
+#if SG_HAVE_ICU
+    static void strcpy_s(UChar *dst, size_t n, const UChar *src)  {
+        ::u_strncpy(dst, src, n);
+    }
+#endif
 
     static int strcmp(const char *s1, const char *s2) {
         return sg_strcmp((const SOCHAR_T *)s1, (const SOCHAR_T *)s2);
@@ -241,6 +268,11 @@ public:
     static int strcmp(const wchar_t *s1, const wchar_t *s2) {
         return ::wcscmp(s1, s2);
     }
+#if SG_HAVE_ICU
+    static int strcmp(const UChar *s1, const UChar *s2) {
+        return ::u_strcmp(s1, s2);
+    }
+#endif
 
     static int strcasecmp(const char *s1, const char *s2) {
         return sg_strcasecmp((const SOCHAR_T *)s1, (const SOCHAR_T *)s2);
@@ -250,6 +282,11 @@ public:
         return ::_wcsicmp(s1, s2);
     }
 #endif // _WIN32
+#if SG_HAVE_ICU
+    static int strcasecmp(const UChar *s1, const UChar *s2) {
+        return u_strcasecmp(s1, s2, 0);
+    }
+#endif
 };
 
 enum SG_FileType {
@@ -314,17 +351,17 @@ struct SimpleGlobBase
     }
 
     bool IsDirS(char) const {
-        return GetFileTypeS(m_oFindDataA.dwFileAttributes) == SG_FILETYPE_DIR;
+        return this->GetFileTypeS(m_oFindDataA.dwFileAttributes) == SG_FILETYPE_DIR;
     }
     bool IsDirS(wchar_t) const {
-        return GetFileTypeS(m_oFindDataW.dwFileAttributes) == SG_FILETYPE_DIR;
+        return this->GetFileTypeS(m_oFindDataW.dwFileAttributes) == SG_FILETYPE_DIR;
     }
 
     SG_FileType GetFileTypeS(const char * a_pszPath) {
-        return GetFileTypeS(GetFileAttributesA(a_pszPath));
+        return this->GetFileTypeS(GetFileAttributesA(a_pszPath));
     }
     SG_FileType GetFileTypeS(const wchar_t * a_pszPath)  {
-        return GetFileTypeS(GetFileAttributesW(a_pszPath));
+        return this->GetFileTypeS(GetFileAttributesW(a_pszPath));
     }
     SG_FileType GetFileTypeS(DWORD a_dwAttribs) const {
         if (a_dwAttribs == INVALID_FILE_ATTRIBUTES) {
@@ -381,6 +418,16 @@ struct SimpleGlobBase
         return SG_SUCCESS;
     }
 
+#if SG_HAVE_ICU
+    int FindFirstFileS(const UChar * a_pszFileSpec, unsigned int a_uiFlags) {
+        char buf[PATH_MAX] = { 0 };
+        UErrorCode status = U_ZERO_ERROR;
+        u_strToUTF8(buf, sizeof(buf), NULL, a_pszFileSpec, -1, &status);
+        if (U_FAILURE(status)) return SG_ERR_FAILURE;
+        return this->FindFirstFileS(buf, a_uiFlags);
+    }
+#endif
+
     bool FindNextFileS(char) {
         SG_ASSERT(m_uiCurr != (size_t)-1);
         if (++m_uiCurr >= m_glob.gl_pathc) {
@@ -389,6 +436,12 @@ struct SimpleGlobBase
         FilePrep();
         return true;
     }
+
+#if SG_HAVE_ICU
+    bool FindNextFileS(UChar) {
+        return this->FindNextFileS((char)0);
+    }
+#endif
 
     void FindDone() {
         globfree(&m_glob);
@@ -401,10 +454,28 @@ struct SimpleGlobBase
         return m_glob.gl_pathv[m_uiCurr];
     }
 
+#if SG_HAVE_ICU
+    const UChar * GetFileNameS(UChar) const {
+        const char * pszFile = this->GetFileNameS((char)0);
+        if (!pszFile) return NULL;
+        UErrorCode status = U_ZERO_ERROR;
+        memset(m_szBuf, 0, sizeof(m_szBuf));
+        u_strFromUTF8(m_szBuf, PATH_MAX, NULL, pszFile, -1, &status);
+        if (U_FAILURE(status)) return NULL;
+        return m_szBuf;
+    }
+#endif
+
     bool IsDirS(char) const {
         SG_ASSERT(m_uiCurr != (size_t)-1);
         return m_bIsDir;
     }
+
+#if SG_HAVE_ICU
+    bool IsDirS(UChar) const {
+        return this->IsDirS((char)0);
+    }
+#endif
 
     SG_FileType GetFileTypeS(const char * a_pszPath) const {
         struct stat sb;
@@ -420,10 +491,23 @@ struct SimpleGlobBase
         return SG_FILETYPE_INVALID;
     }
 
+#if SG_HAVE_ICU
+    SG_FileType GetFileTypeS(const UChar * a_pszPath) const {
+        char buf[PATH_MAX] = { 0 };
+        UErrorCode status = U_ZERO_ERROR;
+        u_strToUTF8(buf, sizeof(buf), NULL, a_pszPath, -1, &status);
+        if (U_FAILURE(status)) return SG_FILETYPE_INVALID;
+        return this->GetFileTypeS(buf);
+    }
+#endif
+
 private:
     glob_t  m_glob;
     size_t  m_uiCurr;
     bool    m_bIsDir;
+#if SG_HAVE_ICU
+    mutable UChar m_szBuf[PATH_MAX];
+#endif
 };
 
 #endif // _WIN32
@@ -514,6 +598,9 @@ public:
     }
 
 private:
+    CSimpleGlobTempl(const CSimpleGlobTempl &); // disabled
+    CSimpleGlobTempl & operator=(const CSimpleGlobTempl &); // disabled
+
     /*! @brief The argv array has it's members stored as either an offset into
         the string buffer, or as pointers to their string in the buffer. The 
         offsets are used because if the string buffer is dynamically resized, 
@@ -852,9 +939,18 @@ typedef CSimpleGlobTempl<char>    CSimpleGlobA;
 /*! @brief wchar_t version of CSimpleGlob */
 typedef CSimpleGlobTempl<wchar_t> CSimpleGlobW; 
 
-#if defined(_UNICODE)
+#if SG_HAVE_ICU
+/*! @brief UChar version of CSimpleGlob */
+typedef CSimpleGlobTempl<UChar> CSimpleGlobU; 
+#endif
+
+#ifdef _UNICODE
 /*! @brief TCHAR version dependent on if _UNICODE is defined */
-# define CSimpleGlob CSimpleGlobW   
+# if SG_HAVE_ICU
+#  define CSimpleGlob CSimpleGlobU
+# else
+#  define CSimpleGlob CSimpleGlobW   
+# endif
 #else
 /*! @brief TCHAR version dependent on if _UNICODE is defined */
 # define CSimpleGlob CSimpleGlobA   

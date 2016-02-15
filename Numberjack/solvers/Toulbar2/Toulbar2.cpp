@@ -9,7 +9,7 @@
 
 static Toulbar2Solver* MyWCSPSolver = NULL;
 
-void timeOut()
+void timeout()
 {
   assert(MyWCSPSolver);
   MyWCSPSolver->interrupted = true;
@@ -936,6 +936,7 @@ Toulbar2_Expression* Toulbar2_Table::add(Toulbar2Solver *solver, bool top_level)
 
 Toulbar2Solver::Toulbar2Solver()
 {
+  tb2init();
   ToulBar2::verbose = -1;
   ToulBar2::startCpuTime = cpuTime();
   initCosts(MAXCOST);
@@ -986,10 +987,10 @@ int Toulbar2Solver::solve()
 	wcsp->sortConstraints();
 	wcsp->histogram();
 	if (ToulBar2::dumpWCSP == 1) {
-	  solver->dump_wcsp("problem_original.wcsp");
+	  solver->dump_wcsp(ToulBar2::problemsaved_filename.c_str());
 	} else {
-	  ToulBar2::timeOut = timeOut;
-	  signal(SIGINT,  timeout);
+	  ToulBar2::timeOut = timeout;
+	  signal(SIGINT,  timeOut);
 	  try {
 		try {
 		  upperbound = wcsp->getUb();
@@ -1045,9 +1046,10 @@ void Toulbar2Solver::debug(const bool debug)
   ToulBar2::debug = debug;
 }
 
-void Toulbar2Solver::dumpWCSP(const int level)
+void Toulbar2Solver::dumpWCSP(const int level, const char* problem)
 {
   ToulBar2::dumpWCSP = level;
+  ToulBar2::problemsaved_filename = to_string(problem);
 }
 
 void Toulbar2Solver::updateUb(const char* newUb)
@@ -1102,9 +1104,11 @@ void Toulbar2Solver::minProperVarSize(const int size)
     ToulBar2::minProperVarSize = size;
 }
 
-void Toulbar2Solver::writeSolution(const bool write)
+void Toulbar2Solver::writeSolution(const char* write)
 {
-    ToulBar2::writeSolution = write;
+    char* filename = new char[strlen(write)+1];
+    strcpy(filename, write);
+    ToulBar2::writeSolution = filename;
 }
 
 void Toulbar2Solver::showSolutions(const bool show)
@@ -1137,7 +1141,7 @@ void Toulbar2Solver::lastConflict(const bool last)
     ToulBar2::lastConflict = last;
 }
 
-void Toulbar2Solver::dichotomicBranching(const bool dicho)
+void Toulbar2Solver::dichotomicBranching(const int dicho)
 {
     ToulBar2::dichotomicBranching = dicho;
 }
@@ -1150,6 +1154,11 @@ void Toulbar2Solver::sortDomains(const bool sort)
 void Toulbar2Solver::weightedDegree(const int wDegree)
 {
     ToulBar2::weightedDegree = wDegree;
+}
+
+void Toulbar2Solver::weightedTightness(const int wTight)
+{
+    ToulBar2::weightedTightness = wTight;
 }
 
 void Toulbar2Solver::nbDecisionVars(const int nbDecision)
@@ -1211,7 +1220,7 @@ void Toulbar2Solver::costThresholdPre(const char* cost)
 
 void Toulbar2Solver::costMultiplier(const char* cost)
 {
-    Cost cm = string2Cost(cost);
+    double cm = atof(cost);
     ToulBar2::costMultiplier = cm;
 }
 
@@ -1261,7 +1270,41 @@ void Toulbar2Solver::lcLevel(const int level)
     ToulBar2::LcLevel = lclevel;
 }
 
-void Toulbar2Solver::logZ(const bool log)
+void Toulbar2Solver::hbfs(const long hbfsgloballimit)
 {
-    ToulBar2::isZ = log;
+  ToulBar2::hbfs = 1;
+  ToulBar2::hbfsGlobalLimit = hbfsgloballimit;
+}
+
+void Toulbar2Solver::hbfsAlpha(const long hbfsalpha)
+{
+  ToulBar2::hbfsAlpha = hbfsalpha;
+}
+
+void Toulbar2Solver::hbfsBeta(const long hbfsbeta)
+{
+  ToulBar2::hbfsBeta = hbfsbeta;
+}
+
+void Toulbar2Solver::hbfsOpenNodeLimit(const long openlimit)
+{
+  ToulBar2::hbfs = 1;
+  if (ToulBar2::hbfsGlobalLimit==0) ToulBar2::hbfsGlobalLimit = 10000;
+  ToulBar2::hbfsOpenNodeLimit = openlimit;
+}
+
+void Toulbar2Solver::variableEliminationOrdering(const int order)
+{
+  ToulBar2::varOrder = reinterpret_cast<char *>(abs(order));
+}
+
+void Toulbar2Solver::incop(const char* cmd)
+{
+  if (cmd == NULL || strlen(cmd) == 0) {
+	ToulBar2::incop_cmd = "0 1 3 idwa 100000 cv v 0 200 1 0 0";
+  } else {
+    char* cmd_ = new char[strlen(cmd)+1];
+    strcpy(cmd_, cmd);
+	ToulBar2::incop_cmd = cmd_;
+  }
 }

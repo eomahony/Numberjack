@@ -250,6 +250,7 @@ toulbar2 = Extension(
     libraries=['gmp'],
     language='c++',
     define_macros=[
+        ('NUMBERJACK', None),
         ('NDEBUG', None),
         ('LINUX', None),
         ('LONGLONG_COST', None),

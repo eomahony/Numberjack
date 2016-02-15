@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 import datetime
 from Numberjack import *
+from Numberjack.Decomp import PostBinary, PostUnary, PostTernary
 
 
 # library of flatzinc predicates translated into numberjack constraints
@@ -26,6 +27,17 @@ def array_bool_or(x,y):
 
 def array_bool_xor(x):
     return ((Sum(x) % 2) == 1)
+
+# cost functions direct access through MiniZinc
+# only feasible with toulbar2 
+def cost_function_unary(var, costs, costVar):
+    return PostUnary(var,costs)
+
+def cost_function_binary(var1, var2, costs, costVar):
+    return PostBinary(var1, var2, costs)
+
+def cost_function_ternary(var1, var2, var3, costs, costVar):
+    return PostTernary(var1, var2, var3, costs)
 
 
 def array_int_element(x, y, z):

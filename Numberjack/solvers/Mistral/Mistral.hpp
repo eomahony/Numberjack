@@ -294,6 +294,22 @@ public:
   virtual Mistral_Expression* add(MistralSolver *solver, bool top_level) = 0;
 };
 
+class Mistral_Abs: public Mistral_binop
+{
+public:
+  Mistral_Abs(Mistral_Expression *var1);
+  virtual ~Mistral_Abs();
+  virtual Mistral_Expression* add(MistralSolver *solver, bool top_level);
+};
+
+class Mistral_neg: public Mistral_binop
+{
+public:
+  Mistral_neg(Mistral_Expression *var1);
+  virtual ~Mistral_neg();
+  virtual Mistral_Expression* add(MistralSolver *solver, bool top_level);
+};
+
 class Mistral_mul: public Mistral_binop
 {
 public:

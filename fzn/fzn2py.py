@@ -311,6 +311,7 @@ def run_solve(model, output_vars, param):
         solver.setOption('deadEndElimination',param['dee'])
         solver.setOption('btdMode',param['btd'])
         solver.setOption('splitClusterMaxSize',param['rds'])
+        solver.setOption('variableEliminationOrdering',param['varElimOrder'])
 ##        uncomment the following lines to save the problem in wcsp format
 #        solver.setOption('nopre')
 #        solver.setOption('lcLevel',0)

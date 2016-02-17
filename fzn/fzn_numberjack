@@ -29,7 +29,6 @@ def translate_fzn_to_nj(fznfilename, timelimit,
         temp_f = tempfile.NamedTemporaryFile(delete=False)
         temp_f.close()
         njfilename = temp_f.name
-        njfilename = "nj.py"
 
     # launch subprocess to convert the file to python file
     cmd = "%s %s > %s" % (fzn2py, fznfilename, njfilename)
@@ -113,7 +112,7 @@ if __name__ == '__main__':
         print >> sys.stderr, "%% Error exitcode %d" % c.exitcode
         print_commented_fzn(c.stdout, pipe=sys.stderr)
         print_commented_fzn(c.stderr, pipe=sys.stderr)
-    #os.remove(njfilename)
+    os.remove(njfilename)
     totaltime = total_seconds(datetime.datetime.now() - totaltime)
     print "%% Translate time: %.1f" % translatetime
     print "%% Run time: %.1f" % runtime

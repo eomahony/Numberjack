@@ -456,7 +456,7 @@ Toulbar2_Expression* Toulbar2_PostNary::add(Toulbar2Solver *solver, bool top_lev
 		for(int i = 0; i < _costs.size(); i++) {
 		  Value val[_arity];  
 		  for(int j = 0; j < _arity; j++) {
-			val[j] = _values.get_item(i).get_item(j);
+			val[j] = _values.get_item(i*_arity + j);
 		  }
 		  _solver->wcsp->postNaryConstraintTuple(ctrIndex,val,_arity,_costs.get_item(i));
 		}
@@ -577,31 +577,31 @@ Toulbar2_Expression* Toulbar2_PostWAmong::add(Toulbar2Solver *solver, bool top_l
 }
 
 Toulbar2_Regular::Toulbar2_Regular(Toulbar2ExpArray& vars, int arity, int nbStates, Toulbar2IntArray& initialStates, Toulbar2IntArray& acceptingStates, Toulbar2IntMultiArray& transitions, 
-Toulbar2StringArray& initialCosts, Toulbar2StringArray& acceptingCosts, Toulbar2StringArray& transitionsCosts): Toulbar2_Expression() 
+Toulbar2IntArray& initialCosts, Toulbar2IntArray& acceptingCosts, Toulbar2IntArray& transitionsCosts): Toulbar2_Expression() 
 {
   _vars = vars;
   _arity = arity; 
   _nbStates = nbStates;
-  _transitions = new int* [transitions.size()];
-  for(int i = 0; i < transitions.size(); i++)
+  _transitions = new int* [transitions.size()/3];
+  for(int i = 0; i < transitions.size()/3; i++)
   {
     _transitions[i] = new int[3];
   }
   for(int i = 0; i < initialStates.size(); i++)
   {
-    _initialStates.push_back(make_pair(initialStates.get_item(i),string2Cost(initialCosts.get_item(i))));
+    _initialStates.push_back(make_pair(initialStates.get_item(i), initialCosts.get_item(i)));
   }
   for(int i = 0; i < acceptingStates.size(); i++)
   {
-    _acceptingStates.push_back(make_pair(acceptingStates.get_item(i),string2Cost(acceptingCosts.get_item(i))));
+    _acceptingStates.push_back(make_pair(acceptingStates.get_item(i), acceptingCosts.get_item(i)));
   }
-  for(int i = 0; i < transitions.size(); i++)
+  for(int i = 0; i < transitions.size()/3; i++)
   {
-    for(int j =0; j < 4; j++)
+    for(int j =0; j < 3; j++)
     {  
-      _transitions[i][j] = transitions.get_item(i).get_item(j);
+      _transitions[i][j] = transitions.get_item(i*3+j);
     }
-    _transitionsCosts.push_back(string2Cost(transitionsCosts.get_item(i)));
+    _transitionsCosts.push_back(transitionsCosts.get_item(i));
   }
   _scope = new int[_vars.size()];
   _type = "w";

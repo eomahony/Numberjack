@@ -32,8 +32,7 @@ public:
 
 typedef Toulbar2Array< int > Toulbar2IntArray;
 typedef Toulbar2Array< double > Toulbar2DoubleArray;
-typedef Toulbar2Array< const char * > Toulbar2StringArray;
-typedef Toulbar2Array< Toulbar2IntArray > Toulbar2IntMultiArray;
+typedef Toulbar2IntArray Toulbar2IntMultiArray; //SdG: multi-arrays are not handled by Numberjack load expr
 
 /**
    Expression (Used to encode variables & constraints)
@@ -546,7 +545,7 @@ public:
     //Example of parameter type conversion to Numberjack 
     //virtual void postWRegular(int* scopeIndex, int arity, int nbStates, int** initial_States, int** accepting_States, int** Wtransitions, int* nbAll) =0; 
   Toulbar2_Regular(Toulbar2ExpArray& vars, int arity, int nbStates, Toulbar2IntArray& initialStates, Toulbar2IntArray& acceptingStates, Toulbar2IntMultiArray& transitions, 
-  Toulbar2StringArray& initialCosts, Toulbar2StringArray& acceptingCosts, Toulbar2StringArray& transitionsCosts);
+  Toulbar2IntArray& initialCosts, Toulbar2IntArray& acceptingCosts, Toulbar2IntArray& transitionsCosts);
   
   Toulbar2_Regular(Toulbar2ExpArray& vars, int arity, int nbStates, Toulbar2IntArray& initialStates, Toulbar2IntArray& acceptingStates, Toulbar2IntMultiArray& transitions, const char* type,
   const char* measureCost, const char* baseCost);

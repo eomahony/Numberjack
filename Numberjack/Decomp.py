@@ -175,10 +175,20 @@ class PostUnary(CostFunction):
 #   - Top-level: PostBinary Constraint
 #   - Nested: Cannot be used as a nested predicate
 #
-# \warning Can only be used with Toulbar2 solver
+# \code
+#   var1 = Variable(1,3)
+#   var2 = Variable(1,3)
+#   post = PostBinary(var1,var2,[5,3,2,2,2,2,2,1,2])
+#   model = Model(post)
+#   print model
+#>>> assign:
+#>>>   x0 in {1..3}
+#>>>   x1 in {1..3}
+#>>>
+#>>> subject to:
+#>>>   PostBinary(x0, x1)
+# \endcode
 #
-#
-
 class PostBinary(CostFunction):
 
     ## PostBinary constraint constructor
@@ -186,25 +196,10 @@ class PostBinary(CostFunction):
     # @param var2 second variable
     # @param costs table of costs
     #
-	# \note
-	#   - Top-level: PostTernary Constraint
-	#   - Nested: Cannot be used as a nested predicate
-	#
-    # \code
-    #var = Variable(1,3)
-	#var1 = Variable(1,3)
-	#post = PostBinary(var,var1,[5,3,2,2,2,2,2,1,2])
-	#model = Model(post)
-    #print model
-    #>>> assign:
-    #>>>   x0 in {1..3}
-    #>>>   x1 in {1..3}
-    #>>>
-    #>>> subject to:
-    #>>>   PostBinary(x0, x1)
-    # \endcode
+    # \note
+    #   - Top-level: PostBinary Constraint
+    #   - Nested: Cannot be used as a nested predicate
     #
-
     def __init__(self, var1, var2, costs):
         CostFunction.__init__(self, [var1, var2], "PostBinary")
         self.parameters = [costs]
@@ -215,24 +210,39 @@ class PostBinary(CostFunction):
         return [Table([obj] + self.get_children(), [(w, i / var2size , i % var2size) for i,w in enumerate(self.parameters[0])], 'support'), Minimize(obj)]
 
 ## PostTernary Constraint
-# @param var first variable
-# @param var1 second variable
-# @param var2 third variable
-# @param costs table of costs
 #
 # \note
 #   - Top-level: PostTernary Constraint
 #   - Nested: Cannot be used as a nested predicate
 #
 # \code
-# var = Variable(2)
-# var1 = Variable(2)
-# var2 = Variable(2)
-# post = PostTernary(var,var1,var2,[5,3,2,2,2,2,2,1])
-# model = Model(post)
+#   var1 = Variable(1,2)
+#   var2 = Variable(1,2)
+#   var3 = Variable(1,2)
+#   post = PostTernary(var1,var2,var3,[5,3,2,2,2,2,2,1])
+#   model = Model(post)
+#   print model
+#>>> assign:
+#>>>   x0 in {1..2}
+#>>>   x1 in {1..2}
+#>>>   x2 in {1..2}
+#>>>
+#>>> subject to:
+#>>>   PostTernary(x0, x1, x2)
 # \endcode
-
+#
 class PostTernary(CostFunction):
+
+    ## PostTernary constraint constructor
+    # @param var1 first variable
+    # @param var2 second variable
+    # @param var3 third variable
+    # @param costs table of costs
+    #
+    # \note
+    #   - Top-level: PostTernary Constraint
+    #   - Nested: Cannot be used as a nested predicate
+    #
     def __init__(self, var1, var2, var3, costs):
         CostFunction.__init__(self, [var1, var2, var3], "PostTernary")
         self.parameters = [costs]
@@ -242,6 +252,46 @@ class PostTernary(CostFunction):
         var2size = self.get_children()[1].get_size()
         var3size = self.get_children()[2].get_size()
         return [Table([obj] + self.get_children(), [(w, i / var2size / var3size , i / var3size, i % var3size) for i,w in enumerate(self.parameters[0])], 'support'), Minimize(obj)]
+
+## PostNary Constraint
+# @param vars list of variables
+# @param arity number of variables in the list
+# @param default_cost cost used by default if an assignment
+#
+# \note
+#   - Top-level: PostNary Constraint
+#   - Nested: Cannot be used as a nested predicate
+#
+# \code
+#   var1 = Variable(2)
+#   var2 = Variable(2)
+#   var3 = Variable(2)
+#   var4 = Variable(2)
+#   post = PostNary([var1,var2,var3,var4],4,0)
+#   for i in range(2):
+#     for j in range(2):
+#       for k in range(2):
+#         for l in range(2):
+#           post.add([i,j,k,l], reduce(op.xor, [i,j,k,l])) # simulates a soft xor constraint on four variables
+#   model = Model(post)
+#   print model
+#>>> assign:
+#>>>   x0 in {0,1}
+#>>>   x1 in {0,1}
+#>>>   x2 in {0,1}
+#>>>   x3 in {0,1}
+#>>>   
+#>>> subject to:
+#>>>   PostNary(x0, x1, x2, x3)[4, 0, [[0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 0, 1, 1], [0, 1, 0, 0], [0, 1, 0, 1], [0, 1, 1, 0], [0, 1, 1, 1], [1, 0, 0, 0], [1, 0, 0, 1], [1, 0, 1, 0], [1, 0, 1, 1], [1, 1, 0, 0], [1, 1, 0, 1], [1, 1, 1, 0], [1, 1, 1, 1]], [0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0]]
+# \endcode
+class PostNary(CostFunction):
+    def __init__(self, vars, arity, default_cost):
+        CostFunction.__init__(self, vars, "PostNary")
+        self.parameters = [arity, default_cost,[],[]]
+
+    def add(self, tupleIndex, cost):
+            self.parameters[2].append(tupleIndex)
+            self.parameters[3].append(cost)
 
 ## PostWSum Constraint
 #
@@ -261,7 +311,6 @@ class PostTernary(CostFunction):
 # post = PostWSum(vars,5,'hard','1000','==',5)
 # model = Model(post)
 # \endcode
-
 class PostWSum(CostFunction):
     def __init__(self, vars, arity, semantics, baseCost, comparator, rightRes):
         CostFunction.__init__(self, vars, "PostWSum")
@@ -353,21 +402,6 @@ class Same(CostFunction):
             self.parameters = [type, semantics]
             if baseCost != None:
                 self.parameters.append(baseCost)
-
-## PostNary Constraint
-#
-# \note
-#   - Top-level: PostNary Constraint
-#   - Nested: Cannot be used as a nested predicate
-#
-class PostNary(CostFunction):
-    def __init__(self, vars, arity, default_cost):
-        CostFunction.__init__(self, vars, "PostNary")
-        self.parameters = [arity, default_cost,[],[]]
-
-    def add(self, tupleIndex, cost):
-            self.parameters[2].append(tupleIndex)
-            self.parameters[3].append(cost)
 
 ## PostWSameGcc Constraint
 #

@@ -3216,7 +3216,7 @@ class NBJ_STD_Solver(object):
                             else:
                                 w_array = self.IntArray()
 
-                            if expr.get_operator() is "Table":
+                            if len(param) and hasattr(param[0], '__iter__'): # expr.get_operator() is "Table": #SdG: also need for PostNary
                                 for w in param:
                                     for v in w:
                                         w_array.add(v)

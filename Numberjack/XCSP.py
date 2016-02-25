@@ -247,7 +247,7 @@ class XCSPParser(object):
             import re
             s = s.strip()
             W, X = [], []
-            exp = re.compile(r"\{\s*(?P<coef>[-]?\d+)\s+(?P<varname>\w+)\s*\}")
+            exp = re.compile(r"\{\s*(?P<coef>[-]?\d+)\s+(?P<varname>[\w\._]+)\s*\}")
             for match in exp.finditer(s):
                 d = match.groupdict()
                 W.append(int(d['coef']) if 'coef' in d else 1)

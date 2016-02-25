@@ -48,6 +48,7 @@ class XCSPPredicate(object):
 
     def parse_functional(self, pred_str):
         # Split out the predicate name
+        pred_str = pred_str.strip()
         bits = pred_str.split("(", 1)
         if len(bits) == 1:
             raise XCSPParserError("Expected predicate %s" % pred_str)

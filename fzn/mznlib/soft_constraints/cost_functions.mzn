@@ -49,3 +49,13 @@ predicate cost_function_binary(var int: x, var int: y, array[int] of int: costs,
 % 1  1  1 | 3
 % would be represented by the cost vector [5, 2, 1, 3, 4, 6, 2, 3], a minimal-cost assignment would be 0  1, 0 
 predicate cost_function_ternary(var int: x, var int: y, var int: z, array[int] of int: costs, var int: costVariable );
+
+% The nary variant requires default_costs for all tuples and allows to list explicit exceptions, exceptions[i] should correspond to costs[i]
+% e.g. 
+% x, y | cost
+% 0  0 | 4
+% 0  1 | 3
+% 1  0 | 2 
+% 1  1 | 4
+% could be represented by vars = [x,y], default_costs = 4, exceptions = [| 0,1 | 1, 0 |], costs = [3, 2] 
+predicate cost_function_nary(array[int] of var int: vars, int: default_costs, array[int,int] of int: exceptions, array[int] of int: costs, var int: costVariable);

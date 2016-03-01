@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 import datetime
 from Numberjack import *
-from Numberjack.Decomp import PostBinary, PostUnary, PostTernary
+from Numberjack.Decomp import PostBinary, PostUnary, PostTernary, PostNary
 
 
 # library of flatzinc predicates translated into numberjack constraints
@@ -39,6 +39,22 @@ def cost_function_binary(var1, var2, costs, costVar):
 def cost_function_ternary(var1, var2, var3, costs, costVar):
     return PostTernary(var1, var2, var3, costs)
 
+def cost_function_nary(variables, default_cost, exceptions, costs, costVar):
+    arity = len(variables)
+    n = len(exceptions)
+    rows = n / arity
+    
+    # reshape into 2D array
+    excepts = [ [ exceptions[i*arity + j] for j in range(arity)] for i in range(rows)]
+
+    nAry = PostNary(variables, arity, default_cost)
+    print excepts
+    i = 0
+    for row in excepts:
+        nAry.add(row, costs[i])
+        i += 1
+
+    return nAry
 
 def array_int_element(x, y, z):
     # Buggy Workaround, produces invalid values in some optimization cases.

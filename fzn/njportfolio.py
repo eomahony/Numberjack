@@ -100,8 +100,8 @@ def njportfolio(njfilename, cores, timeout, memlimit):
         configs.append({'solver': 'Gurobi'})
     if 'Toulbar2' in available:
         configs.append({'solver': 'Toulbar2', 'lds': 1})
-#         configs.append({'solver': 'Toulbar2', 'btd': 3, 'lcLevel': 1, 'rds': 1})
-#         configs.append({'solver': 'Toulbar2', 'btd': 1, 'varElimOrder': 3}) # requires libboost-graph-dev installed and recompile Toulbar2 with flag BOOST active in setup.py
+#        configs.append({'solver': 'Toulbar2', 'btd': 3, 'lcLevel': 1, 'rds': 1})
+#        configs.append({'solver': 'Toulbar2', 'btd': 1, 'varElimOrder': 3}) # requires libboost-graph-dev installed and recompile Toulbar2 with flag BOOST active in setup.py
     configs.append({'solver': 'Mistral', 'var': 'Impact', 'val': 'Impact', 'restart': LUBY, 'base': 10000})
     configs.append({'solver': 'Mistral', 'dichotomic': 1, 'dichtcutoff': 10, 'base': 10, 'restart': GEOMETRIC, 'base': 256, 'factor': 1.3})
     configs.append({'solver': 'MiniSat'})

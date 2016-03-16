@@ -31,6 +31,7 @@
 Mistral::ConsolidateListener::ConsolidateListener(Mistral::Solver *s) 
   : VariableListener(), ConstraintListener(), solver(s)
 {
+	
   sequence = &(solver->sequence);
   constraints.initialise(solver->variables.size);
 
@@ -107,13 +108,13 @@ void Mistral::ConsolidateListener::notify_relax(Constraint c) {};
 
 void Mistral::ConsolidateListener::notify_add_con(Constraint c) {
 
-  //std::cout << "ADD CON " << c << std::endl;
-
   Variable *scope = c.get_scope();
   int arity = c.arity();
   for(int i=0; i<arity; ++i) {
-    constraints[scope[i].id()].add(c);
-    constraints[scope[i].id()].back().set_index(i);
+		if(!scope[i].is_ground()) {
+			constraints[scope[i].id()].add(c);
+    	constraints[scope[i].id()].back().set_index(i);
+		}
   }
 }
 

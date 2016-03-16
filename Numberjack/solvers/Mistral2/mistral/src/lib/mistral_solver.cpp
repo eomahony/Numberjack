@@ -1469,8 +1469,6 @@ void Mistral::Solver::add(Constraint c) {
   std::cout << "add " << c << std::endl;
 #endif
 
-  //std::cout << "ADD " << c << std::endl;
-
   if(c.id() < 0) {
 
     c.initialise(this);
@@ -1487,15 +1485,13 @@ void Mistral::Solver::add(Constraint c) {
 
   } else {
 
-
-    //std::cout << "awaken" << std::endl;
     c.awaken();
     
   }
   
 
-  // std::cout << "================\n" << active_constraints << "\n================" << std::endl;
-  
+  //std::cout << "================\n" << active_constraints << "\n================" << std::endl;
+	
   c.trigger();
 
   //active_constraints.trigger(c);
@@ -1518,6 +1514,7 @@ void Mistral::Solver::add(Constraint c) {
   // std::cout << "================\n" << active_constraints << "\n================" << std::endl;
 
   if(level <= 0 && !posted_constraints.safe_contain(c.id())) {
+		
     posted_constraints.init_add(c.id());
 
     //std::cout << "ADD " << c.id() << "?" << " yep " << posted_constraints << std::endl;
@@ -1906,6 +1903,7 @@ Mistral::Outcome Mistral::Solver::restart_search(const int root, const bool _res
     satisfiability = //(parameters.backjump ? 
       //conflict_directed_backjump() :
       chronological_dfs(root); //_exit_on_solution_); //);
+		
     
     // if(_exit_on_solution_ && objective)
     //   satisfiability = objective->notify_solution(this);
@@ -1918,6 +1916,9 @@ Mistral::Outcome Mistral::Solver::restart_search(const int root, const bool _res
 	satisfiability = UNKNOWN;
       }
     }
+		
+		
+		
 
     if(_restore_ || satisfiability == UNKNOWN) restore(root);
 
@@ -2395,7 +2396,7 @@ void Mistral::Solver::add(Mistral::VariableListener* l) {
   l->vid = variable_triggers.size;
   variable_triggers.add(l);
 }
-void Mistral::Solver::add(Mistral::ConstraintListener* l) {
+void Mistral::Solver::add(Mistral::ConstraintListener* l) {	
   l->cid = constraint_triggers.size;
   constraint_triggers.add(l);
 }
@@ -5088,154 +5089,160 @@ void Mistral::Solver::branch_left() {
 
 Mistral::Outcome Mistral::Solver::satisfied() {    
 #ifdef _DEBUG_SEARCH
-  if(_DEBUG_SEARCH) {
-    std::cout << parameters.prefix_comment;
-    for(unsigned int k=0; k<=decisions.size; ++k) std::cout << " ";
-    std::cout << " SAT! "  << std::endl; 
-  }
+	if(_DEBUG_SEARCH) {
+		std::cout << parameters.prefix_comment;
+		for(unsigned int k=0; k<=decisions.size; ++k) std::cout << " ";
+		std::cout << " SAT! "  << std::endl; 
+	}
 #endif
 
-  unsigned int i, j, k;
+	unsigned int i, j, k;
 
-  if(parameters.checked) {
+	if(parameters.checked) {
+		
+		/// check the current solution
+		Vector< int > tmp_sol;
+		Variable *scope;
+		Constraint C;
+		bool all_assigned;
+		int real_arity;
 
-    /// check the current solution
-    Vector< int > tmp_sol;
-    Variable *scope;
-    Constraint C;
-    bool all_assigned;
-    int real_arity;
+		for(i=0; i<posted_constraints.size; ++i) {
+			all_assigned = true;
+			C = constraints[posted_constraints[i]];
+			//C.consolidate();
 
-    for(i=0; i<posted_constraints.size; ++i) {
-      all_assigned = true;
-      C = constraints[posted_constraints[i]];
-      //C.consolidate();
+			real_arity = 0;
+			k=C.arity();
+			scope = C.get_scope();
+			for(j=0; j<k; ++j) {
+				if(scope[j].is_ground()) 
+					tmp_sol.add(scope[j].get_value());
+				else {
+					++real_arity;
+					tmp_sol.add(scope[j].get_min());
+					all_assigned = false;
+					//break;
+				}
+			}
 
-      real_arity = 0;
-      k=C.arity();
-      scope = C.get_scope();
-      for(j=0; j<k; ++j) {
-	if(scope[j].is_ground()) 
-	  tmp_sol.add(scope[j].get_value());
-	else {
-	  ++real_arity;
-	  tmp_sol.add(scope[j].get_min());
-	  all_assigned = false;
-	  //break;
-	}
-      }
+			bool consistent = true;
 
-      bool consistent = true;
-
-      if(!all_assigned) {
+			if(!all_assigned) {
 
 
-	/// !!! This checks that all values are AC, this is too strong
-	// for(j=0; j<k && consistent; ++j) {
-	//   if(!scope[j].is_ground()) {
-	//     int vali, vnext = scope[j].get_min();
-	//     do {
-	//       vali = vnext;
-	//       if(!C.find_support(j, vali)) consistent = false;
-	//       vnext = scope[j].next(vali);
-	//     } while( consistent && vali<vnext );
-	//   }
-	// }
+				/// !!! This checks that all values are AC, this is too strong
+				// for(j=0; j<k && consistent; ++j) {
+				//   if(!scope[j].is_ground()) {
+				//     int vali, vnext = scope[j].get_min();
+				//     do {
+				//       vali = vnext;
+				//       if(!C.find_support(j, vali)) consistent = false;
+				//       vnext = scope[j].next(vali);
+				//     } while( consistent && vali<vnext );
+				//   }
+				// }
 
-	// #ifdef _DEG_SEARCH
-	// 	if(_DEBUG_SEARCH) {
-	// 	  std::cout << "c check incomplete assignment of " << C << " (" << real_arity << ")" << std::endl; 
-	// 	}
-	// #endif
+				// #ifdef _DEG_SEARCH
+				// 	if(_DEBUG_SEARCH) {
+				// 	  std::cout << "c check incomplete assignment of " << C << " (" << real_arity << ")" << std::endl; 
+				// 	}
+				// #endif
 	
-	if(real_arity < 5) {
-	  /// This checks that all bounds are BC
-	  for(j=0; j<k && consistent; ++j) {
-	    if(!scope[j].is_ground()) {
-	      if(!C.find_bound_support(j, scope[j].get_min())) consistent = false;
-	      else if(!C.find_bound_support(j, scope[j].get_max())) consistent = false;
-	    }
-	  }
-	}
+				if(real_arity < 5) {
+					/// This checks that all bounds are BC
+					for(j=0; j<k && consistent; ++j) {
+						if(!scope[j].is_ground()) {
+							if(!C.find_bound_support(j, scope[j].get_min())) consistent = false;
+							else if(!C.find_bound_support(j, scope[j].get_max())) consistent = false;
+						}
+					}
+				}
 
 
-      } else {
-	consistent = !C.check(tmp_sol.stack_);
-      }
+			} else {
+				
+				consistent = !C.check(tmp_sol.stack_);
+			}
 
-      if(!consistent)
-	{
+			if(!consistent)
+			{
+				
 	
-	  if(tmp_sol.size < k) {
-	    std::cerr << "\nError: solution does not satisfy c" << C.id() << ": " << C << tmp_sol << " (backtracking)"<< std::endl;
-	    exit(0);
-	  } else {
-	    std::cerr << "\nError: solution does not satisfy c" << C.id() << ": " << C ;
-	    for(j=0; j<k; ++j) {
-	      std::cerr << " " << scope[j].get_domain();
-	    }
-	    std::cerr << " (backtracking)"<< std::endl;
-	    exit(0);
-	  }
-	  if( decisions.empty() ) return UNSAT;
-	  else if( limits_expired() ) return LIMITOUT;
-	  else {
-	    branch_right();
-	    return UNKNOWN;
-	  }
+				if(tmp_sol.size < k) {
+					std::cerr << "\nError: solution does not satisfy c" << C.id() << ": " << C << tmp_sol << " (backtracking)"<< std::endl;
+					exit(0);
+				} else {
+					std::cerr << "\nError: solution does not satisfy c" << C.id() << ": " << C ;
+					for(j=0; j<k; ++j) {
+						std::cerr << " " << scope[j].get_domain();
+					}
+					std::cerr << " (backtracking)"<< std::endl;
+					exit(0);
+				}
+				if( decisions.empty() ) return UNSAT;
+				else if( limits_expired() ) return LIMITOUT;
+				else {
+					branch_right();
+					return UNKNOWN;
+				}
+			}
+			tmp_sol.clear();
+		}
 	}
-      tmp_sol.clear();
-    }
-  }
 
-  /// store the solution 
-  for(i=0; i<variables.size; ++i) {
-    last_solution_lb[i] = variables[i].get_min();
-    last_solution_ub[i] = variables[i].get_max();
 
-    //std::cout << variables[i] << " := " << last_solution_lb[i] << " " << variables[i].get_domain() << std::endl;
+	/// store the solution 
+	for(i=0; i<variables.size; ++i) {
+		
+		last_solution_lb[i] = variables[i].get_min();
+		last_solution_ub[i] = variables[i].get_max();
 
-  }
-  //std::cout << std::endl;
-  ++statistics.num_solutions;
+		//std::cout << variables[i] << " := " << last_solution_lb[i] << " " << variables[i].get_domain() << std::endl;
+
+	}
+	//std::cout << "stats" << std::endl;
+	++statistics.num_solutions;
 
 #ifdef _DEBUG_SEARCH
-  if(_DEBUG_SEARCH) {
-    std::cout << parameters.prefix_comment;
-    for(unsigned int k=0; k<=decisions.size; ++k) std::cout << " ";
-    std::cout << "notify solution to goal " << objective << " " << objective->objective << " " << objective->objective.get_domain() << std::endl;
-  }
+	if(_DEBUG_SEARCH) {
+		std::cout << parameters.prefix_comment;
+		for(unsigned int k=0; k<=decisions.size; ++k) std::cout << " ";
+		std::cout << "notify solution to goal " << objective; //<< std::endl;
+		if (objective->type == Goal::OPTIMIZATION) {
+			std::cout << " " << objective->objective  << " " << objective->objective.get_domain() ;
+		} 
+		std::cout << std::endl;
+							
+	}
 #endif
 
 
-
-
-  /// notify the objective and return the outcome
-  Outcome result = //(_exit_on_solution_ ? SAT : objective->notify_solution(this));
-    objective->notify_solution(this);
+	/// notify the objective and return the outcome
+	Outcome result = //(_exit_on_solution_ ? SAT : objective->notify_solution(this));
+	objective->notify_solution(this);
 
   
-  statistics.objective_value = objective->value();
-  //std::cout << statistics.objective_value << std::endl;
+	statistics.objective_value = objective->value();
+	//std::cout << statistics.objective_value << std::endl;
 
 
-
-  for(i=0; i<solution_triggers.size; ++i) {
-    solution_triggers[i]->notify_solution();
-  }
+	for(i=0; i<solution_triggers.size; ++i) {
+		solution_triggers[i]->notify_solution();
+	}
 
 #ifdef _DEBUG_SEARCH
-  if(_DEBUG_SEARCH) {
-    std::cout << parameters.prefix_comment;
-    for(unsigned int k=0; k<=decisions.size; ++k) std::cout << " ";
-    std::cout << "=> " << outcome2str(result) << std::endl;
-  }
+	if(_DEBUG_SEARCH) {
+		std::cout << parameters.prefix_comment;
+		for(unsigned int k=0; k<=decisions.size; ++k) std::cout << " ";
+		std::cout << "=> " << outcome2str(result) << std::endl;
+	}
 #endif
   
   
-  return result;
+	return result;
   
-  //return SAT;
+	//return SAT;
 }
 
 

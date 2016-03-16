@@ -333,8 +333,6 @@ namespace Mistral {
     //FailureCountManager(Solver *s, void *a=NULL) : solver(s) {// }
     FailureCountManager(Solver *s) : solver(s) {// }
 
-      //std::cout << "OLD" << std::endl;
-
       weight_unit = solver->parameters.activity_increment;
       
       variable_weight.initialise(solver->variables.size, solver->variables.size);
@@ -454,6 +452,7 @@ namespace Mistral {
     }
 
     virtual void notify_add_con(Constraint con) {
+			
       while(constraint_weight.size < solver->constraints.size) {
 	constraint_weight.add(weight_unit);
       }

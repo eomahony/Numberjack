@@ -494,16 +494,15 @@ Mistral2_Expression* Mistral2_Element::add(Mistral2Solver *solver, bool top_leve
     
     int i, n=_vars.size();  
     Mistral::VarArray scope(n-1);
-      
-
 
     for(i=0; i<n-1; ++i) {
       _vars.get_item(i)->add(_solver,false);
       scope[i] = _vars.get_item(i)->_self;
-    }
+    }	
     
     _vars.get_item(n-1)->add(_solver,false);
     Mistral::Variable index = _vars.get_item(n-1)->_self;
+		
     _self = scope[index];
 
   }

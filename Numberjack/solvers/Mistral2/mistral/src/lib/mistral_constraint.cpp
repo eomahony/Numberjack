@@ -13753,6 +13753,9 @@ Mistral::PredicateElement::PredicateElement(std::vector< Variable >& scp, const 
 }
 
 void Mistral::PredicateElement::initialise() {
+	
+	//std::cout << "start init" << std::endl;
+	
   ConstraintImplementation::initialise();
 
   int n = scope.size-1;
@@ -13769,6 +13772,8 @@ void Mistral::PredicateElement::initialise() {
   /////
   scope[n-1].set_min(0+offset);
   scope[n-1].set_max(n-2+offset);
+	
+	//std::cout << "end init" << std::endl;
 
 }
 

@@ -1808,262 +1808,265 @@ double Mistral::Solver::get_current_target() {
 
 Mistral::Outcome Mistral::Solver::restart_search(const int root, const bool _restore_) { //const bool _restore_, const bool _exit_on_solution_) {
 
-  //int initial_level = level; 
+	//int initial_level = level; 
 
   
-  if(parameters.verbosity>2)  {
-    std::cout << " " << parameters.prefix_comment << " +" << std::setw(89) << std::setfill('=')
-	      << "+" << std::endl << std::setfill(' ') 
-	      << " " << parameters.prefix_comment << " |      INSTANCE STATS   |      LEARNING      |         SEARCH STATS          |";
-    if(objective) {
-      if(objective->is_optimization())
-	std::cout << " OBJECTIVE |" ;
-      else if(objective->is_satisfaction())
-	std::cout << " MAX DEPTH |" ;
-      else if(objective->is_enumeration())
-	std::cout << " #SOLUTION |" ;
-    }
-    std::cout << std::endl 
-	      << " " << parameters.prefix_comment << " |   vars  vals     cons |  #learnt size kept |    nodes     propags     time |           |" << std::endl;
-  } else if(parameters.verbosity>1)  {
-   std::cout << " " << parameters.prefix_comment << " +" << std::setw(44) << std::setfill('=')
-	      << "+" << std::endl << std::setfill(' ') 
-	      << " " << parameters.prefix_comment << " |         SEARCH STATS          |";
-    if(objective) {
-      if(objective->is_optimization())
-	std::cout << " OBJECTIVE |" ;
-      else if(objective->is_satisfaction())
-	std::cout << " MAX DEPTH |" ;
-      else if(objective->is_enumeration())
-	std::cout << " #SOLUTION |" ;
-    }
-    std::cout << std::endl 
-	      << " " << parameters.prefix_comment << " |    nodes     propags     time |           |" << std::endl;
-  }
+	if(parameters.verbosity>2)  {
+		std::cout << " " << parameters.prefix_comment << " +" << std::setw(89) << std::setfill('=')
+			<< "+" << std::endl << std::setfill(' ') 
+				<< " " << parameters.prefix_comment << " |      INSTANCE STATS   |      LEARNING      |         SEARCH STATS          |";
+		if(objective) {
+			if(objective->is_optimization())
+				std::cout << " OBJECTIVE |" ;
+			else if(objective->is_satisfaction())
+				std::cout << " MAX DEPTH |" ;
+			else if(objective->is_enumeration())
+				std::cout << " #SOLUTION |" ;
+		}
+		std::cout << std::endl 
+			<< " " << parameters.prefix_comment << " |   vars  vals     cons |  #learnt size kept |    nodes     propags     time |           |" << std::endl;
+	} else if(parameters.verbosity>1)  {
+		std::cout << " " << parameters.prefix_comment << " +" << std::setw(44) << std::setfill('=')
+			<< "+" << std::endl << std::setfill(' ') 
+				<< " " << parameters.prefix_comment << " |         SEARCH STATS          |";
+		if(objective) {
+			if(objective->is_optimization())
+				std::cout << " OBJECTIVE |" ;
+			else if(objective->is_satisfaction())
+				std::cout << " MAX DEPTH |" ;
+			else if(objective->is_enumeration())
+				std::cout << " #SOLUTION |" ;
+		}
+		std::cout << std::endl 
+			<< " " << parameters.prefix_comment << " |    nodes     propags     time |           |" << std::endl;
+	}
 
-  Outcome satisfiability = UNKNOWN;
+	Outcome satisfiability = UNKNOWN;
 
-  statistics.objective_value = objective->value();
-  statistics.num_variables = sequence.size;  
+	statistics.objective_value = objective->value();
+	statistics.num_variables = sequence.size;  
 
-  double last_target = get_current_target();
-  double target_i;
-  double progress_i=0;
+	double last_target = get_current_target();
+	double target_i;
+	double progress_i=0;
 
-  //double total_progress = 0;
-  //unsigned int tprog = 0;
+	//double total_progress = 0;
+	//unsigned int tprog = 0;
 
-  // std::cout << "[" << std::right << std::setw(33) << "]";
-  // std::cout.flush();
+	// std::cout << "[" << std::right << std::setw(33) << "]";
+	// std::cout.flush();
 
-  while(satisfiability == UNKNOWN) {
+	while(satisfiability == UNKNOWN) {
 
-    statistics.num_constraints = posted_constraints.size;
-    if(base) statistics.num_clauses = base->clauses.size;
-    if(base) statistics.num_learned = base->learnt.size;
-    statistics.num_variables = sequence.size;  
-    statistics.num_values = 0;
-    for(int i=0; i<sequence.size; ++i)
-      statistics.num_values += sequence[i].get_size();
+		statistics.num_constraints = posted_constraints.size;
+		if(base) statistics.num_clauses = base->clauses.size;
+		if(base) statistics.num_learned = base->learnt.size;
+		statistics.num_variables = sequence.size;  
+		statistics.num_values = 0;
+		for(int i=0; i<sequence.size; ++i)
+			statistics.num_values += sequence[i].get_size();
     
-    if(parameters.verbosity>1) {
-      statistics.print_short(std::cout);
-      std::cout << " " << (int)(100*progress_i) << "%" << std::endl;
-    }
+		if(parameters.verbosity>1) {
+			statistics.print_short(std::cout);
+			std::cout << " " << (int)(100*progress_i) << "%" << std::endl;
+		}
 
-    // if(progress_i > 0) {
-    //   total_progress += (1.0-total_progress)*progress_i;
-    //   tprog = (4294977296.0*total_progress);
-    //   unsigned int i, j=31;
-    //   //for(i=0; i<33; ++i) std::cout << "\b";
-    //   for(i=(1<<j); j && i <= tprog; i+=(1<<(--j))) ;
+		// if(progress_i > 0) {
+		//   total_progress += (1.0-total_progress)*progress_i;
+		//   tprog = (4294977296.0*total_progress);
+		//   unsigned int i, j=31;
+		//   //for(i=0; i<33; ++i) std::cout << "\b";
+		//   for(i=(1<<j); j && i <= tprog; i+=(1<<(--j))) ;
 
-    //   std::cout << (32-j) << " "<< tprog << std::endl; 
+		//   std::cout << (32-j) << " "<< tprog << std::endl; 
 
-    //   i = tprog = 32-j;
-    //   // while(i--) std::cout << "=";
-    //   // std::cout << std::right << std::setw(33-tprog) << "]";
-    //   // std::cout.flush();
-    // }
+		//   i = tprog = 32-j;
+		//   // while(i--) std::cout << "=";
+		//   // std::cout << std::right << std::setw(33-tprog) << "]";
+		//   // std::cout.flush();
+		// }
 
-    ++statistics.num_restarts;
-
-
-    //std::cout << " c notify restart" << std::endl;
-    notify_restart(progress_i);
+		++statistics.num_restarts;
 
 
-    // std::cout << "seq: [";
-    // for(int i=sequence.size; i<variables.size; ++i) {
-    //   std::cout << (sequence[i].get_value() ? " +" : " -") << sequence[i]; 
-    // }
-    // std::cout << "]\n";
+		//std::cout << " c notify restart" << std::endl;
+		notify_restart(progress_i);
 
 
-    satisfiability = //(parameters.backjump ? 
-      //conflict_directed_backjump() :
-      chronological_dfs(root); //_exit_on_solution_); //);
+		// std::cout << "seq: [";
+		// for(int i=sequence.size; i<variables.size; ++i) {
+		//   std::cout << (sequence[i].get_value() ? " +" : " -") << sequence[i]; 
+		// }
+		// std::cout << "]\n";
+
+
+		satisfiability = //(parameters.backjump ? 
+			//conflict_directed_backjump() :
+			chronological_dfs(root); //_exit_on_solution_); //);
 		
     
-    // if(_exit_on_solution_ && objective)
-    //   satisfiability = objective->notify_solution(this);
+		// if(_exit_on_solution_ && objective)
+		//   satisfiability = objective->notify_solution(this);
 
-    if(satisfiability == LIMITOUT) {
+		if(satisfiability == LIMITOUT) {
 
-      policy->reset(parameters.restart_limit);
+			policy->reset(parameters.restart_limit);
     
-      if(!limits_expired()) {
-	satisfiability = UNKNOWN;
-      }
-    }
+			if(!limits_expired()) {
+				satisfiability = UNKNOWN;
+			}
+		}
 		
 		
 		
 
-    if(_restore_ || satisfiability == UNKNOWN) restore(root);
+		if(_restore_ || satisfiability == UNKNOWN) restore(root);
 
-    forget();
+		forget();
 
-    target_i = get_current_target();
-    progress_i = (last_target-target_i)/last_target;
-    last_target = target_i;
+		target_i = get_current_target();
+		progress_i = (last_target-target_i)/last_target;
+		last_target = target_i;
 
-  }
+	}
 
-  if(satisfiability == LIMITOUT) statistics.outcome = interrupted();
-  else statistics.outcome = satisfiability;
+	if(satisfiability == LIMITOUT) statistics.outcome = interrupted();
+	else statistics.outcome = satisfiability;
 
-  statistics.end_time = get_run_time();
+	statistics.end_time = get_run_time();
 
-  if(parameters.verbosity)  {
-    std::cout << statistics;
-  }
+	if(parameters.verbosity)  {
+		std::cout << statistics;
+	}
 
-  return satisfiability;
+	return satisfiability;
 }
 
 Mistral::Outcome Mistral::Solver::get_next_solution()  
 {
-  Outcome satisfiability = UNSAT;
+	Outcome satisfiability = UNSAT;
   
-  if(search_started) {
-    if(decisions.size) 
-      branch_right();
-    else {
-      return satisfiability;
-    }
-  }
+	if(search_started) {
+		if(decisions.size) 
+			branch_right();
+		else {
+			return satisfiability;
+		}
+	}
    
-  search_started = true;
+	search_started = true;
   
-  statistics.num_variables = sequence.size;
-  statistics.num_values = 0;
-  for(int i=0; i<sequence.size; ++i)
-    statistics.num_values += sequence[i].get_size();
+	statistics.num_variables = sequence.size;
+	statistics.num_values = 0;
+	for(int i=0; i<sequence.size; ++i)
+		statistics.num_values += sequence[i].get_size();
   
-  //display(std::cout);
-  satisfiability = chronological_dfs();
+	//display(std::cout);
+	satisfiability = chronological_dfs();
   
-  if(parameters.verbosity) {
-    statistics.print_short(std::cout);
-  }
+	if(parameters.verbosity) {
+		statistics.print_short(std::cout);
+	}
 
-  return satisfiability;
+	return satisfiability;
 }
 
 void Mistral::Solver::BooleanMemoryManager::add(Variable *x) {
-  if(size.back() < 1024) {
-    x->bool_domain = slots.back()+size.back();
-    ++size.back();
-  } else {
-    int *nslot = new int[1024];
-    std::fill(nslot, nslot+1024, 3);
-    size.add(1);
-    slots.add(nslot);
-    x->bool_domain = nslot;
-  }
+	if(size.back() < 1024) {
+		x->bool_domain = slots.back()+size.back();
+		++size.back();
+	} else {
+		int *nslot = new int[1024];
+		std::fill(nslot, nslot+1024, 3);
+		size.add(1);
+		slots.add(nslot);
+		x->bool_domain = nslot;
+	}
 
-  //std::cout << "zzz " << *x << ": " << x->domain_type << std::endl;
+	//std::cout << "zzz " << *x << ": " << x->domain_type << std::endl;
 }
 
 
 void Mistral::Solver::initialise_search(Vector< Variable >& seq, 
-					BranchingHeuristic *heu, 
-					RestartPolicy *pol,
-					Goal *goal) 
+BranchingHeuristic *heu, 
+RestartPolicy *pol,
+Goal *goal) 
 {
 
 #ifdef _DEBUG_BUILD
-  std::cout << "INIT SEARCH!" << std::endl;
+	std::cout << "INIT SEARCH!" << std::endl;
 #endif
 
   
 
-  //consolidate();
+	//consolidate();
 
-  if(level < 0) save();
+	if(level < 0) save();
 
-  active_solver = this;
-  signal(SIGINT,Mistral_SIGINT_handler);
-
-
-  sequence.clear();
-  //decisions.clear();
-  for(unsigned int i=seq.size; i;) {
-    Variable x = seq[--i].get_var();
-    if(!sequence.contain(x) && !(domain_types[x.id()]&REMOVED_VAR)) sequence.add(x);
-    if(x.is_ground()) sequence.remove(x);
-  }
-  num_search_variables = sequence.size;
+	active_solver = this;
+	signal(SIGINT,Mistral_SIGINT_handler);
 
 
-  if(heu) { // delete heuristic
-    ; heuristic = heu; }
-  else if(!heuristic) heuristic = new GenericHeuristic< Lexicographic, MinValue >(this);
-  if(pol) { // delete policy;
-    policy    = pol; }
-  else if(!policy)    policy    = new NoRestart();
-  if(goal){ // delete objective;
-    objective = goal;}
-  else if(!objective) objective = new Goal(Goal::SATISFACTION);
+	sequence.clear();
+	//decisions.clear();
+	for(unsigned int i=seq.size; i;) {
+		Variable x = seq[--i].get_var();
+		if(!sequence.contain(x) && !(domain_types[x.id()]&REMOVED_VAR)) sequence.add(x);
+		if(x.is_ground()) sequence.remove(x);
+	}
+	num_search_variables = sequence.size;
 
-  // std::cout << (int*)heu << " " << (int*)heuristic << std::endl;
-  // std::cout << heuristic << std::endl;
-  // heuristic->display(std::cout);
-  // std::cout << std::endl << sequence << std::endl;
 
-  heuristic->initialise(sequence);
+	if(heu) { // delete heuristic
+		; heuristic = heu; 
+	}
+	else if(!heuristic) heuristic = new GenericHeuristic< Lexicographic, MinValue >(this);
+	if(pol) { // delete policy;
+		policy    = pol; 
+	}
+	else if(!policy)    policy    = new NoRestart();
+	if(goal){ // delete objective;
+		objective = goal;
+	}
+	else if(!objective) objective = new Goal(Goal::SATISFACTION);
 
-  parameters.restart_limit = policy->base;
-  parameters.limit = (policy->base > 0);
+	// std::cout << (int*)heu << " " << (int*)heuristic << std::endl;
+	// std::cout << heuristic << std::endl;
+	// heuristic->display(std::cout);
+	// std::cout << std::endl << sequence << std::endl;
 
-  statistics.num_constraints = posted_constraints.size;
+	heuristic->initialise(sequence);
+
+	parameters.restart_limit = policy->base;
+	parameters.limit = (policy->base > 0);
+
+	statistics.num_constraints = posted_constraints.size;
   
-  if(base) statistics.num_clauses = base->clauses.size;
+	if(base) statistics.num_clauses = base->clauses.size;
 
-  unsigned int arity;
-  for(unsigned int i=0; i<posted_constraints.size; ++i) {
-    arity = constraints[posted_constraints[i]].arity();
-    if(arity > statistics.max_arity) statistics.max_arity = arity;
-  }
+	unsigned int arity;
+	for(unsigned int i=0; i<posted_constraints.size; ++i) {
+		arity = constraints[posted_constraints[i]].arity();
+		if(arity > statistics.max_arity) statistics.max_arity = arity;
+	}
 
-  /*
-  std::cout << sequence << std::endl;
-  monitor_list << variables[29];
-  monitor_list << " ";
-  monitor_list << variables[30];
-  monitor_list << " ";
-  monitor_list << variables[31];
-  monitor_list << " ";
-  monitor_list << variables[32];
-  monitor_list << " ";
-  monitor_list << variables[33];
-  monitor_list << " ";
-  monitor_list << variables[34];
-  monitor_list << " ";
-  monitor_list << variables[35];
-  monitor_list << "\n";
-  */
+	/*
+	std::cout << sequence << std::endl;
+	monitor_list << variables[29];
+	monitor_list << " ";
+	monitor_list << variables[30];
+	monitor_list << " ";
+	monitor_list << variables[31];
+	monitor_list << " ";
+	monitor_list << variables[32];
+	monitor_list << " ";
+	monitor_list << variables[33];
+	monitor_list << " ";
+	monitor_list << variables[34];
+	monitor_list << " ";
+	monitor_list << variables[35];
+	monitor_list << "\n";
+	*/
   
 }
 
@@ -5260,6 +5263,12 @@ Mistral::Outcome Mistral::Solver::exhausted() {
 
 bool Mistral::Solver::limits_expired() {
   
+	// std::cout << (get_run_time() - statistics.start_time) << " / " << parameters.time_limit << std::endl;
+	// std::cout << statistics.num_nodes << " / " << parameters.node_limit << std::endl;
+	// std::cout << statistics.num_failures << " / " << parameters.fail_limit << std::endl;
+	// std::cout << statistics.num_failures << " / " << parameters.restart_limit << std::endl;
+	// std::cout << statistics.num_propagations << " / " << parameters.propagation_limit << std::endl;
+	//
 #ifdef _DEBUG_SEARCH
   if(_DEBUG_SEARCH) {
     if(parameters.limit && 

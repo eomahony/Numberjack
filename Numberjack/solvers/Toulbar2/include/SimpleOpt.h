@@ -1,6 +1,6 @@
 /*! @file SimpleOpt.h
 
-    @version 3.0
+    @version 3.6
 
     @brief A cross-platform command line library which can parse almost any
     of the standard command line formats in use today. It is designed 
@@ -8,7 +8,6 @@
     and Linux. See CSimpleOptTempl for the class definition.
 
     @section features FEATURES
-
     -   MIT Licence allows free use in all software (including GPL 
         and commercial)
     -   multi-platform (Windows 95/98/ME/NT/2K/XP, Linux, Unix)
@@ -71,18 +70,13 @@
         level 3 (Windows/VC6) and -Wall (Linux/gcc)
 
     @section usage USAGE
-
     The SimpleOpt class is used by following these steps:
-
-    <ol>
+<ol>
     <li> Include the SimpleOpt.h header file
-
         <pre>
         \#include "SimpleOpt.h"
         </pre>
-
     <li> Define an array of valid options for your program.
-
 <pre>
 @link CSimpleOptTempl::SOption CSimpleOpt::SOption @endlink g_rgOptions[] = {
     { OPT_FLAG, _T("-a"),     SO_NONE    }, // "-a"
@@ -93,28 +87,22 @@
     SO_END_OF_OPTIONS                       // END
 };
 </pre>
-
         Note that all options must start with a hyphen even if the slash will
         be accepted. This is because the slash character is automatically
         converted into a hyphen to test against the list of options. 
         For example, the following line matches both "-?" and "/?" 
         (on Windows).
-
-        <pre>
-        { OPT_HELP, _T("-?"),     SO_NONE    }, // "-?"
-        </pre>
-
+<pre>
+    { OPT_HELP, _T("-?"),     SO_NONE    }, // "-?"
+</pre>
    <li> Instantiate a CSimpleOpt object supplying argc, argv and the option 
         table
-
 <pre>
 @link CSimpleOptTempl CSimpleOpt @endlink args(argc, argv, g_rgOptions);
 </pre>
-
    <li> Process the arguments by calling Next() until it returns false. 
         On each call, first check for an error by calling LastError(), then 
         either handle the error or process the argument.
-
 <pre>
 while (args.Next()) {
     if (args.LastError() == SO_SUCCESS) {
@@ -125,28 +113,24 @@ while (args.Next()) {
     }
 }
 </pre>
-
    <li> Process all non-option arguments with File(), Files() and FileCount()
-
 <pre>
 ShowFiles(args.FileCount(), args.Files());
 </pre>
-
     </ol>
 
     @section notes NOTES
-
     -   In MBCS mode, this library is guaranteed to work correctly only when
         all option names use only ASCII characters.
     -   Note that if case-insensitive matching is being used then the first
         matching option in the argument list will be returned.
 
     @section licence MIT LICENCE
-
+<pre>
     The licence text below is the boilerplate "MIT Licence" used from:
     http://www.opensource.org/licenses/mit-license.php
 
-    Copyright (c) 2006-2007, Brodie Thiesfield
+    Copyright (c) 2006-2013, Brodie Thiesfield
 
     Permission is hereby granted, free of charge, to any person obtaining a
     copy of this software and associated documentation files (the "Software"),
@@ -165,6 +149,7 @@ ShowFiles(args.FileCount(), args.Files());
     CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
     TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</pre>
 */
 
 /*! @mainpage
@@ -317,10 +302,11 @@ typedef enum _ESOArgType {
 #define SO_END_OF_OPTIONS   { -1, NULL, SO_NONE }
 
 #ifdef _DEBUG
-#if defined(_MSC_VER)
+# ifdef _MSC_VER
 #  include <crtdbg.h>
 #  define SO_ASSERT(b)  _ASSERTE(b)
 # else
+#  include <assert.h>
 #  define SO_ASSERT(b)  assert(b)
 # endif
 #else
@@ -339,15 +325,15 @@ public:
     /*! @brief Structure used to define all known options. */
     struct SOption {
         /*! ID to return for this flag. Optional but must be >= 0 */
-        int         nId;        
+        int nId;        
 
         /*! arg string to search for, e.g.  "open", "-", "-f", "--file" 
             Note that on Windows the slash option marker will be converted
             to a hyphen so that "-f" will also match "/f". */
-        SOCHAR *    pszArg;
+        const SOCHAR * pszArg;
 
         /*! type of argument accepted by this option */
-        ESOArgType  nArgType;   
+        ESOArgType nArgType;   
     };
 
     /*! @brief Initialize the class. Init() must be called later. */
@@ -442,6 +428,11 @@ public:
     */
     bool Next();
 
+    /*! Stops processing of the command line and returns all remaining
+        arguments as files. The next call to Next() will return false.
+     */
+    void Stop();
+
     /*! @brief Return the last error that occurred.
 
         This function must always be called before processing the current 
@@ -461,7 +452,7 @@ public:
 
         This function is available only when Next() has returned true.
      */
-    inline SOCHAR * OptionText() const { return m_pszOptionText; }
+    inline const SOCHAR * OptionText() const { return m_pszOptionText; }
 
     /*! @brief Return the argument for the current option where one exists.
 
@@ -505,6 +496,9 @@ public:
     inline SOCHAR ** Files() const { return &m_argv[m_nLastArg]; }
 
 private:
+    CSimpleOptTempl(const CSimpleOptTempl &); // disabled
+    CSimpleOptTempl & operator=(const CSimpleOptTempl &); // disabled
+
     SOCHAR PrepareArg(SOCHAR * a_pszString) const;
     bool NextClumped();
     void ShuffleArg(int a_nStartIdx, int a_nCount);
@@ -523,7 +517,7 @@ private:
         // keep our promise of no CLIB usage
         while (nCount-- > 0) *ppDst++ = *ppSrc++;
 #else
-        memcpy(ppDst, ppSrc, nCount * sizeof(SOCHAR*));
+        memmove(ppDst, ppSrc, nCount * sizeof(SOCHAR*));
 #endif
     }
 
@@ -536,7 +530,7 @@ private:
     int             m_nLastArg;      //!< last argument, after this are files
     int             m_argc;          //!< argc to process
     SOCHAR **       m_argv;          //!< argv
-    SOCHAR *        m_pszOptionText; //!< curr option text, e.g. "-f"
+    const SOCHAR *  m_pszOptionText; //!< curr option text, e.g. "-f"
     SOCHAR *        m_pszOptionArg;  //!< curr option arg, e.g. "c:\file.txt"
     SOCHAR *        m_pszClump;      //!< clumped single character options
     SOCHAR          m_szShort[3];    //!< temp for clump and combined args
@@ -632,48 +626,47 @@ CSimpleOptTempl<SOCHAR>::Next()
     int nTableIdx = -1;
     int nOptIdx = m_nOptionIdx;
     while (nTableIdx < 0 && nOptIdx < m_nLastArg) {
-        // assumed argument
-        m_pszOptionText = m_argv[nOptIdx];
+        SOCHAR * pszArg = m_argv[nOptIdx];
         m_pszOptionArg  = NULL;
 
         // find this option in the options table
-        cFirst = PrepareArg(m_pszOptionText);
-        if (m_pszOptionText[0] == (SOCHAR)'-') {
+        cFirst = PrepareArg(pszArg);
+        if (pszArg[0] == (SOCHAR)'-') {
             // find any combined argument string and remove equals sign
-            m_pszOptionArg = FindEquals(m_pszOptionText);
+            m_pszOptionArg = FindEquals(pszArg);
             if (m_pszOptionArg) {
                 *m_pszOptionArg++ = (SOCHAR)'\0';
             }
         }
-        nTableIdx = LookupOption(m_pszOptionText);
+        nTableIdx = LookupOption(pszArg);
 
         // if we didn't find this option but if it is a short form
         // option then we try the alternative forms
         if (nTableIdx < 0
             && !m_pszOptionArg
-            && m_pszOptionText[0] == (SOCHAR)'-'
-            && m_pszOptionText[1]
-            && m_pszOptionText[1] != (SOCHAR)'-'
-            && m_pszOptionText[2])
+            && pszArg[0] == (SOCHAR)'-'
+            && pszArg[1]
+            && pszArg[1] != (SOCHAR)'-'
+            && pszArg[2])
         {
             // test for a short-form with argument if appropriate
             if (HasFlag(SO_O_SHORTARG)) {
-                m_szShort[1] = m_pszOptionText[1];
+                m_szShort[1] = pszArg[1];
                 int nIdx = LookupOption(m_szShort);
                 if (nIdx >= 0
                     && (m_rgOptions[nIdx].nArgType == SO_REQ_CMB
                         || m_rgOptions[nIdx].nArgType == SO_OPT))
                 {
-                    m_pszOptionArg  = &m_pszOptionText[2];
-                    m_pszOptionText = m_szShort;
-                    nTableIdx       = nIdx;
+                    m_pszOptionArg = &pszArg[2];
+                    pszArg         = m_szShort;
+                    nTableIdx      = nIdx;
                 }
             }
 
             // test for a clumped short-form option string and we didn't
             // match on the short-form argument above
             if (nTableIdx < 0 && HasFlag(SO_O_CLUMP))  {
-                m_pszClump = &m_pszOptionText[1];
+                m_pszClump = &pszArg[1];
                 ++m_nNextOption;
                 if (nOptIdx > m_nOptionIdx) {
                     ShuffleArg(m_nOptionIdx, nOptIdx - m_nOptionIdx);
@@ -686,10 +679,12 @@ CSimpleOptTempl<SOCHAR>::Next()
         // and we are not suppressing errors for invalid options then it
         // is reported as an error, otherwise it is data.
         if (nTableIdx < 0) {
-            if (!HasFlag(SO_O_NOERR) && m_pszOptionText[0] == (SOCHAR)'-') {
+            if (!HasFlag(SO_O_NOERR) && pszArg[0] == (SOCHAR)'-') {
+                m_pszOptionText = pszArg;
                 break;
             }
-            m_pszOptionText[0] = cFirst;
+            
+            pszArg[0] = cFirst;
             ++nOptIdx;
             if (m_pszOptionArg) {
                 *(--m_pszOptionArg) = (SOCHAR)'=';
@@ -709,7 +704,7 @@ CSimpleOptTempl<SOCHAR>::Next()
     // get the option id
     ESOArgType nArgType = SO_NONE;
     if (nTableIdx < 0) {
-        m_nLastError = (ESOError) nTableIdx; // error code
+        m_nLastError    = (ESOError) nTableIdx; // error code
     }
     else {
         m_nOptionId     = m_rgOptions[nTableIdx].nId;
@@ -773,6 +768,15 @@ CSimpleOptTempl<SOCHAR>::Next()
 }
 
 template<class SOCHAR>
+void
+CSimpleOptTempl<SOCHAR>::Stop()
+{
+    if (m_nNextOption < m_nLastArg) {
+        ShuffleArg(m_nNextOption, m_nLastArg - m_nNextOption);
+    }
+}
+
+template<class SOCHAR>
 SOCHAR
 CSimpleOptTempl<SOCHAR>::PrepareArg(
     SOCHAR * a_pszString
@@ -802,23 +806,25 @@ CSimpleOptTempl<SOCHAR>::NextClumped()
     // prepare for the next clumped option
     m_szShort[1]    = *m_pszClump++;
     m_nOptionId     = -1;
-    m_pszOptionText = m_szShort;
+    m_pszOptionText = NULL;
     m_pszOptionArg  = NULL;
     m_nLastError    = SO_SUCCESS;
 
     // lookup this option, ensure that we are using exact matching
     int nSavedFlags = m_nFlags;
     m_nFlags = SO_O_EXACT;
-    int nTableIdx = LookupOption(m_pszOptionText);
+    int nTableIdx = LookupOption(m_szShort);
     m_nFlags = nSavedFlags;
 
     // unknown option
     if (nTableIdx < 0) {
+        m_pszOptionText = m_szShort; // invalid option
         m_nLastError = (ESOError) nTableIdx; // error code
         return false;
     }
 
     // valid option
+    m_pszOptionText = m_rgOptions[nTableIdx].pszArg;
     ESOArgType nArgType = m_rgOptions[nTableIdx].nArgType;
     if (nArgType == SO_NONE) {
         m_nOptionId = m_rgOptions[nTableIdx].nId;

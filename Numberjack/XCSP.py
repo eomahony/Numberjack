@@ -48,6 +48,7 @@ class XCSPPredicate(object):
 
     def parse_functional(self, pred_str):
         # Split out the predicate name
+        pred_str = pred_str.strip()
         bits = pred_str.split("(", 1)
         if len(bits) == 1:
             raise XCSPParserError("Expected predicate %s" % pred_str)
@@ -247,7 +248,7 @@ class XCSPParser(object):
             import re
             s = s.strip()
             W, X = [], []
-            exp = re.compile(r"\{\s*(?P<coef>[-]?\d+)\s+(?P<varname>\w+)\s*\}")
+            exp = re.compile(r"\{\s*(?P<coef>[-]?\d+)\s+(?P<varname>[\w\._]+)\s*\}")
             for match in exp.finditer(s):
                 d = match.groupdict()
                 W.append(int(d['coef']) if 'coef' in d else 1)

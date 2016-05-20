@@ -24,7 +24,7 @@ def get_model(param):
 
 
 def solution_string(price, quantities, apitizers):
-    return "\n".join("%s x %s (€%.2lf)" % (quantities[i], apitizers[i], price[i] / 100.0) for i in xrange(len(price)))
+    return "\n".join("%s x %s (€%.2lf)" % (quantities[i], apitizers[i], price[i] / 100.0) for i in range(len(price)))
 
 
 def solve(param):
@@ -34,12 +34,12 @@ def solve(param):
     if param['solver'] == 'Mistral':
         solver.startNewSearch()
         while solver.getNextSolution() == SAT:
-            print "\nSOLUTION:\n", solution_string(price, quantities, apitizers)
+            print("\nSOLUTION:\n", solution_string(price, quantities, apitizers))
     else:
         if solver.solve():
-            print solution_string(price, quantities, apitizers)
+            print(solution_string(price, quantities, apitizers))
         else:
-            print "No solution"
+            print("No solution")
 
 
 solvers = ['Mistral', 'SCIP']

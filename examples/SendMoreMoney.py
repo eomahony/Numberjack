@@ -29,9 +29,9 @@ def solve(param):
     # Now Solve
     solver.solve()
     if solver.is_sat():
-        print "    %d %d %d %d" % (s.get_value(), e.get_value(), n.get_value(), d.get_value())
-        print "+   %d %d %d %d" % (m.get_value(), o.get_value(), r.get_value(), e.get_value())
-        print "= %d %d %d %d %d" % (m.get_value(), o.get_value(), n.get_value(), e.get_value(), y.get_value())
+        print("    %d %d %d %d" % (s.get_value(), e.get_value(), n.get_value(), d.get_value()))
+        print("+   %d %d %d %d" % (m.get_value(), o.get_value(), r.get_value(), e.get_value()))
+        print("= %d %d %d %d %d" % (m.get_value(), o.get_value(), n.get_value(), e.get_value(), y.get_value()))
 
 
 if __name__ == '__main__':

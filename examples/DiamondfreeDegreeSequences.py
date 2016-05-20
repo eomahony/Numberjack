@@ -15,7 +15,7 @@
 # that the matrix will be symmetrical.
 #
 # CSPLib Problem 050 - http://www.csplib.org/Problems/prob050/
-
+from __future__ import print_function
 from Numberjack import *
 from itertools import combinations
 
@@ -48,7 +48,7 @@ def get_model(N):
 
         for j in range(N):
             model += matrix[i][j] == matrix[j][i]
-    
+
     # Symmetry breaking
     for i in range(N-1):
         model += LeqLex(matrix.row[i], matrix.row[i+1])
@@ -66,15 +66,15 @@ def solve(param):
     solver.solve()
 
     if solver.is_sat():
-        print str(matrix) + '\n'
+        print(str(matrix) + '\n')
 
-        print "Degree sequence:",
+        print("Degree sequence:",)
         for row in matrix:
-            print sum([x.get_value() for x in row]),
+            print(sum([x.get_value() for x in row]))
     elif solver.is_unsat():
-        print "Unsatisfiable"
+        print("Unsatisfiable")
     else:
-        print "Timed out"
+        print("Timed out")
 
 
 if __name__ == '__main__':

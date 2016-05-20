@@ -26,7 +26,7 @@ class MiscTest(unittest.TestCase):
 
         square = Matrix(n, n, 1, n * n)
 
-        sum_val = n * (n * n + 1) / 2  # This is what all the columns, rows and diagonals must add up tp
+        sum_val = n * (n * n + 1) // 2  # This is what all the columns, rows and diagonals must add up tp
 
         model = Model(
             AllDiff(square.flat),

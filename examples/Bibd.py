@@ -50,4 +50,4 @@ default = {'solver': 'Mistral', 'v': 7, 'b': 7, 'r': 3, 'k': 3, 'l': 1, 'verbose
 
 if __name__ == '__main__':
     param = input(default)
-    print solve(param)
+    print(solve(param))

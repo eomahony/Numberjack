@@ -51,4 +51,4 @@ default = {'solver': 'Mistral', 'N': 6, 'verbose': 1, 'tcutoff': 3}
 
 if __name__ == '__main__':
     param = input(default)
-    print solve(param)
+    print(solve(param))

@@ -20,7 +20,7 @@ def binarydfs(solver, variables, variableselection=lexvar):
     depth = 0
 
     def log(s):
-        print "  " * depth, s
+        print("  " * depth, s)
 
     while not proven_infeasibility:
         if solver.propagate():  # Propagate to a fixed point. Returns False if there was a conflict
@@ -61,8 +61,8 @@ def main():
     s.startNewSearch()
     binarydfs(s, [v1, v2])
     if s.is_sat():
-        print "\nSolution:"
-        print "v1 = %d, v2 = %d" % (v1.get_value(), v2.get_value())
+        print("\nSolution:")
+        print("v1 = %d, v2 = %d" % (v1.get_value(), v2.get_value()))
 
 
 if __name__ == "__main__":

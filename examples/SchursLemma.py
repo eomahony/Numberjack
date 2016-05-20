@@ -6,6 +6,7 @@
 #
 # CSPLib Problem 015 - http://www.csplib.org/Problems/prob015/
 
+from __future__ import print_function
 from Numberjack import *
 
 
@@ -32,11 +33,11 @@ def solve(param):
     solver.solve()
 
     if solver.is_sat():
-        print str(balls)
+        print(str(balls))
     elif solver.is_unsat():
-        print "Unsatisifiable"
+        print("Unsatisifiable")
     else:
-        print "Timed out"
+        print("Timed out")
 
 
 if __name__ == "__main__":

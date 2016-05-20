@@ -1,3 +1,4 @@
+from __future__ import division, print_function
 #import Numberjack
 
 MODELMAXSIZE = 1000000
@@ -15,7 +16,7 @@ class MyConstraint(Expression):
 
         self.set_children(vars)
 
-        print "This is the MyConstraint method"
+        print("This is the MyConstraint method")
 
     def decompose(self):
         '''
@@ -110,7 +111,7 @@ class Function(Predicate):
         d = []
         self.lb = defval
         self.ub = defval
-        for t,res in dictionary.iteritems():
+        for t,res in dictionary.items():
             d.append((t,res))
             if (res < self.lb):
                 self.lb = res
@@ -120,9 +121,9 @@ class Function(Predicate):
 
     def decompose(self):
         #SDG: Warning! It assumes the default value is never used (dict entries = cartesian product of self.children)
-        res = Variable(min(e for e in self.parameters[0].itervalues()), max(e for e in self.parameters[0].itervalues()))
+        res = Variable(min(e for e in self.parameters[0].values()), max(e for e in self.parameters[0].values()))
         tuples = []
-        for key,val in self.parameters[0].iteritems():
+        for key,val in self.parameters[0].items():
             tuples.append(tuple([val] + list(key)))
         return [res, Table([res] + self.children, tuples, 'support')]
 
@@ -175,10 +176,20 @@ class PostUnary(CostFunction):
 #   - Top-level: PostBinary Constraint
 #   - Nested: Cannot be used as a nested predicate
 #
-# \warning Can only be used with Toulbar2 solver
+# \code
+#   var1 = Variable(1,3)
+#   var2 = Variable(1,3)
+#   post = PostBinary(var1,var2,[5,3,2,2,2,2,2,1,2])
+#   model = Model(post)
+#   print model
+#>>> assign:
+#>>>   x0 in {1..3}
+#>>>   x1 in {1..3}
+#>>>
+#>>> subject to:
+#>>>   PostBinary(x0, x1)
+# \endcode
 #
-#
-
 class PostBinary(CostFunction):
 
     ## PostBinary constraint constructor
@@ -186,25 +197,10 @@ class PostBinary(CostFunction):
     # @param var2 second variable
     # @param costs table of costs
     #
-	# \note
-	#   - Top-level: PostTernary Constraint
-	#   - Nested: Cannot be used as a nested predicate
-	#
-    # \code
-    #var = Variable(1,3)
-	#var1 = Variable(1,3)
-	#post = PostBinary(var,var1,[5,3,2,2,2,2,2,1,2])
-	#model = Model(post)
-    #print model
-    #>>> assign:
-    #>>>   x0 in {1..3}
-    #>>>   x1 in {1..3}
-    #>>>
-    #>>> subject to:
-    #>>>   PostBinary(x0, x1)
-    # \endcode
+    # \note
+    #   - Top-level: PostBinary Constraint
+    #   - Nested: Cannot be used as a nested predicate
     #
-
     def __init__(self, var1, var2, costs):
         CostFunction.__init__(self, [var1, var2], "PostBinary")
         self.parameters = [costs]
@@ -212,27 +208,42 @@ class PostBinary(CostFunction):
     def decompose(self):
         obj = Variable(0,max(self.parameters[0]))
         var2size = self.get_children()[1].get_size()
-        return [Table([obj] + self.get_children(), [(w, i / var2size , i % var2size) for i,w in enumerate(self.parameters[0])], 'support'), Minimize(obj)]
+        return [Table([obj] + self.get_children(), [(w, i // var2size , i % var2size) for i,w in enumerate(self.parameters[0])], 'support'), Minimize(obj)]
 
 ## PostTernary Constraint
-# @param var first variable
-# @param var1 second variable
-# @param var2 third variable
-# @param costs table of costs
 #
 # \note
 #   - Top-level: PostTernary Constraint
 #   - Nested: Cannot be used as a nested predicate
 #
 # \code
-# var = Variable(2)
-# var1 = Variable(2)
-# var2 = Variable(2)
-# post = PostTernary(var,var1,var2,[5,3,2,2,2,2,2,1])
-# model = Model(post)
+#   var1 = Variable(1,2)
+#   var2 = Variable(1,2)
+#   var3 = Variable(1,2)
+#   post = PostTernary(var1,var2,var3,[5,3,2,2,2,2,2,1])
+#   model = Model(post)
+#   print model
+#>>> assign:
+#>>>   x0 in {1..2}
+#>>>   x1 in {1..2}
+#>>>   x2 in {1..2}
+#>>>
+#>>> subject to:
+#>>>   PostTernary(x0, x1, x2)
 # \endcode
-
+#
 class PostTernary(CostFunction):
+
+    ## PostTernary constraint constructor
+    # @param var1 first variable
+    # @param var2 second variable
+    # @param var3 third variable
+    # @param costs table of costs
+    #
+    # \note
+    #   - Top-level: PostTernary Constraint
+    #   - Nested: Cannot be used as a nested predicate
+    #
     def __init__(self, var1, var2, var3, costs):
         CostFunction.__init__(self, [var1, var2, var3], "PostTernary")
         self.parameters = [costs]
@@ -241,7 +252,47 @@ class PostTernary(CostFunction):
         obj = Variable(0,max(self.parameters[0]))
         var2size = self.get_children()[1].get_size()
         var3size = self.get_children()[2].get_size()
-        return [Table([obj] + self.get_children(), [(w, i / var2size / var3size , i / var3size, i % var3size) for i,w in enumerate(self.parameters[0])], 'support'), Minimize(obj)]
+        return [Table([obj] + self.get_children(), [(w, i // var2size // var3size , i // var3size, i % var3size) for i,w in enumerate(self.parameters[0])], 'support'), Minimize(obj)]
+
+## PostNary Constraint
+# @param vars list of variables
+# @param arity number of variables in the list
+# @param default_cost cost used by default if an assignment
+#
+# \note
+#   - Top-level: PostNary Constraint
+#   - Nested: Cannot be used as a nested predicate
+#
+# \code
+#   var1 = Variable(2)
+#   var2 = Variable(2)
+#   var3 = Variable(2)
+#   var4 = Variable(2)
+#   post = PostNary([var1,var2,var3,var4],4,0)
+#   for i in range(2):
+#     for j in range(2):
+#       for k in range(2):
+#         for l in range(2):
+#           post.add([i,j,k,l], reduce(op.xor, [i,j,k,l])) # simulates a soft xor constraint on four variables
+#   model = Model(post)
+#   print model
+#>>> assign:
+#>>>   x0 in {0,1}
+#>>>   x1 in {0,1}
+#>>>   x2 in {0,1}
+#>>>   x3 in {0,1}
+#>>>   
+#>>> subject to:
+#>>>   PostNary(x0, x1, x2, x3)[4, 0, [[0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 0, 1, 1], [0, 1, 0, 0], [0, 1, 0, 1], [0, 1, 1, 0], [0, 1, 1, 1], [1, 0, 0, 0], [1, 0, 0, 1], [1, 0, 1, 0], [1, 0, 1, 1], [1, 1, 0, 0], [1, 1, 0, 1], [1, 1, 1, 0], [1, 1, 1, 1]], [0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0]]
+# \endcode
+class PostNary(CostFunction):
+    def __init__(self, vars, arity, default_cost):
+        CostFunction.__init__(self, vars, "PostNary")
+        self.parameters = [arity, default_cost,[],[]]
+
+    def add(self, tupleIndex, cost):
+            self.parameters[2].append(tupleIndex)
+            self.parameters[3].append(cost)
 
 ## PostWSum Constraint
 #
@@ -261,7 +312,6 @@ class PostTernary(CostFunction):
 # post = PostWSum(vars,5,'hard','1000','==',5)
 # model = Model(post)
 # \endcode
-
 class PostWSum(CostFunction):
     def __init__(self, vars, arity, semantics, baseCost, comparator, rightRes):
         CostFunction.__init__(self, vars, "PostWSum")
@@ -302,7 +352,7 @@ class PostWAmong(CostFunction):
             self.parameters.append(lb)
             self.parameters.append(ub)
         else :
-            print "You're using WVarAmong constraint, bounds are set by the Variable passed in the last parameter of the constraint constructor!"
+            print("You're using WVarAmong constraint, bounds are set by the Variable passed in the last parameter of the constraint constructor!")
 
 ## Regular Constraint
 #
@@ -354,21 +404,6 @@ class Same(CostFunction):
             if baseCost != None:
                 self.parameters.append(baseCost)
 
-## PostNary Constraint
-#
-# \note
-#   - Top-level: PostNary Constraint
-#   - Nested: Cannot be used as a nested predicate
-#
-class PostNary(CostFunction):
-    def __init__(self, vars, arity, default_cost):
-        CostFunction.__init__(self, vars, "PostNary")
-        self.parameters = [arity, default_cost,[],[]]
-
-    def add(self, tupleIndex, cost):
-            self.parameters[2].append(tupleIndex)
-            self.parameters[3].append(cost)
-
 ## PostWSameGcc Constraint
 #
 # \note
@@ -378,7 +413,7 @@ class PostNary(CostFunction):
 class PostWSameGcc(CostFunction):
     def __init__(self, varsL, varsR, cards, type, semantics, baseCost):
         CostFunction.__init__(self, [varsL, varsR], "PostWSameGcc")
-        values = cards.keys()
+        values = list(cards.keys())
         values.sort()
         lb = []
         ub = []
@@ -409,7 +444,7 @@ def decompose_AllDiff(self):
 def decompose_Element(self):
     u = set()
     for e in self.children[:-1]:
-        u = u | set([e] if type(e) is int else range(e.lb, e.ub + 1))
+        u = u | set([e] if type(e) is int else list(range(e.lb, e.ub + 1)))
     res = Variable(list(u))
     # ret = ([res, (self.children[-1] >= 0), (self.children[-1] < len(self.children)-1)] + [((res == e) | (self.children[-1] != i)) for i, e in enumerate(self.children[:-1])])
     # print "Decomposed:"
@@ -420,7 +455,7 @@ def decompose_Element(self):
 
 #SDG: decompose LeqLex and LessLex
 def decompose_LessLex(self):
-    length = len(self.children) / 2
+    length = len(self.children) // 2
     def lexico(vars1,vars2,i):
         if (i == len(vars1)-1):
             return (vars1[i] < vars2[i])
@@ -429,7 +464,7 @@ def decompose_LessLex(self):
     return [lexico(self.children[:length], self.children[length:], 0)]
 
 def decompose_LeqLex(self):
-    length = len(self.children) / 2
+    length = len(self.children) // 2
     def lexico(vars1,vars2,i):
         if (i == len(vars1)-1):
             return (vars1[i] <= vars2[i])
@@ -454,7 +489,7 @@ def get_arity(expr):
     return len(get_scope(expr))
 
 def get_scope(expr):
-    if type(expr) in [int, long, float, bool, str]:
+    if type(expr) in [int, int, float, bool, str]:
         return []
     elif expr.is_var():
         if expr.get_lb() == expr.get_ub():
@@ -468,7 +503,7 @@ def get_scope(expr):
         return list(set(res))
 
 def evaluate(expr, assignment):
-    if type(expr) in [int, long, float, bool, str]:
+    if type(expr) in [int, int, float, bool, str]:
         return expr
     elif expr.is_var():
         if (expr.get_lb()==expr.get_ub()):
@@ -486,7 +521,7 @@ def evaluate(expr, assignment):
     elif issubclass(type(expr), Min):
         return min([evaluate(e,assignment) for e in expr.children])
     elif issubclass(type(expr), Sum):
-        return sum([evaluate(e,assignment) * expr.parameters[0][i] for (i,e) in enumerate(expr.children)])
+        return sum([evaluate(e,assignment) * expr.parameters[0][i] for (i,e) in enumerate(expr.children)])  + expr.parameters[1] # AS: these are additional constants that are moved from children to parameters in model.close()
     elif issubclass(type(expr), Function):
         return expr.parameters[0].get(tuple([evaluate(e,assignment) for e in expr.children]), expr.parameters[1])
     elif issubclass(type(expr), Disjunction):
@@ -508,13 +543,13 @@ def decompose_BinPredicate(self):
         res2 = Variable(val,val,str(val))
         return [res2]
     elif arity is 1:
-        return [res, Table([res, scope[0]], [(evaluate(self, dict([(scope[0],val0)])), val0) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else xrange(scope[0].get_lb(), scope[0].get_ub()+1))])]
+        return [res, Table([res, scope[0]], [(evaluate(self, dict([(scope[0],val0)])), val0) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else range(scope[0].get_lb(), scope[0].get_ub()+1))])]
     elif arity is 2:
         product = cartesian_product(self)  # check if decomposition is feasible in size
-        return [res, Table([res, scope[0], scope[1]], [(evaluate(self, dict([(scope[0],val0), (scope[1],val1)])), val0, val1) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else xrange(scope[0].get_lb(), scope[0].get_ub()+1)) for val1 in (scope[1].domain_ if scope[1].domain_ is not None else xrange(scope[1].get_lb(), scope[1].get_ub()+1))])]
+        return [res, Table([res, scope[0], scope[1]], [(evaluate(self, dict([(scope[0],val0), (scope[1],val1)])), val0, val1) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else range(scope[0].get_lb(), scope[0].get_ub()+1)) for val1 in (scope[1].domain_ if scope[1].domain_ is not None else range(scope[1].get_lb(), scope[1].get_ub()+1))])]
     elif arity is 3:
         product = cartesian_product(self)  # check if decomposition is feasible in size
-        return [res, Table([res, scope[0], scope[1], scope[2]], [(evaluate(self, dict([(scope[0],val0), (scope[1],val1), (scope[2],val2)])), val0, val1, val2) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else xrange(scope[0].get_lb(), scope[0].get_ub()+1)) for val1 in (scope[1].domain_ if scope[1].domain_ is not None else xrange(scope[1].get_lb(), scope[1].get_ub()+1)) for val2 in (scope[2].domain_ if scope[2].domain_ is not None else xrange(scope[2].get_lb(), scope[2].get_ub()+1))])]
+        return [res, Table([res, scope[0], scope[1], scope[2]], [(evaluate(self, dict([(scope[0],val0), (scope[1],val1), (scope[2],val2)])), val0, val1, val2) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else range(scope[0].get_lb(), scope[0].get_ub()+1)) for val1 in (scope[1].domain_ if scope[1].domain_ is not None else range(scope[1].get_lb(), scope[1].get_ub()+1)) for val2 in (scope[2].domain_ if scope[2].domain_ is not None else range(scope[2].get_lb(), scope[2].get_ub()+1))])]
 #    elif arity is 4:
 #        product = cartesian_product(self)  # check if decomposition is feasible in size
 #        return [res, Table([res, scope[0], scope[1], scope[2], scope[3]], [(evaluate(self, dict([(scope[0],val0), (scope[1],val1), (scope[2],val2), (scope[3],val3)])), val0, val1, val2, val3) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else xrange(scope[0].get_lb(), scope[0].get_ub()+1)) for val1 in (scope[1].domain_ if scope[1].domain_ is not None else xrange(scope[1].get_lb(), scope[1].get_ub()+1)) for val2 in (scope[2].domain_ if scope[2].domain_ is not None else xrange(scope[2].get_lb(), scope[2].get_ub()+1)) for val3 in (scope[3].domain_ if scope[3].domain_ is not None else xrange(scope[3].get_lb(), scope[3].get_ub()+1))])]
@@ -522,7 +557,7 @@ def decompose_BinPredicate(self):
         size = (self.get_ub(0)+1-self.get_lb(0)) * (self.get_ub(1)+1-self.get_lb(1))
         if (size > MODELMAXSIZE):
             raise ModelSizeError(size)
-        tuples = [(self.eval(val0, val1), val0, val1) for val0 in (self.children[0].domain_ if issubclass(type(self.children[0]), Expression) and self.children[0].is_var() and self.children[0].domain_ is not None else xrange(self.get_lb(0), self.get_ub(0)+1)) for val1 in (self.children[1].domain_ if issubclass(type(self.children[1]), Expression) and self.children[1].is_var() and self.children[1].domain_ is not None else xrange(self.get_lb(1), self.get_ub(1)+1))]
+        tuples = [(self.eval(val0, val1), val0, val1) for val0 in (self.children[0].domain_ if issubclass(type(self.children[0]), Expression) and self.children[0].is_var() and self.children[0].domain_ is not None else range(self.get_lb(0), self.get_ub(0)+1)) for val1 in (self.children[1].domain_ if issubclass(type(self.children[1]), Expression) and self.children[1].is_var() and self.children[1].domain_ is not None else range(self.get_lb(1), self.get_ub(1)+1))]
         return [res, Table([res, self.children[0] if issubclass(type(self.children[0]), Expression) else Variable(self.children[0],self.children[0],str(self.children[0])), self.children[1] if issubclass(type(self.children[1]), Expression) else Variable(self.children[1],self.children[1],str(self.children[1]))], tuples)]
 
 #SDG: decompose maximise into minimise
@@ -548,10 +583,10 @@ def decompose_Minimise(self):
         if arity is 0:
             return [PostNullary(evaluate(self.children[0], dict([])))]
         elif arity is 1:
-            costs = [evaluate(self.children[0], dict([(scope[0],val0)])) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else xrange(scope[0].get_lb(), scope[0].get_ub()+1))]
+            costs = [evaluate(self.children[0], dict([(scope[0],val0)])) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else range(scope[0].get_lb(), scope[0].get_ub()+1))]
             return [PostUnary(scope[0], costs)]
         elif arity is 2:
-            costs = [evaluate(self.children[0], dict([(scope[0],val0), (scope[1],val1)])) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else xrange(scope[0].get_lb(), scope[0].get_ub()+1)) for val1 in (scope[1].domain_ if scope[1].domain_ is not None else xrange(scope[1].get_lb(), scope[1].get_ub()+1))]
+            costs = [evaluate(self.children[0], dict([(scope[0],val0), (scope[1],val1)])) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else range(scope[0].get_lb(), scope[0].get_ub()+1)) for val1 in (scope[1].domain_ if scope[1].domain_ is not None else range(scope[1].get_lb(), scope[1].get_ub()+1))]
             return [PostBinary(scope[0], scope[1], costs)]
         else:
             obj = Variable(self.children[0].get_lb(), self.children[0].get_ub())

@@ -23,20 +23,20 @@ class Queue : private BTList<VariableWithTimeStamp>
     // make it private because we don't want copy nor assignment
     Queue(const Queue &s);
     Queue& operator=(const Queue &s);
-    
+
 public:
     Queue() : BTList<VariableWithTimeStamp>(NULL) {}
-    
+
     int getSize() const {return BTList<VariableWithTimeStamp>::getSize();}
     bool empty() const {return BTList<VariableWithTimeStamp>::empty();}
 
     void clear() {BTList<VariableWithTimeStamp>::clear();}
-    
+
     void push(DLink<VariableWithTimeStamp> *elt, Long curTimeStamp);   
     void push(DLink<VariableWithTimeStamp> *elt, EventType incdec, Long curTimeStamp);
 
     void remove(DLink<VariableWithTimeStamp> *elt);
-    
+
     Variable *pop();
     Variable *pop(int *incdec);
     Variable *pop_min();
@@ -44,9 +44,17 @@ public:
     Variable *pop_max();
     Variable *pop_max(int *incdec);
     Variable *pop_first();
-    
- 
+
+
     void print(ostream& o);
 };
 
 #endif /*TB2QUEUE_HPP_*/
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

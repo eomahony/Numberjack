@@ -1,3 +1,4 @@
+from __future__ import print_function
 from Numberjack import *
 
 
@@ -13,10 +14,10 @@ def get_model(pls_filename):
 
         model = Model()
         matrix = []
-        columns = [[] for i in xrange(n)]
+        columns = [[] for i in range(n)]
 
         for i, row in enumerate(f):
-            bits = map(int, row.split())
+            bits = list(map(int, row.split()))
             row = []
             for j, v in enumerate(bits):
                 var = None
@@ -64,19 +65,19 @@ def solve(param):
 
     f = sys.stdout
     if solver.is_sat():
-        print >> f, "s SATISFIABLE"
+        print("s SATISFIABLE", file=f)
         for row in matrix:
-            print >> f, "v", " ".join("%2d" % v.get_value() for v in row)
+            print("v", " ".join("%2d" % v.get_value() for v in row), file=f)
     elif solver.is_unsat():
-        print >> f, "s UNSATISFIABLE"
+        print("s UNSATISFIABLE", file=f)
     else:
-        print >> f, "s UNKNOWN"
-    print >> f, "c Nodes %d" % solver.getNodes()
-    print >> f, 'c Failures', solver.getFailures()
-    print >> f, 'c NumVariables', solver.getNumVariables()
-    print >> f, 'c NumConstraints', solver.getNumConstraints()
-    print >> f, "c EncodeTime %.5f" % solver.load_time
-    print >> f, "c SolveTime %.5f" % solver.getTime()
+        print("s UNKNOWN", file=f)
+    print("c Nodes %d" % solver.getNodes(), file=f)
+    print('c Failures', solver.getFailures(), file=f)
+    print('c NumVariables', solver.getNumVariables(), file=f)
+    print('c NumConstraints', solver.getNumConstraints(), file=f)
+    print("c EncodeTime %.5f" % solver.load_time, file=f)
+    print("c SolveTime %.5f" % solver.getTime(), file=f)
 
 
 if __name__ == "__main__":

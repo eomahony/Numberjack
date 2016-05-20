@@ -15,6 +15,8 @@ XMLParser_libxml2<MistralCallback> *parser;
 
 const int num_features = 36;
 
+//#define _DEBUGWRAP
+
 /**************************************************************
  ********************     EXPRESSION        *******************
  **************************************************************/
@@ -38,7 +40,7 @@ Mistral_Expression::Mistral_Expression(BuildObject *x)
   _self = x;
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating a variable [" << 0 << ".." << (nval-1) << "]" << std::endl;
+  std::cout << "creating a variable from " << x << std::endl;
 #endif
 
 }
@@ -248,7 +250,7 @@ Mistral_Expression* Mistral_Neg::add(MistralSolver *solver, bool top_level) {
   if(!has_been_added()) {
 
 #ifdef _DEBUGWRAP
-    std::cout << "add an alldiff constraint" << std::endl;
+    std::cout << "add a neg constraint" << std::endl;
 #endif
 
     _solver = solver;
@@ -274,7 +276,7 @@ Mistral_Min::Mistral_Min( MistralExpArray& vars )
   _vars = vars;
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating an alldiff constraint" << std::endl;
+  std::cout << "creating a min constraint" << std::endl;
 #endif
 
 }
@@ -286,7 +288,7 @@ Mistral_Min::Mistral_Min( Mistral_Expression *var1, Mistral_Expression *var2 )
   _vars.add(var2); 
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating a binary alldiff constraint" << std::endl;
+  std::cout << "creating a binary min constraint" << std::endl;
 #endif
 
 }
@@ -295,7 +297,7 @@ Mistral_Min::~Mistral_Min()
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "delete alldiff" << std::endl;
+  std::cout << "delete min" << std::endl;
 #endif
 
 }
@@ -305,7 +307,7 @@ Mistral_Expression* Mistral_Min::add(MistralSolver *solver, bool top_level) {
   if(!has_been_added()) {
 
 #ifdef _DEBUGWRAP
-    std::cout << "add an alldiff constraint" << std::endl;
+    std::cout << "add an min constraint" << std::endl;
 #endif
 
     _solver = solver;
@@ -339,7 +341,7 @@ Mistral_Max::Mistral_Max( MistralExpArray& vars )
   _vars = vars;
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating an alldiff constraint" << std::endl;
+  std::cout << "creating a max constraint" << std::endl;
 #endif
 
 }
@@ -351,7 +353,7 @@ Mistral_Max::Mistral_Max( Mistral_Expression *var1, Mistral_Expression *var2 )
   _vars.add(var2); 
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating a binary alldiff constraint" << std::endl;
+  std::cout << "creating a binary max constraint" << std::endl;
 #endif
 
 }
@@ -360,7 +362,7 @@ Mistral_Max::~Mistral_Max()
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "delete alldiff" << std::endl;
+  std::cout << "delete max" << std::endl;
 #endif
 
 }
@@ -370,7 +372,7 @@ Mistral_Expression* Mistral_Max::add(MistralSolver *solver, bool top_level) {
   if(!has_been_added()) {
 
 #ifdef _DEBUGWRAP
-    std::cout << "add an alldiff constraint" << std::endl;
+    std::cout << "add an max constraint" << std::endl;
 #endif
 
     _solver = solver;
@@ -431,7 +433,7 @@ Mistral_Table::~Mistral_Table()
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "delete alldiff" << std::endl;
+  std::cout << "delete table" << std::endl;
 #endif
 
 }
@@ -525,7 +527,7 @@ Mistral_Expression* Mistral_AllDiff::add(MistralSolver *solver, bool top_level) 
 
     if(n == 2) {
       _self = CSP::_Equal(_vars.get_item(0)->_self,
-			  _vars.get_item(1)->_self, 0);      
+		  										_vars.get_item(1)->_self, 0);      
     } else if(n > 2) {
       BuildObject **scope = new BuildObject*[n+1];
       for(i=0; i<n; ++i) scope[i] = _vars.get_item(i)->_self;
@@ -835,12 +837,86 @@ Mistral_Expression* Mistral_Sum::add(MistralSolver *solver, bool top_level){
   return this;
 }
 
+Mistral_Abs::Mistral_Abs(Mistral_Expression *var1)
+  : Mistral_binop(var1,0)
+{
+
+#ifdef _DEBUGWRAP
+  std::cout << "creating Abs" << std::endl;
+#endif
+
+}
+
+Mistral_Abs::~Mistral_Abs(){
+
+#ifdef _DEBUGWRAP
+  std::cout << "delete Abs" << std::endl;
+#endif
+
+}
+
+Mistral_Expression* Mistral_Abs::add(MistralSolver *solver, bool top_level){
+
+  if(!has_been_added()) {
+#ifdef _DEBUGWRAP
+      std::cout << "add Abs constraint" << std::endl;
+#endif
+    _solver = solver;
+
+    _vars[0]->add(_solver,false);
+		_self = CSP::_Abs(_vars[0]->_self);
+
+    if( top_level )
+      _solver->model->add( _self );
+  }
+
+  return this;
+}
+
+
+Mistral_neg::Mistral_neg(Mistral_Expression *var1)
+  : Mistral_binop(var1,0)
+{
+
+#ifdef _DEBUGWRAP
+  std::cout << "creating neg" << std::endl;
+#endif
+
+}
+
+Mistral_neg::~Mistral_neg(){
+
+#ifdef _DEBUGWRAP
+  std::cout << "delete neg" << std::endl;
+#endif
+
+}
+
+Mistral_Expression* Mistral_neg::add(MistralSolver *solver, bool top_level){
+
+  if(!has_been_added()) {
+#ifdef _DEBUGWRAP
+      std::cout << "add neg constraint" << std::endl;
+#endif
+    _solver = solver;
+
+    _vars[0]->add(_solver,false);
+		_self = CSP::_Negation(_vars[0]->_self);
+
+    if( top_level )
+      _solver->model->add( _self );
+  }
+
+  return this;
+}
+
+
 Mistral_mul::Mistral_mul(Mistral_Expression *var1, Mistral_Expression *var2)
   : Mistral_binop(var1,var2)
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating muluality" << std::endl;
+  std::cout << "creating mul" << std::endl;
 #endif
 
 }
@@ -850,7 +926,7 @@ Mistral_mul::Mistral_mul(Mistral_Expression *var1, int constant)
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating muluality" << std::endl;
+  std::cout << "creating mul" << std::endl;
 #endif
 
 }
@@ -893,7 +969,7 @@ Mistral_div::Mistral_div(Mistral_Expression *var1, Mistral_Expression *var2)
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating divuality" << std::endl;
+  std::cout << "creating div" << std::endl;
 #endif
 
 }
@@ -903,7 +979,7 @@ Mistral_div::Mistral_div(Mistral_Expression *var1, int constant)
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating divuality" << std::endl;
+  std::cout << "creating div" << std::endl;
 #endif
 
 }
@@ -949,7 +1025,7 @@ Mistral_mod::Mistral_mod(Mistral_Expression *var1, Mistral_Expression *var2)
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating moduality" << std::endl;
+  std::cout << "creating mod" << std::endl;
 #endif
 
 }
@@ -959,7 +1035,7 @@ Mistral_mod::Mistral_mod(Mistral_Expression *var1, int constant)
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating moduality" << std::endl;
+  std::cout << "creating mod" << std::endl;
 #endif
 
 }
@@ -1003,7 +1079,7 @@ Mistral_and::Mistral_and(Mistral_Expression *var1, Mistral_Expression *var2)
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating anduality" << std::endl;
+  std::cout << "creating and" << std::endl;
 #endif
 
 }
@@ -1013,7 +1089,7 @@ Mistral_and::Mistral_and(Mistral_Expression *var1, int constant)
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating anduality" << std::endl;
+  std::cout << "creating and" << std::endl;
 #endif
 
 }
@@ -1058,7 +1134,7 @@ Mistral_or::Mistral_or(Mistral_Expression *var1, Mistral_Expression *var2)
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating oruality" << std::endl;
+  std::cout << "creating or" << std::endl;
 #endif
 
 }
@@ -1068,7 +1144,7 @@ Mistral_or::Mistral_or(Mistral_Expression *var1, int constant)
 {
 
 #ifdef _DEBUGWRAP
-  std::cout << "creating oruality" << std::endl;
+  std::cout << "creating or" << std::endl;
 #endif
 
 }

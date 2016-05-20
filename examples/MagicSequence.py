@@ -9,8 +9,11 @@
 #
 # CSPlib Problem 019 - http://www.csplib.org/Problems/prob019/
 
+from __future__ import print_function
 from Numberjack import *
-
+import sys
+if sys.version_info[0] > 2:
+    xrange = range
 
 def get_model(N):
     seq = VarArray(N, N)
@@ -32,11 +35,11 @@ def solve(param):
     solver.solve()
 
     if solver.is_sat():
-        print str(seq)
+        print(str(seq))
     elif solver.is_unsat():
-        print "Unsatisfiable"
+        print("Unsatisfiable")
     else:
-        print "Timed out"
+        print("Timed out")
 
 
 if __name__ == '__main__':

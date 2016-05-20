@@ -35,4 +35,4 @@ default = {'N': 3, 'solver': 'Mistral', 'file': 'data/sdk.txt', 'verbose': 0, 't
 
 if __name__ == '__main__':
     param = input(default)
-    print solve(param)
+    print(solve(param))

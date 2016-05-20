@@ -10,6 +10,7 @@
 #
 # CSPlib Problem 041 - http://www.csplib.org/Problems/prob041/
 
+from __future__ import print_function
 from Numberjack import *
 
 
@@ -35,13 +36,13 @@ def solve(param):
     solver.solve()
 
     if solver.is_sat():
-        print "(" + str(a) + " / " + str(b) + str(c) + ") + " + \
+        print("(" + str(a) + " / " + str(b) + str(c) + ") + " + \
               "(" + str(d) + " / " + str(e) + str(f) + ") + " + \
-              "(" + str(g) + " / " + str(h) + str(i) + ") = 1"
+              "(" + str(g) + " / " + str(h) + str(i) + ") = 1")
     elif solver.is_unsat():
-        print "Unsatisfiable"
+        print("Unsatisfiable")
     else:
-        print "Timed out"
+        print("Timed out")
 
 
 if __name__ == '__main__':

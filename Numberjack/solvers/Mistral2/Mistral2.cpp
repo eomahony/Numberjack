@@ -308,14 +308,15 @@ Mistral2_Expression* Mistral2_Max::add(Mistral2Solver *solver, bool top_level)
   if(!has_been_added()) {
 
 #ifdef _DEBUGWRAP
-    std::cout << "add an Max constraint" << std::endl;
+    std::cout << "add a Max constraint" << std::endl;
 #endif
 
-    _solver = solver;
-    
-    int i, n=_vars.size();  
-    for(i=0; i<n; ++i) 
+    _solver = solver;    
+    int i, n=_vars.size(); 
+		 
+    for(i=0; i<n; ++i) {
       _vars.get_item(i)->add(_solver,false);
+		}
 
     if(n == 2) {
       _self = Max(_vars.get_item(0)->_self,
@@ -373,7 +374,7 @@ Mistral2_Expression* Mistral2_AllDiff::add(Mistral2Solver *solver, bool top_leve
       _vars.set_item(i, _vars.get_item(i)->add(solver, false));
     
     if(n==2) {
-      _self = (_vars.get_item(0) != _vars.get_item(1));
+      _self = (_vars.get_item(0)->_self != _vars.get_item(1)->_self);
     } else {
       Mistral::VarArray scope(n);
       for(i=0; i<n; ++i) scope[i] = _vars.get_item(i)->_self;
@@ -493,16 +494,15 @@ Mistral2_Expression* Mistral2_Element::add(Mistral2Solver *solver, bool top_leve
     
     int i, n=_vars.size();  
     Mistral::VarArray scope(n-1);
-      
-
 
     for(i=0; i<n-1; ++i) {
       _vars.get_item(i)->add(_solver,false);
       scope[i] = _vars.get_item(i)->_self;
-    }
+    }	
     
     _vars.get_item(n-1)->add(_solver,false);
     Mistral::Variable index = _vars.get_item(n-1)->_self;
+		
     _self = scope[index];
 
   }
@@ -759,6 +759,74 @@ Mistral2_Expression* Mistral2_OrderedSum::add(Mistral2Solver *solver, bool top_l
 
   return this;
 }
+
+/**
+ * Unary constraints
+ */
+Mistral2_Abs::Mistral2_Abs(Mistral2_Expression *var1)
+  : Mistral2_binop(var1,0)
+{
+#ifdef _DEBUGWRAP
+  std::cout << "creating Abs constraint" << std::endl;
+#endif
+}
+
+Mistral2_Abs::~Mistral2_Abs(){
+#ifdef _DEBUGWRAP
+  std::cout << "delete Abs constraint" << std::endl;
+#endif
+}
+
+Mistral2_Expression* Mistral2_Abs::add(Mistral2Solver *solver, bool top_level){
+  if(!has_been_added()) {
+#ifdef _DEBUGWRAP
+    std::cout << "add Abs constraint" << std::endl;
+#endif
+      
+    _solver = solver;
+    
+    _vars[0]->add(_solver,false);
+    _self = Abs(_vars[0]->_self);
+
+    if( top_level )
+      _solver->solver->add( _self );
+      
+  }
+  return this;
+}
+
+Mistral2_neg::Mistral2_neg(Mistral2_Expression *var1)
+  : Mistral2_binop(var1,0)
+{
+#ifdef _DEBUGWRAP
+  std::cout << "creating neg constraint" << std::endl;
+#endif
+}
+
+Mistral2_neg::~Mistral2_neg(){
+#ifdef _DEBUGWRAP
+  std::cout << "delete neg constraint" << std::endl;
+#endif
+}
+
+Mistral2_Expression* Mistral2_neg::add(Mistral2Solver *solver, bool top_level){
+  if(!has_been_added()) {
+#ifdef _DEBUGWRAP
+    std::cout << "add neg constraint" << std::endl;
+#endif
+      
+    _solver = solver;
+    
+    _vars[0]->add(_solver,false);
+    _self = -(_vars[0]->_self);
+
+    if( top_level )
+      _solver->solver->add( _self );
+      
+  }
+  return this;
+}
+
 
 /**
  * Binary constraints
@@ -1088,11 +1156,11 @@ Mistral2_Expression* Mistral2_ne::add(Mistral2Solver *solver, bool top_level){
     std::cout << "add notequal constraint" << std::endl;
 #endif
 
-    _solver = solver;
-    
+    _solver = solver;		
     _vars[0]->add(_solver,false);
+				
     if(_vars[1]) {
-      _vars[1]->add(_solver,false);   
+			_vars[1]->add(_solver,false);  
       _self = (_vars[0]->_self != _vars[1]->_self);
     } else {
       _self = (_vars[0]->_self != _constant);
@@ -1533,6 +1601,24 @@ int Mistral2Solver::startNewSearch()
 #ifdef _DEBUGWRAP
   std::cout << "starting new search" << std::endl;
 #endif
+	
+  solver->consolidate();
+
+  
+#ifdef _DEBUGWRAP
+  std::cout << solver << std::endl;
+  solver->parameters.verbosity = 2; 
+#endif
+
+  _branching_heuristic = solver->heuristic_factory(_var_heuristic_str, _val_heuristic_str, _heuristic_randomization);
+
+  _restart_policy = solver->restart_factory(_restart_policy_str); 
+
+  solver->initialise_search(solver->variables, _branching_heuristic, _restart_policy, NULL);
+
+  solver->statistics.start_time = Mistral::get_run_time();
+
+	
   return 0;
 }
 
@@ -1541,7 +1627,8 @@ int Mistral2Solver::getNextSolution()
 #ifdef _DEBUGWRAP
   std::cout << "getting next solution" << std::endl;
 #endif
-  return 0;
+	
+  return solver->get_next_solution();
 }
 
 int Mistral2Solver::sacPreprocess(const int type)

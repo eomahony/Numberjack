@@ -1,165 +1,163 @@
 /*
  * ****** Set of useful classes to enforce VAC
  */
- 
+
 #include "tb2vacutils.hpp"
 #include "tb2vac.hpp"
 #include "tb2clusters.hpp"
 
 
 
-VACVariable::VACVariable (WCSP *wcsp, string n, Value iinf, Value isup) : EnumeratedVariable(wcsp, n, iinf, isup)
-				,vac(wcsp->vac), myThreshold(MIN_COST, &wcsp->getStore()->storeCost) 
+VACVariable::VACVariable (WCSP *wcsp, string n, Value iinf, Value isup) : EnumeratedVariable(wcsp, n, iinf, isup), vac(wcsp->vac), myThreshold(MIN_COST, &wcsp->getStore()->storeCost)
 {
-  init();
+    init();
 }
 
-VACVariable::VACVariable (WCSP *wcsp, string n, Value *d, int dsize) : EnumeratedVariable(wcsp, n, d, dsize)
-				,vac(wcsp->vac), myThreshold(MIN_COST, &wcsp->getStore()->storeCost)
+VACVariable::VACVariable (WCSP *wcsp, string n, Value *d, int dsize) : EnumeratedVariable(wcsp, n, d, dsize), vac(wcsp->vac), myThreshold(MIN_COST, &wcsp->getStore()->storeCost)
 {
-  init();
+    init();
 }
 
 VACVariable::~VACVariable () {
 }
 
 void VACVariable::init () {
-  killed =0; // HEUR
-  maxk_timeStamp = 0;
-  maxk = 0;
-  for (unsigned int a = 0; a < getDomainInitSize(); a++) {
-  	mark.push_back(0);
-  	k_timeStamp.push_back(0);
-  	k.push_back(0);
-  	killer.push_back(0);
-  }
-  linkVACQueue.content.var = this;
-  linkVACQueue.content.timeStamp = -1;
-  linkSeekSupport.content.var = this;
-  linkSeekSupport.content.timeStamp = -1;
-  linkVAC2Queue.content = this;
+    killed =0; // HEUR
+    maxk_timeStamp = 0;
+    maxk = 0;
+    for (unsigned int a = 0; a < getDomainInitSize(); a++) {
+        mark.push_back(0);
+        k_timeStamp.push_back(0);
+        k.push_back(0);
+        killer.push_back(0);
+    }
+    linkVACQueue.content.var = this;
+    linkVACQueue.content.timeStamp = -1;
+    linkSeekSupport.content.var = this;
+    linkSeekSupport.content.timeStamp = -1;
+    linkVAC2Queue.content = this;
 }
 
- 
+
 bool VACVariable::increaseVAC(Value newInf) {
     if (newInf > inf) {
-    	if(newInf > sup) return true;
-    	else {
-	        newInf = domain.increase(newInf);
-	        inf = newInf;
-    	}
+        if(newInf > sup) return true;
+        else {
+            newInf = domain.increase(newInf);
+            inf = newInf;
+        }
     }
-   	return false;
+    return false;
 }
 
 bool VACVariable::decreaseVAC(Value newSup) {
     if (newSup < sup) {
-    	if(newSup < inf) return true;
-    	else {
-	        newSup = domain.decrease(newSup);
-	        sup = newSup;
-    	}
-   }
-   return false;
+        if(newSup < inf) return true;
+        else {
+            newSup = domain.decrease(newSup);
+            sup = newSup;
+        }
+    }
+    return false;
 }
 
 bool VACVariable::removeVAC ( Value v )
 {
     if (v == inf) return increaseVAC(v + 1);
     else if (v == sup) return decreaseVAC(v - 1);
-	else if (canbe(v)) domain.erase(v);
-	return false;
+    else if (canbe(v)) domain.erase(v);
+    return false;
 }
 
 void VACVariable::decreaseCost(Value v, Cost c) {	
-  assert(c > MIN_COST);
-  Cost cini = getCost(v);  
-  if (wcsp->getLb() + cini < wcsp->getUb()) {
-    costs[toIndex(v)] -= c;
-  }
+    assert(c > MIN_COST);
+    Cost cini = getCost(v);
+    if (wcsp->getLb() + cini < wcsp->getUb()) {
+        costs[toIndex(v)] -= c;
+    }
 }
 
 
 void VACVariable::VACproject (Value v, const Cost c) {
-//   Cost oldCost = getVACCost(v);
-  costs[toIndex(v)] += c;
-//   Cost newCost = getVACCost(v);
-  
-//   if ((v == maxCostValue) || (newCost > maxCost) || CUT(wcsp->getLb() + newCost,wcsp->getUb())) {
-   if (CUT(wcsp->getLb() + getCost(v), wcsp->getUb())) {
-     queueNC();
-   }
-//   if (oldCost == MIN_COST) {
-//     queueNC();
-//     queueDAC();
-//     queueEAC1();
-//   }
-//   if ((isNull(oldCost)) && (!isNull(newCost))) {
-//     queueVAC2();
-//   }
-  
-//   if(v == getSupport()) { 
-//     Value newSupport = getInf();
-//     Cost minCost = getCost(newSupport);
-//     EnumeratedVariable::iterator iter = begin();
-//     for (++iter; minCost > MIN_COST && iter != end(); ++iter) {
-//         Cost cost = getCost(*iter);
-//         if (cost < minCost) {
-//             minCost = cost;
-//             newSupport = *iter;
-//         }
-//     }
-// 	assert(canbe(newSupport));
-// 	//	cout << "setsupport " << wcspIndex << " " << newSupport << endl;
-// 	setSupport(newSupport);
-//   } 
+    //   Cost oldCost = getVACCost(v);
+    costs[toIndex(v)] += c;
+    //   Cost newCost = getVACCost(v);
+
+    //   if ((v == maxCostValue) || (newCost > maxCost) || CUT(wcsp->getLb() + newCost,wcsp->getUb())) {
+    if (CUT(wcsp->getLb() + getCost(v), wcsp->getUb())) {
+        queueNC();
+    }
+    //   if (oldCost == MIN_COST) {
+    //     queueNC();
+    //     queueDAC();
+    //     queueEAC1();
+    //   }
+    //   if ((isNull(oldCost)) && (!isNull(newCost))) {
+    //     queueVAC2();
+    //   }
+
+    //   if(v == getSupport()) {
+    //     Value newSupport = getInf();
+    //     Cost minCost = getCost(newSupport);
+    //     EnumeratedVariable::iterator iter = begin();
+    //     for (++iter; minCost > MIN_COST && iter != end(); ++iter) {
+    //         Cost cost = getCost(*iter);
+    //         if (cost < minCost) {
+    //             minCost = cost;
+    //             newSupport = *iter;
+    //         }
+    //     }
+    // 	assert(canbe(newSupport));
+    // 	//	cout << "setsupport " << wcspIndex << " " << newSupport << endl;
+    // 	setSupport(newSupport);
+    //   }
 }
 
 void VACVariable::VACextend (Value v, const Cost c) {
-  decreaseCost(v,c);
-  if (v == maxCostValue) queueNC();
-  assert(canbe(getSupport()));
-//   if(cannotbe(getSupport()) || getCost(getSupport())>MIN_COST) { // TO BE REMOVED ???
-//     Value newSupport = getInf();
-//     Cost minCost = getCost(newSupport);
-//     EnumeratedVariable::iterator iter = begin();
-//     for (++iter; minCost > MIN_COST && iter != end(); ++iter) {
-//         Cost cost = getCost(*iter);
-//         if (cost < minCost) {
-//             minCost = cost;
-//             newSupport = *iter;
-//         }
-//     }
-// 	assert(canbe(newSupport));
-// 	//	cout << "setsupport " << wcspIndex << " " << newSupport << endl;
-// 	setSupport(newSupport);
-//   } 
+    decreaseCost(v,c);
+    if (v == maxCostValue) queueNC();
+    assert(canbe(getSupport()));
+    //   if(cannotbe(getSupport()) || getCost(getSupport())>MIN_COST) { // TO BE REMOVED ???
+    //     Value newSupport = getInf();
+    //     Cost minCost = getCost(newSupport);
+    //     EnumeratedVariable::iterator iter = begin();
+    //     for (++iter; minCost > MIN_COST && iter != end(); ++iter) {
+    //         Cost cost = getCost(*iter);
+    //         if (cost < minCost) {
+    //             minCost = cost;
+    //             newSupport = *iter;
+    //         }
+    //     }
+    // 	assert(canbe(newSupport));
+    // 	//	cout << "setsupport " << wcspIndex << " " << newSupport << endl;
+    // 	setSupport(newSupport);
+    //   }
 }
 
 bool VACVariable::isSimplyNull(Cost c) 
 {
-  return (vac->isNull(c));
+    return (vac->isNull(c));
 }
 
 bool VACVariable::isNull (Cost c) 
 {
-  return (vac->isNull(c) || (c < myThreshold));
+    return (vac->isNull(c) || (c < myThreshold));
 }
 
 void VACVariable::queueVAC() {
-  wcsp->vac->queueVAC(&linkVACQueue);
+    wcsp->vac->queueVAC(&linkVACQueue);
 }
 
 void VACVariable::queueSeekSupport() {
-  wcsp->vac->queueSeekSupport(&linkSeekSupport);
+    wcsp->vac->queueSeekSupport(&linkSeekSupport);
 }
 
 void VACVariable::queueVAC2() {
-  wcsp->vac->queueVAC2(&linkVAC2Queue);
+    wcsp->vac->queueVAC2(&linkVAC2Queue);
 }
 
 void VACVariable::dequeueVAC2() {
-  wcsp->vac->dequeueVAC2(&linkVAC2Queue);
+    wcsp->vac->dequeueVAC2(&linkVAC2Queue);
 }
 
 // void VACVariable::extendAll(Cost cost) {
@@ -178,7 +176,7 @@ void VACVariable::dequeueVAC2() {
 
 // void VACVariable::assign(Value newValue) {
 //   vac->assign(wcspIndex, newValue);
- 
+
 //   if (ToulBar2::vac) {
 //     for (ConstraintList::iterator iter = getConstrs()->begin(); iter != getConstrs()->end(); ++iter) {
 // 	   Constraint *c = (*iter).constr;
@@ -193,20 +191,20 @@ void VACVariable::dequeueVAC2() {
 
 
 void VACVariable::remove (Value value) {
-  // if (canbe(value)) {
-  //   queueVAC2();
-  // }
-  if (ToulBar2::singletonConsistency) vac->singleton.insert(MAX_DOMAIN_SIZE*wcspIndex + value);
-  EnumeratedVariable::remove(value);
+    // if (canbe(value)) {
+    //   queueVAC2();
+    // }
+    if (ToulBar2::singletonConsistency) vac->singleton.insert(MAX_DOMAIN_SIZE*wcspIndex + value);
+    EnumeratedVariable::remove(value);
 }
 
 
 void VACVariable::removeFast (Value value) {
-  if (ToulBar2::singletonConsistency) vac->singleton.insert(MAX_DOMAIN_SIZE*wcspIndex + value);
-  EnumeratedVariable::removeFast(value);
+    if (ToulBar2::singletonConsistency) vac->singleton.insert(MAX_DOMAIN_SIZE*wcspIndex + value);
+    EnumeratedVariable::removeFast(value);
 }
 
- 
+
 // void VACVariable::project (Value value, Cost cost) {
 //   assert(cost >= MIN_COST);
 //   Cost oldcost = getCost(value);
@@ -231,19 +229,19 @@ void VACVariable::removeFast (Value value) {
 // }
 
 void VACVariable::increase(Value newInf) {
-  // if ((newInf > inf) && (newInf < sup)) {
-  //   queueVAC2();
-  // }
-  if (ToulBar2::singletonConsistency) for(int i=inf;i<=newInf;i++) vac->singleton.insert(MAX_DOMAIN_SIZE*wcspIndex + i);
-  EnumeratedVariable::increase(newInf);
+    // if ((newInf > inf) && (newInf < sup)) {
+    //   queueVAC2();
+    // }
+    if (ToulBar2::singletonConsistency) for(int i=inf;i<=newInf;i++) vac->singleton.insert(MAX_DOMAIN_SIZE*wcspIndex + i);
+    EnumeratedVariable::increase(newInf);
 }
 
 void VACVariable::decrease(Value newSup) {
-  // if ((newSup < sup) && (newSup > inf)) {
-  //   queueVAC2();
-  // }
-  if (ToulBar2::singletonConsistency) for(int i=sup;i>=newSup;i--) vac->singleton.insert(MAX_DOMAIN_SIZE*wcspIndex + i);
-  EnumeratedVariable::decrease(newSup);
+    // if ((newSup < sup) && (newSup > inf)) {
+    //   queueVAC2();
+    // }
+    if (ToulBar2::singletonConsistency) for(int i=sup;i>=newSup;i--) vac->singleton.insert(MAX_DOMAIN_SIZE*wcspIndex + i);
+    EnumeratedVariable::decrease(newSup);
 }
 
 
@@ -253,113 +251,113 @@ void VACVariable::decrease(Value newSup) {
 
 bool VACVariable::averaging()
 {
-	Cost Top = wcsp->getUb();
-	bool change = false;
-	EnumeratedVariable* x;
-	EnumeratedVariable* y;
-	Constraint* ctr = NULL;
-	ConstraintList::iterator itc = getConstrs()->begin();
-	if(itc != getConstrs()->end())	ctr = (*itc).constr;
-	while(ctr) {
-		if(ctr->arity() == 2 && !ctr->isSep()) {
-			BinaryConstraint* bctr = (BinaryConstraint*) ctr;
-			x = (EnumeratedVariable*) bctr->getVarDiffFrom( (Variable*) this );
-			for (iterator it = begin(); it != end(); ++it) {
-				Cost cu = getCost(*it);
-				Cost cmin = Top;
-				for (iterator itx = x->begin(); itx != x->end(); ++itx) {
-					Cost cbin = bctr->getCost(this,x,*it,*itx);
-					if(cbin < cmin) cmin = cbin;
-				}
-				assert(cmin < Top);
-				Double mean = to_double(cmin + cu) / 2.;	
-				Double extc = to_double(cu) - mean;					 
-				if(abs(extc) >= 1) {
-				  Cost costi = (Long) extc;
-				  for (iterator itx = x->begin(); itx != x->end(); ++itx) {
-					bctr->addcost(this,x,*it,*itx,costi);				
-				  }
-				  if(mean > to_double(cu)) project(*it, -costi); 
-				  else extend(*it, costi);
-				  change = true;
-				}
-			}
-		} else if(ctr->arity() == 3 && !ctr->isSep()) {
-			TernaryConstraint* tctr = (TernaryConstraint*) ctr;
-			x = (EnumeratedVariable*) tctr->getVar( 0 );
-			if(x == this) x = (EnumeratedVariable*) tctr->getVar( 1 );
-		    y = (EnumeratedVariable*) tctr->getVarDiffFrom((Variable*) this, (Variable*)x);
-			for (iterator it = begin(); it != end(); ++it) {
-				Cost cu = getCost(*it);
-				Cost cmin = Top;
-				for (iterator itx = x->begin(); itx != x->end(); ++itx) {
-				for (iterator ity = y->begin(); ity != y->end(); ++ity) {
-					Cost ctern = tctr->getCost(this,x,y,*it,*itx,*ity);
-					if(ctern < cmin) cmin = ctern;
-				}}
-				assert(cmin < Top);
-				Double mean = to_double(cmin + cu) / 2.;
-				Double extc = to_double(cu) - mean;				 
-				if(abs(extc) >= 1) {
-					Cost costi = (Long) extc;
-					for (iterator itx = x->begin(); itx != x->end(); ++itx) {
-					for (iterator ity = y->begin(); ity != y->end(); ++ity) {
-						tctr->addCost(this,x,y,*it,*itx,*ity,costi);				
-					}}
-					if(mean > to_double(cu)) project(*it, -costi); 
-					else extend(*it, costi);
-					change = true;
-				}
-			}
-		} else if(ctr->arity() >= 4 && ctr->extension() && !ctr->isSep()) {
-			NaryConstraint* nctr = (NaryConstraint*) ctr;
-			for (iterator it = begin(); it != end(); ++it) {
-				Cost cu = getCost(*it);
-				Cost cmin = Top;
-				int tindex = nctr->getIndex(this);
-				String tuple;
-				Cost cost;
-				Long nbtuples = 0;
-				nctr->first();
-				while (nctr->next(tuple,cost)) {
-				  nbtuples++;
-				  if (toValue(tuple[tindex] - CHAR_FIRST)==(*it) && cost < cmin) cmin = cost;
-				}
-				if (nctr->getDefCost() < cmin && nbtuples < nctr->getDomainSizeProduct()) cmin = nctr->getDefCost();
-				//				assert(cmin < Top);
-				Double mean = to_double(cmin + cu) / 2.;
-				Double extc = to_double(cu) - mean;				 
-				if(abs(extc) >= 1) {
-					Cost costi = (Cost) extc;
-					if(nctr->getDefCost() < Top) {
-					  nctr->firstlex();
-					  while( nctr->nextlex(tuple,cost) ) {
-						if (toValue(tuple[tindex] - CHAR_FIRST)==(*it)) {
-						  if(cost + costi < Top) nctr->setTuple(tuple, cost + costi);
-						  else nctr->setTuple(tuple, Top);
-						}
-					  }
-					  nctr->setDefCost(Top);
-					} else {
-					  nctr->first();
-					  while( nctr->next(tuple,cost) ) {
-						if (toValue(tuple[tindex] - CHAR_FIRST)==(*it)) {
-						  if(cost + costi < Top) nctr->addtoTuple(tuple, costi);
-						  else nctr->setTuple(tuple, Top);
-						}
-					  }
-					}
-					if(mean > to_double(cu)) project(*it, -costi); 
-					else extend(*it, costi);
-					change = true;
-				}
-			}
-		}
-		++itc;
-		if(itc != getConstrs()->end()) ctr = (*itc).constr;
-		else ctr = NULL;
-	}
-	return change;
+    Cost Top = wcsp->getUb();
+    bool change = false;
+    EnumeratedVariable* x;
+    EnumeratedVariable* y;
+    Constraint* ctr = NULL;
+    ConstraintList::iterator itc = getConstrs()->begin();
+    if(itc != getConstrs()->end())	ctr = (*itc).constr;
+    while(ctr) {
+        if(ctr->arity() == 2 && !ctr->isSep()) {
+            BinaryConstraint* bctr = (BinaryConstraint*) ctr;
+            x = (EnumeratedVariable*) bctr->getVarDiffFrom( (Variable*) this );
+            for (iterator it = begin(); it != end(); ++it) {
+                Cost cu = getCost(*it);
+                Cost cmin = Top;
+                for (iterator itx = x->begin(); itx != x->end(); ++itx) {
+                    Cost cbin = bctr->getCost(this,x,*it,*itx);
+                    if(cbin < cmin) cmin = cbin;
+                }
+                assert(cmin < Top);
+                Double mean = to_double(cmin + cu) / 2.;
+                Double extc = to_double(cu) - mean;
+                if(abs(extc) >= 1) {
+                    Cost costi = (Long) extc;
+                    for (iterator itx = x->begin(); itx != x->end(); ++itx) {
+                        bctr->addcost(this,x,*it,*itx,costi);
+                    }
+                    if(mean > to_double(cu)) project(*it, -costi);
+                    else extend(*it, costi);
+                    change = true;
+                }
+            }
+        } else if(ctr->arity() == 3 && !ctr->isSep()) {
+            TernaryConstraint* tctr = (TernaryConstraint*) ctr;
+            x = (EnumeratedVariable*) tctr->getVar( 0 );
+            if(x == this) x = (EnumeratedVariable*) tctr->getVar( 1 );
+            y = (EnumeratedVariable*) tctr->getVarDiffFrom((Variable*) this, (Variable*)x);
+            for (iterator it = begin(); it != end(); ++it) {
+                Cost cu = getCost(*it);
+                Cost cmin = Top;
+                for (iterator itx = x->begin(); itx != x->end(); ++itx) {
+                    for (iterator ity = y->begin(); ity != y->end(); ++ity) {
+                        Cost ctern = tctr->getCost(this,x,y,*it,*itx,*ity);
+                        if(ctern < cmin) cmin = ctern;
+                    }}
+                assert(cmin < Top);
+                Double mean = to_double(cmin + cu) / 2.;
+                Double extc = to_double(cu) - mean;
+                if(abs(extc) >= 1) {
+                    Cost costi = (Long) extc;
+                    for (iterator itx = x->begin(); itx != x->end(); ++itx) {
+                        for (iterator ity = y->begin(); ity != y->end(); ++ity) {
+                            tctr->addCost(this,x,y,*it,*itx,*ity,costi);
+                        }}
+                    if(mean > to_double(cu)) project(*it, -costi);
+                    else extend(*it, costi);
+                    change = true;
+                }
+            }
+        } else if(ctr->arity() >= 4 && ctr->extension() && !ctr->isSep()) {
+            NaryConstraint* nctr = (NaryConstraint*) ctr;
+            for (iterator it = begin(); it != end(); ++it) {
+                Cost cu = getCost(*it);
+                Cost cmin = Top;
+                int tindex = nctr->getIndex(this);
+                String tuple;
+                Cost cost;
+                Long nbtuples = 0;
+                nctr->first();
+                while (nctr->next(tuple,cost)) {
+                    nbtuples++;
+                    if (toValue(tuple[tindex] - CHAR_FIRST)==(*it) && cost < cmin) cmin = cost;
+                }
+                if (nctr->getDefCost() < cmin && nbtuples < nctr->getDomainSizeProduct()) cmin = nctr->getDefCost();
+                //				assert(cmin < Top);
+                Double mean = to_double(cmin + cu) / 2.;
+                Double extc = to_double(cu) - mean;
+                if(abs(extc) >= 1) {
+                    Cost costi = (Cost) extc;
+                    if(nctr->getDefCost() < Top) {
+                        nctr->firstlex();
+                        while( nctr->nextlex(tuple,cost) ) {
+                            if (toValue(tuple[tindex] - CHAR_FIRST)==(*it)) {
+                                if(cost + costi < Top) nctr->setTuple(tuple, cost + costi);
+                                else nctr->setTuple(tuple, Top);
+                            }
+                        }
+                        nctr->setDefCost(Top);
+                    } else {
+                        nctr->first();
+                        while( nctr->next(tuple,cost) ) {
+                            if (toValue(tuple[tindex] - CHAR_FIRST)==(*it)) {
+                                if(cost + costi < Top) nctr->addtoTuple(tuple, costi);
+                                else nctr->setTuple(tuple, Top);
+                            }
+                        }
+                    }
+                    if(mean > to_double(cu)) project(*it, -costi);
+                    else extend(*it, costi);
+                    change = true;
+                }
+            }
+        }
+        ++itc;
+        if(itc != getConstrs()->end()) ctr = (*itc).constr;
+        else ctr = NULL;
+    }
+    return change;
 }
 
 
@@ -370,14 +368,14 @@ bool VACVariable::averaging()
 
 VACBinaryConstraint::VACBinaryConstraint (WCSP *wcsp, EnumeratedVariable *xx, EnumeratedVariable *yy, vector<Cost> &tab, StoreStack<Cost, Cost> *storeCost) :  BinaryConstraint(wcsp, xx, yy, tab, storeCost), myThreshold(MIN_COST, &wcsp->getStore()->storeCost)
 {
-   for (unsigned int a = 0; a < xx->getDomainInitSize(); a++) {
-	   	kX.push_back(0);
-	   	kX_timeStamp.push_back(0);
-   }
-   for (unsigned int b = 0; b < yy->getDomainInitSize(); b++) {
-	   	kY.push_back(0);
-	   	kY_timeStamp.push_back(0);
-   }
+    for (unsigned int a = 0; a < xx->getDomainInitSize(); a++) {
+        kX.push_back(0);
+        kX_timeStamp.push_back(0);
+    }
+    for (unsigned int b = 0; b < yy->getDomainInitSize(); b++) {
+        kY.push_back(0);
+        kY_timeStamp.push_back(0);
+    }
 }
 
 VACBinaryConstraint::VACBinaryConstraint (WCSP *wcsp, StoreStack<Cost, Cost> *storeCost) : BinaryConstraint(wcsp, storeCost) , myThreshold(MIN_COST, &wcsp->getStore()->storeCost)
@@ -385,14 +383,14 @@ VACBinaryConstraint::VACBinaryConstraint (WCSP *wcsp, StoreStack<Cost, Cost> *st
 
 void VACBinaryConstraint::VACfillElimConstr ()
 {
-   for (unsigned int a = kX.size(); a < sizeX; a++) {
-	   	kX.push_back(0);
-	   	kX_timeStamp.push_back(0);
-   }
-   for (unsigned int b = kY.size(); b < sizeY; b++) {
-	   	kY.push_back(0);
-	   	kY_timeStamp.push_back(0);
-   }
+    for (unsigned int a = kX.size(); a < sizeX; a++) {
+        kX.push_back(0);
+        kX_timeStamp.push_back(0);
+    }
+    for (unsigned int b = kY.size(); b < sizeY; b++) {
+        kY.push_back(0);
+        kY_timeStamp.push_back(0);
+    }
 }
 
 VACBinaryConstraint::~VACBinaryConstraint ()
@@ -400,106 +398,106 @@ VACBinaryConstraint::~VACBinaryConstraint ()
 }
 
 void VACBinaryConstraint::VACproject (VACVariable* x, Value v, Cost c) {
-  assert(ToulBar2::verbose < 4 || ((cout << "project(C" << getVar(0)->getName() << "," << getVar(1)->getName() << ", (" << x->getName() << "," << v << "), " << c << ")" << endl), true));
+    assert(ToulBar2::verbose < 4 || ((cout << "project(C" << getVar(0)->getName() << "," << getVar(1)->getName() << ", (" << x->getName() << "," << v << "), " << c << ")" << endl), true));
 
-  TreeDecomposition* td = wcsp->getTreeDec();
-  if(td) td->addDelta(cluster,x,v,c);
+    TreeDecomposition* td = wcsp->getTreeDec();
+    if(td) td->addDelta(cluster,x,v,c);
 
-  int index = x->toIndex(v);
-  // TO BE REPLACED BY A LOOP ON THE DOMAIN IN ORDER TO AVOID SUBTRACTING TOP???
-  if(!getIndex(x)) deltaCostsX[index] += c;
-  else             deltaCostsY[index] += c;
-  x->VACproject(v, c);
+    int index = x->toIndex(v);
+    // TO BE REPLACED BY A LOOP ON THE DOMAIN IN ORDER TO AVOID SUBTRACTING TOP???
+    if(!getIndex(x)) deltaCostsX[index] += c;
+    else             deltaCostsY[index] += c;
+    x->VACproject(v, c);
 }
 
 void VACBinaryConstraint::VACextend(VACVariable* x, Value v, Cost c) {
-  assert(ToulBar2::verbose < 4 || ((cout << "extend(C" << getVar(0)->getName() << "," << getVar(1)->getName() << ", (" << x->getName() << "," << v << "), " << c << ")" << endl), true));
+    assert(ToulBar2::verbose < 4 || ((cout << "extend(C" << getVar(0)->getName() << "," << getVar(1)->getName() << ", (" << x->getName() << "," << v << "), " << c << ")" << endl), true));
 
-  TreeDecomposition* td = wcsp->getTreeDec();
-  if(td) td->addDelta(cluster,x,v,-c);
+    TreeDecomposition* td = wcsp->getTreeDec();
+    if(td) td->addDelta(cluster,x,v,-c);
 
-  int index = x->toIndex(v);
-  // TO BE REPLACED BY A LOOP ON THE DOMAIN IN ORDER TO AVOID SUBTRACTING TOP???
-  if(!getIndex(x)) deltaCostsX[index] -= c;
-  else             deltaCostsY[index] -= c;
-  x->VACextend(v, c);
+    int index = x->toIndex(v);
+    // TO BE REPLACED BY A LOOP ON THE DOMAIN IN ORDER TO AVOID SUBTRACTING TOP???
+    if(!getIndex(x)) deltaCostsX[index] -= c;
+    else             deltaCostsY[index] -= c;
+    x->VACextend(v, c);
 }
 
 int VACBinaryConstraint::getK (VACVariable* var, Value v, Long timeStamp) {
-  if(var == (VACVariable*) getVar(0)) {
-  	if(kX_timeStamp[var->toIndex(v)] < timeStamp) return 0;
-  	else return kX[var->toIndex(v)];
-  }  else  {
-  	if(kY_timeStamp[var->toIndex(v)] < timeStamp) return 0;
-  	else return kY[var->toIndex(v)];
-  }
+    if(var == (VACVariable*) getVar(0)) {
+        if(kX_timeStamp[var->toIndex(v)] < timeStamp) return 0;
+        else return kX[var->toIndex(v)];
+    }  else  {
+        if(kY_timeStamp[var->toIndex(v)] < timeStamp) return 0;
+        else return kY[var->toIndex(v)];
+    }
 }
 
 void VACBinaryConstraint::setK (VACVariable* var, Value v, int c, Long timeStamp) {
-  if(var == getVar(0)) {
-  	kX[var->toIndex(v)] = c;
-  	kX_timeStamp[var->toIndex(v)] = timeStamp;
-  } else {
-    kY[var->toIndex(v)] = c;
-   	kY_timeStamp[var->toIndex(v)] = timeStamp;
-  }
+    if(var == getVar(0)) {
+        kX[var->toIndex(v)] = c;
+        kX_timeStamp[var->toIndex(v)] = timeStamp;
+    } else {
+        kY[var->toIndex(v)] = c;
+        kY_timeStamp[var->toIndex(v)] = timeStamp;
+    }
 }
 
 bool VACBinaryConstraint::isNull (Cost c)
 {
-  VACVariable* xi = (VACVariable*) getVar(0);
-  return (xi->isSimplyNull(c) || (c < myThreshold));
+    VACVariable* xi = (VACVariable*) getVar(0);
+    return (xi->isSimplyNull(c) || (c < myThreshold));
 }
 
 bool VACBinaryConstraint::revise (VACVariable* var, Value v) {
-  bool wipeout = false;
-  VACVariable* xi = (VACVariable*) getVar(0);
-  VACVariable* xj = (VACVariable*) getVar(1);
-  Value sup = getSupport(var,v);
-  Value minsup = sup;
-  if(var != xi) {  xi = (VACVariable*)getVar(1); xj = (VACVariable*)getVar(0); }
-  Cost cost, minCost = wcsp->getUb();
+    //  bool wipeout = false;
+    VACVariable* xi = (VACVariable*) getVar(0);
+    VACVariable* xj = (VACVariable*) getVar(1);
+    Value sup = getSupport(var,v);
+    Value minsup = sup;
+    if(var != xi) {  xi = (VACVariable*)getVar(1); xj = (VACVariable*)getVar(0); }
+    Cost cost, minCost = wcsp->getUb();
 
-  if(xj->canbe(sup)) {
-	  if(xj->getVACCost(sup) != MIN_COST) { wipeout = xj->removeVAC(sup);  }
-	  else {
-		  if (getVACCost(xi,xj,v,sup) == MIN_COST) {
-		    return false;
-		  }
-	  }
-  }
+    if(xj->canbe(sup)) {
+        if(xj->getVACCost(sup) != MIN_COST) { xj->removeVAC(sup);  } // wipeout = xj->removeVAC(sup);
+        else {
+            if (getVACCost(xi,xj,v,sup) == MIN_COST) {
+                return false;
+            }
+        }
+    }
 
-  for (EnumeratedVariable::iterator it = xj->lower_bound(sup); it != xj->end(); ++it) {
-	  Value w = *it;
-	  if(xj->getVACCost(w) != MIN_COST) { wipeout = xj->removeVAC(w); xj->queueVAC(); }
-	  else {
-	      cost = getVACCost(xi,xj,v, w);
-	      if (cost == MIN_COST) {
-	      	setSupport(xi,v,w);
-	        return false;
-	      } else if (cost < minCost) {
-	      	  minCost = cost;
-	          minsup = w;
-	      }
-	  }
-  }
-  for (EnumeratedVariable::iterator it = xj->begin(); it != xj->lower_bound(sup); ++it) {
-	  Value w = *it;
-	  if(xj->getVACCost(w) != MIN_COST) { wipeout = xj->removeVAC(w); xj->queueVAC(); }
-	  else {
-	      cost = getVACCost(xi,xj,v, w);
-	      if (cost == MIN_COST) {
-	      	setSupport(xi,v,w);
-	        return false;
-	      } else if (cost < minCost) {
-	      	  minCost = cost;
-	          minsup = w;
-	      }
-	  }
-  }
+    for (EnumeratedVariable::iterator it = xj->lower_bound(sup); it != xj->end(); ++it) {
+        Value w = *it;
+        if(xj->getVACCost(w) != MIN_COST) { xj->removeVAC(w); xj->queueVAC(); } // wipeout = xj->removeVAC(w); xj->queueVAC();
+        else {
+            cost = getVACCost(xi,xj,v, w);
+            if (cost == MIN_COST) {
+                setSupport(xi,v,w);
+                return false;
+            } else if (cost < minCost) {
+                minCost = cost;
+                minsup = w;
+            }
+        }
+    }
+    for (EnumeratedVariable::iterator it = xj->begin(); it != xj->lower_bound(sup); ++it) {
+        Value w = *it;
+        if(xj->getVACCost(w) != MIN_COST) { xj->removeVAC(w); xj->queueVAC(); } // wipeout = xj->removeVAC(w); xj->queueVAC();
+        else {
+            cost = getVACCost(xi,xj,v, w);
+            if (cost == MIN_COST) {
+                setSupport(xi,v,w);
+                return false;
+            } else if (cost < minCost) {
+                minCost = cost;
+                minsup = w;
+            }
+        }
+    }
 
-  setSupport(xi,v,minsup);
-  return true;
+    setSupport(xi,v,minsup);
+    return true;
 }
 
 
@@ -546,7 +544,7 @@ VACTernaryConstraint::~VACTernaryConstraint ()
 
 void VACTernaryConstraint::VACproject (VACVariable* x, Value v, Cost c) {
   assert(ToulBar2::verbose < 4 || ((cout << "project(C" << getVar(0)->getName() << "," << getVar(1)->getName() << "," << getVar(2)->getName() << ", (" << x->getName() << "," << v << "), " << c << ")" << endl), true));
-    
+
   TreeDecomposition* td = wcsp->getTreeDec();
   if(td) td->addDelta(cluster,x,v,c);
 
@@ -631,7 +629,7 @@ bool VACTernaryConstraint::revise (VACVariable* var, Value v) {
 		  }
 	  }
   }
-   
+
   for (EnumeratedVariable::iterator it = xj->lower_bound(sup); it != xj->end(); ++it) {
 	  Value w = *it;	
 	  if(xj->getVACCost(w) != MIN_COST) { wipeout = xj->removeVAC(w); xj->queueVAC(); }
@@ -660,8 +658,16 @@ bool VACTernaryConstraint::revise (VACVariable* var, Value v) {
 	      }
 	  }
   }
-  
+
   setSupport(xi,v,minsup);
   return true;
 }
-*/
+ */
+
+/* Local Variables: */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: nil */
+/* c-default-style: "k&r" */
+/* End: */
+

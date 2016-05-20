@@ -1,5 +1,5 @@
 %module(package="Numberjack.solvers") Gurobi 
-%import(module="MipWrapper") "MipWrapper.hpp"
+%import(module="Numberjack.solvers.MipWrapper") "MipWrapper.hpp"
 
 %{
 #include <iostream>

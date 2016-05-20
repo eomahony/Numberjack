@@ -29,6 +29,8 @@
 using namespace Mistral;
 using namespace std;
 
+//#define _DEBUGMODEL true
+
 
 static ConstraintStore ENVIRONMENT;
 
@@ -1944,12 +1946,17 @@ string BuildObjectNot::xmlPred(int& idx, int level, const BuildObjectPredicate *
  **********************************************/ 
 void BuildObjectAbs::build( Solver *s, VariableInt **tmp, BuildObjectPredicate *pred ) 
 {
+	//std::cout << "predicate ABS" << std::endl;
+	
   new PredicateAbs( s, tmp );
 }
 
 int BuildObjectAbs::propagateUpward( BuildObjectPredicate *pred ) const 
 {
   BuildObject *x = pred->scope[0];
+	
+	//std::cout << x->min() << ".." << x->max() << std::endl;
+	
   int lb, ub, aux;     
   if( x->min() >= 0 ) {
     lb = x->min();
@@ -1965,6 +1972,8 @@ int BuildObjectAbs::propagateUpward( BuildObjectPredicate *pred ) const
     ub = x->max();
     if( aux > ub ) ub = aux;
   }
+	
+		//std::cout << lb << ".." << ub << std::endl;
 
   int consistent = ( pred->setMin( lb ) && pred->setMax( ub ) );
   if( consistent && pred->isTop() ) 
@@ -1982,17 +1991,23 @@ int BuildObjectAbs::propagateDownward( BuildObjectPredicate *pred ) const
 
 void BuildObjectAbs::close( BuildObjectPredicate *pred ) 
 {  
-  if( pred->isConstant() ) {
-    pred->unsetRel();
-    pred->scope[0]->deReference();
-  } else {
+  // if( pred->isConstant() ) {
+  //
+  // 		std::cout << "constant ABS" << std::endl;
+  //
+  //   pred->unsetRel();
+  //   pred->scope[0]->deReference();
+  // } else {
+  //
+  // 		std::cout << "normal ABS" << std::endl;
+  //
     pred->model->unsetSat();
     pred->scope[0]->unsetRange();
     pred->scope[0]->unsetBList();
     pred->scope[0]->unsetIList();
     pred->unsetBList();
     pred->unsetIList();
-  }
+ // }
 }
 
 void BuildObjectAbs::print(std::ostream& o, const BuildObjectPredicate *pred) const

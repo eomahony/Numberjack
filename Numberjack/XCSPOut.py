@@ -240,10 +240,10 @@ class XCSPOutput():
         """
         Extracts the normalised parameters from the given expression
         """
-        if type(expr) == types.IntType:
+        if type(expr) == int:
             params.append(("INT", self.__extract_param_counter))
             self.__extract_param_counter += 1
-        elif type(expr) == types.StringType:
+        elif type(expr) == bytes:
             if expr in self.__strings:
                 params.append(("INT", self.__strings.index(expr)))
             else:
@@ -266,10 +266,10 @@ class XCSPOutput():
         with normalised parameteres.
         """
         extracted_expr = None
-        if type(expr) == types.IntType:
+        if type(expr) == int:
             self.__extract_param_counter += 1
             return "X%d" % (self.__extract_param_counter -1)
-        elif type(expr) == types.StringType:
+        elif type(expr) == bytes:
             self.__extract_param_counter += 1
             return "X%d" % (self.__extract_param_counter -1)
         elif expr.get_operator() == "Sum":
@@ -314,9 +314,9 @@ class XCSPOutput():
         Extracts the parameters in terms of their variable identifiers and
         wheather they are constants.
         """
-        if type(expr) == types.IntType:
+        if type(expr) == int:
             params.append(("INT", expr))
-        elif type(expr) == types.StringType:
+        elif type(expr) == bytes:
             pass
         elif expr.get_operator() == "Sum":
             params.append(("VAR", self.handle_weighted_sum(expr)))
@@ -333,7 +333,7 @@ class XCSPOutput():
         This adds a global constraint to the list of constraints
         """
         if self.global_map.get(expr.get_operator()) is "NOT_SUPPORTED":
-            print "Global operator, %s, is not supported, yet" % expr.get_operator()
+            print("Global operator, %s, is not supported, yet" % expr.get_operator())
         else:
             conformat = self.global_format.get(expr.get_operator())
             params = []
@@ -346,7 +346,7 @@ class XCSPOutput():
                 index = self.create_variable(1, len(expr.get_children())-1,
                                              Name="Result of Element C%d" %
                                                 self.__local_con_idx)
-                print "C%d created aux element var" % (self.__local_con_idx), index
+                print("C%d created aux element var" % (self.__local_con_idx), index)
                 params.append(("VAR", index))
             dparams = sorted(set(params))
             scope = [str(par[1]) for par in dparams if par[0] == "VAR"]
@@ -377,7 +377,7 @@ class XCSPOutput():
 
             if "S1" in conformat:
                 val = expr.get_children()[0]
-                if isinstance(val, types.IntType):
+                if isinstance(val, int):
                     con_string += "\t\t\t%d\n" % val
                 else:
                     con_string += "\t\t\tV%d\n" % val.ident
@@ -423,7 +423,7 @@ class XCSPOutput():
 
             if "E1" in conformat:
                 val = expr.get_children()[-1]
-                if type(val) == types.IntType :
+                if type(val) == int :
                     con_string += "\t\t\t%d\n" % val
                 else:
                     con_string += "\t\t\tVV%d\n" % val.ident
@@ -499,7 +499,7 @@ class XCSPOutput():
         Handles an expression that needs to be represented by an
         intermediate variable. Mainly for stuff under a weighted sum.
         """
-        if type(expr) == types.IntType:
+        if type(expr) == int:
             return expr
         elif expr.is_var():
             return (expr.ident, expr.get_domain_tuple()[0], expr.get_domain_tuple()[1])
@@ -681,7 +681,7 @@ class XCSPOutput():
         nbvalues = 0
         dom_list = []
         if len(domain) == 2:
-            nbvalues = len(range(lb, ub+1))
+            nbvalues = len(list(range(lb, ub+1)))
             if lb != ub:
                 dom_list.append("%d..%d" % (lb, ub))
             else:

@@ -5446,6 +5446,7 @@ void Mistral::ElementExpression::extract_variable(Solver *s) {
   initialise_domain();
   Variable aux(values, DYN_VAR);
 
+
   _self = aux;
 
   _self.initialise(s, 1);
@@ -5457,19 +5458,21 @@ const char* Mistral::ElementExpression::get_name() const {
   return "element";
 }
 
+//#define _DEBUG_ACELT
+
 void Mistral::ElementExpression::extract_predicate(Solver *s) {
   int arity = children.size-2;
-#ifdef _DEBUG_AC
+#ifdef _DEBUG_ACELT
   std::cout << "pre-propagte element(" 
-	    << children[arity] << " of ["
+	    << children[arity] << " = " << children[arity].get_domain() << " of ["
 	    << children[0] ;
-  for(unsigned int i=0; i<arity; ++i)
+  for(unsigned int i=1; i<arity; ++i)
     std::cout << ", " << children[i];
-  std::cout << "]) = " << children[arity+1] ;
+  std::cout << "]) = " << children[arity+1] << " in " << children[arity+1].get_domain() << std::endl;
 #endif
   if(FAILED(children[arity].set_min(offset)))
     { 
-#ifdef _DEBUG_AC
+#ifdef _DEBUG_ACELT
       std::cout << " FAIL!" << std::endl;
       //exit(1);
 #endif
@@ -5477,17 +5480,19 @@ void Mistral::ElementExpression::extract_predicate(Solver *s) {
     }
   else if(FAILED(children[arity].set_max(arity-1+offset)))
     { 
-#ifdef _DEBUG_AC
+#ifdef _DEBUG_ACELT
       std::cout << " FAIL!" << std::endl;
       //exit(1);
 #endif
       s->fail(); 
     }
-#ifdef _DEBUG_AC
+#ifdef _DEBUG_ACELT
   else
     std::cout << "ok\n";
 #endif
-  s->add(Constraint(new PredicateElement(children, offset)));
+	Constraint con(new PredicateElement(children, offset));
+	
+  s->add(con);
 }
 
 

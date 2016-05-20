@@ -137,7 +137,7 @@ parameter {
 		exit(2);
 	}
 	name = $6;
-	print "    " name " = VarArray(" isup ",-" MAXINT "," MAXINT ",'" name "')";
+	print "#    " name " = VarArray(" isup ",-" MAXINT "," MAXINT ",'" name "')";
 	if (match($0,"::_output_")) {
 		output[ name ] = isup;
 		outputstring[ name ] = substr($0, RSTART+RLENGTH);
@@ -147,8 +147,18 @@ parameter {
 		sub("::_output_.*","");
 		gsub(" ","");
 		for (i=0; i<isup; i++) {
-			print "    model.add(" name "[" i "] == " $0 "[" i "])";
+			print "#    model.add(" name "[" i "] == " $0 "[" i "])";
 		}
+        print "    " name " = VarArray(" $0 ")";
+	} else  if (match($7,"::var_is_introduced")) {
+		sub(".*= ","");
+		sub("::_output_.*","");
+		sub("::var_is_introduced","");
+		gsub(" ","");
+		for (i=0; i<isup; i++) {
+			print "#    model.add(" name "[" i "] == " $0 "[" i "])";
+		}
+        print "    " name " = VarArray(" $0 ")";
 	}
 }
 
@@ -358,7 +368,7 @@ END {
 	print "start_time = datetime.datetime.now()\n\n";
 	print "if __name__ == '__main__':";
 	print "    solvers = ['Mistral', 'SCIP', 'MiniSat', 'Toulbar2', 'Gurobi']";
-	print "    default = dict([('solver', 'Mistral'), ('verbose', 0), ('tcutoff', 900), ('var', 'DomainOverWDegree'), ('val', 'Lex'), ('rand', 2), ('threads', 1), ('restart', GEOMETRIC), ('base', 256), ('factor', 1.3), ('lcLevel', 4), ('lds', 0), ('dee',0), ('btd',0), ('rds',0), ('dichotomic', 0), ('dichtcutoff', 5), ('encoding', '')])";
+	print "    default = dict([('solver', 'Mistral'), ('verbose', 0), ('tcutoff', 900), ('var', 'DomainOverWDegree'), ('val', 'Lex'), ('rand', 2), ('threads', 1), ('restart', GEOMETRIC), ('base', 256), ('factor', 1.3), ('lcLevel', 4), ('lds', 0), ('dee',0), ('btd',0), ('rds',0), ('varElimOrder', 0), ('dichotomic', 0), ('dichtcutoff', 5), ('encoding', '')])";
 	print "    param = input(default)";
 	if(objective){
 		print "    if param['dichotomic'] == 1:";

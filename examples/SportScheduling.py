@@ -2,11 +2,11 @@ from Numberjack import *
 
 
 def get_model(nbTeams):
-    Teams = range(nbTeams)
-    Weeks = range(nbTeams-1)
-    EWeeks = range(nbTeams)
-    Periods = range(nbTeams/2)
-    Games = range(nbTeams*nbTeams)
+    Teams = list(range(nbTeams))
+    Weeks = list(range(nbTeams-1))
+    EWeeks = list(range(nbTeams))
+    Periods = list(range(nbTeams//2))
+    Games = list(range(nbTeams*nbTeams))
     Slots = ('home', 'away')
 
     occur = dict([(i, (2, 2)) for i in range(nbTeams)])
@@ -51,4 +51,4 @@ default = {'solver': 'Mistral', 'teams': 8, 'verbose': 0, 'tcutoff': 30}
 
 if __name__ == '__main__':
     param = input(default)
-    print solve(param)
+    print(solve(param))

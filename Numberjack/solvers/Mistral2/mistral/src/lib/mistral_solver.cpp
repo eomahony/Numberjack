@@ -35,6 +35,7 @@
 //#define _OLD_ true
 //#define _DEBUG_NOGOOD true //(statistics.num_filterings == 491)
 //#define _DEBUG_SEARCH true
+//#define _DEBUG_AC true
 
 //((statistics.num_filterings == 48212) || (statistics.num_filterings == 46738) || (statistics.num_filterings == 44368) || (statistics.num_filterings == 43659))
 
@@ -1468,8 +1469,6 @@ void Mistral::Solver::add(Constraint c) {
   std::cout << "add " << c << std::endl;
 #endif
 
-  //std::cout << "ADD " << c << std::endl;
-
   if(c.id() < 0) {
 
     c.initialise(this);
@@ -1486,15 +1485,13 @@ void Mistral::Solver::add(Constraint c) {
 
   } else {
 
-
-    //std::cout << "awaken" << std::endl;
     c.awaken();
     
   }
   
 
-  // std::cout << "================\n" << active_constraints << "\n================" << std::endl;
-  
+  //std::cout << "================\n" << active_constraints << "\n================" << std::endl;
+	
   c.trigger();
 
   //active_constraints.trigger(c);
@@ -1517,6 +1514,7 @@ void Mistral::Solver::add(Constraint c) {
   // std::cout << "================\n" << active_constraints << "\n================" << std::endl;
 
   if(level <= 0 && !posted_constraints.safe_contain(c.id())) {
+		
     posted_constraints.init_add(c.id());
 
     //std::cout << "ADD " << c.id() << "?" << " yep " << posted_constraints << std::endl;
@@ -1810,258 +1808,265 @@ double Mistral::Solver::get_current_target() {
 
 Mistral::Outcome Mistral::Solver::restart_search(const int root, const bool _restore_) { //const bool _restore_, const bool _exit_on_solution_) {
 
-  //int initial_level = level; 
+	//int initial_level = level; 
 
   
-  if(parameters.verbosity>2)  {
-    std::cout << " " << parameters.prefix_comment << " +" << std::setw(89) << std::setfill('=')
-	      << "+" << std::endl << std::setfill(' ') 
-	      << " " << parameters.prefix_comment << " |      INSTANCE STATS   |      LEARNING      |         SEARCH STATS          |";
-    if(objective) {
-      if(objective->is_optimization())
-	std::cout << " OBJECTIVE |" ;
-      else if(objective->is_satisfaction())
-	std::cout << " MAX DEPTH |" ;
-      else if(objective->is_enumeration())
-	std::cout << " #SOLUTION |" ;
-    }
-    std::cout << std::endl 
-	      << " " << parameters.prefix_comment << " |   vars  vals     cons |  #learnt size kept |    nodes     propags     time |           |" << std::endl;
-  } else if(parameters.verbosity>1)  {
-   std::cout << " " << parameters.prefix_comment << " +" << std::setw(44) << std::setfill('=')
-	      << "+" << std::endl << std::setfill(' ') 
-	      << " " << parameters.prefix_comment << " |         SEARCH STATS          |";
-    if(objective) {
-      if(objective->is_optimization())
-	std::cout << " OBJECTIVE |" ;
-      else if(objective->is_satisfaction())
-	std::cout << " MAX DEPTH |" ;
-      else if(objective->is_enumeration())
-	std::cout << " #SOLUTION |" ;
-    }
-    std::cout << std::endl 
-	      << " " << parameters.prefix_comment << " |    nodes     propags     time |           |" << std::endl;
-  }
+	if(parameters.verbosity>2)  {
+		std::cout << " " << parameters.prefix_comment << " +" << std::setw(89) << std::setfill('=')
+			<< "+" << std::endl << std::setfill(' ') 
+				<< " " << parameters.prefix_comment << " |      INSTANCE STATS   |      LEARNING      |         SEARCH STATS          |";
+		if(objective) {
+			if(objective->is_optimization())
+				std::cout << " OBJECTIVE |" ;
+			else if(objective->is_satisfaction())
+				std::cout << " MAX DEPTH |" ;
+			else if(objective->is_enumeration())
+				std::cout << " #SOLUTION |" ;
+		}
+		std::cout << std::endl 
+			<< " " << parameters.prefix_comment << " |   vars  vals     cons |  #learnt size kept |    nodes     propags     time |           |" << std::endl;
+	} else if(parameters.verbosity>1)  {
+		std::cout << " " << parameters.prefix_comment << " +" << std::setw(44) << std::setfill('=')
+			<< "+" << std::endl << std::setfill(' ') 
+				<< " " << parameters.prefix_comment << " |         SEARCH STATS          |";
+		if(objective) {
+			if(objective->is_optimization())
+				std::cout << " OBJECTIVE |" ;
+			else if(objective->is_satisfaction())
+				std::cout << " MAX DEPTH |" ;
+			else if(objective->is_enumeration())
+				std::cout << " #SOLUTION |" ;
+		}
+		std::cout << std::endl 
+			<< " " << parameters.prefix_comment << " |    nodes     propags     time |           |" << std::endl;
+	}
 
-  Outcome satisfiability = UNKNOWN;
+	Outcome satisfiability = UNKNOWN;
 
-  statistics.objective_value = objective->value();
-  statistics.num_variables = sequence.size;  
+	statistics.objective_value = objective->value();
+	statistics.num_variables = sequence.size;  
 
-  double last_target = get_current_target();
-  double target_i;
-  double progress_i=0;
+	double last_target = get_current_target();
+	double target_i;
+	double progress_i=0;
 
-  //double total_progress = 0;
-  //unsigned int tprog = 0;
+	//double total_progress = 0;
+	//unsigned int tprog = 0;
 
-  // std::cout << "[" << std::right << std::setw(33) << "]";
-  // std::cout.flush();
+	// std::cout << "[" << std::right << std::setw(33) << "]";
+	// std::cout.flush();
 
-  while(satisfiability == UNKNOWN) {
+	while(satisfiability == UNKNOWN) {
 
-    statistics.num_constraints = posted_constraints.size;
-    if(base) statistics.num_clauses = base->clauses.size;
-    if(base) statistics.num_learned = base->learnt.size;
-    statistics.num_variables = sequence.size;  
-    statistics.num_values = 0;
-    for(int i=0; i<sequence.size; ++i)
-      statistics.num_values += sequence[i].get_size();
+		statistics.num_constraints = posted_constraints.size;
+		if(base) statistics.num_clauses = base->clauses.size;
+		if(base) statistics.num_learned = base->learnt.size;
+		statistics.num_variables = sequence.size;  
+		statistics.num_values = 0;
+		for(int i=0; i<sequence.size; ++i)
+			statistics.num_values += sequence[i].get_size();
     
-    if(parameters.verbosity>1) {
-      statistics.print_short(std::cout);
-      std::cout << " " << (int)(100*progress_i) << "%" << std::endl;
-    }
+		if(parameters.verbosity>1) {
+			statistics.print_short(std::cout);
+			std::cout << " " << (int)(100*progress_i) << "%" << std::endl;
+		}
 
-    // if(progress_i > 0) {
-    //   total_progress += (1.0-total_progress)*progress_i;
-    //   tprog = (4294977296.0*total_progress);
-    //   unsigned int i, j=31;
-    //   //for(i=0; i<33; ++i) std::cout << "\b";
-    //   for(i=(1<<j); j && i <= tprog; i+=(1<<(--j))) ;
+		// if(progress_i > 0) {
+		//   total_progress += (1.0-total_progress)*progress_i;
+		//   tprog = (4294977296.0*total_progress);
+		//   unsigned int i, j=31;
+		//   //for(i=0; i<33; ++i) std::cout << "\b";
+		//   for(i=(1<<j); j && i <= tprog; i+=(1<<(--j))) ;
 
-    //   std::cout << (32-j) << " "<< tprog << std::endl; 
+		//   std::cout << (32-j) << " "<< tprog << std::endl; 
 
-    //   i = tprog = 32-j;
-    //   // while(i--) std::cout << "=";
-    //   // std::cout << std::right << std::setw(33-tprog) << "]";
-    //   // std::cout.flush();
-    // }
+		//   i = tprog = 32-j;
+		//   // while(i--) std::cout << "=";
+		//   // std::cout << std::right << std::setw(33-tprog) << "]";
+		//   // std::cout.flush();
+		// }
 
-    ++statistics.num_restarts;
-
-
-    //std::cout << " c notify restart" << std::endl;
-    notify_restart(progress_i);
+		++statistics.num_restarts;
 
 
-    // std::cout << "seq: [";
-    // for(int i=sequence.size; i<variables.size; ++i) {
-    //   std::cout << (sequence[i].get_value() ? " +" : " -") << sequence[i]; 
-    // }
-    // std::cout << "]\n";
+		//std::cout << " c notify restart" << std::endl;
+		notify_restart(progress_i);
 
 
-    satisfiability = //(parameters.backjump ? 
-      //conflict_directed_backjump() :
-      chronological_dfs(root); //_exit_on_solution_); //);
+		// std::cout << "seq: [";
+		// for(int i=sequence.size; i<variables.size; ++i) {
+		//   std::cout << (sequence[i].get_value() ? " +" : " -") << sequence[i]; 
+		// }
+		// std::cout << "]\n";
+
+
+		satisfiability = //(parameters.backjump ? 
+			//conflict_directed_backjump() :
+			chronological_dfs(root); //_exit_on_solution_); //);
+		
     
-    // if(_exit_on_solution_ && objective)
-    //   satisfiability = objective->notify_solution(this);
+		// if(_exit_on_solution_ && objective)
+		//   satisfiability = objective->notify_solution(this);
 
-    if(satisfiability == LIMITOUT) {
+		if(satisfiability == LIMITOUT) {
 
-      policy->reset(parameters.restart_limit);
+			policy->reset(parameters.restart_limit);
     
-      if(!limits_expired()) {
-	satisfiability = UNKNOWN;
-      }
-    }
+			if(!limits_expired()) {
+				satisfiability = UNKNOWN;
+			}
+		}
+		
+		
+		
 
-    if(_restore_ || satisfiability == UNKNOWN) restore(root);
+		if(_restore_ || satisfiability == UNKNOWN) restore(root);
 
-    forget();
+		forget();
 
-    target_i = get_current_target();
-    progress_i = (last_target-target_i)/last_target;
-    last_target = target_i;
+		target_i = get_current_target();
+		progress_i = (last_target-target_i)/last_target;
+		last_target = target_i;
 
-  }
+	}
 
-  if(satisfiability == LIMITOUT) statistics.outcome = interrupted();
-  else statistics.outcome = satisfiability;
+	if(satisfiability == LIMITOUT) statistics.outcome = interrupted();
+	else statistics.outcome = satisfiability;
 
-  statistics.end_time = get_run_time();
+	statistics.end_time = get_run_time();
 
-  if(parameters.verbosity)  {
-    std::cout << statistics;
-  }
+	if(parameters.verbosity)  {
+		std::cout << statistics;
+	}
 
-  return satisfiability;
+	return satisfiability;
 }
 
 Mistral::Outcome Mistral::Solver::get_next_solution()  
 {
-  Outcome satisfiability = UNSAT;
+	Outcome satisfiability = UNSAT;
   
-  if(search_started) {
-    if(decisions.size) 
-      branch_right();
-    else {
-      return satisfiability;
-    }
-  }
+	if(search_started) {
+		if(decisions.size) 
+			branch_right();
+		else {
+			return satisfiability;
+		}
+	}
    
-  search_started = true;
+	search_started = true;
   
-  statistics.num_variables = sequence.size;
-  statistics.num_values = 0;
-  for(int i=0; i<sequence.size; ++i)
-    statistics.num_values += sequence[i].get_size();
+	statistics.num_variables = sequence.size;
+	statistics.num_values = 0;
+	for(int i=0; i<sequence.size; ++i)
+		statistics.num_values += sequence[i].get_size();
   
-  //display(std::cout);
-  satisfiability = chronological_dfs();
+	//display(std::cout);
+	satisfiability = chronological_dfs();
   
-  if(parameters.verbosity) {
-    statistics.print_short(std::cout);
-  }
+	if(parameters.verbosity) {
+		statistics.print_short(std::cout);
+	}
 
-  return satisfiability;
+	return satisfiability;
 }
 
 void Mistral::Solver::BooleanMemoryManager::add(Variable *x) {
-  if(size.back() < 1024) {
-    x->bool_domain = slots.back()+size.back();
-    ++size.back();
-  } else {
-    int *nslot = new int[1024];
-    std::fill(nslot, nslot+1024, 3);
-    size.add(1);
-    slots.add(nslot);
-    x->bool_domain = nslot;
-  }
+	if(size.back() < 1024) {
+		x->bool_domain = slots.back()+size.back();
+		++size.back();
+	} else {
+		int *nslot = new int[1024];
+		std::fill(nslot, nslot+1024, 3);
+		size.add(1);
+		slots.add(nslot);
+		x->bool_domain = nslot;
+	}
 
-  //std::cout << "zzz " << *x << ": " << x->domain_type << std::endl;
+	//std::cout << "zzz " << *x << ": " << x->domain_type << std::endl;
 }
 
 
 void Mistral::Solver::initialise_search(Vector< Variable >& seq, 
-					BranchingHeuristic *heu, 
-					RestartPolicy *pol,
-					Goal *goal) 
+BranchingHeuristic *heu, 
+RestartPolicy *pol,
+Goal *goal) 
 {
 
 #ifdef _DEBUG_BUILD
-  std::cout << "INIT SEARCH!" << std::endl;
+	std::cout << "INIT SEARCH!" << std::endl;
 #endif
 
   
 
-  //consolidate();
+	//consolidate();
 
-  if(level < 0) save();
+	if(level < 0) save();
 
-  active_solver = this;
-  signal(SIGINT,Mistral_SIGINT_handler);
-
-
-  sequence.clear();
-  //decisions.clear();
-  for(unsigned int i=seq.size; i;) {
-    Variable x = seq[--i].get_var();
-    if(!sequence.contain(x) && !(domain_types[x.id()]&REMOVED_VAR)) sequence.add(x);
-    if(x.is_ground()) sequence.remove(x);
-  }
-  num_search_variables = sequence.size;
+	active_solver = this;
+	signal(SIGINT,Mistral_SIGINT_handler);
 
 
-  if(heu) { // delete heuristic
-    ; heuristic = heu; }
-  else if(!heuristic) heuristic = new GenericHeuristic< Lexicographic, MinValue >(this);
-  if(pol) { // delete policy;
-    policy    = pol; }
-  else if(!policy)    policy    = new NoRestart();
-  if(goal){ // delete objective;
-    objective = goal;}
-  else if(!objective) objective = new Goal(Goal::SATISFACTION);
+	sequence.clear();
+	//decisions.clear();
+	for(unsigned int i=seq.size; i;) {
+		Variable x = seq[--i].get_var();
+		if(!sequence.contain(x) && !(domain_types[x.id()]&REMOVED_VAR)) sequence.add(x);
+		if(x.is_ground()) sequence.remove(x);
+	}
+	num_search_variables = sequence.size;
 
-  // std::cout << (int*)heu << " " << (int*)heuristic << std::endl;
-  // std::cout << heuristic << std::endl;
-  // heuristic->display(std::cout);
-  // std::cout << std::endl << sequence << std::endl;
 
-  heuristic->initialise(sequence);
+	if(heu) { // delete heuristic
+		; heuristic = heu; 
+	}
+	else if(!heuristic) heuristic = new GenericHeuristic< Lexicographic, MinValue >(this);
+	if(pol) { // delete policy;
+		policy    = pol; 
+	}
+	else if(!policy)    policy    = new NoRestart();
+	if(goal){ // delete objective;
+		objective = goal;
+	}
+	else if(!objective) objective = new Goal(Goal::SATISFACTION);
 
-  parameters.restart_limit = policy->base;
-  parameters.limit = (policy->base > 0);
+	// std::cout << (int*)heu << " " << (int*)heuristic << std::endl;
+	// std::cout << heuristic << std::endl;
+	// heuristic->display(std::cout);
+	// std::cout << std::endl << sequence << std::endl;
 
-  statistics.num_constraints = posted_constraints.size;
+	heuristic->initialise(sequence);
+
+	parameters.restart_limit = policy->base;
+	parameters.limit = (policy->base > 0);
+
+	statistics.num_constraints = posted_constraints.size;
   
-  if(base) statistics.num_clauses = base->clauses.size;
+	if(base) statistics.num_clauses = base->clauses.size;
 
-  unsigned int arity;
-  for(unsigned int i=0; i<posted_constraints.size; ++i) {
-    arity = constraints[posted_constraints[i]].arity();
-    if(arity > statistics.max_arity) statistics.max_arity = arity;
-  }
+	unsigned int arity;
+	for(unsigned int i=0; i<posted_constraints.size; ++i) {
+		arity = constraints[posted_constraints[i]].arity();
+		if(arity > statistics.max_arity) statistics.max_arity = arity;
+	}
 
-  /*
-  std::cout << sequence << std::endl;
-  monitor_list << variables[29];
-  monitor_list << " ";
-  monitor_list << variables[30];
-  monitor_list << " ";
-  monitor_list << variables[31];
-  monitor_list << " ";
-  monitor_list << variables[32];
-  monitor_list << " ";
-  monitor_list << variables[33];
-  monitor_list << " ";
-  monitor_list << variables[34];
-  monitor_list << " ";
-  monitor_list << variables[35];
-  monitor_list << "\n";
-  */
+	/*
+	std::cout << sequence << std::endl;
+	monitor_list << variables[29];
+	monitor_list << " ";
+	monitor_list << variables[30];
+	monitor_list << " ";
+	monitor_list << variables[31];
+	monitor_list << " ";
+	monitor_list << variables[32];
+	monitor_list << " ";
+	monitor_list << variables[33];
+	monitor_list << " ";
+	monitor_list << variables[34];
+	monitor_list << " ";
+	monitor_list << variables[35];
+	monitor_list << "\n";
+	*/
   
 }
 
@@ -2394,7 +2399,7 @@ void Mistral::Solver::add(Mistral::VariableListener* l) {
   l->vid = variable_triggers.size;
   variable_triggers.add(l);
 }
-void Mistral::Solver::add(Mistral::ConstraintListener* l) {
+void Mistral::Solver::add(Mistral::ConstraintListener* l) {	
   l->cid = constraint_triggers.size;
   constraint_triggers.add(l);
 }
@@ -5087,154 +5092,160 @@ void Mistral::Solver::branch_left() {
 
 Mistral::Outcome Mistral::Solver::satisfied() {    
 #ifdef _DEBUG_SEARCH
-  if(_DEBUG_SEARCH) {
-    std::cout << parameters.prefix_comment;
-    for(unsigned int k=0; k<=decisions.size; ++k) std::cout << " ";
-    std::cout << " SAT! "  << std::endl; 
-  }
+	if(_DEBUG_SEARCH) {
+		std::cout << parameters.prefix_comment;
+		for(unsigned int k=0; k<=decisions.size; ++k) std::cout << " ";
+		std::cout << " SAT! "  << std::endl; 
+	}
 #endif
 
-  unsigned int i, j, k;
+	unsigned int i, j, k;
 
-  if(parameters.checked) {
+	if(parameters.checked) {
+		
+		/// check the current solution
+		Vector< int > tmp_sol;
+		Variable *scope;
+		Constraint C;
+		bool all_assigned;
+		int real_arity;
 
-    /// check the current solution
-    Vector< int > tmp_sol;
-    Variable *scope;
-    Constraint C;
-    bool all_assigned;
-    int real_arity;
+		for(i=0; i<posted_constraints.size; ++i) {
+			all_assigned = true;
+			C = constraints[posted_constraints[i]];
+			//C.consolidate();
 
-    for(i=0; i<posted_constraints.size; ++i) {
-      all_assigned = true;
-      C = constraints[posted_constraints[i]];
-      //C.consolidate();
+			real_arity = 0;
+			k=C.arity();
+			scope = C.get_scope();
+			for(j=0; j<k; ++j) {
+				if(scope[j].is_ground()) 
+					tmp_sol.add(scope[j].get_value());
+				else {
+					++real_arity;
+					tmp_sol.add(scope[j].get_min());
+					all_assigned = false;
+					//break;
+				}
+			}
 
-      real_arity = 0;
-      k=C.arity();
-      scope = C.get_scope();
-      for(j=0; j<k; ++j) {
-	if(scope[j].is_ground()) 
-	  tmp_sol.add(scope[j].get_value());
-	else {
-	  ++real_arity;
-	  tmp_sol.add(scope[j].get_min());
-	  all_assigned = false;
-	  //break;
-	}
-      }
+			bool consistent = true;
 
-      bool consistent = true;
-
-      if(!all_assigned) {
+			if(!all_assigned) {
 
 
-	/// !!! This checks that all values are AC, this is too strong
-	// for(j=0; j<k && consistent; ++j) {
-	//   if(!scope[j].is_ground()) {
-	//     int vali, vnext = scope[j].get_min();
-	//     do {
-	//       vali = vnext;
-	//       if(!C.find_support(j, vali)) consistent = false;
-	//       vnext = scope[j].next(vali);
-	//     } while( consistent && vali<vnext );
-	//   }
-	// }
+				/// !!! This checks that all values are AC, this is too strong
+				// for(j=0; j<k && consistent; ++j) {
+				//   if(!scope[j].is_ground()) {
+				//     int vali, vnext = scope[j].get_min();
+				//     do {
+				//       vali = vnext;
+				//       if(!C.find_support(j, vali)) consistent = false;
+				//       vnext = scope[j].next(vali);
+				//     } while( consistent && vali<vnext );
+				//   }
+				// }
 
-	// #ifdef _DEG_SEARCH
-	// 	if(_DEBUG_SEARCH) {
-	// 	  std::cout << "c check incomplete assignment of " << C << " (" << real_arity << ")" << std::endl; 
-	// 	}
-	// #endif
+				// #ifdef _DEG_SEARCH
+				// 	if(_DEBUG_SEARCH) {
+				// 	  std::cout << "c check incomplete assignment of " << C << " (" << real_arity << ")" << std::endl; 
+				// 	}
+				// #endif
 	
-	if(real_arity < 5) {
-	  /// This checks that all bounds are BC
-	  for(j=0; j<k && consistent; ++j) {
-	    if(!scope[j].is_ground()) {
-	      if(!C.find_bound_support(j, scope[j].get_min())) consistent = false;
-	      else if(!C.find_bound_support(j, scope[j].get_max())) consistent = false;
-	    }
-	  }
-	}
+				if(real_arity < 5) {
+					/// This checks that all bounds are BC
+					for(j=0; j<k && consistent; ++j) {
+						if(!scope[j].is_ground()) {
+							if(!C.find_bound_support(j, scope[j].get_min())) consistent = false;
+							else if(!C.find_bound_support(j, scope[j].get_max())) consistent = false;
+						}
+					}
+				}
 
 
-      } else {
-	consistent = !C.check(tmp_sol.stack_);
-      }
+			} else {
+				
+				consistent = !C.check(tmp_sol.stack_);
+			}
 
-      if(!consistent)
-	{
+			if(!consistent)
+			{
+				
 	
-	  if(tmp_sol.size < k) {
-	    std::cerr << "\nError: solution does not satisfy c" << C.id() << ": " << C << tmp_sol << " (backtracking)"<< std::endl;
-	    exit(0);
-	  } else {
-	    std::cerr << "\nError: solution does not satisfy c" << C.id() << ": " << C ;
-	    for(j=0; j<k; ++j) {
-	      std::cerr << " " << scope[j].get_domain();
-	    }
-	    std::cerr << " (backtracking)"<< std::endl;
-	    exit(0);
-	  }
-	  if( decisions.empty() ) return UNSAT;
-	  else if( limits_expired() ) return LIMITOUT;
-	  else {
-	    branch_right();
-	    return UNKNOWN;
-	  }
+				if(tmp_sol.size < k) {
+					std::cerr << "\nError: solution does not satisfy c" << C.id() << ": " << C << tmp_sol << " (backtracking)"<< std::endl;
+					exit(0);
+				} else {
+					std::cerr << "\nError: solution does not satisfy c" << C.id() << ": " << C ;
+					for(j=0; j<k; ++j) {
+						std::cerr << " " << scope[j].get_domain();
+					}
+					std::cerr << " (backtracking)"<< std::endl;
+					exit(0);
+				}
+				if( decisions.empty() ) return UNSAT;
+				else if( limits_expired() ) return LIMITOUT;
+				else {
+					branch_right();
+					return UNKNOWN;
+				}
+			}
+			tmp_sol.clear();
+		}
 	}
-      tmp_sol.clear();
-    }
-  }
 
-  /// store the solution 
-  for(i=0; i<variables.size; ++i) {
-    last_solution_lb[i] = variables[i].get_min();
-    last_solution_ub[i] = variables[i].get_max();
 
-    //std::cout << variables[i] << " := " << last_solution_lb[i] << " " << variables[i].get_domain() << std::endl;
+	/// store the solution 
+	for(i=0; i<variables.size; ++i) {
+		
+		last_solution_lb[i] = variables[i].get_min();
+		last_solution_ub[i] = variables[i].get_max();
 
-  }
-  //std::cout << std::endl;
-  ++statistics.num_solutions;
+		//std::cout << variables[i] << " := " << last_solution_lb[i] << " " << variables[i].get_domain() << std::endl;
+
+	}
+	//std::cout << "stats" << std::endl;
+	++statistics.num_solutions;
 
 #ifdef _DEBUG_SEARCH
-  if(_DEBUG_SEARCH) {
-    std::cout << parameters.prefix_comment;
-    for(unsigned int k=0; k<=decisions.size; ++k) std::cout << " ";
-    std::cout << "notify solution to goal " << objective << " " << objective->objective << " " << objective->objective.get_domain() << std::endl;
-  }
+	if(_DEBUG_SEARCH) {
+		std::cout << parameters.prefix_comment;
+		for(unsigned int k=0; k<=decisions.size; ++k) std::cout << " ";
+		std::cout << "notify solution to goal " << objective; //<< std::endl;
+		if (objective->type == Goal::OPTIMIZATION) {
+			std::cout << " " << objective->objective  << " " << objective->objective.get_domain() ;
+		} 
+		std::cout << std::endl;
+							
+	}
 #endif
 
 
-
-
-  /// notify the objective and return the outcome
-  Outcome result = //(_exit_on_solution_ ? SAT : objective->notify_solution(this));
-    objective->notify_solution(this);
+	/// notify the objective and return the outcome
+	Outcome result = //(_exit_on_solution_ ? SAT : objective->notify_solution(this));
+	objective->notify_solution(this);
 
   
-  statistics.objective_value = objective->value();
-  //std::cout << statistics.objective_value << std::endl;
+	statistics.objective_value = objective->value();
+	//std::cout << statistics.objective_value << std::endl;
 
 
-
-  for(i=0; i<solution_triggers.size; ++i) {
-    solution_triggers[i]->notify_solution();
-  }
+	for(i=0; i<solution_triggers.size; ++i) {
+		solution_triggers[i]->notify_solution();
+	}
 
 #ifdef _DEBUG_SEARCH
-  if(_DEBUG_SEARCH) {
-    std::cout << parameters.prefix_comment;
-    for(unsigned int k=0; k<=decisions.size; ++k) std::cout << " ";
-    std::cout << "=> " << outcome2str(result) << std::endl;
-  }
+	if(_DEBUG_SEARCH) {
+		std::cout << parameters.prefix_comment;
+		for(unsigned int k=0; k<=decisions.size; ++k) std::cout << " ";
+		std::cout << "=> " << outcome2str(result) << std::endl;
+	}
 #endif
   
   
-  return result;
+	return result;
   
-  //return SAT;
+	//return SAT;
 }
 
 
@@ -5252,6 +5263,12 @@ Mistral::Outcome Mistral::Solver::exhausted() {
 
 bool Mistral::Solver::limits_expired() {
   
+	// std::cout << (get_run_time() - statistics.start_time) << " / " << parameters.time_limit << std::endl;
+	// std::cout << statistics.num_nodes << " / " << parameters.node_limit << std::endl;
+	// std::cout << statistics.num_failures << " / " << parameters.fail_limit << std::endl;
+	// std::cout << statistics.num_failures << " / " << parameters.restart_limit << std::endl;
+	// std::cout << statistics.num_propagations << " / " << parameters.propagation_limit << std::endl;
+	//
 #ifdef _DEBUG_SEARCH
   if(_DEBUG_SEARCH) {
     if(parameters.limit && 

@@ -76,7 +76,7 @@ class CoreTest(unittest.TestCase):
         v = Variable(list_domain)
         self.assertEqual(v.lb, 2)
         self.assertEqual(v.ub, 8)
-        self.assertItemsEqual(list_domain, v.get_domain())
+        self.assertEqual(set(list_domain), set(v.get_domain()))
 
     def testVariableListName(self):
         # Variable(list, 'x') :- Variable with domain specified as a list called 'x'
@@ -85,33 +85,33 @@ class CoreTest(unittest.TestCase):
         self.assertEqual(v.name(), 'y')
         self.assertEqual(v.lb, 2)
         self.assertEqual(v.ub, 8)
-        self.assertItemsEqual(list_domain, v.get_domain())
+        self.assertEqual(set(list_domain), set(v.get_domain()))
 
     def testDomainListIterator(self):
         "Test the iterator code on Domain returns the correct values when given the domain as a list."
-        list_domain = range(10)
+        list_domain = list(range(10))
         x = Variable(list_domain)
         list_from_iterator = [v for v in x]
-        self.assertItemsEqual(list_domain, list_from_iterator)
+        self.assertEqual(set(list_domain), set(list_from_iterator))
 
     def testDomainBoundedIterator(self):
         "Test the iterator code on Domain returns the correct values when given the domain as bounds."
         x = Variable(5, 10)
         list_from_iterator = [v for v in x]
-        self.assertItemsEqual(range(5, 11), list_from_iterator)
+        self.assertEqual(set(list(range(5, 11))), set(list_from_iterator))
 
     def testBuiltExpressionDomainRange(self):
         v = Variable(10)
         model = Model(v)
         solver = CoreTest.solver(model)
-        self.assertItemsEqual(range(10), v.get_domain())
+        self.assertEqual(set(list(range(10))), set(v.get_domain()))
 
     def testBuiltExpressionDomainWithGaps(self):
-        list_domain = range(0, 10, 2)
+        list_domain = list(range(0, 10, 2))
         v = Variable(list_domain)
         model = Model(v)
         solver = CoreTest.solver(model)
-        self.assertItemsEqual(list_domain, v.get_domain())
+        self.assertEqual(set(list_domain), set(v.get_domain()))
 
     def testExpressionRangeSize(self):
         v = Variable(10)
@@ -195,6 +195,7 @@ class CoreTest(unittest.TestCase):
         n, m = 5, 5
         matrix = Matrix(n, m)
         m_slice = matrix[1:3]
+        print("slice:", repr(m_slice))
         self.assertEqual(len(m_slice), 2)
         for row in m_slice:
             self.assertEqual(len(row), m)

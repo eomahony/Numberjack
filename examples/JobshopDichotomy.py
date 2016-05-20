@@ -1,3 +1,4 @@
+from __future__ import print_function
 from Numberjack import *
 
 
@@ -96,17 +97,17 @@ def dichotomic_step(model, solver, C_max, best_solution, verb, cutoff):
     if solver.is_sat():
         outcome = (True, solver.get_solution(), max([task.get_min() + task.duration for task in model.tasks]))
         if verb > 0:
-            print 'SAT',
+            print('SAT', end=' ')
     elif solver.is_unsat():
         outcome = (False, None, C_max)
         if verb > 0:
-            print 'UNSAT',
+            print('UNSAT', end=' ')
     else:
         if verb > 0:
-            print 'ABORT',
+            print('ABORT', end=' ')
 
     if verb > 0:
-        print str(solver.getTime()).rjust(8), 's', str(solver.getNodes()).rjust(10), 'nds'
+        print(str(solver.getTime()).rjust(8), 's', str(solver.getNodes()).rjust(10), 'nds')
 
     solver.reset()
     solver.undo()
@@ -119,7 +120,7 @@ def dichotomic_step(model, solver, C_max, best_solution, verb, cutoff):
 ###############################################
 def dichotomic_search(model, solver, max_infeasible, min_feasible, verb, cutoff):
     if verb > 0:
-        print 'start dichotmic search', cutoff
+        print('start dichotmic search', cutoff)
 
     lb = max_infeasible
     ub = min_feasible
@@ -129,7 +130,7 @@ def dichotomic_search(model, solver, max_infeasible, min_feasible, verb, cutoff)
         C_max = int((lb + ub) / 2)
 
         if verb > 0:
-            print 'c   current bounds:', ('[' + str(lb + 1) + '..' + str(ub) + ']').rjust(16), ' solve', str(C_max).ljust(6),
+            print('c   current bounds:', ('[' + str(lb + 1) + '..' + str(ub) + ']').rjust(16), ' solve', str(C_max).ljust(6), end=' ')
 
         feasible, solution, C_max = dichotomic_step(model, solver, C_max, best_solution, verb, cutoff)
 
@@ -172,11 +173,11 @@ def branch_and_bound(model, lib, max_infeasible, min_feasible, verb, best=None):
 
     if solver.is_opt():
         if verb > 0:
-            print 'c   Found optimal solution:', C_max.solution()
+            print('c   Found optimal solution:', C_max.solution())
         outcome = (C_max.get_value(), C_max.get_value(), best)
     else:
         if verb > 0:
-            print 'c   Best C_max:', C_max.solution()
+            print('c   Best C_max:', C_max.solution())
         outcome = (max_infeasible + 1, C_max.get_value(), best)
     return outcome
 
@@ -203,7 +204,7 @@ def solve(param):
 
     (lb, ub, best) = dichotomic_search(model, solver, lb, ub, verb, param['tcutoff'])
     if verb > 0:
-        print 'start branch & bound in ['+str(lb)+'..'+str(ub)+']'
+        print('start branch & bound in ['+str(lb)+'..'+str(ub)+']')
     if lb + 1 < ub:
         (lb, ub, best) = branch_and_bound(model, lib, lb, ub, verb, best)
 
@@ -237,7 +238,7 @@ def solve(param):
         ###############################################
         ############# Output (Matplotlib) #############
         ###############################################
-        print '\n display schedule'
+        print('\n display schedule')
 
         width = 60
         print_schedule = []
@@ -258,4 +259,4 @@ default = {'solver': 'Mistral', 'data': 'data/tiny_jsp.txt', 'print': 'no', 'ver
 
 if __name__ == '__main__':
     param = input(default)
-    print solve(param)
+    print(solve(param))

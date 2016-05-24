@@ -2,7 +2,7 @@
 from __future__ import print_function, division
 
 
-UNSAT, SAT, UNKNOWN, LIMITOUT = 0, 1, 2, 3
+UNSAT, SAT, UNKNOWN, LIMITOUT = 0, 1, 2, 4
 LUBY, GEOMETRIC = 0, 1
 MAXCOST = 100000000
 

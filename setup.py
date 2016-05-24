@@ -259,7 +259,7 @@ toulbar2 = Extension(
     language='c++',
     define_macros=[
         ('NUMBERJACK', None),
-#        ('BOOST', None), # requires libboost-graph-dev installed
+        # ('BOOST', None), # requires libboost-graph-dev installed
         ('NDEBUG', None),
         ('LINUX', None),
         ('LONGLONG_COST', None),
@@ -272,32 +272,33 @@ toulbar2 = Extension(
 extensions.append(toulbar2)
 
 
-gecodedir = "/Users/bhurley/ThirdPartySoftware/gecode-4.3.3"
+gecode_home = get_solver_home(GECODE)
+gecode_swig_opts = ['-modern', '-c++', '-INumberjack/solvers/Gecode']
+gecode_include_dirs = ['Numberjack/solvers/Gecode']
+gecode_library_dirs = []
+if gecode_home:
+    gecode_swig_opts.append('-I%s' % os.path.join(gecode_home, 'include'))
+    gecode_include_dirs.append(os.path.join(gecode_home, 'include'))
+    gecode_library_dirs.append(os.path.join(gecode_home, 'lib'))
+
 gecode = Extension(
     '_Gecode',
     sources=[
         'Numberjack/solvers/Gecode.i',
         'Numberjack/solvers/Gecode/Gecode.cpp',
     ],
-    swig_opts=[
-        '-modern', '-c++',
-        '-INumberjack/solvers/Gecode',
-        '-I%s' % os.path.join(gecodedir, 'include'),
-    ],
-    include_dirs=[
-        'Numberjack/solvers/Gecode',
-        os.path.join(gecodedir, 'include')
-    ],
-    library_dirs=[
-        os.path.join(gecodedir, 'lib'),
-    ],
+    swig_opts=gecode_swig_opts,
+    include_dirs=gecode_include_dirs,
+    library_dirs=gecode_library_dirs,
     libraries=['m', 'gecodesearch', 'gecodeint', 'gecodekernel', 'gecodesupport', 'gecodedriver'],
-    # libraries=['m', 'gecodeflatzinc', 'gecodedriver', 'gecodegist', 'gecodesearch', 'gecodeminimodel', 'gecodeset', 'gecodefloat', 'gecodeint', 'gecodekernel', 'gecodesupport'],
     language='c++',
     define_macros=[
-        ('_DEBUGWRAP', None),
+        # ('_DEBUGWRAP', None),
     ],
-    extra_compile_args=EXTRA_COMPILE_ARGS + ['-fno-signaling-nans', '-fno-rounding-math', '-ffinite-math-only', '-fno-math-errno', '-fno-strict-aliasing', '-fvisibility=hidden', '-fPIC', '-pthread'],  # + ['-g', '-fPIC', '-fexceptions'],
+    extra_compile_args=EXTRA_COMPILE_ARGS + [
+        '-fno-signaling-nans', '-fno-rounding-math', '-ffinite-math-only', '-fno-math-errno',
+        '-fno-strict-aliasing', '-fvisibility=hidden', '-fPIC', '-pthread'
+    ],  # + ['-g', '-fPIC', '-fexceptions'],
     extra_link_args=EXTRA_LINK_ARGS,
 )
 extensions.append(gecode)

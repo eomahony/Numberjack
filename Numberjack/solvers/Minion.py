@@ -9,10 +9,10 @@
 # so that they can be used with other solvers. In particular reifyimply would be
 # nice.
 
+from __future__ import print_function, division
 
 from Numberjack.ExternalSolver import ExternalSolver
-from Numberjack import NBJ_STD_Solver, Variable, SAT, UNSAT
-import sys
+from Numberjack import NBJ_STD_Solver, SAT, UNSAT
 import re
 
 

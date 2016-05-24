@@ -1,3 +1,5 @@
+from __future__ import print_function, division
+
 from Numberjack.solvers.SatWrapper import SatWrapperSolver
 import Numberjack
 import subprocess as sp
@@ -6,7 +8,6 @@ import tempfile
 import datetime
 import signal
 import atexit
-import sys
 import os
 
 

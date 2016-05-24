@@ -1740,8 +1740,6 @@ class Eq(BinPredicate):
         BinPredicate.__init__(self, vars, "eq")
         #SDG: initialize lb,ub
         self.lb = int((self.get_lb(0) == self.get_ub(0)) and (self.get_lb(1) == self.get_ub(1)) and (self.get_lb(0) == self.get_lb(1)))
-        print("ub:", self.get_ub(0), self.get_ub(1))
-        print("lb:", self.get_lb(0), self.get_lb(1))
         self.ub = int(not(lt_with_none(self.get_ub(0), self.get_lb(1)) or gt_with_none(self.get_lb(0), self.get_ub(1))))
 
     def get_symbol(self):

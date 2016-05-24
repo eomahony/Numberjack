@@ -1,4 +1,4 @@
-# Copyright 2009 - 2014 Insight Centre for Data Analytics, UCC
+# Copyright 2009 - 2016 Insight Centre for Data Analytics, UCC
 from __future__ import print_function, division
 
 

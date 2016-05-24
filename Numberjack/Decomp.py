@@ -1,5 +1,4 @@
 from __future__ import division, print_function
-#import Numberjack
 
 MODELMAXSIZE = 1000000
 
@@ -269,7 +268,7 @@ class PostTernary(CostFunction):
 #   var3 = Variable(2)
 #   var4 = Variable(2)
 #   post = PostNary([var1,var2,var3,var4],4,0)
-#   for i in range(2):
+#   for i in range(2):
 #     for j in range(2):
 #       for k in range(2):
 #         for l in range(2):

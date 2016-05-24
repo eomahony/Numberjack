@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 from Numberjack import *
 import xml.etree.cElementTree as ET
 import sys

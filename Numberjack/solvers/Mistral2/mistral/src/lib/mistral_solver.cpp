@@ -1607,6 +1607,9 @@ Mistral::Outcome Mistral::Solver::depth_first_search(Vector< Variable >& seq,
   // if(objective) consolidate_manager->id_obj = objective->objective.id();
 
   statistics.start_time = get_run_time();
+	
+	search_started = true;
+	
   return restart_search(0, _restore_);
 }
  

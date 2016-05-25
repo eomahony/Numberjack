@@ -27,6 +27,11 @@ def model_magic_square(N):
         square[0][0] < square[0][N-1],
         square[0][0] < square[N-1][N-1],
         square[0][N-1] < square[N-1][0],
+        
+        # [square.row[i-1] < square.row[i] for i in range(1,N)],
+        # [square.col[i-1] < square.col[i] for i in range(1,N)],
+        #
+        #
 
         # first, the rim
         water.row[0] == square.row[0],

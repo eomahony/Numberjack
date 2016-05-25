@@ -1,3 +1,4 @@
+from __future__ import division, print_function
 from Numberjack import *
 
 
@@ -13,7 +14,7 @@ def solve(param):
 
     while True:
         decsionvars = VarArray(N)  # Array of N Boolean variables
-        model = Model(Sum(decsionvars) == (N / 2))
+        model = Model(Sum(decsionvars) == (N // 2))
 
         # Forbid previous solutions
         for values in previoussolutions:
@@ -28,14 +29,14 @@ def solve(param):
 
         if solver.is_sat():
             values = [x.get_value() for x in decsionvars]
-            print "Solution:", values
+            print("Solution:", values)
             previoussolutions.append(values)
 
         elif solver.is_unsat():
-            print "No more solutions."
+            print("No more solutions.")
             break
 
-    print "Found a total of %d solutions." % len(previoussolutions)
+    print("Found a total of %d solutions." % len(previoussolutions))
 
 
 if __name__ == '__main__':

@@ -15,6 +15,7 @@
 #
 # CSPLib Problem 023 - http://www.csplib.org/Problems/prob023/
 
+from __future__ import print_function, division
 from Numberjack import *
 
 
@@ -58,22 +59,22 @@ def solve(param):
     solver.solve()
 
     if solver.is_sat():
-        print "  ", str(a).zfill(2), str(b).zfill(2), str(c).zfill(2)
+        print("  ", str(a).zfill(2), str(b).zfill(2), str(c).zfill(2))
 
-        print " ", str(d).zfill(2), str(e).zfill(2), str(f).zfill(2), \
-            str(g).zfill(2)
+        print(" ", str(d).zfill(2), str(e).zfill(2), str(f).zfill(2),
+            str(g).zfill(2))
 
-        print str(h).zfill(2), str(i).zfill(2), str(j).zfill(2), \
-            str(k).zfill(2), str(l).zfill(2)
+        print(str(h).zfill(2), str(i).zfill(2), str(j).zfill(2),
+            str(k).zfill(2), str(l).zfill(2))
 
-        print " ", str(m).zfill(2), str(n).zfill(2), str(o).zfill(2), \
-            str(p).zfill(2)
+        print(" ", str(m).zfill(2), str(n).zfill(2), str(o).zfill(2),
+            str(p).zfill(2))
 
-        print "  ", str(q).zfill(2), str(r).zfill(2), str(s).zfill(2)
+        print("  ", str(q).zfill(2), str(r).zfill(2), str(s).zfill(2))
     elif solver.is_unsat():
-        print "Unsatisfiable"
+        print("Unsatisfiable")
     else:
-        print "Unknown"
+        print("Unknown")
 
 
 if __name__ == '__main__':

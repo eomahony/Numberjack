@@ -7,13 +7,13 @@ from Numberjack import *
 
 
 def model_magic_square(N):
-    sum_val = N * (N * N + 1) / 2  # The magic number
+    sum_val = N * (N * N + 1) // 2  # The magic number
 
     square = Matrix(N, N, 1, N * N)
     water = Matrix(N, N, 1, N * N)  # water[a][b] stands for the water level in square a,b
 
     # Sum of water depth
-    objective = Sum(water) - (N * N * (N * N + 1) / 2)
+    objective = Sum(water) - (N * N * (N * N + 1) // 2)
 
     model = Model(
         AllDiff(square),
@@ -90,7 +90,7 @@ def print_water(squares, waters):
     labels = ['Solid']
     labels.extend(['Water ('+str(i+1)+')' for i in range(M)])
 
-    fracs = [(N*N)*(N*N+1)/2]
+    fracs = [(N*N)*(N*N+1)//2]
     fracs.extend([sum([sum(row) for row in waterq]) for waterq in water_quantity])
 
     explode = [0]
@@ -168,7 +168,7 @@ def solve_wall(param):
             solver.post(cell <= (N * N - (len(wall) - margin)))
 
         solver.solveAndRestart(GEOMETRIC, param['base'], param['factor'], param['decay'])
-        print solver.is_sat()
+        print(solver.is_sat())
         if solver.is_sat() and objective.get_value() > water_level:
             water_level = objective.get_value()
             square_sol = Solution(square)
@@ -214,4 +214,4 @@ default = {'N': 4, 'var': 'DomainOverWDegree', 'proba': 0.8,
 
 if __name__ == '__main__':
     param = input(default)
-    print solve(param)
+    print(solve(param))

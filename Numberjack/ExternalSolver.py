@@ -1,3 +1,5 @@
+from __future__ import print_function, division
+
 from Numberjack.solvers.SatWrapper import SatWrapperSolver
 import Numberjack
 import subprocess as sp
@@ -6,7 +8,6 @@ import tempfile
 import datetime
 import signal
 import atexit
-import sys
 import os
 
 
@@ -75,8 +76,8 @@ class Command(object):
 def print_commented(blob, comment_prefix="c"):
     for line in blob.split("\n"):
         if not line.startswith("%s " % comment_prefix):
-            print comment_prefix,
-        print line
+            print(comment_prefix, end=' ')
+        print(line)
 
 
 ## Base class for using an external solver binary that doesn't have a native interface.
@@ -159,11 +160,11 @@ class ExternalSolver(object):
     def solve(self, *args, **kwargs):
         cmd = self.build_solver_cmd()
         if self.verbosity >= 1:
-            print "c Running:", cmd
+            print("c Running:", cmd)
         c = Command(cmd)
         c.run(timelimit=self.timelimit)
         if self.verbosity >= 1:
-            print "c External solver finished."
+            print("c External solver finished.")
             print_commented(c.stdout)
             print_commented(c.stderr)
         self.parse_output(c.stdout)
@@ -176,7 +177,7 @@ class ExternalSolver(object):
         pass
 
     def parse_solver_info_line(self, line):
-        for key, (regexp, cast_func) in self.info_regexps.iteritems():
+        for key, (regexp, cast_func) in self.info_regexps.items():
             match = regexp.match(line)
             if match:
                 setattr(self, key, cast_func(match.groupdict()[key]))
@@ -246,7 +247,7 @@ class ExternalCNFSolver(ExternalSolver, SatWrapperSolver):
         self.model = model
         # print "c minimise_obj:", str(self.minimise_obj), self.minimise_obj.get_min(), self.minimise_obj.get_max()
         # print "c maximise_obj:", str(self.maximise_obj)
-        print "c Outputting to:", self.filename
+        print("c Outputting to:", self.filename)
         SatWrapperSolver.output_cnf(self, self.filename)
 
     def parse_output(self, output):
@@ -256,7 +257,7 @@ class ExternalCNFSolver(ExternalSolver, SatWrapperSolver):
             http://www.satcompetition.org/2009/format-solvers2009.html
         """
         from Numberjack.solvers.SatWrapper import SatWrapperIntArray
-        print "c Parse output"
+        print("c Parse output")
         values = SatWrapperIntArray()
         for line in output.split("\n"):
             line = line.strip()
@@ -281,7 +282,7 @@ class ExternalCNFSolver(ExternalSolver, SatWrapperSolver):
 
         t = datetime.datetime.now()
         self.store_solution(values)
-        print "c Time to store solution: %.4f" % (datetime.datetime.now() - t).total_seconds()
+        print("c Time to store solution: %.4f" % (datetime.datetime.now() - t).total_seconds())
 
 
 # ---------- External XCSP ----------
@@ -306,14 +307,14 @@ class ExternalXCSPSolver(ExternalSolver):
         self.model = model
         self.output_model()
 
-        for nj_var, i in sorted(self.out_object.njvar_mapping.iteritems(), key=lambda (k, v): v):
+        for nj_var, i in sorted(iter(self.out_object.njvar_mapping.items()), key=lambda k_v: k_v[1]):
             my_var = ExternalXCSPIntVariable(nj_var)
             nj_var.setVar(solver_id, solver_name, my_var, new_solver=solver)
             nj_var.solver = solver
             self.variables.append(my_var)
 
     def output_model(self):
-        from XCSPOut import XCSPOutput
+        from .XCSPOut import XCSPOutput
         self.out_object = XCSPOutput(self.model)
         self.out_object.output(self.filename)
 
@@ -330,13 +331,13 @@ class ExternalXCSPSolver(ExternalSolver):
                 continue
 
             if first_two == "s ":
-                print line
+                print(line)
                 if "UNSATISFIABLE" in line or "UNSAT" in line:
                     self.sat = Numberjack.UNSAT
                 elif "SATISFIABLE" in line or "SAT" in line:
                     self.sat = Numberjack.SAT
             elif first_two == "v ":
-                values.extend(map(int, line[2:].split()))
+                values.extend(list(map(int, line[2:].split())))
             elif first_two == "d " or first_two == "c ":
                 self.parse_solver_info_line(line[2:])
 

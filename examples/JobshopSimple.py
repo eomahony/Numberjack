@@ -109,7 +109,7 @@ def solve(param):
     ############# Output (Matplotlib) #############
     ###############################################
     if param['print'] == 'yes':
-        print '\n display schedule'
+        print('\n display schedule')
         width = 60
         print_schedule = []
         for row in schedule:
@@ -135,4 +135,4 @@ default = {'solver': 'Mistral', 'data': 'data/tiny_jsp.txt', 'print': 'no', 'ver
 
 if __name__ == '__main__':
     param = input(default)
-    print solve(param)
+    print(solve(param))

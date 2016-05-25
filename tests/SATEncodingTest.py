@@ -384,7 +384,7 @@ class SATEncodingTest(unittest.TestCase):
         s = SATEncodingTest.solver(m, encoding=SATEncodingTest.encoding)
         s.solve()
         values = [v.get_value() for v in vs]
-        self.assertItemsEqual(range(1, 6), values)
+        self.assertEqual(set(list(range(1, 6))), set(values))
 
     def testMaximise(self):
         v1 = Variable(5)
@@ -432,6 +432,7 @@ class SATEncodingTest(unittest.TestCase):
         v1, v2 = VarArray(2, 1, 3)
         t = Table([v1, v2], [[1, 1], [2, 2], [3, 3]], type="conflict")
         m = Model(t)
+        print(m)
         e = copy(SATEncodingTest.encoding)
         e.direct = True
         s = SATEncodingTest.solver(m, encoding=e)

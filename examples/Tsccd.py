@@ -3,7 +3,7 @@ from Numberjack import *
 
 def get_model(k, v, n):
     design = Matrix(v, n)
-    pairs = Matrix(v * (v - 1) / 2, n)
+    pairs = Matrix(v * (v - 1) // 2, n)
     index = [[0 for i in range(v)] for j in range(v)]
     a = 0
     for i in range(v - 1):
@@ -12,10 +12,10 @@ def get_model(k, v, n):
             index[j][i] = a
             a += 1
 
-    pair_occurrence = VarArray(v * (v - 1) / 2, 1, v - k)
+    pair_occurrence = VarArray(v * (v - 1) // 2, 1, v - k)
 
-    first = VarArray(v * (v - 1) / 2, n)
-    last = VarArray(v * (v - 1) / 2, n)
+    first = VarArray(v * (v - 1) // 2, n)
+    last = VarArray(v * (v - 1) // 2, n)
 
     model = Model(
         ## each block is a k-tuple
@@ -36,7 +36,7 @@ def get_model(k, v, n):
         [first[index[i][j]] <= last[index[i][j]] for i in range(v) for j in range(i)],
 
         # implied constraint (we know the number of pairs in in each column)
-        [Sum(col) == (k*(k-1)/2) for col in pairs.col],
+        [Sum(col) == (k*(k-1)//2) for col in pairs.col],
 
         ## symmetry breaking
         [design[i][0] == 1 for i in range(k)],
@@ -50,7 +50,7 @@ def get_model(k, v, n):
 def solve(param):
     k = param['k']
     v = param['v']
-    n = (v * (v - 1) / 2 - k * (k - 1) / 2) / (k - 1) + 1
+    n = (v * (v - 1) // 2 - k * (k - 1) // 2) // (k - 1) + 1
 
     first, pairs, last, design, index, model = get_model(k, v, n)
 
@@ -89,4 +89,4 @@ default = {'k': 3, 'v': 6, 'solver': 'MiniSat', 'verbose': 0, 'tcutoff': 30}
 
 if __name__ == '__main__':
     param = input(default)
-    print solve(param)
+    print(solve(param))

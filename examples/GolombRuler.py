@@ -22,7 +22,7 @@ def get_model(param):
         AllDiff(distance),
         marks[0] == 0,  # symmetry breaking
 
-        [distance[i * (i - 1) / 2 + j] >= ruler[i - j] for i in range(1, m) for j in range(0, i - 1) if (i - j < m)]
+        [distance[i * (i - 1) // 2 + j] >= ruler[i - j] for i in range(1, m) for j in range(0, i - 1) if (i - j < m)]
     )
 
     return marks, model
@@ -52,4 +52,4 @@ default = {'solver': 'Mistral', 'marks': 6, 'heuristic': 'Impact', 'verbose': 0,
 
 if __name__ == '__main__':
     param = input(default)
-    print solve(param)
+    print(solve(param))

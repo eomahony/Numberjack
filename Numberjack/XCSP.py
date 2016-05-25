@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 from Numberjack import *
 import xml.etree.cElementTree as ET
 import sys
@@ -11,30 +12,30 @@ sys.setrecursionlimit(100000)
 # of (2 * x), Mul([x, 2]) gets created instead of Mul([2, x]).
 functional_map = {
     "abs": Abs,
-    "add": lambda (x, y): x + y,
+    "add": lambda x_y: x_y[0] + x_y[1],
     "and": And,
-    "div": lambda (x, y): x / y,
-    "eq": lambda (x, y): x == y,
-    "ge": lambda (x, y): x >= y,
-    "gt": lambda (x, y): x > y,
-    "le": lambda (x, y): x <= y,
-    "lt": lambda (x, y): x < y,
+    "div": lambda x_y1: x_y1[0] / x_y1[1],
+    "eq": lambda x_y2: x_y2[0] == x_y2[1],
+    "ge": lambda x_y3: x_y3[0] >= x_y3[1],
+    "gt": lambda x_y4: x_y4[0] > x_y4[1],
+    "le": lambda x_y5: x_y5[0] <= x_y5[1],
+    "lt": lambda x_y6: x_y6[0] < x_y6[1],
     "max": Max,
     "min": Min,
     "mod": Mod,
-    "mul": lambda (x, y): x * y,
-    "ne": lambda (x, y): x != y,
+    "mul": lambda x_y7: x_y7[0] * x_y7[1],
+    "ne": lambda x_y8: x_y8[0] != x_y8[1],
     "neg": Neg,
     # "not": Not,
     "or": Or,
-    "sub": lambda (x, y): x - y,
-    "iff": lambda (x, y): Or([x == 0, y]),
+    "sub": lambda x_y9: x_y9[0] - x_y9[1],
+    "iff": lambda x_y10: Or([x_y10[0] == 0, x_y10[1]]),
 }
 
 global_map = {
     "global:allDifferent": AllDiff,
-    "global:element": lambda (i, X, v): v == Element(X, i),
-    "global:weightedSum": lambda (X, W): Sum(X, W),
+    "global:element": lambda i_X_v: i_X_v[2] == Element(i_X_v[1], i_X_v[0]),
+    "global:weightedSum": lambda X_W: Sum(X_W[0], X_W[1]),
 }
 
 
@@ -88,7 +89,7 @@ class XCSPPredicate(object):
         self.children = [parse_arg(arg) for arg in split_children(remaining)]
 
     def get_expr(self, args):
-        arg_map = dict(zip(self.parameter_order, args))
+        arg_map = dict(list(zip(self.parameter_order, args)))
         return self.get_expr_with_arg_map(arg_map)
 
     def get_expr_with_arg_map(self, arg_map):
@@ -97,13 +98,13 @@ class XCSPPredicate(object):
                 return c.get_expr_with_arg_map(arg_map)
             elif isnumeric(c):
                 return int(c)
-            elif isinstance(c, basestring):
+            elif isinstance(c, str):
                 try:
                     return arg_map[c]
                 except Exception as e:
-                    print self.pred_name, self.predicate, self.children, self.parameter_order
-                    print "\n".join("%s:%s" % (k, str(v)) for k, v in arg_map.iteritems())
-                    print str(e)
+                    print(self.pred_name, self.predicate, self.children, self.parameter_order)
+                    print("\n".join("%s:%s" % (k, str(v)) for k, v in arg_map.items()))
+                    print(str(e))
                     raise e
             else:
                 raise XCSPParserError("Error unknown child %s" % str(c))
@@ -170,12 +171,12 @@ class XCSPParser(object):
             bits = s.strip().split(" ")
             for bit in bits:
                 if ".." in bit:
-                    l, u = map(int, bit.split(".."))
+                    l, u = list(map(int, bit.split("..")))
                     if len(bits) == 1:
                         # Domain is just specified by a single range
                         return [l, u]
                     else:
-                        domain.extend(range(l, u + 1))
+                        domain.extend(list(range(l, u + 1)))
                 else:
                     domain.append(int(bit))
             return [domain]
@@ -209,7 +210,7 @@ class XCSPParser(object):
                 if r.text is not None and len(r.text.strip()) > 0:
                     for t_str in r.text.split("|"):
                         bits = [s.strip() for s in t_str.split(" ") if len(s.strip()) > 0]
-                        relation.tuples.append(map(int, bits))
+                        relation.tuples.append(list(map(int, bits)))
                 # print semantics, relation.tuples
                 self.pred_and_rel[name] = relation
 
@@ -228,7 +229,7 @@ class XCSPParser(object):
 
     def parse_constraints(self):
         def build_param(param):
-            if isinstance(param, basestring):
+            if isinstance(param, str):
                 if isnumeric(param):
                     return int(param)
                 return self.variable_map[param]
@@ -268,7 +269,7 @@ class XCSPParser(object):
                 try:
                     constraint = predicate.get_expr(args)
                 except Exception as e:
-                    print reference, parameter_str, args
+                    print(reference, parameter_str, args)
                     raise e
 
             elif "global:" in reference:
@@ -324,7 +325,7 @@ if __name__ == '__main__':
     import os
 
     def usage():
-        print >> sys.stderr, "Usage: python %s -solver Mistral|MiniSat|... -xcsp xcspfilename.xml" % sys.argv[0]
+        print("Usage: python %s -solver Mistral|MiniSat|... -xcsp xcspfilename.xml" % sys.argv[0], file=sys.stderr)
         sys.exit(1)
 
     default = {'solver': '', 'verbose': 0, 'tcutoff': 3600, 'xcsp': '', 'encoding': ''}
@@ -333,16 +334,16 @@ if __name__ == '__main__':
     encoding = NJEncodings[param['encoding']] if param['encoding'] else None
 
     if not os.path.isfile(filename):
-        print >> sys.stderr, "Error: the file '%s' does not exist." % filename
+        print("Error: the file '%s' does not exist." % filename, file=sys.stderr)
         usage()
     if not param['solver']:
-        print >> sys.stderr, "Error: Please sepcify a solver."
+        print("Error: Please sepcify a solver.", file=sys.stderr)
         usage()
 
     t = datetime.datetime.now()
     c = time.clock()
     parser = XCSPParser(filename)
-    print "c Time to parse: %.2f %.2f" % ((datetime.datetime.now() - t).total_seconds(), (time.clock() - c))
+    print("c Time to parse: %.2f %.2f" % ((datetime.datetime.now() - t).total_seconds(), (time.clock() - c)))
     model, variables = parser.model, parser.variables
     # print "\n".join(str(v) for v in variables)
     # print model
@@ -350,25 +351,25 @@ if __name__ == '__main__':
     # t = datetime.datetime.now()
     # model.preprocess()
     # print "c Time to preprocess: %.2f" % (datetime.datetime.now() - t).total_seconds()
-    print "c Loading model"
+    print("c Loading model")
     t = datetime.datetime.now()
     c = time.clock()
     s = model.load(param['solver'], encoding=encoding)
-    print "c Time to load model: %.2f %.2f" % ((datetime.datetime.now() - t).total_seconds(), (time.clock() - c))
+    print("c Time to load model: %.2f %.2f" % ((datetime.datetime.now() - t).total_seconds(), (time.clock() - c)))
     s.setVerbosity(param['verbose'])
     s.setTimeLimit(int(param['tcutoff'] - time.clock()))
-    print "c Solve"
+    print("c Solve")
     t = datetime.datetime.now()
     c = time.clock()
     s.solve()
-    print "c Time to solve: %.2f %.2f" % ((datetime.datetime.now() - t).total_seconds(), (time.clock() - c))
-    print "c Nodes %d" % s.getNodes()
-    print "c Failures %d" % s.getFailures()
-    print "c SolveTime %.4f" % s.getTime()
+    print("c Time to solve: %.2f %.2f" % ((datetime.datetime.now() - t).total_seconds(), (time.clock() - c)))
+    print("c Nodes %d" % s.getNodes())
+    print("c Failures %d" % s.getFailures())
+    print("c SolveTime %.4f" % s.getTime())
     if s.is_sat():
-        print "s SATISFIABLE"
-        print "v", " ".join(str(v.get_value()) for v in variables)
+        print("s SATISFIABLE")
+        print("v", " ".join(str(v.get_value()) for v in variables))
     elif s.is_unsat():
-        print "s UNSATISFIABLE"
+        print("s UNSATISFIABLE")
     else:
-        print "s UNKNOWN"
+        print("s UNKNOWN")

@@ -19,7 +19,7 @@
   numberjack.support@gmail.com
 '''
 
-
+from __future__ import print_function
 from distutils.core import setup
 from distutils.extension import Extension
 from distutils.command.build_ext import build_ext as _build_ext
@@ -71,18 +71,17 @@ class njbuild_ext(_build_ext):
         _build_ext.run(self)
 
         if disabled_extensions:
-            print >> sys.stderr, \
-                "The following solvers could not be located " \
+            print("The following solvers could not be located " \
                 "on your system so their interface has been disabled:", \
-                ", ".join(disabled_extensions)
+                ", ".join(disabled_extensions), file=sys.stderr)
 
         if self.failedsolvernames:
-            print >> sys.stderr, "Failed to build the following interfaces " \
-                "(details are above):", ", ".join(self.failedsolvernames)
+            print("Failed to build the following interfaces " \
+                "(details are above):", ", ".join(self.failedsolvernames), file=sys.stderr)
 
         if self.builtsolvernames:
-            print "Successfully built solver interfaces for", \
-                ", ".join(self.builtsolvernames)
+            print("Successfully built solver interfaces for", \
+                ", ".join(self.builtsolvernames))
 
     def build_extension(self, ext):
         try:
@@ -105,7 +104,7 @@ def xml2config(option, path="xml2-config"):
     cmd = '%s %s' % (path, option)
     p = sp.Popen(cmd, stdout=sp.PIPE, shell=True)
     stdout, stderr = p.communicate()
-    return shlex.split(stdout.strip())
+    return shlex.split(stdout.decode("utf-8").strip())
 
 
 CPLEX, GUROBI, SCIP = "CPLEX", "Gurobi", "SCIP"
@@ -501,7 +500,7 @@ if scipopthome:
             makecmd = "make scipoptlib ZIMPL=false ZLIB=false READLINE=false" \
                 " GAMS=false GMP=false LEGACY=true SPX_LEGACY=true"
 
-            print "Compiling SCIP library..."
+            print("Compiling SCIP library...")
             returncode = sp.call(makecmd, cwd=scipopthome, shell=True)
             if returncode != 0:
                 sys.exit(1)
@@ -558,15 +557,15 @@ solversubsetnames = set()
 while SOLVERARG in sys.argv:
     pos = sys.argv.index(SOLVERARG)
     if pos + 1 >= len(sys.argv):
-        print >> sys.stderr, "Error: you should specify a solver or list of " \
-            "solvers to compile with the %s option." % SOLVERARG
+        print("Error: you should specify a solver or list of " \
+            "solvers to compile with the %s option." % SOLVERARG, file=sys.stderr)
         sys.exit(1)
 
     solvernames = [x.strip() for x in sys.argv[pos + 1].split(",")]
     for s in solvernames:
         if s not in allsolvers:
-            print >> sys.stderr, "Error: the solver '%s' is not known, please" \
-                " use one of: %s" % (s, ", ".join(allsolvers.keys()))
+            print("Error: the solver '%s' is not known, please" \
+                " use one of: %s" % (s, ", ".join(list(allsolvers.keys()))), file=sys.stderr)
             sys.exit(1)
         solversubsetnames.add(s)
     del sys.argv[pos:pos + 2]
@@ -596,7 +595,7 @@ lic = "License :: OSI Approved :: " \
 
 setup(
     name='Numberjack',
-    version='1.1.4',
+    version='1.1.5-dev',
     author='Numberjack Developers',
     packages=['Numberjack', 'Numberjack.solvers'],
     ext_modules=extensions,
@@ -617,6 +616,7 @@ setup(
         "Programming Language :: C",
         "Programming Language :: C++",
         "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.4",
         "Topic :: Scientific/Engineering",
         lic,
     ],

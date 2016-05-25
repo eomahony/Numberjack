@@ -60,7 +60,7 @@ def solve(param):
     solver.solve()
 
     for i in range(Houses):
-        print 'The tenant of house', str(i+1), 'is', Nationalities[i], 'likes', Colours[i], 'has a', Animals[i], 'drinks', Drinks[i], 'and smokes', Cigarettes[i]
+        print('The tenant of house', str(i+1), 'is', Nationalities[i], 'likes', Colours[i], 'has a', Animals[i], 'drinks', Drinks[i], 'and smokes', Cigarettes[i])
 
 
 default = {'solver': 'Mistral'}

@@ -9,10 +9,10 @@
 # so that they can be used with other solvers. In particular reifyimply would be
 # nice.
 
+from __future__ import print_function, division
 
 from Numberjack.ExternalSolver import ExternalSolver
-from Numberjack import NBJ_STD_Solver, Variable, SAT, UNSAT
-import sys
+from Numberjack import NBJ_STD_Solver, SAT, UNSAT
 import re
 
 
@@ -78,7 +78,7 @@ class Minion_IntVar(Minion_Expression):
             if self.lb == 0 and self.ub == 1:
                 solver.create_variable(self, self.varname, "BOOL %s" % self.varname)
             elif self.domain and len(self.domain) != (self.ub - self.lb) + 1:
-                dom_str = csvstr(map(str, self.domain))
+                dom_str = csvstr(list(map(str, self.domain)))
                 solver.create_variable(self, self.varname, "SPARSEBOUND %s {%s}" % (self.varname, dom_str))
             else:
                 solver.create_variable(self, self.varname, "DISCRETE %s {%d..%d}" % (self.varname, self.lb, self.ub))
@@ -295,7 +295,7 @@ class Minion_AllDiff(Minion_Expression):
     def add(self, solver, toplevel):
         if not self.has_been_added():
             super(Minion_AllDiff, self).add(solver, toplevel)
-            for i in xrange(len(self.vars)):
+            for i in range(len(self.vars)):
                 if isinstance(self.vars[i], Minion_Expression):
                     self.vars[i] = self.vars[i].add(solver, False)
 
@@ -308,7 +308,7 @@ class Minion_AllDiff(Minion_Expression):
             else:
                 assert toplevel, "Constraint not implemented as a sub-expression/reified yet."
 
-                solver.print_constraint("gacalldiff([%s])" % (csvstr(map(varname, self.vars))))
+                solver.print_constraint("gacalldiff([%s])" % (csvstr(list(map(varname, self.vars)))))
         return self
 
 
@@ -321,7 +321,7 @@ class Minion_LeqLex(Minion_Expression):
     def add(self, solver, toplevel):
         if not self.has_been_added():
             super(Minion_LeqLex, self).add(solver, toplevel)
-            for i in xrange(len(self.vars)):
+            for i in range(len(self.vars)):
                 self.vars[i] = self.vars[i].add(solver, False)
 
             assert toplevel, "Constraint not implemented as a sub-expression/reified yet."
@@ -341,7 +341,7 @@ class Minion_LessLex(Minion_Expression):
     def add(self, solver, toplevel):
         if not self.has_been_added():
             super(Minion_LessLex, self).add(solver, toplevel)
-            for i in xrange(len(self.vars)):
+            for i in range(len(self.vars)):
                 self.vars[i] = self.vars[i].add(solver, False)
 
             assert toplevel, "Constraint not implemented as a sub-expression/reified yet."
@@ -364,16 +364,16 @@ class Minion_Gcc(Minion_Expression):
     def add(self, solver, toplevel):
         if not self.has_been_added():
             super(Minion_Gcc, self).add(solver, toplevel)
-            for i in xrange(len(self.vars)):
+            for i in range(len(self.vars)):
                 self.vars[i] = self.vars[i].add(solver, False)
 
             assert toplevel, "Constraint not implemented as a sub-expression/reified yet."
             names = [varname(x) for x in self.vars]
             value_str = csvstr(self.vals)
             auxvariables = [Minion_IntVar(l, u) for l, u in zip(self.lb_card, self.ub_card)]
-            for i in xrange(len(auxvariables)):
+            for i in range(len(auxvariables)):
                 auxvariables[i] = auxvariables[i].add(solver, False)
-            vec_str = csvstr(map(varname, auxvariables))
+            vec_str = csvstr(list(map(varname, auxvariables)))
             solver.print_constraint("gccweak([%s], [%s], [%s])" %
                                     (csvstr(names), value_str, vec_str))
         return self
@@ -418,7 +418,7 @@ class Minion_Sum(Minion_Expression):
         assert not toplevel, "Constraint is only valid as a sub-expression."
         if not self.has_been_added():
             super(Minion_Sum, self).add(solver, toplevel)
-            for i in xrange(len(self.vars)):
+            for i in range(len(self.vars)):
                 self.vars[i] = self.vars[i].add(solver, False)
 
             if len(self.vars) == 1 and self.offset == 0 and \
@@ -480,7 +480,7 @@ class Minion_Max(Minion_Expression):
         assert not toplevel, "Constraint is only valid as a sub-expression."
         if not self.has_been_added():
             super(Minion_Max, self).add(solver, toplevel)
-            for i in xrange(len(self.vars)):
+            for i in range(len(self.vars)):
                 self.vars[i] = self.vars[i].add(solver, False)
 
             if len(self.vars) == 1:
@@ -512,7 +512,7 @@ class Minion_Min(Minion_Expression):
         assert not toplevel, "Constraint is only valid as a sub-expression."
         if not self.has_been_added():
             super(Minion_Min, self).add(solver, toplevel)
-            for i in xrange(len(self.vars)):
+            for i in range(len(self.vars)):
                 self.vars[i] = self.vars[i].add(solver, False)
 
             if len(self.vars) == 1:
@@ -541,14 +541,14 @@ class Minion_Element(Minion_Expression):
         # Compute the lower and upper bound for the auxiliary variable
         lowind = max(0, self.indexvar.get_min())
         highind = min(len(self.vars), self.indexvar.get_max())
-        self.lb = min(self.vars[i].get_min() for i in xrange(lowind, highind))
-        self.ub = min(self.vars[i].get_max() for i in xrange(lowind, highind))
+        self.lb = min(self.vars[i].get_min() for i in range(lowind, highind))
+        self.ub = min(self.vars[i].get_max() for i in range(lowind, highind))
 
     def add(self, solver, toplevel):
         assert not toplevel, "Constraint is only valid as a sub-expression."
         if not self.has_been_added():
             super(Minion_Element, self).add(solver, toplevel)
-            for i in xrange(len(self.vars)):
+            for i in range(len(self.vars)):
                 self.vars[i] = self.vars[i].add(solver, False)
             self.indexvar = self.indexvar.add(solver, False)
 
@@ -608,7 +608,7 @@ class MinionSolver(ExternalSolver):
             'time': (re.compile(r'^Solve Time:[ ]+(?P<time>\d+\.\d+)$'), float),
         }
         self.f = open(self.filename, "wt")
-        print >> self.f, "MINION 3"
+        print("MINION 3", file=self.f)
 
     def build_solver_cmd(self):
         # The Verbosity that we pass down to the solver should be at least 1 so
@@ -617,7 +617,7 @@ class MinionSolver(ExternalSolver):
 
     def build_cmdlineoptions(self):
         s = ""
-        for k, v in self.cmdlineoptdict.iteritems():
+        for k, v in self.cmdlineoptdict.items():
             s += " " + str(k)
             if v is not None:
                 s += " " + str(v)
@@ -628,10 +628,10 @@ class MinionSolver(ExternalSolver):
 
     def initialise(self, searchvars=None):
         if searchvars:
-            self.print_search("VARORDER [%s]" % csvstr(map(varname, searchvars)))
+            self.print_search("VARORDER [%s]" % csvstr(list(map(varname, searchvars))))
 
     def solve(self, *args, **kwargs):
-        print >> self.f, "**EOF**"
+        print("**EOF**", file=self.f)
         self.f.close()
 
         if self.verbosity >= 2:
@@ -640,7 +640,7 @@ class MinionSolver(ExternalSolver):
         if self.verbosity >= 3:
             with open(self.filename, "rt") as f:
                 for line in f:
-                    print line,
+                    print(line, end=' ')
 
         return super(MinionSolver, self).solve(*args, **kwargs)
 
@@ -651,21 +651,21 @@ class MinionSolver(ExternalSolver):
     def print_variable(self, s):
         if self.last_section != MinionSolver.VARIABLES:
             self.last_section = MinionSolver.VARIABLES
-            print >> self.f, "**VARIABLES**"  # FIXME switching back and forth
-        print >> self.f, s
+            print("**VARIABLES**", file=self.f)  # FIXME switching back and forth
+        print(s, file=self.f)
 
     def print_constraint(self, s):
         if self.last_section != MinionSolver.CONSTRAINTS:
             self.last_section = MinionSolver.CONSTRAINTS
-            print >> self.f, "**CONSTRAINTS**"
+            print("**CONSTRAINTS**", file=self.f)
         self.constraintcount += 1
-        print >> self.f, s
+        print(s, file=self.f)
 
     def print_search(self, s):
         if self.last_section != MinionSolver.SEARCH:
             self.last_section = MinionSolver.SEARCH
-            print >> self.f, "**SEARCH**"
-        print >> self.f, s
+            print("**SEARCH**", file=self.f)
+        print(s, file=self.f)
 
     def getNumVariables(self):
         return self.variablecount

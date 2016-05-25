@@ -13,6 +13,7 @@
 #
 # CSPlib Problem 057 - http://www.csplib.org/Problems/prob057/
 
+from __future__ import print_function
 from Numberjack import *
 
 
@@ -48,11 +49,11 @@ def solve(param):
     solver.solve()
 
     if solver.is_sat():
-        print str(grid)
+        print(str(grid))
     elif solver.is_unsat():
-        print "Unsatisfiable"
+        print("Unsatisfiable")
     else:
-        print "Unknown"
+        print("Unknown")
 
 
 def parsecages(textblob):
@@ -60,7 +61,7 @@ def parsecages(textblob):
     for line in textblob.split("\n"):
         if not line.strip():
             continue
-        bits = map(int, line.split())
+        bits = list(map(int, line.split()))
         cages.append((bits[0], bits[1:]))
     return cages
 

@@ -28,11 +28,11 @@ class MIPParser(object):
         elif filetype == 'lp':
             parser.load_lp(self.model_path, 0)
         elif filetype == 'njm':
-            import cPickle
-            self.model = cPickle.load(open(self.model_path))
+            import pickle
+            self.model = pickle.load(open(self.model_path))
             return self.model
         else:
-            print "Unknown filetype, Supported formats are [gmpl, mps, mps.gz, lp], exiting"
+            print("Unknown filetype, Supported formats are [gmpl, mps, mps.gz, lp], exiting")
             return None
         prse = parser.solver
 
@@ -42,7 +42,7 @@ class MIPParser(object):
         for i in range(n):
             expr = self.getNJExp(prse.get_expression(i), 0)
             if self.verbose > 0:
-                print expr
+                print(expr)
             self.model.add(expr)
         return self.model
 
@@ -60,9 +60,9 @@ class MIPParser(object):
         return (solver, self.model)
 
     def save(self):
-        import cPickle
-        cPickle.dump(self.model, open(self.model_path + '.njm', 'w'))
-        print "Model saved to", self.model_path + '.njm'
+        import pickle
+        pickle.dump(self.model, open(self.model_path + '.njm', 'w'))
+        print("Model saved to", self.model_path + '.njm')
 
     def getNJVar(self, mexp, ident):
         ident = mexp.getVariableId()
@@ -101,7 +101,7 @@ class MIPParser(object):
         elif exp_type == "minimise":
             return Minimise(children[0])
         else:
-            print "Error: Failed to parse expression:", type
+            print("Error: Failed to parse expression:", type)
             exit(1)
 
 if __name__ == "__main__":
@@ -152,12 +152,12 @@ if __name__ == "__main__":
                 time = solver.getTime()
                 nodesps = nodes/time if time > 0 else nodes
 
-                print("c Result                      :         %11s" % 'SAT')
-                print("c #Nodes                      :         %11s" % nodes)
-                print("c Solving time (in sec.)      :         %11s" % time)
-                print("c Nodes/second                :         %11s" % nodesps)
-                print 'v', ' '.join(str(v.get_value()) for v in model.variables)
+                print(("c Result                      :         %11s" % 'SAT'))
+                print(("c #Nodes                      :         %11s" % nodes))
+                print(("c Solving time (in sec.)      :         %11s" % time))
+                print(("c Nodes/second                :         %11s" % nodesps))
+                print('v', ' '.join(str(v.get_value()) for v in model.variables))
             else:
-                print "UNSAT"
+                print("UNSAT")
     else:
         opts.print_help()

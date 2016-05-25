@@ -943,6 +943,8 @@ Mistral::Solver::Solver()
   initialised_cons = 0;
   num_search_variables = 0;
   base = NULL;
+	
+	search_root = -2;
 
   // trail stuff
   level = -1;
@@ -2373,8 +2375,10 @@ void Mistral::Solver::restore() {
 
 void Mistral::Solver::restore(const int lvl) {
   //decisions.size = lvl;
-  decisions.size = lvl -search_root;
-  while(lvl < level) restore();
+	if(lvl>=search_root && search_root>=-1) {
+		decisions.size = lvl -search_root;
+  	while(lvl < level) restore();
+	}
 }
 
 

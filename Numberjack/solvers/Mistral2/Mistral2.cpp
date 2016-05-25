@@ -9,7 +9,7 @@
  ********************     EXPRESSION        *******************
  **************************************************************/
 
-//#define _DEBUGWRAP true
+// #define _DEBUGWRAP true
 
 Mistral2_Expression::Mistral2_Expression()
 {

@@ -102,6 +102,9 @@
 //#define _OS_PRUNING true
 
 
+int integer_div_up(const int x, const int y);
+int integer_div_lo(const int x, const int y);
+
 
 
 /**

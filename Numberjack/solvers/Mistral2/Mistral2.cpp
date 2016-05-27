@@ -1872,7 +1872,7 @@ void Mistral2Solver::setRandomSeed(const int seed)
 #endif
 
   solver->parameters.seed = seed;
-	solver->initialise_random_seed(seed)
+	solver->initialise_random_seed(seed);
 
 }
 

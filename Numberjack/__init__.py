@@ -2157,11 +2157,45 @@ class OrderedSum(Predicate):
         Predicate.close(self)
 
     def __str__(self):
-        #print len(self.children)
         op = str(self.parameters[0]) + ' <= ('+(self.children[0].__str__())
         for i in range(1, len(self.children)):
             op += (' + ' + self.children[i].__str__())
         return op + ') <= ' + str(self.parameters[1])
+
+
+class Product(Predicate):
+    """
+    Syntactic sugar for a cross product expression on a list of :class:`.Expression`.
+    `Product([x, y, z])` is equivalent to writing `(x * y * z)`.
+
+    :param vars: the variables or expressions which will be multiplied by each other.
+        This should be a :class:`.VarArray` or `list` with at least one item.
+
+    .. note::
+
+        Cannot be used as a top-level constraint, only as a sub-expression.
+    """
+
+    def __init__(self, vars):
+        Predicate.__init__(self, vars, "Product")
+        self.lb = None
+        self.ub = None
+
+    def __str__(self):
+        return "(%s)" % " * ".join(map(str, self.children))
+
+    def decompose(self):
+        if len(self.children) == 0:
+            return []
+        elif len(self.children) == 1:
+            return [self.children[0]]
+        elif len(self.children) == 2:
+            return [self.children[0] * self.children[1]]
+        else:
+            from operator import mul
+            ret = [reduce(mul, self.children[1:], self.children[0])]
+            print("returning decomposed:", str(ret[0]))
+            return ret
 
 
 class AllDiff(Predicate):

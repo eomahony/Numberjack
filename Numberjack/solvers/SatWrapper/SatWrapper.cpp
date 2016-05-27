@@ -3160,7 +3160,7 @@ int SatWrapperSolver::startNewSearch() {
     std::cout << "start a new interuptable search" << std::endl;
 #endif
 
-    return 1;
+    return UNKNOWN;
 }
 
 int SatWrapperSolver::getNextSolution() {
@@ -3169,7 +3169,7 @@ int SatWrapperSolver::getNextSolution() {
     std::cout << "seek next solution" << std::endl;
 #endif
 
-    return 1;
+    return UNKNOWN;
 }
 
 int SatWrapperSolver::sacPreprocess(const int type) {
@@ -3178,7 +3178,7 @@ int SatWrapperSolver::sacPreprocess(const int type) {
     std::cout << "enforces singleton arc consistency" << std::endl;
 #endif
 
-    return 1;
+    return UNKNOWN;
 }
 
 void SatWrapperSolver::setHeuristic(const char* var_heuristic, const char* val_heuristic, const int rand) {

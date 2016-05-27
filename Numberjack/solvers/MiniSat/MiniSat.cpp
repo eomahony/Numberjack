@@ -568,7 +568,7 @@ void MiniSatSolver::setRandomized(const int degree)
 
 void MiniSatSolver::setRandomSeed(const int seed)
 {
-  setRandomSeed((double)seed);
+  SimpSolver::setRandomSeed((double)seed);
 }
 
 bool MiniSatSolver::is_sat()

@@ -252,14 +252,17 @@ toulbar2 = Extension(
     language='c++',
     define_macros=[
         ('NUMBERJACK', None),
-#        ('BOOST', None), # requires libboost-graph-dev installed
+        # ('BOOST', None), # requires libboost-graph-dev installed
         ('NDEBUG', None),
         ('LINUX', None),
         ('LONGLONG_COST', None),
         ('WIDE_STRING', None),
         ('LONGDOUBLE_PROB', None),
-        ('NARYCHAR', None)],
-    extra_compile_args=EXTRA_COMPILE_ARGS + ['-Wno-overloaded-virtual'],
+        ('NARYCHAR', None),
+    ],
+    extra_compile_args=EXTRA_COMPILE_ARGS + [
+        '-Wno-overloaded-virtual', '-Wno-mismatched-tags', '-Wno-unused-private-field',
+    ],
     extra_link_args=EXTRA_LINK_ARGS,
 )
 extensions.append(toulbar2)

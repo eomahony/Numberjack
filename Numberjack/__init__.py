@@ -2194,7 +2194,7 @@ class Product(Predicate):
         else:
             from operator import mul
             ret = [reduce(mul, self.children[1:], self.children[0])]
-            print("returning decomposed:", str(ret[0]))
+            # print("returning decomposed:", str(ret[0]))
             return ret
 
 

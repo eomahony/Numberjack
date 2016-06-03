@@ -4,6 +4,7 @@ Global Constraints Reference
 .. autoclass:: Numberjack.AllDiff
 .. autoclass:: Numberjack.AllDiffExcept0
 .. autoclass:: Numberjack.Sum
+.. autoclass:: Numberjack.Product
 .. autoclass:: Numberjack.Gcc
 .. autoclass:: Numberjack.LessLex
 .. autoclass:: Numberjack.LeqLex

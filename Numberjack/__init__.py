@@ -2165,8 +2165,12 @@ class OrderedSum(Predicate):
 
 class Product(Predicate):
     """
-    Syntactic sugar for a cross product expression on a list of :class:`.Expression`.
-    `Product([x, y, z])` is equivalent to writing `(x * y * z)`.
+    Syntactic sugar for a product expression on a list of :class:`.Expression`.
+    `Product([x, y, z])` is equivalent to writing `(x * y * z)` but is more
+    flexible in that it excepts a variable number of expressions.
+
+    This expression is not supported by any solver at the moment, so it will be
+    decomposed to chained product expressions.
 
     :param vars: the variables or expressions which will be multiplied by each other.
         This should be a :class:`.VarArray` or `list` with at least one item.
@@ -2174,6 +2178,8 @@ class Product(Predicate):
     .. note::
 
         Cannot be used as a top-level constraint, only as a sub-expression.
+
+    .. versionadded:: 1.2.0
     """
 
     def __init__(self, vars):
@@ -2194,7 +2200,6 @@ class Product(Predicate):
         else:
             from operator import mul
             ret = [reduce(mul, self.children[1:], self.children[0])]
-            print("returning decomposed:", str(ret[0]))
             return ret
 
 

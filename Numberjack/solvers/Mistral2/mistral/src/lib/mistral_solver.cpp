@@ -35,7 +35,7 @@
 //#define _OLD_ true
 //#define _DEBUG_NOGOOD true //(statistics.num_filterings == 491)
 //#define _DEBUG_SEARCH true
-//#define _DEBUG_AC true
+//#define _DEBUG_AC ((statistics.num_propagations > 700) && (level == 0))
 
 //((statistics.num_filterings == 48212) || (statistics.num_filterings == 46738) || (statistics.num_filterings == 44368) || (statistics.num_filterings == 43659))
 
@@ -1950,6 +1950,9 @@ Mistral::Outcome Mistral::Solver::restart_search(const int root, const bool _res
 Mistral::Outcome Mistral::Solver::get_next_solution()  
 {
 	Outcome satisfiability = UNSAT;
+	
+	if(parameters.restart_limit>0)
+		parameters.restart_limit = 0;
   
 	if(search_started) {
 		if(decisions.size) 
@@ -5269,13 +5272,13 @@ Mistral::Outcome Mistral::Solver::exhausted() {
 }
 
 bool Mistral::Solver::limits_expired() {
-  
+
 	// std::cout << (get_run_time() - statistics.start_time) << " / " << parameters.time_limit << std::endl;
 	// std::cout << statistics.num_nodes << " / " << parameters.node_limit << std::endl;
 	// std::cout << statistics.num_failures << " / " << parameters.fail_limit << std::endl;
 	// std::cout << statistics.num_failures << " / " << parameters.restart_limit << std::endl;
 	// std::cout << statistics.num_propagations << " / " << parameters.propagation_limit << std::endl;
-	//
+
 #ifdef _DEBUG_SEARCH
   if(_DEBUG_SEARCH) {
     if(parameters.limit && 

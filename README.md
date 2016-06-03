@@ -1,17 +1,17 @@
 # Numberjack
-## A Python constraint programming platform
+## A Python platform for Combinatorial Optimisation
 
 ## What is Numberjack?
 
-Numberjack is a modelling package written in Python for constraint programming.
-Python benefits from a large and active programming community, Numberjack is
-therefore a perfect tool to embed CP technology into larger applications. It is
-designed to support a number of underlying C/C++ solvers seamlessly and
-efficiently. There are a number of available back-ends: three mixed integer
-programming solvers ([Gurobi][gurobiopt], [CPLEX][cplex], and [SCIP][scipopt]),
-satisfiability solvers ([MiniSat][minisat], [Walksat][walksat], and many
-others), a constraint programming solver (Mistral), and a weighted constraint
-satisfaction solver ([Toulbar2][toulbar2]).
+Numberjack is a modelling package written in Python for combinatorial
+optimisation. Python benefits from a large and active programming community,
+Numberjack is therefore a perfect tool to embed optimisation technology into
+larger applications. It is designed to support a number of underlying C/C++
+solvers seamlessly and efficiently. There are a number of available back-ends:
+three mixed integer programming solvers ([Gurobi][gurobiopt], [CPLEX][cplex],
+and [SCIP][scipopt]), satisfiability solvers ([MiniSat][minisat],
+[Walksat][walksat], and many others), a constraint programming solver (Mistral),
+and a weighted constraint satisfaction solver ([Toulbar2][toulbar2]).
 
 * Numberjack offers a high level constraint programming language
 * Numberjack directly benefits from python's features and modules

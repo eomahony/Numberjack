@@ -32,6 +32,8 @@ Contents
    Scheduling specific constructs <scheduling>
    Solving <solving>
    Exceptions <exceptions>
+   changes
+   contributing
 
 
 License

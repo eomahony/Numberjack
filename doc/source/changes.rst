@@ -1,6 +1,8 @@
-# Changelog
+Changelog
+=========
 
-## v1.2.0 (2016-06-03)
+v1.2.0 (2016-06-03)
+-------------------
 
 - Added support for Python 2 and 3 from the same code base. Big thanks to Robin Deits!
 - Improved the quality of models coming from MiniZinc/Flatzinc input, particularly for large domains

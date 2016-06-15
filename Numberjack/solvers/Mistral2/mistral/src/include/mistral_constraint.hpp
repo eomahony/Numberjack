@@ -102,6 +102,9 @@
 //#define _OS_PRUNING true
 
 
+int integer_div_up(const int x, const int y);
+int integer_div_lo(const int x, const int y);
+
 
 
 /**
@@ -2895,7 +2898,7 @@ std::cout << "[" << std::setw(4) << id << "](" << name() << "): restore" << std:
     virtual Constraint clone() { return Constraint(new PredicateFactor(scope[0], scope[1], factor)); }
     virtual void initialise();
     virtual void mark_domain();
-    virtual int idempotent() { return 1;}
+    virtual int idempotent() { return 0;}
     virtual ~PredicateFactor() {}
     //@}
 

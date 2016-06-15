@@ -44,7 +44,9 @@
 //#define _DEBUG_WEIGHTEDBOOLSUM (id == 102)
 //#define _DEBUG_CLIQUENOTEQUAL (id == 1)
 //#define _DEBUG_WEIGHT_CONFLICT
-//#define _DEBUG_MUL (id == 4735)
+//#define _DEBUG_MUL (id == 58)
+//#define _DEBUG_FACTOR (id == 39)
+// #define _DEBUG_FACTOR true
 //#define _DEBUG_ORDEREDSUM true
 //#define _DEBUG_SQUARE true
 
@@ -2949,6 +2951,8 @@ void Mistral::PredicateFactor::initialise() {
   ConstraintImplementation::initialise();
   trigger_on(_RANGE_, scope[0]);
   trigger_on(_RANGE_, scope[1]);
+	
+	//set_idempotent(false);
 }
 
 void Mistral::PredicateFactor::mark_domain() {
@@ -2957,68 +2961,191 @@ void Mistral::PredicateFactor::mark_domain() {
 }
 
 
+int integer_div_up(const int x, const int y) {
+	// return the x/y rounded up
+	
+	int r = ((x%y)!=0);
+	int q = x/y;
+	
+	if(q<0) {
+		return q;
+	} else {
+		return q+r;
+	}
+	
+}
+
+
+int integer_div_lo(const int x, const int y) {
+	// return the x/y rounded down
+	
+	int r = ((x%y)!=0);
+	int q = x/y;
+	
+	if(q<0) {
+		return q+r;
+	} else {
+		return q;
+	}
+	
+}
+
+
 Mistral::PropagationOutcome Mistral::PredicateFactor::propagate() {      
   Mistral::PropagationOutcome wiped = CONSISTENT;
+	
+#ifdef _DEBUG_FACTOR
+	if(_DEBUG_FACTOR) {
+		std::cout << std::endl << scope[0].get_domain() << " * " << factor << " = " << scope[1].get_domain() 
+			<< " lvl=" << get_solver()->level << " prop=" << get_solver()->statistics.num_propagations << std::endl;
+	}
+#endif
+	
 
-  if( FAILED(scope[0].set_min( (factor>0 ? 
-				 scope[1].get_min() : 
-				 scope[1].get_max()) / factor )) ) {
-    wiped = FAILURE(0); 
+	//   if( FAILED(scope[0].set_min( (factor>0 ?
+	//   				 scope[1].get_min() :
+	//   				 //integer_div_up(scope[1].get_max()), factor) )) ) {
+	// scope[1].get_max()) / factor )) ) {
+	//     wiped = FAILURE(0);
+	//
+	//   } else if( FAILED(scope[0].set_max( (factor>0 ?
+	//   				  scope[1].get_max() :
+	//   					// integer_div_lo(scope[1].get_min()), factor) )) ) {
+	// scope[1].get_min()) / factor )) ) {
+	//     wiped = FAILURE(0);
+	//
+	//   } else if( FAILED(scope[1].set_min( (factor>0 ?
+	//   					scope[0].get_min() :
+	//   					scope[0].get_max()) * factor )) ) {
+	//     wiped = FAILURE(1);
+	//
+	//   } else if( FAILED(scope[1].set_max( (factor>0 ?
+	//   					scope[0].get_max() :
+	//   					scope[0].get_min()) * factor )) ) {
+	//     wiped = FAILURE(1);
+	//
+	//   }
+	
+	
+	bool fix_point;
+	PropagationOutcome evt = NO_EVENT;
 
-  } else if( FAILED(scope[0].set_max( (factor>0 ? 
-				      scope[1].get_max() :
-					scope[1].get_min()) / factor )) ) {
-    wiped = FAILURE(0); 
+	do {
+		fix_point = true;
 
-  } else if( FAILED(scope[1].set_min( (factor>0 ? 
-					scope[0].get_min() : 
-					scope[0].get_max()) * factor )) ) {
-    wiped = FAILURE(1); 
+		evt = scope[0].set_min( integer_div_up(
+						(factor>0 ? scope[1].get_min() : scope[1].get_max()),
+						factor
+					)
+				);
+		if(evt != NO_EVENT) fix_point = false;
+		if(FAILED(evt)) wiped = FAILURE(0);
 
-  } else if( FAILED(scope[1].set_max( (factor>0 ? 
+		evt = scope[0].set_max( integer_div_lo(
+						(factor>0 ? scope[1].get_max() : scope[1].get_min()),
+						factor
+					)
+				);
+		if(evt != NO_EVENT) fix_point = false;
+		if(FAILED(evt)) wiped = FAILURE(0);
+
+		evt = scope[1].set_min( (factor>0 ?
+					scope[0].get_min() :
+					scope[0].get_max()) * factor
+				);
+		if(evt != NO_EVENT) fix_point = false;
+		if(FAILED(evt)) wiped = FAILURE(1);
+
+		evt = scope[1].set_max( (factor>0 ?
 					scope[0].get_max() :
-					scope[0].get_min()) * factor )) ) {
-    wiped = FAILURE(1);
+					scope[0].get_min()) * factor
+				);
+		if(evt != NO_EVENT) fix_point = false;
+		if(FAILED(evt)) wiped = FAILURE(1);
 
-  }
 
+	} while(!fix_point);
+	
+#ifdef _DEBUG_FACTOR
+	if(_DEBUG_FACTOR) {
+		std::cout << scope[0].get_domain() << " * " << factor << " = " << scope[1].get_domain() << std::endl << wiped << std::endl;
+	}
+#endif
+	
   return wiped;
 }
 
+
 Mistral::PropagationOutcome Mistral::PredicateFactor::propagate(const int changed_idx, const Event evt) {      
   Mistral::PropagationOutcome wiped = CONSISTENT;
+	
+#ifdef _DEBUG_FACTOR
+	if(_DEBUG_FACTOR) {
+		std::cout << std::endl << scope[0].get_domain() << " * " << factor << " = " << scope[1].get_domain() 
+			<< " id=" << changed_idx << " lvl=" << get_solver()->level << " prop=" << get_solver()->statistics.num_propagations << std::endl;
+	}
+#endif
 
-  if(changed_idx == 1) {
-    if(factor>0) {
-      if( LB_CHANGED(evt) && FAILED(scope[0].set_min( scope[1].get_min() / factor )) )
-	wiped = FAILURE(0); 
-      if( UB_CHANGED(evt) && FAILED(scope[0].set_max( scope[1].get_max() / factor )) ) 
-	wiped = FAILURE(0); 
-    } else {
-      if( UB_CHANGED(evt) && FAILED(scope[0].set_min( scope[1].get_max() / factor )) )
-	wiped = FAILURE(0); 
-      if( LB_CHANGED(evt) && FAILED(scope[0].set_max( scope[1].get_min() / factor )) )
-	wiped = FAILURE(0); 
-    }
-  } else {
-    if(factor>0) {
-      if( LB_CHANGED(evt) && FAILED(scope[1].set_min( scope[0].get_min() * factor )) )
-	wiped = FAILURE(1); 
-      if( UB_CHANGED(evt) && FAILED(scope[1].set_max( scope[0].get_max() * factor )) ) 
-	wiped = FAILURE(1); 
-    } else {
-      if( UB_CHANGED(evt) && FAILED(scope[1].set_min( scope[0].get_max() * factor )) )
-	wiped = FAILURE(1); 
-      if( LB_CHANGED(evt) && FAILED(scope[1].set_max( scope[0].get_min() * factor )) )
-	wiped = FAILURE(1); 
-    }
-  }
+	if(changed_idx == 1) {
+		int bound;
+		if(factor>0) {
+			
+			if( LB_CHANGED(evt) ) {
+				bound = integer_div_up(scope[1].get_min(), factor);
+				if( FAILED(scope[0].set_min( bound )) )
+					wiped = FAILURE(0);
+			} 
+			if( UB_CHANGED(evt) ) {
+				bound = integer_div_lo(scope[1].get_max(), factor);
+				if( FAILED(scope[0].set_max( bound )) ) 
+					wiped = FAILURE(0); 
+			}
+		} else {
+			if( UB_CHANGED(evt) ) {
+				bound = integer_div_up(scope[1].get_max(), factor);
+				if( FAILED(scope[0].set_min( bound )) )
+					wiped = FAILURE(0);
+			}
+			if( LB_CHANGED(evt) ) {
+				bound = integer_div_lo(scope[1].get_min(), factor);
+				if( FAILED(scope[0].set_max( bound )) )
+					wiped = FAILURE(0);
+			} 
+		}
+	} else {
+		if(factor>0) {
+			
+#ifdef _DEBUG_FACTOR
+	if(_DEBUG_FACTOR) {
+			std::cout << (LB_CHANGED(evt)) << " "
+				<< (scope[0].get_min()) << " " << (scope[0].get_min() * factor) << std::endl;
+	}
+#endif
+					
+			if( LB_CHANGED(evt) && FAILED(scope[1].set_min( scope[0].get_min() * factor )) )
+				wiped = FAILURE(1); 
+			if( UB_CHANGED(evt) && FAILED(scope[1].set_max( scope[0].get_max() * factor )) ) 
+				wiped = FAILURE(1); 
+		} else {
+			if( UB_CHANGED(evt) && FAILED(scope[1].set_min( scope[0].get_max() * factor )) )
+				wiped = FAILURE(1); 
+			if( LB_CHANGED(evt) && FAILED(scope[1].set_max( scope[0].get_min() * factor )) )
+				wiped = FAILURE(1); 
+		}
+	}
+	
+#ifdef _DEBUG_FACTOR
+	if(_DEBUG_FACTOR) {
+		std::cout << scope[0].get_domain() << " * " << factor << " = " << scope[1].get_domain() << std::endl << wiped << std::endl;
+	}
+#endif
+	
   
   return wiped;
 }
 
 std::ostream& Mistral::PredicateFactor::display(std::ostream& os) const {
-  os << scope[1]/*.get_var()*/ << " == (" << scope[0]/*.get_var()*/ << " * " << factor << ")";
+  os << scope[1]/*.get_var()*/ << " == (" << scope[0]/*.get_var()*/ << " * " << factor << "):" << id;
   return os;
 }
 

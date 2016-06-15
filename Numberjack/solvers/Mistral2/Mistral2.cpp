@@ -9,7 +9,7 @@
  ********************     EXPRESSION        *******************
  **************************************************************/
 
-//#define _DEBUGWRAP true
+// #define _DEBUGWRAP true
 
 Mistral2_Expression::Mistral2_Expression()
 {
@@ -1872,6 +1872,7 @@ void Mistral2Solver::setRandomSeed(const int seed)
 #endif
 
   solver->parameters.seed = seed;
+	solver->initialise_random_seed(seed);
 
 }
 

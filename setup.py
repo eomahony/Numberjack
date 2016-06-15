@@ -72,17 +72,17 @@ class njbuild_ext(_build_ext):
         _build_ext.run(self)
 
         if disabled_extensions:
-            print("The following solvers could not be located " \
-                "on your system so their interface has been disabled:", \
-                ", ".join(disabled_extensions), file=sys.stderr)
+            print("The following solvers could not be located "
+                  "on your system so their interface has been disabled:",
+                  ", ".join(disabled_extensions), file=sys.stderr)
 
         if self.failedsolvernames:
-            print("Failed to build the following interfaces " \
-                "(details are above):", ", ".join(self.failedsolvernames), file=sys.stderr)
+            print("Failed to build the following interfaces "
+                  "(details are above):", ", ".join(self.failedsolvernames), file=sys.stderr)
 
         if self.builtsolvernames:
-            print("Successfully built solver interfaces for", \
-                ", ".join(self.builtsolvernames))
+            print("Successfully built solver interfaces for",
+                  ", ".join(self.builtsolvernames))
 
     def build_extension(self, ext):
         try:
@@ -265,8 +265,11 @@ toulbar2 = Extension(
         ('LONGLONG_COST', None),
         ('WIDE_STRING', None),
         ('LONGDOUBLE_PROB', None),
-        ('NARYCHAR', None)],
-    extra_compile_args=EXTRA_COMPILE_ARGS + ['-Wno-overloaded-virtual'],
+        ('NARYCHAR', None),
+    ],
+    extra_compile_args=EXTRA_COMPILE_ARGS + [
+        '-Wno-overloaded-virtual', '-Wno-mismatched-tags', '-Wno-unused-private-field',
+    ],
     extra_link_args=EXTRA_LINK_ARGS,
 )
 extensions.append(toulbar2)
@@ -596,15 +599,15 @@ solversubsetnames = set()
 while SOLVERARG in sys.argv:
     pos = sys.argv.index(SOLVERARG)
     if pos + 1 >= len(sys.argv):
-        print("Error: you should specify a solver or list of " \
-            "solvers to compile with the %s option." % SOLVERARG, file=sys.stderr)
+        print("Error: you should specify a solver or list of "
+              "solvers to compile with the %s option." % SOLVERARG, file=sys.stderr)
         sys.exit(1)
 
     solvernames = [x.strip() for x in sys.argv[pos + 1].split(",")]
     for s in solvernames:
         if s not in allsolvers:
-            print("Error: the solver '%s' is not known, please" \
-                " use one of: %s" % (s, ", ".join(list(allsolvers.keys()))), file=sys.stderr)
+            print("Error: the solver '%s' is not known, please"
+                  " use one of: %s" % (s, ", ".join(list(allsolvers.keys()))), file=sys.stderr)
             sys.exit(1)
         solversubsetnames.add(s)
     del sys.argv[pos:pos + 2]
@@ -634,7 +637,7 @@ lic = "License :: OSI Approved :: " \
 
 setup(
     name='Numberjack',
-    version='1.1.5-dev',
+    version='1.2.0',
     author='Numberjack Developers',
     packages=['Numberjack', 'Numberjack.solvers'],
     ext_modules=extensions,

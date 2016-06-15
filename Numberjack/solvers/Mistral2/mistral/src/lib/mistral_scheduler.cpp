@@ -2157,7 +2157,7 @@ void SchedulingSolver::dichotomic_search()
 
 
 	//propagate the bounds, with respect to the initial upper bound
-	Outcome result = (IS_OK(propagate()) ? UNKNOWN : UNSAT);
+	Outcome result = (propagate() ? UNKNOWN : UNSAT);
 
   
 	////////// dichotomic search ///////////////

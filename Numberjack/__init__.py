@@ -1,8 +1,8 @@
-# Copyright 2009 - 2014 Insight Centre for Data Analytics, UCC
+# Copyright 2009 - 2016 Insight Centre for Data Analytics, UCC
 from __future__ import print_function, division
 
 
-UNSAT, SAT, UNKNOWN, LIMITOUT = 0, 1, 2, 3
+UNSAT, SAT, UNKNOWN, LIMITOUT = 0, 1, 2, 4
 LUBY, GEOMETRIC = 0, 1
 MAXCOST = 100000000
 
@@ -2172,11 +2172,50 @@ class OrderedSum(Predicate):
         Predicate.close(self)
 
     def __str__(self):
-        #print len(self.children)
         op = str(self.parameters[0]) + ' <= ('+(self.children[0].__str__())
         for i in range(1, len(self.children)):
             op += (' + ' + self.children[i].__str__())
         return op + ') <= ' + str(self.parameters[1])
+
+
+class Product(Predicate):
+    """
+    Syntactic sugar for a product expression on a list of :class:`.Expression`.
+    `Product([x, y, z])` is equivalent to writing `(x * y * z)` but is more
+    flexible in that it excepts a variable number of expressions.
+
+    This expression is not supported by any solver at the moment, so it will be
+    decomposed to chained product expressions.
+
+    :param vars: the variables or expressions which will be multiplied by each other.
+        This should be a :class:`.VarArray` or `list` with at least one item.
+
+    .. note::
+
+        Cannot be used as a top-level constraint, only as a sub-expression.
+
+    .. versionadded:: 1.2.0
+    """
+
+    def __init__(self, vars):
+        Predicate.__init__(self, vars, "Product")
+        self.lb = None
+        self.ub = None
+
+    def __str__(self):
+        return "(%s)" % " * ".join(map(str, self.children))
+
+    def decompose(self):
+        if len(self.children) == 0:
+            return []
+        elif len(self.children) == 1:
+            return [self.children[0]]
+        elif len(self.children) == 2:
+            return [self.children[0] * self.children[1]]
+        else:
+            from operator import mul
+            ret = [reduce(mul, self.children[1:], self.children[0])]
+            return ret
 
 
 class AllDiff(Predicate):

@@ -71,6 +71,8 @@ public:
 		      const unsigned int base = 32, 
 		      const double factor = 1.3333333,
 		      const double decay = 0.0);
+  int startNewSearch();
+  int getNextSolution();
 
   void reset(bool full);
   bool propagate();

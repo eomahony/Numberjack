@@ -371,6 +371,27 @@ int MiniSatSolver::solve()
  return ret;
 }
 
+int MiniSatSolver::startNewSearch() {
+    return is_sat();
+}
+
+int MiniSatSolver::getNextSolution() {
+    result = SimpSolver::solve(true, true);
+    if(result == l_True) {
+        store_solution();
+
+        // Forbid the current assignment in future solutions
+        vec<Lit> blocking_clause;
+        for(int i=1; i<nVars(); ++i) {
+            bool sign = modelValue(Lit(i)).toInt() == 1;
+            blocking_clause.push(Lit(i, sign));
+        }
+        cancelUntil(init_level);
+        Solver::addClause(blocking_clause);
+    }
+    return result == l_True;
+}
+
 bool MiniSatSolver::propagate()
 {
   conflict_clause = NULL;
@@ -547,7 +568,7 @@ void MiniSatSolver::setRandomized(const int degree)
 
 void MiniSatSolver::setRandomSeed(const int seed)
 {
-  setRandomSeed((double)seed);
+  SimpSolver::setRandomSeed((double)seed);
 }
 
 bool MiniSatSolver::is_sat()

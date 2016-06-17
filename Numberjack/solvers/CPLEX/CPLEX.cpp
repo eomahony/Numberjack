@@ -152,7 +152,15 @@ void CPLEXSolver::setRandomSeed(const int seed) {
     cplex->setParam(IloCplex::RandomSeed, seed);
 }
 
-void CPLEXSolver::setWorkMem(const int mb){
+void CPLEXSolver::setMIPEmphasis(const int emphasis) {
+    if(emphasis >= 0 && emphasis <= 4) {
+        cplex->setParam(IloCplex::MIPEmphasis, emphasis);
+    } else {
+        std::cerr << "Warning: unknown value " << emphasis << " for MIPEmphasis, ignoring." << std::endl;
+    }
+}
+
+void CPLEXSolver::setWorkMem(const int mb) {
     cplex->setParam(IloCplex::WorkMem, mb);
 }
 

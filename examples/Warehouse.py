@@ -87,7 +87,7 @@ class WareHouseParser(object):
         self.Capacity = [4 for val in range(self.NumberOfWarehouses)]
 
 
-default = {'solver': 'Mistral', 'data': 'data/cap44.dat.txt', 'cutoff': 50000, 'verbose': 1, 'tcutoff': 30}
+default = {'solver': 'Mistral', 'data': 'data/cap44.dat', 'cutoff': 50000, 'verbose': 1, 'tcutoff': 30}
 
 if __name__ == '__main__':
     param = input(default)

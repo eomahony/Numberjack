@@ -3608,6 +3608,18 @@ class NBJ_STD_Solver(object):
                 " setting the work memory.")
         return None
 
+    def setMIPEmphasis(self, emphasis):
+        """
+        Set the MIP emphasis, only used for CPLEX.
+        """
+        if hasattr(self.solver, 'setMIPEmphasis'):
+            return self.solver.setMIPEmphasis(emphasis)
+        else:
+            raise UnsupportedSolverFunction(
+                self.Library, "setMIPEmphasis", "This solver does not support"
+                " setting the MIP emphasis.")
+        return None
+
     def getWorkMem(self):
         """
         Get the limit of working memory, only used for CPLEX.

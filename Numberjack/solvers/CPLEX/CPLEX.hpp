@@ -38,6 +38,7 @@ public:
     void setVerbosity(const int degree);
     void setRandomSeed(const int seed);
     void setWorkMem(const int mb);
+    void setMIPEmphasis(const int emphasis);
     int getWorkMem();
 
     bool is_opt();

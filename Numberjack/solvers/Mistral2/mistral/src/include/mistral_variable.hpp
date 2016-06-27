@@ -1560,7 +1560,7 @@ namespace Mistral {
   public:
 
     union {
-      int domain_type;
+      unsigned int domain_type;
       int* bool_domain;
     };
     union {

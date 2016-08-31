@@ -25,7 +25,7 @@ public:
 
     ~SameConstraint() {}
 
-    Cost evalOriginal (String s);
+    Cost evalOriginal(const String& s);
     /*void addToGroup(int gp, Variable *var) {
 			for (int i=0;i<arity_;i++) {
 				if (getVar(i) == var) {
@@ -38,7 +38,7 @@ public:
 		void addToGroupX(Variable *var) {addToGroup(0, var);}
 		void addToGroupY(Variable *var) {addToGroup(1, var);}
      */
-    string getName() {return "same constraint";}
+    string getName() {return "ssame";}
     void read(istream &file);
     void addVariablesToGroup(EnumeratedVariable* variable, int groupID) {
 
@@ -54,7 +54,7 @@ public:
         for (int g=0;g<2;g++) sort(group[g].begin(), group[g].end());
     }
 
-    void print(ostream& os);
+//    void print(ostream& os);
     void dump(ostream& os, bool original = true);
 };
 

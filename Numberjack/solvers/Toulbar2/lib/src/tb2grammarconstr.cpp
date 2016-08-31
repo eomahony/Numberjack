@@ -92,6 +92,19 @@ void GrammarConstraint::read(istream & file) {
 
 }
 
+void GrammarConstraint::dump(ostream& os, bool original)
+{
+    if (original) {
+        os << arity_;
+        for(int i = 0; i < arity_;i++) os << " " << scope[i]->wcspIndex;
+    } else {
+        os << nonassigned;
+        for(int i = 0; i < arity_; i++) if (scope[i]->unassigned()) os << " " << scope[i]->getCurrentVarId();
+    }
+    os << " -1 sgrammardp " << ((mode == VAR)?"var":"weight") << " " << def << endl;
+    cfg.dump(os, original);
+}
+
 void GrammarConstraint::initMemoization() {
 
     if (mode == VAR) {
@@ -150,7 +163,7 @@ Cost GrammarConstraint::minCostOriginal(int var, Value val, bool changed) {
     return minCost(var, val, changed).first;
 }
 
-Cost GrammarConstraint::eval(String s) {
+Cost GrammarConstraint::eval(const String& s) {
     int n = arity();
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < cfg.getNumTerminals(); j++) {

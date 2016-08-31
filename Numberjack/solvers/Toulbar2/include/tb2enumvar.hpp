@@ -38,7 +38,7 @@ public:
     EnumeratedVariable(WCSP *wcsp, string n, Value iinf, Value isup);
     EnumeratedVariable(WCSP *wcsp, string n, Value *d, int dsize);
 
-    bool enumerated() const {return true;}
+    bool enumerated() const FINAL {return true;}
 
     unsigned int getDomainInitSize() const {return domain.getInitSize();}
 #if defined(WCSPFORMATONLY) && !defined(NUMBERJACK)
@@ -49,37 +49,37 @@ public:
     Value toValue(unsigned int idx) const {return domain.toValue(idx);}
 #endif
     unsigned int toCurrentIndex(Value v) {return domain.toCurrentIndex(v);} // return value position in current domain
-    unsigned int getDomainSize() const {
+    unsigned int getDomainSize() const FINAL {
         if (assigned()) return 1; 
         else return domain.getSize(); ///< \warning can return a negative size in the case of a wrong list utilization
     }
     void getDomain(Value *array);
     void getDomainAndCost(ValueCost *array);
 
-    bool canbe(Value v) const {return v >= inf && v <= sup && domain.canbe(v);}
+    bool canbe(Value v) const FINAL {return v >= inf && v <= sup && domain.canbe(v);}
     bool canbeAfterElim(Value v) const {return domain.canbe(v);}
-    bool cannotbe(Value v) const {return v < inf || v > sup || domain.cannotbe(v);}
+    bool cannotbe(Value v) const FINAL {return v < inf || v > sup || domain.cannotbe(v);}
 
     virtual void increase(Value newInf, bool isDecision = false);
     virtual void decrease(Value newSup, bool isDecision = false);
     virtual void remove(Value value, bool isDecision = false);
     virtual void assign(Value newValue, bool isDecision = false);
     void assignWhenEliminated(Value newValue);
-    void assignLS(Value newValue, set<Constraint *>& delayedCtrs);
+    void assignLS(Value newValue, ConstraintSet& delayedCtrs);
 
     virtual void project(Value value, Cost cost, bool delayed = false); ///< \param delayed if true, it does not check for forbidden cost/value and let node consistency do the job later
     virtual void extend(Value value, Cost cost);
     virtual void extendAll(Cost cost);
-    Value getSupport() const {return support;}
+    Value getSupport() const FINAL {return support;}
     void setSupport(Value val) {support = val;}    
-    inline Cost getCost(const Value value) const {
+    inline Cost getCost(const Value value) const FINAL {
         return costs[toIndex(value)] - deltaCost;
     }
     Cost getBinaryCost(ConstraintLink c,    Value myvalue, Value itsvalue);
     Cost getBinaryCost(BinaryConstraint* c, Value myvalue, Value itsvalue);
 
-    Cost getInfCost() const {return costs[toIndex(getInf())] - deltaCost;}
-    Cost getSupCost() const {return costs[toIndex(getSup())] - deltaCost;}
+    Cost getInfCost() const FINAL {return costs[toIndex(getInf())] - deltaCost;}
+    Cost getSupCost() const FINAL {return costs[toIndex(getSup())] - deltaCost;}
     void projectInfCost(Cost cost);
     void projectSupCost(Cost cost);
 
@@ -126,7 +126,7 @@ public:
 
         Value operator*() const {return *diter;}
 
-        iterator &operator++() {    // Prefix form
+        iterator &operator++() {    // Prefix form //TODO: add a const_iterator to speed-up iterations (should be inlined?)
             if (var->unassigned()) ++diter;
             else {
                 if (*diter < var->getValue()) diter = var->domain.lower_bound(var->getValue());

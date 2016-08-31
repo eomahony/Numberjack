@@ -202,7 +202,7 @@ WeightedRegular::addToCostFunctionNetwork(WCSP* wcsp) {
     int unsigned current_var_number = wcsp->numberOfVariables();
     int unsigned q0 = current_var_number;
     if ( ToulBar2::verbose > 1 ) 	{
-        cout << "DEBUG>> wregular found : inital number of variables before creation = " <<  wcsp->numberOfVariables() <<endl;
+        cout << "DEBUG>> wregular found : initial number of variables before creation = " <<  wcsp->numberOfVariables() <<endl;
         cout << "DEBUG>> wregular Automatum Total number of states: " <<  automaton->getNbStates() <<endl;
         cout << "DEBUG>> wregular Initial states number: " << automaton->getInitialStates().size()  <<endl;
         cout << "DEBUG>> wregular add new variable from " << q0 <<" to "<<  current_var_number+arity+1 <<endl;
@@ -235,9 +235,8 @@ WeightedRegular::addToCostFunctionNetwork(WCSP* wcsp) {
         int unsigned domsize = automaton->getNbStates()-1;
         string varname = to_string(v+q0);
 
-        int theindex = -1;
-        theindex=wcsp->makeEnumeratedVariable(varname,(Value) 0,(Value) domsize);			// add qi variable
-        assert(theindex=v+current_var_number);
+        DEBONLY(int theindex =) wcsp->makeEnumeratedVariable(varname,(Value) 0,(Value) domsize);			// add qi variable
+        assert(theindex == v+ (int) current_var_number);
         if ( ToulBar2::verbose > 1 ) cout << "DEBUG>> wregular add varname =" << varname <<"=> rank "<<  wcsp->numberOfVariables() << " domain = " << domsize+1 << endl;
     }
     int unsigned q_last = wcsp->numberOfVariables() -1 ;
@@ -1006,7 +1005,7 @@ WeightedAllDifferent::WeightedAllDifferent(unsigned int _arity, int* _scope) : D
 
 WeightedAllDifferent::WeightedAllDifferent(unsigned int _arity, int* _scope, istream &file) : DecomposableGlobalCostFunction(_arity,_scope) {
     file >> semantics >> baseCost;
-    display();
+    //display();
 }
 
 WeightedAllDifferent::~WeightedAllDifferent() {}
@@ -1377,7 +1376,7 @@ WeightedSameGcc::addToCostFunctionNetwork(WCSP* wcsp) {
                 if (gap < 0) gap *=-1;
                 Cost currentCost = 0;
                 if (gap && semantics == "hard") currentCost = baseCost;
-                if (semantics == "lin" || semantics == "var") 		currentCost = baseCost*gap;
+                if (semantics == "lin" || semantics == "dec") 		currentCost = baseCost*gap;
                 if (semantics == "quad") 		currentCost = baseCost*gap*gap;
                 binaryCosts[position] = currentCost;
 
@@ -1406,7 +1405,7 @@ WeightedSameGcc::addToCostFunctionNetwork(WCSP* wcsp) {
                     Cost currentCost = 0;
                     int gap = max( 0 , max( int(lb - count), int(count - ub) ) );
                     if (gap && semantics == "hard") currentCost = baseCost;
-                    if (semantics == "lin" || semantics == "val") 		currentCost = baseCost*gap;
+                    if (semantics == "lin" || semantics == "dec") 		currentCost = baseCost*gap;
                     if (semantics == "quad") 		currentCost = baseCost*gap*gap;
                     unaryCosts[count] = currentCost;
                 }
@@ -1418,7 +1417,7 @@ WeightedSameGcc::addToCostFunctionNetwork(WCSP* wcsp) {
                     Cost currentCost = 0;
                     int gap = max( 0 , max( int(lb - count), int(count - ub) ) );
                     if (gap && semantics == "hard") currentCost = baseCost;
-                    if (semantics == "lin" || semantics == "val") 		currentCost = baseCost*gap;
+                    if (semantics == "lin" || semantics == "dec") 		currentCost = baseCost*gap;
                     if (semantics == "quad") 		currentCost = baseCost*gap*gap;
                     unaryCosts[count] = currentCost;
                 }

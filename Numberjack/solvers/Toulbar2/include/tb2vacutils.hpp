@@ -138,8 +138,8 @@ private:
 
 public:
 
-    VACBinaryConstraint (WCSP *wcsp, EnumeratedVariable *xx, EnumeratedVariable *yy, vector<Cost> &tab, StoreStack<Cost, Cost> *storeCost);
-    VACBinaryConstraint (WCSP *wcsp, StoreStack<Cost, Cost> *storeCost);
+    VACBinaryConstraint (WCSP *wcsp, EnumeratedVariable *xx, EnumeratedVariable *yy, vector<Cost> &tab);
+    VACBinaryConstraint (WCSP *wcsp);
     ~VACBinaryConstraint ();
 
     void VACfillElimConstr();
@@ -186,8 +186,8 @@ private:
 
 public:
 
-    VACTernaryConstraint (WCSP *wcsp, EnumeratedVariable *xx, EnumeratedVariable *yy, EnumeratedVariable *zz, BinaryConstraint *xy, BinaryConstraint *xz, BinaryConstraint *yz, vector<Cost> &tab, StoreStack<Cost, Cost> *storeCost);
-    VACTernaryConstraint (WCSP *wcsp, StoreStack<Cost, Cost> *storeCost);
+    VACTernaryConstraint (WCSP *wcsp, EnumeratedVariable *xx, EnumeratedVariable *yy, EnumeratedVariable *zz, BinaryConstraint *xy, BinaryConstraint *xz, BinaryConstraint *yz, vector<Cost> &tab);
+    VACTernaryConstraint (WCSP *wcsp);
     ~VACTernaryConstraint ();
 
     int getK (VACVariable* var, Value v, Long timeStamp);

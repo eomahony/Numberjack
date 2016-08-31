@@ -15,14 +15,13 @@
 
 Variable::Variable(WCSP *w, string n, Value iinf, Value isup) : WCSPLink(w,w->numberOfVariables()), name(n), dac(w->numberOfVariables()),
         timestamp(-1), pos(-1),
-        inf(iinf, &w->getStore()->storeValue), sup(isup, &w->getStore()->storeValue), 
-        constrs(&w->getStore()->storeConstraint),
-        //triangles(&w->getStore()->storeConstraint),
-        maxCost(MIN_COST, &w->getStore()->storeCost), maxCostValue(iinf, &w->getStore()->storeValue), 
-        NCBucket(-1, &w->getStore()->storeInt),
-        cluster(-1, &w->getStore()->storeInt)
+        inf(iinf), sup(isup), constrs(&Store::storeConstraint),
+        //triangles(&Store::storeConstraint),
+        maxCost(MIN_COST), maxCostValue(iinf), 
+        NCBucket(-1),
+        cluster(-1)
 {
-    if (w->getStore()->getDepth() > 0) {
+    if (Store::getDepth() > 0) {
         cerr << "You cannot create a variable during the search!" << endl;
         exit(EXIT_FAILURE);
     }
@@ -129,7 +128,7 @@ void Variable::deconnect(DLink<ConstraintLink> *link, bool reuse)
                                 getTrueDegree() <= ToulBar2::elimDegree_preprocessing_))) queueEliminate();
     }
     if (reuse) {
-        assert(wcsp->getStore()->getDepth()==0);
+        assert(Store::getDepth()==0);
         link->prev = NULL;
         link->next = NULL;
     }
@@ -157,6 +156,26 @@ int Variable::getTrueDegree()
     }
     if (scope1.size() >= 1) return scope1.size() - 1;
     else return 0;
+}
+
+Double Variable::getMaxElimSize()
+{
+    if (getDegree() == 0 ) return getDomainSize();
+    if (getDegree() == 1 ) return (*constrs.begin()).constr->size();
+    //  if (constrs.getSize() >= ToulBar2::weightedDegree) return getDegree(); ///\warning returns an approximate degree if the constraint list is too large!
+    //    TSCOPE scope1,scope2,scope3;
+    map<int,unsigned int> scope1;
+    for (ConstraintList::iterator iter=constrs.begin(); iter != constrs.end(); ++iter) {
+        if((*iter).constr->isSep()) continue;
+        for(int k=0; k < (*iter).constr->arity(); k++) {
+            scope1[(*iter).constr->getVar(k)->wcspIndex] = (*iter).constr->getVar(k)->getDomainSize();
+        }
+    }
+    Double sz = 1.;
+    for (map<int,unsigned int>::iterator iter=scope1.begin(); iter != scope1.end(); ++iter) {
+        sz *= (*iter).second;
+    }
+    return sz;
 }
 
 Long Variable::getWeightedDegree()
@@ -259,7 +278,7 @@ BinaryConstraint* Variable::getConstr( Variable* x )
     BinaryConstraint* ctr2;
     TernaryConstraint* ctr3;
     for (ConstraintList::iterator iter=constrs.begin(); iter != constrs.end(); ++iter) {
-        if((*iter).constr->isSep()) continue;
+        if((*iter).constr->isSep() || (*iter).constr->isGlobal()) continue;
 
         if ((*iter).constr->arity() == 2) {
             ctr2 = (BinaryConstraint*) (*iter).constr;
@@ -286,7 +305,7 @@ BinaryConstraint* Variable::getConstr( Variable* x, int cid )
     BinaryConstraint* ctr2;
     TernaryConstraint* ctr3;
     for (ConstraintList::iterator iter=constrs.begin(); iter != constrs.end(); ++iter) {
-        if((*iter).constr->isSep()) continue;
+        if((*iter).constr->isSep() || (*iter).constr->isGlobal()) continue;
 
         if ((*iter).constr->arity() == 2) {
             ctr2 = (BinaryConstraint*) (*iter).constr;
@@ -318,7 +337,7 @@ TernaryConstraint* Variable::getConstr( Variable* x, Variable* y )
 {
     TernaryConstraint* ctr;
     for (ConstraintList::iterator iter=constrs.begin(); iter != constrs.end(); ++iter) {
-        if((*iter).constr->isSep()) continue;
+        if((*iter).constr->isSep() || (*iter).constr->isGlobal()) continue;
 
         if ((*iter).constr->arity() == 3) {
             ctr = (TernaryConstraint*) (*iter).constr;
@@ -332,7 +351,7 @@ TernaryConstraint* Variable::getConstr( Variable* x, Variable* y, int cid )
 {
     TernaryConstraint* ctr = NULL;
     for (ConstraintList::iterator iter=constrs.begin(); iter != constrs.end(); ++iter) {
-        if((*iter).constr->isSep()) continue;
+        if((*iter).constr->isSep() || (*iter).constr->isGlobal()) continue;
 
         if ((*iter).constr->arity() == 3) {
             ctr = (TernaryConstraint*) (*iter).constr;
@@ -373,7 +392,7 @@ double Variable::strongLinkedby( Variable* &strvar,  TernaryConstraint* &tctr1ma
     TernaryConstraint *tctr1 = NULL;
 
     for(ConstraintList::iterator iter=constrs.begin(); iter != constrs.end(); ++iter) {
-        if((*iter).constr->isSep()) continue;
+        if((*iter).constr->isSep() || (*iter).constr->isGlobal()) continue;
         if((*iter).constr->arity() == 2) {
             BinaryConstraint* bctr = (BinaryConstraint*) (*iter).constr;
             double bintight = bctr->getTightness();

@@ -59,6 +59,24 @@ private:
             }
         }
 
+        void dump(ostream& os, bool original) {
+            assert(original); //TODO: case original is false
+            os << nstate << endl;
+            os << init.size();
+            for (vector<int>::iterator i = init.begin(); i != init.end(); i++) os << " " << *i;
+            os << endl;
+            os << final.size();
+            for (vector<int>::iterator i = final.begin(); i != final.end(); i++) os << " " << *i;
+            os << endl;
+            int nbtrans = 0;
+            for (int s = 0; s < nstate; s++) nbtrans += transition[s].size();
+            os << nbtrans << endl;
+            for (int s = 0; s < nstate; s++) {
+                for (vector<pair<int, int> >::iterator i = transition[s].begin(); i != transition[s].end(); i++)
+                    os << s << " " << i->first << " " << i->second << endl;
+            }
+        }
+
         void print() {
             cout << "start state : ";
             for (vector<int>::iterator i = init.begin(); i != init.end(); i++) cout << *i << " ";
@@ -122,12 +140,15 @@ public:
     RegularDPConstraint(WCSP * wcsp, EnumeratedVariable ** scope, int arity);
     virtual ~RegularDPConstraint();
 
-    Cost eval(String s);    
+    Cost eval(const String& s);
     void read(istream & file);
     WeightedAutomaton* getWeightedAutomaton() {return &dfa;}
     string getName() {
         return "sregulardp";
     }
+
+    void dump(ostream& os, bool original);
+    void print(ostream& os);
 };
 
 #endif /* TB2REGULARDPCONSTR_HPP_ */

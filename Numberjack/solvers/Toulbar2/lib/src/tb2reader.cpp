@@ -123,11 +123,13 @@ typedef struct {
  *     - sregulardp var \e cost \e nb_states \e nb_initial_states (\e state)* \e nb_final_states (\e state)* \e nb_transitions (\e start_state \e symbol_value \e end_state)* to express a soft regular constraint with a variable-based (\e var keyword) cost semantic with a given \e cost per violation followed by the definition of a deterministic finite automaton with number of states, list of initial and final states, and list of state transitions where symbols are domain values
  *     - sgrammar|sgrammardp var|weight \e cost \e nb_symbols \e nb_values \e start_symbol \e nb_rules ((0 \e terminal_symbol \e value)|(1 \e nonterminal_in \e nonterminal_out_left \e nonterminal_out_right)|(2 \e terminal_symbol \e value \e weight)|(3 \e nonterminal_in \e nonterminal_out_left \e nonterminal_out_right \e weight))* to express a soft/weighted grammar in Chomsky normal form
  *     - samong|samongdp var \e cost \e lower_bound \e upper_bound \e nb_values (\e value)* to express a soft among constraint to restrict the number of variables taking their value into a given set of values
+ *     - salldiffdp var \e cost to express a soft alldifferent constraint with variable-based (\e var keyword) cost semantic with a given \e cost per violation (decomposes into samongdp cost functions)
+ *     - sgccdp var \e cost \e nb_values (\e value \e lower_bound \e upper_bound)* to express a soft global cardinality constraint with variable-based (\e var keyword) cost semantic with a given \e cost per violation and for each value its lower and upper bound (decomposes into samongdp cost functions)
  *     - max|smaxdp \e defCost \e nbtuples (\e variable \e value \e cost)* to express a weighted max cost function to find the maximum cost over a set of unary cost functions associated to a set of variables (by default, \e defCost if unspecified)
- *     - smst|smstdp hard to express a spanning tree hard constraint where each variable is assigned to its parent variable index in order to build a spanning tree (the root being assigned to itself)
+ *     - MST|smstdp hard to express a spanning tree hard constraint where each variable is assigned to its parent variable index in order to build a spanning tree (the root being assigned to itself)
  *     .
  * - Global cost functions using a cost function network-based propagator:
- *     - wregular \e nb_states \e nb_initial_states (\e state and cost enum)* \e nb_final_states (\e state and cost enum)* \e nb_transitions (\e start_state \e symbol_value \e end_state \e cost)* to express a wregular constraint with variable-based cost semantic with a given \e cost per violation followed by the definition of a deterministic finite automaton with number of states, list of initial and final states, and list of state transitions where symbols are domain values
+ *     - wregular \e nb_states \e nb_initial_states (\e state and cost)* \e nb_final_states (\e state and cost)* \e nb_transitions (\e start_state \e symbol_value \e end_state \e cost)* to express a weighted regular constraint with weights on initial states, final states, and transitions, followed by the definition of a deterministic finite automaton with number of states, list of initial and final states with their costs, and list of weighted state transitions where symbols are domain values
  *     - walldiff hard|lin|quad \e cost to express a soft alldifferent constraint as a set of wamong hard constraint (\e hard keyword) or decomposition-based (\e lin and \e quad keywords) cost semantic with a given \e cost per violation
  *     - wgcc hard|lin|quad \e cost \e nb_values (\e value \e lower_bound \e upper_bound)* to express a soft global cardinality constraint as either a hard constraint (\e hard keyword) or with decomposition-based (\e lin and \e quad keyword) cost semantic with a given \e cost per violation and for each value its lower and upper bound
  *     - wsame hard|lin|quad \e cost to express a permutation constraint on two lists of variables of equal size (implicitly concatenated in the scope) using implicit decomposition-based cost semantic
@@ -166,7 +168,7 @@ typedef struct {
  * - soft_grammar({x0,x1,x2,x3}) with hard cost (1000) producing well-formed parenthesis expressions: \code 4 0 1 2 3 -1 sgrammardp var 1000 4 2 0 6 1 0 0 0 1 0 1 2 1 0 1 3 1 2 0 3 0 1 0 0 3 1 \endcode
  * - soft_among({x1,x2,x3,x4}) with hard cost (1000) if \f$\sum_{i=1}^4(x_i \in \{1,2\}) < 1\f$ or \f$\sum_{i=1}^4(x_i \in \{1,2\}) > 3\f$: \code 4 1 2 3 4 -1 samongdp var 1000 1 3 2 1 2 \endcode
  * - soft max({x0,x1,x2,x3}) with cost equal to \f$\max_{i=0}^3((x_i!=i)?1000:(4-i))\f$: \code 4 0 1 2 3 -1 smaxdp 1000 4 0 0 4 1 1 3 2 2 2 3 3 1 \endcode
- * - wregular({x0,x1,x2,x3}) with DFA (a(ba)*c*): \code 4 0 1 2 3 -1 wregular 3 1 0 0 1 2 0 9 0 0 1 0 0 1 1 1 0 2 1 1 1 1 0 0 1 0 0 1 1 2 0 1 1 2 2 0 1 0 2 1 1 1 2 1 \endcode
+ * - wregular({x0,x1,x2,x3}) with DFA (0(10)*2*): \code 4 0 1 2 3 -1 wregular 3 1 0 0 1 2 0 9 0 0 1 0 0 1 1 1 0 2 1 1 1 1 0 0 1 0 0 1 1 2 0 1 1 2 2 0 1 0 2 1 1 1 2 1 \endcode
  * - wamong ({x1,x2,x3,x4}) with hard cost (1000) if \f$\sum_{i=1}^4(x_i \in \{1,2\}) < 1\f$ or \f$\sum_{i=1}^4(x_i \in \{1,2\}) > 3\f$: \code 4 1 2 3 4 -1 wamong hard 1000 2 1 2 1 3 \endcode
  * - wvaramong ({x1,x2,x3,x4}) with hard cost (1000) if \f$\sum_{i=1}^3(x_i \in \{1,2\}) \neq x_4\f$: \code 4 1 2 3 4 -1 wvaramong hard 1000 2 1 2 \endcode
  * - woverlap({x1,x2,x3,x4}) with hard cost (1000) if \f$\sum_{i=1}^2(x_i = x_{i+2}) \geq 1\f$: \code 4 1 2 3 4 -1 woverlap hard 1000 < 1\endcode
@@ -351,10 +353,7 @@ void WCSP::read_wcsp(const char *fileName)
         file >> domsize;
         if(domsize > nbvaltrue) nbvaltrue = domsize;
         if (ToulBar2::verbose >= 3) cout << "read variable " << i << " of size " << domsize << endl;
-        int theindex = -1;
-
-        if (domsize >= 0) theindex = makeEnumeratedVariable(varname,0,domsize-1);
-        else theindex = makeIntervalVariable(varname,0,-domsize-1);
+        DEBONLY(int theindex = ) ((domsize >= 0) ? makeEnumeratedVariable(varname,0,domsize-1) : makeIntervalVariable(varname,0,-domsize-1));
         assert(theindex == i);
     }
 
@@ -388,7 +387,6 @@ void WCSP::read_wcsp(const char *fileName)
                 else { // monolithic global cost functions
                     postGlobalConstraint(scopeIndex, arity, gcname, file, &nbconstr);
                 }
-
             } else {
                 if(arity > MAX_ARITY)  { cerr << "Nary cost functions of arity > " << MAX_ARITY << " not supported" << endl; exit(EXIT_FAILURE); }
                 file >> ntuples;
@@ -406,7 +404,7 @@ void WCSP::read_wcsp(const char *fileName)
                 {
                     Cost tmpcost = defval*K;
                     if(CUT(tmpcost, getUb()) && (tmpcost < MEDIUM_COST*getUb()) && getUb()<(MAX_COST / MEDIUM_COST)) tmpcost *= MEDIUM_COST;
-                    int naryIndex = postNaryConstraintBegin(scopeIndex,arity,tmpcost);
+                    int naryIndex = postNaryConstraintBegin(scopeIndex,arity,tmpcost,ntuples);
                     NaryConstraint *nary = (NaryConstraint *) constrs[naryIndex];
 
                     Char buf[MAX_ARITY];
@@ -442,14 +440,7 @@ void WCSP::read_wcsp(const char *fileName)
                     if (ToulBar2::preprocessNary>0) {
                         Cost minc = nary->getMinCost();
                         if (minc > MIN_COST) {
-                            Cost defcost = nary->getDefCost();
-                            if (CUT(defcost, minc)) nary->setDefCost(defcost - minc);
-                            String tuple;
-                            Cost cost;
-                            nary->first();
-                            while (nary->next(tuple,cost)) {
-                                nary->setTuple(tuple, cost-minc, NULL);
-                            }
+                            nary->addtoTuples(-minc);
                             if (ToulBar2::verbose >= 2) cout << "IC0 performed for cost function " << nary << " with initial minimum cost " << minc << endl;
                             inclowerbound += minc;
                         }
@@ -522,7 +513,13 @@ void WCSP::read_wcsp(const char *fileName)
                 scopeIndex[2] = k;
                 string gcname;
                 file >> gcname;
-                postGlobalConstraint(scopeIndex, arity, gcname, file, &nbconstr);
+                if (gcname.substr(0,1) == "w") { // global cost functions decomposed into a cost function network
+                    DecomposableGlobalCostFunction* decomposableGCF = DecomposableGlobalCostFunction::FactoryDGCF(gcname, arity, scopeIndex, file);
+                    decomposableGCF->addToCostFunctionNetwork(this);
+                }
+                else { // monolithic global cost functions
+                    postGlobalConstraint(scopeIndex, arity, gcname, file, &nbconstr);
+                }
             }
         } else if (arity == 2) {
             maxarity = max(maxarity,arity);
@@ -617,8 +614,16 @@ void WCSP::read_wcsp(const char *fileName)
                     file >> funcparam6;
                     postSpecialDisjunction(i,j,funcparam1,funcparam2,funcparam3,funcparam4,funcparam5,funcparam6);
                 } else {
-                    cerr << "Error: function " << funcname << " not implemented!" << endl;
-                    exit(EXIT_FAILURE);
+                    int scopeIndex[2];
+                    scopeIndex[0] = i;
+                    scopeIndex[1] = j;
+                    if (funcname.substr(0,1) == "w") { // global cost functions decomposed into a cost function network
+                        DecomposableGlobalCostFunction* decomposableGCF = DecomposableGlobalCostFunction::FactoryDGCF(funcname, arity, scopeIndex, file);
+                        decomposableGCF->addToCostFunctionNetwork(this);
+                    }
+                    else { // monolithic global cost functions
+                        postGlobalConstraint(scopeIndex, arity, funcname, file, &nbconstr);
+                    }
                 }
             }
         } else if (arity == 1) {
@@ -628,40 +633,54 @@ void WCSP::read_wcsp(const char *fileName)
             if (vars[i]->enumerated()) {
                 EnumeratedVariable *x = (EnumeratedVariable *) vars[i];
                 file >> defval;
-                file >> ntuples;
-                TemporaryUnaryConstraint unaryconstr;
-                unaryconstr.var = x;
-                if (ntuples < 0) {
-                    int reusedconstr = -ntuples-1;
-                    if (reusedconstr >= (int) sharedSize.size()) {
-                        cerr << "Shared cost function number " << reusedconstr << " not already defined! Cannot reuse it!" << endl;
-                        exit(EXIT_FAILURE);
+                if (defval == -1) {
+                    int scopeIndex[1];
+                    scopeIndex[0] = i;
+                    string gcname;
+                    file >> gcname;
+                    if (gcname.substr(0,1) == "w") { // global cost functions decomposed into a cost function network
+                        DecomposableGlobalCostFunction* decomposableGCF = DecomposableGlobalCostFunction::FactoryDGCF(gcname, arity, scopeIndex, file);
+                        decomposableGCF->addToCostFunctionNetwork(this);
                     }
-                    ntuples = sharedSize[reusedconstr];
-                    assert(ntuples == (int) x->getDomainInitSize());
-                    unaryconstr.costs = sharedCosts[reusedconstr];
+                    else { // monolithic global cost functions
+                        postGlobalConstraint(scopeIndex, arity, gcname, file, &nbconstr);
+                    }
+                } else {
+                    file >> ntuples;
+                    TemporaryUnaryConstraint unaryconstr;
+                    unaryconstr.var = x;
+                    if (ntuples < 0) {
+                        int reusedconstr = -ntuples-1;
+                        if (reusedconstr >= (int) sharedSize.size()) {
+                            cerr << "Shared cost function number " << reusedconstr << " not already defined! Cannot reuse it!" << endl;
+                            exit(EXIT_FAILURE);
+                        }
+                        ntuples = sharedSize[reusedconstr];
+                        assert(ntuples == (int) x->getDomainInitSize());
+                        unaryconstr.costs = sharedCosts[reusedconstr];
+                        unaryconstrs.push_back(unaryconstr);
+                        continue;
+                    }
+                    for (a = 0; a < x->getDomainInitSize(); a++) {
+                        Cost tmpcost = defval*K;
+                        if(CUT(tmpcost, getUb()) && (tmpcost < MEDIUM_COST*getUb()) && getUb()<(MAX_COST / MEDIUM_COST)) tmpcost *= MEDIUM_COST;
+                        unaryconstr.costs.push_back(tmpcost);
+                    }
+                    for (k = 0; k < ntuples; k++) {
+                        file >> a;
+                        file >> cost;
+                        Cost tmpcost = cost*K;
+                        if(CUT(tmpcost, getUb()) && (tmpcost < MEDIUM_COST*getUb()) && getUb()<(MAX_COST / MEDIUM_COST)) tmpcost *= MEDIUM_COST;
+                        assert(a>= 0 && a < x->getDomainInitSize());
+                        unaryconstr.costs[a] = tmpcost;
+                    }
+                    if (shared) {
+                        sharedSize.push_back(x->getDomainInitSize());
+                        sharedCosts.push_back(unaryconstr.costs);
+                        sharedTuples.push_back(emptyTuples);
+                    }
                     unaryconstrs.push_back(unaryconstr);
-                    continue;
                 }
-                for (a = 0; a < x->getDomainInitSize(); a++) {
-                    Cost tmpcost = defval*K;
-                    if(CUT(tmpcost, getUb()) && (tmpcost < MEDIUM_COST*getUb()) && getUb()<(MAX_COST / MEDIUM_COST)) tmpcost *= MEDIUM_COST;
-                    unaryconstr.costs.push_back(tmpcost);
-                }
-                for (k = 0; k < ntuples; k++) {
-                    file >> a;
-                    file >> cost;
-                    Cost tmpcost = cost*K;
-                    if(CUT(tmpcost, getUb()) && (tmpcost < MEDIUM_COST*getUb()) && getUb()<(MAX_COST / MEDIUM_COST)) tmpcost *= MEDIUM_COST;
-                    assert(a>= 0 && a < x->getDomainInitSize());
-                    unaryconstr.costs[a] = tmpcost;
-                }
-                if (shared) {
-                    sharedSize.push_back(x->getDomainInitSize());
-                    sharedCosts.push_back(unaryconstr.costs);
-                    sharedTuples.push_back(emptyTuples);
-                }
-                unaryconstrs.push_back(unaryconstr);
             } else {
                 file >> defval;
                 if (defval == MIN_COST) {
@@ -678,7 +697,7 @@ void WCSP::read_wcsp(const char *fileName)
                         exit(EXIT_FAILURE);
                     }
                 }
-                postUnary(i,dom,ntuples,defval);
+                postUnaryConstraint(i,dom,ntuples,defval);
                 delete [] dom;
             }
         } else if (arity == 0) {
@@ -735,23 +754,21 @@ void WCSP::read_wcsp(const char *fileName)
 
     // unary cost functions are delayed for compatibility issue (same lowerbound found) with old toolbar solver
     for (unsigned int u=0; u<unaryconstrs.size(); u++) {
-        postUnary(unaryconstrs[u].var->wcspIndex, unaryconstrs[u].costs);
+        postUnaryConstraint(unaryconstrs[u].var->wcspIndex, unaryconstrs[u].costs);
     }
-    histogram();
 
-    cout << "Read " << nbvar << " variables, with " << nbvaltrue << " values at most, and " << nbconstr << " cost functions, with maximum arity " << maxarity  << "." << endl;
+    if (ToulBar2::verbose >= 0) cout << "Read " << nbvar << " variables, with " << nbvaltrue << " values at most, and " << nbconstr << " cost functions, with maximum arity " << maxarity  << "." << endl;
 }
 
 
-void WCSP::read_random(int n, int m, vector<int>& p, int seed, bool forceSubModular )
+void WCSP::read_random(int n, int m, vector<int>& p, int seed, bool forceSubModular, string globalname)
 {
     naryRandom randwcsp(this,seed);
-    randwcsp.Input(n,m,p,forceSubModular);
+    randwcsp.Input(n,m,p,forceSubModular,globalname);
     ToulBar2::nbvar= n;
 
     unsigned int nbconstr = numberOfConstraints();
     sortConstraints();
-    histogram();
 
     if (ToulBar2::verbose >= 0) {
         cout << "Generated random problem " << n << " variables, with " << m << " values, and " << nbconstr << " cost functions." << endl;
@@ -818,9 +835,7 @@ void WCSP::read_uai2008(const char *fileName)
         file >> domsize;
         if (ToulBar2::verbose >= 3) cout << "read variable " << i << " of size " << domsize << endl;
         if(domsize > nbval) nbval = domsize;
-        int theindex = -1;
-        if (domsize >= 0) theindex = makeEnumeratedVariable(varname,0,domsize-1);
-        else theindex = makeIntervalVariable(varname,0,-domsize-1);
+        DEBONLY(int theindex =) ((domsize >= 0)  ? makeEnumeratedVariable(varname,0,domsize-1) : makeIntervalVariable(varname,0,-domsize-1));
         assert(theindex == i);
     }
 
@@ -829,6 +844,10 @@ void WCSP::read_uai2008(const char *fileName)
     // read each constraint
     for (ic = 0; ic < nbconstr; ic++) {
         file >> arity;
+        if (!file) {
+            cerr << "Warning: EOF reached before reading all the scopes (initial number of factors too large?)" << endl;
+            break;
+        }
         maxarity = max(maxarity,arity);
 
         if(arity > MAX_ARITY)  { cerr << "Nary cost functions of arity > " << MAX_ARITY << " not supported" << endl; exit(EXIT_FAILURE); }
@@ -847,7 +866,7 @@ void WCSP::read_uai2008(const char *fileName)
                 if (ToulBar2::verbose >= 3) cout << j << " ";
             }
             if (ToulBar2::verbose >= 3) cout << endl;
-            lctrs.push_back( postNaryConstraintBegin(scopeIndex,arity,MIN_COST) );
+            lctrs.push_back( postNaryConstraintBegin(scopeIndex,arity,MIN_COST,LONGLONG_MAX) );
             assert(lctrs.back() >= 0);
         }
         else if (arity == 3) {
@@ -921,6 +940,10 @@ void WCSP::read_uai2008(const char *fileName)
     list<int>::iterator it = lctrs.begin();
     while(it !=  lctrs.end()) {
         file >> ntuples;
+        if (!file) {
+            cerr << "Warning: EOF reached before reading all the factor tables (initial number of factors too large?)" << endl;
+            break;
+        }
         ntuplesarray[ictr] = ntuples;
 
         TProb p;
@@ -962,6 +985,12 @@ void WCSP::read_uai2008(const char *fileName)
         ictr++;
         ++it;
     }
+
+    file >> varname;
+    if (file) {
+        cerr << "Warning: EOF not reached after reading all the factor tables (initial number of factors too small?)" << endl;
+    }
+
     updateUb( upperbound );
 
     ictr = 0;
@@ -1032,10 +1061,9 @@ void WCSP::read_uai2008(const char *fileName)
     increaseLb(inclowerbound);
 
     for (unsigned int u=0; u<unaryconstrs.size(); u++) {
-        postUnary(unaryconstrs[u].var->wcspIndex, unaryconstrs[u].costs);
+        postUnaryConstraint(unaryconstrs[u].var->wcspIndex, unaryconstrs[u].costs);
     }
-    histogram();
-    cout << "Read " << nbvar << " variables, with " << nbval << " values at most, and " << nbconstr << " cost functions, with maximum arity " << maxarity  << "." << endl;
+    if (ToulBar2::verbose >= 0) cout << "Read " << nbvar << " variables, with " << nbval << " values at most, and " << nbconstr << " cost functions, with maximum arity " << maxarity  << "." << endl;
 
     int nevi = 0;
     ifstream fevid(ToulBar2::evidence_file.c_str());
@@ -1217,8 +1245,7 @@ void WCSP::read_wcnf(const char *fileName)
     for (int i = 0; i<nbvar; i++) {
         string varname;
         varname = to_string(i);
-        int theindex = -1;
-        theindex = makeEnumeratedVariable(varname,0,1);
+        DEBONLY(int theindex = ) makeEnumeratedVariable(varname,0,1);
         assert(theindex == i);
     }
 
@@ -1263,7 +1290,7 @@ void WCSP::read_wcnf(const char *fileName)
         maxarity = max(maxarity,arity);
 
         if (arity > 3) {
-            int index = postNaryConstraintBegin(scopeIndex,arity,MIN_COST);
+            int index = postNaryConstraintBegin(scopeIndex,arity,MIN_COST,0);
             String tup = buf;
             postNaryConstraintTuple(index, tup, cost*K);
             postNaryConstraintEnd(index);
@@ -1317,9 +1344,8 @@ void WCSP::read_wcnf(const char *fileName)
     increaseLb(inclowerbound);
 
     for (unsigned int u=0; u<unaryconstrs.size(); u++) {
-        postUnary(unaryconstrs[u].var->wcspIndex, unaryconstrs[u].costs);
+        postUnaryConstraint(unaryconstrs[u].var->wcspIndex, unaryconstrs[u].costs);
     }
-    histogram();
     cout << "c Read " << nbvar << " variables, with 2 values at most, and " << nbclauses << " clauses, with maximum arity " << maxarity  << "." << endl;
 }
 
@@ -1477,11 +1503,10 @@ void WCSP::read_qpbo(const char *fileName)
             vector<Cost> costs(2, 0);
             costs[0] = unaryCosts0[i];
             costs[1] = unaryCosts1[i];
-            postUnary(i, costs);
+            postUnaryConstraint(i, costs);
         }
     }
-    histogram();
-    cout << "Read " << n << " variables, with " << 2 << " values at most, and " << m << " nonzero matrix costs." << endl;
+    if (ToulBar2::verbose >= 0) cout << "Read " << n << " variables, with " << 2 << " values at most, and " << m << " nonzero matrix costs." << endl;
 }
 
 /* Local Variables: */

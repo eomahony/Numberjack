@@ -16,9 +16,6 @@
  * 
  */
 
-class BinaryConstraint;
-class TernaryConstraint;
-
 class Variable : public WCSPLink
 {
 protected:
@@ -79,12 +76,13 @@ public:
     virtual void decrease(Value newSup, bool isDecision = false) =0;
     virtual void remove(Value remValue, bool isDecision = false) =0;
     virtual void assign(Value newValue, bool isDecision = false) =0;
-    virtual void assignLS(Value newValue, set<Constraint *>& delayedCtrs) =0;
+    virtual void assignLS(Value newValue, ConstraintSet& delayedCtrs) =0;
 
     //    ConstraintList *getTriangles() {return &triangles;}
     ConstraintList *getConstrs() {return &constrs;}
     int getDegree() {return constrs.getSize();}
     int getTrueDegree();
+    Double getMaxElimSize(); /// \brief returns estimated size of the resulting cost function (including this variable) to eliminate itself
     Long getWeightedDegree();
     void resetWeightedDegree();
     DLink<ConstraintLink> *link(Constraint *c, int index);

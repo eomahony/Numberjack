@@ -40,8 +40,8 @@ public:
 			}*/ 
     }
 
-    string getName() {return "GCC constraint";}
-    Cost evalOriginal (String s);
+    string getName();
+    Cost evalOriginal(const String& s);
     void read(istream &file);
 
     //GlobalCostFunctionParameters* getParameters() {return this;}
@@ -58,7 +58,7 @@ public:
     }
     void organizeConfig();
 
-    void print(ostream& os);
+//    void print(ostream& os);
     void dump(ostream& os, bool original = true);
 };
 

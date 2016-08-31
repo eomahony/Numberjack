@@ -29,15 +29,15 @@ public:
 
     virtual ~AbstractUnaryConstraint() {delete linkX;}
 
-    bool connected() const {return !linkX->removed;}
-    bool deconnected() const {return linkX->removed;}
-    void deconnect(bool reuse = false) {
+    bool connected() const FINAL {return !linkX->removed;}
+    bool deconnected() const FINAL {return linkX->removed;}
+    void deconnect(bool reuse = false) FINAL {
         if (connected()) {
             if (ToulBar2::verbose >= 3) cout << "deconnect " << this << endl;
             x->deconnect(linkX, reuse);
         }
     }
-    void reconnect() {
+    void reconnect() FINAL {
         if (deconnected()) {
             if (ToulBar2::verbose >= 3) cout << "reconnect " << this << endl;
             assert(linkX->prev == NULL && linkX->next == NULL);
@@ -45,32 +45,33 @@ public:
         }
     }
 
-    int arity() const {return 1;}
+    int arity() const FINAL {return 1;}
 
-    Variable *getVar(int varCtrIndex) const {return x;}
+    Variable *getVar(int varCtrIndex) const FINAL {return x;}
+    Variable *getDACVar(int varCtrIndex) const FINAL {return getVar(varCtrIndex);}
 
-    Variable *getVarDiffFrom( Variable* v ) const  {
+    Variable *getVarDiffFrom( Variable* v ) const {
         if(v != x) return x;
         else exit(EXIT_FAILURE);
     }
 
-    int getIndex(Variable* var) const
+    int getIndex(Variable* var) const FINAL
     {
         if(var == x) return 0;
         return -1;
     }
 
-    int getSmallestVarIndexInScope(int forbiddenScopeIndex) {assert(forbiddenScopeIndex >= 0); assert(forbiddenScopeIndex < 1); return x->wcspIndex;}
-    int getSmallestVarIndexInScope() {return x->wcspIndex;}
-    int getSmallestDACIndexInScope(int forbiddenScopeIndex) {assert(forbiddenScopeIndex >= 0); assert(forbiddenScopeIndex < 1); return x->getDACOrder();}
+    int getSmallestVarIndexInScope(int forbiddenScopeIndex) FINAL {assert(forbiddenScopeIndex >= 0); assert(forbiddenScopeIndex < 1); return x->wcspIndex;}
+    int getSmallestVarIndexInScope() FINAL {return x->wcspIndex;}
+    int getSmallestDACIndexInScope(int forbiddenScopeIndex) FINAL {assert(forbiddenScopeIndex >= 0); assert(forbiddenScopeIndex < 1); return x->getDACOrder();}
 
-    void getScope( TSCOPE& scope_inv ) {
+    void getScope( TSCOPE& scope_inv ) FINAL {
         scope_inv.clear();
         scope_inv[ x->wcspIndex ] = 0;
     }
 
-    set<Constraint *> subConstraint(){
-        set <Constraint *> subcstr;
+    ConstraintSet subConstraint() FINAL {
+        ConstraintSet subcstr;
         return subcstr;
     }
 };
@@ -99,16 +100,16 @@ public:
 
     virtual ~AbstractBinaryConstraint() {delete linkX; delete linkY;}
 
-    bool connected() const {return !linkX->removed && !linkY->removed;}
-    bool deconnected() const {return linkX->removed || linkY->removed;}
-    void deconnect(bool reuse = false) {
+    bool connected() const FINAL {return !linkX->removed && !linkY->removed;}
+    bool deconnected() const FINAL {return linkX->removed || linkY->removed;}
+    void deconnect(bool reuse = false) FINAL {
         if (connected()) {
             if (ToulBar2::verbose >= 3) cout << "deconnect " << this << endl;
             x->deconnect(linkX, reuse);
             y->deconnect(linkY, reuse);
         }
     }
-    void reconnect() {
+    void reconnect() FINAL {
         if (deconnected()) {
             if (ToulBar2::verbose >= 3) cout << "reconnect " << this << endl;
             assert(linkX->prev == NULL && linkX->next == NULL);
@@ -118,37 +119,38 @@ public:
         }
     }
 
-    int arity() const {return 2;}
+    int arity() const FINAL {return 2;}
 
-    Variable *getVar(int varCtrIndex) const {return (varCtrIndex == 0)?x:y;}
+    Variable *getVar(int varCtrIndex) const FINAL {return (varCtrIndex == 0)?x:y;}
 
-    Variable *getVarDiffFrom( Variable* v ) const  {
+    Variable *getVarDiffFrom( Variable* v ) const {
         if(v == x) return y;
         else if(v == y) return x;
         else exit(EXIT_FAILURE);
     }
 
-    int getIndex(Variable* var) const
+    int getIndex(Variable* var) const FINAL
     {
         if(var == x) return 0;
         else if(var == y) return 1;
         return -1;
     }
 
-    int getSmallestVarIndexInScope(int forbiddenScopeIndex) {assert(forbiddenScopeIndex >= 0); assert(forbiddenScopeIndex < 2); return (forbiddenScopeIndex)?x->wcspIndex:y->wcspIndex;}
-    int getSmallestVarIndexInScope() {return min(x->wcspIndex, y->wcspIndex);}
-    int getDACScopeIndex() const {return dacvar;}
-    void setDACScopeIndex() {if (x->getDACOrder() < y->getDACOrder()) dacvar = 0; else dacvar = 1;}
-    int getSmallestDACIndexInScope(int forbiddenScopeIndex) {assert(forbiddenScopeIndex >= 0); assert(forbiddenScopeIndex < 2); return (forbiddenScopeIndex)?x->getDACOrder():y->getDACOrder();}
+    int getSmallestVarIndexInScope(int forbiddenScopeIndex) FINAL {assert(forbiddenScopeIndex >= 0); assert(forbiddenScopeIndex < 2); return (forbiddenScopeIndex)?x->wcspIndex:y->wcspIndex;}
+    int getSmallestVarIndexInScope() FINAL {return min(x->wcspIndex, y->wcspIndex);}
+    int getDACScopeIndex() const FINAL {return dacvar;}
+    void setDACScopeIndex() FINAL {if (x->getDACOrder() < y->getDACOrder()) dacvar = 0; else dacvar = 1;}
+    int getSmallestDACIndexInScope(int forbiddenScopeIndex) FINAL {assert(forbiddenScopeIndex >= 0); assert(forbiddenScopeIndex < 2); return (forbiddenScopeIndex)?x->getDACOrder():y->getDACOrder();}
+    Variable *getDACVar(int varCtrIndex) const FINAL {return ((varCtrIndex == 0) == (dacvar == 0))?x:y;}
 
-    void getScope( TSCOPE& scope_inv ) {
+    void getScope( TSCOPE& scope_inv ) FINAL {
         scope_inv.clear();
         scope_inv[ x->wcspIndex ] = 0;
         scope_inv[ y->wcspIndex ] = 1;
     }
 
-    set<Constraint *> subConstraint(){
-        set <Constraint *> subcstr;
+    ConstraintSet subConstraint() FINAL {
+        ConstraintSet subcstr;
         return subcstr;
     }
 };
@@ -183,9 +185,9 @@ public:
 
     virtual ~AbstractTernaryConstraint() {delete linkX; delete linkY; delete linkZ;}
 
-    bool connected() const {return !linkX->removed && !linkY->removed && !linkZ->removed;}
-    bool deconnected() const {return linkX->removed || linkY->removed || linkZ->removed;}
-    void deconnect(bool reuse = false) {
+    bool connected() const FINAL {return !linkX->removed && !linkY->removed && !linkZ->removed;}
+    bool deconnected() const FINAL {return linkX->removed || linkY->removed || linkZ->removed;}
+    void deconnect(bool reuse = false) FINAL {
         if (connected()) {
             if (ToulBar2::verbose >= 3) cout << "deconnect " << this << endl;
             x->deconnect(linkX, reuse);
@@ -193,7 +195,7 @@ public:
             z->deconnect(linkZ, reuse);
         }
     }
-    void reconnect() {
+    void reconnect() FINAL {
         if (deconnected()) {
             if (ToulBar2::verbose >= 3) cout << "reconnect " << this << endl;
             assert(linkX->prev == NULL && linkX->next == NULL);
@@ -211,9 +213,9 @@ public:
         }
     }
 
-    int arity() const {return 3;}
+    int arity() const FINAL {return 3;}
 
-    Variable *getVar(int varCtrIndex) const
+    Variable *getVar(int varCtrIndex) const FINAL
     {
         switch(varCtrIndex) { case 0: return x; break;
         case 1: return y; break;
@@ -232,7 +234,7 @@ public:
         else exit(EXIT_FAILURE);
     }
 
-    int getIndex(Variable* var) const
+    int getIndex(Variable* var) const FINAL
     {
         if(var == x) return 0;
         else if(var == y) return 1;
@@ -241,7 +243,7 @@ public:
     }
 
 
-    int getSmallestVarIndexInScope(int forbiddenScopeIndex)
+    int getSmallestVarIndexInScope(int forbiddenScopeIndex) FINAL
     {
         assert(forbiddenScopeIndex >= 0); assert(forbiddenScopeIndex < 3);
         switch (forbiddenScopeIndex) {
@@ -251,18 +253,18 @@ public:
         default: exit(EXIT_FAILURE);
         }
     }
-    int getSmallestVarIndexInScope()
+    int getSmallestVarIndexInScope() FINAL
     {
         int res = min(x->wcspIndex,y->wcspIndex);
         return min(res, z->wcspIndex);
     }
-    int getDACScopeIndex() const {return dacvar;}
-    void setDACScopeIndex() {
+    int getDACScopeIndex() const FINAL {return dacvar;}
+    void setDACScopeIndex() FINAL {
         if (x->getDACOrder() < y->getDACOrder() && x->getDACOrder() < z->getDACOrder()) dacvar = 0;
         else if (y->getDACOrder() < x->getDACOrder() && y->getDACOrder() < z->getDACOrder()) dacvar = 1;
         else dacvar = 2;
     }
-    int getSmallestDACIndexInScope(int forbiddenScopeIndex)
+    int getSmallestDACIndexInScope(int forbiddenScopeIndex) FINAL
     {
         assert(forbiddenScopeIndex >= 0); assert(forbiddenScopeIndex < 3);
         switch (forbiddenScopeIndex) {
@@ -272,15 +274,34 @@ public:
         default: exit(EXIT_FAILURE);
         }
     }
-    void getScope( TSCOPE& scope_inv ) {
+    Variable *getDACVar(int varCtrIndex) const FINAL
+    {
+        if (varCtrIndex == 0) {
+            switch (dacvar) {
+            case 0: return x;
+            case 1: return y;
+            case 2: return z;
+            default: exit(EXIT_FAILURE);
+            }
+        } else { // varCtrIndex >= 1
+            switch (dacvar) {
+            case 0: return ((varCtrIndex == 1) == (y->getDACOrder() < z->getDACOrder()))?y:z;
+            case 1: return ((varCtrIndex == 1) == (x->getDACOrder() < z->getDACOrder()))?x:z;
+            case 2: return ((varCtrIndex == 1) == (x->getDACOrder() < y->getDACOrder()))?x:y;
+            default: exit(EXIT_FAILURE);
+            }
+        }
+    }
+
+    void getScope( TSCOPE& scope_inv ) FINAL {
         scope_inv.clear();
         scope_inv[ x->wcspIndex ] = 0;
         scope_inv[ y->wcspIndex ] = 1;
         scope_inv[ z->wcspIndex ] = 2;
     }
 
-    set<Constraint *> subConstraint(){
-        set <Constraint *> subcstr;
+    ConstraintSet subConstraint() FINAL {
+        ConstraintSet subcstr;
         set<int> scope;
         for(int k=0; k < arity(); k++) {
             scope.insert(getVar(k)->wcspIndex);
@@ -298,6 +319,8 @@ public:
 
 };
 
+extern int cmpDAC(const void *var1, const void *var2);
+
 class AbstractNaryConstraint : public Constraint
 {
 protected:
@@ -305,22 +328,30 @@ protected:
     int arity_;
 
     EnumeratedVariable** scope;
+    EnumeratedVariable** scope_dac; // scope sorted by increasing DAC order
     TSCOPE scope_inv;
 
     DLink<ConstraintLink>** links;
+
+    vector<EnumeratedVariable::iterator> it_values; // used by firstlex/nextlex and for separator decomposition tests
+    String iterTuple;
 
 public:
     AbstractNaryConstraint(WCSP *wcsp, EnumeratedVariable** scope_in, int arity_in) : Constraint(wcsp), arity_(arity_in)
     {
         scope = new EnumeratedVariable* [arity_];
+        scope_dac = new EnumeratedVariable* [arity_];
         links = new DLink<ConstraintLink>* [arity_];
 
         for(int i=0; i < arity_; i++) {
             EnumeratedVariable* var = scope_in[i];
             scope_inv[ var->wcspIndex ] = i;
             scope[i] = var;
+            scope_dac[i] = var;
             links[i] = var->link(this,i);
+            iterTuple.append(1, CHAR_FIRST);
         }
+        setDACScopeIndex();
     }
 
     AbstractNaryConstraint(WCSP *wcsp) : Constraint(wcsp)
@@ -329,14 +360,15 @@ public:
 
     virtual ~AbstractNaryConstraint() {}
 
-    int arity() const {return arity_;}
+    int arity() const FINAL {return arity_;}
+    Long getDomainInitSizeProduct(); // warning! return LONGLONG_MAX if overflow occurs
 
-    Variable *getVar(int varCtrIndex) const {
+    Variable *getVar(int varCtrIndex) const FINAL {
         assert(varCtrIndex < arity_);
         return scope[varCtrIndex];
     }
 
-    int getIndex(Variable* var) const {
+    int getIndex(Variable* var) const FINAL {
         int index = var->wcspIndex;
         map<int,int>::const_iterator it = scope_inv.find(index);
         if(it == scope_inv.end()) return -1;
@@ -346,12 +378,12 @@ public:
     bool connected(int varIndex) const {return !links[varIndex]->removed;}
     bool deconnected(int varIndex) const {return links[varIndex]->removed;}
 
-    bool connected() const {
+    bool connected() const FINAL {
         for(int i=0;i<arity_;i++) if(!links[i]->removed) return true;
         return false;
     }
 
-    bool deconnected() const {
+    bool deconnected() const FINAL {
         for(int i=0;i<arity_;i++) if(!links[i]->removed) return false;
         return true;
     }
@@ -360,7 +392,7 @@ public:
         scope[varIndex]->deconnect( links[varIndex], reuse );
     }
 
-    void deconnect(bool reuse = false) {
+    void deconnect(bool reuse = false) FINAL {
         if (connected()) {
             if (ToulBar2::verbose >= 3) cout << "deconnect " << this << endl;
             for(int i=0;i<arity_;i++) deconnect(i, reuse);
@@ -377,10 +409,10 @@ public:
         }
     }
 
-    virtual Cost eval( String& t ) { return -UNIT_COST; }
-    virtual void insertTuple( String t, Cost c, EnumeratedVariable** scope_in ) { }
+    virtual Cost eval( const String& t ) {cout << "dummy eval on: " << *this << endl; return MIN_COST;}
+//    virtual void insertTuple( String t, Cost c, EnumeratedVariable** scope_in ) { }
 
-    int getSmallestVarIndexInScope(int forbiddenScopeIndex)
+    int getSmallestVarIndexInScope(int forbiddenScopeIndex) FINAL
     {
         assert(forbiddenScopeIndex >= 0); assert(forbiddenScopeIndex < arity_);
         int indexmin = INT_MAX;
@@ -391,7 +423,7 @@ public:
         }
         return indexmin;
     }
-    int getSmallestVarIndexInScope()
+    int getSmallestVarIndexInScope() FINAL
     {
         int indexmin = INT_MAX;
         for(int i=0; i < arity_; i++) {
@@ -401,17 +433,20 @@ public:
         }
         return indexmin;
     }
-    void getScope( TSCOPE& scope_inv_in ) {
+    void getScope( TSCOPE& scope_inv_in ) FINAL {
         scope_inv_in = scope_inv;
     }
-    // side-effect only: update scope_inv to current variable wcspIndex
-    void setDACScopeIndex() {
+
+    /// \warning scope_dac uses pointers not indexes!
+    /// \warning additional side-effect: updates scope_inv with current variable wcspIndexes
+    void setDACScopeIndex() FINAL {
         scope_inv.clear();
         for(int i=0; i < arity_; i++) {
             scope_inv[ scope[i]->wcspIndex ] = i;
         }
+        qsort(scope_dac, arity_, sizeof(EnumeratedVariable *), cmpDAC);
     }
-    int getSmallestDACIndexInScope(int forbiddenScopeIndex)
+    int getSmallestDACIndexInScope(int forbiddenScopeIndex) FINAL
     {
         assert(forbiddenScopeIndex >= 0); assert(forbiddenScopeIndex < arity_);
         int indexmin = INT_MAX;
@@ -422,11 +457,15 @@ public:
         }
         return indexmin;
     }
+    Variable *getDACVar(int varCtrIndex) const FINAL {
+        assert(varCtrIndex < arity_);
+        return scope_dac[varCtrIndex];
+    }
 
-    set<Constraint *> subConstraint(){
-        set <Constraint *> subcstr;
+    ConstraintSet subConstraint() FINAL {
+        ConstraintSet subcstr;
         set<int> scope;
-        for(int k=0; k < arity(); k++) {
+        for(int k=0; k < arity_; k++) {
             scope.insert(getVar(k)->wcspIndex);
         }
         for(set<int>::iterator itx = scope.begin(); itx != scope.end(); ++itx){
@@ -439,6 +478,11 @@ public:
 
         return subcstr;
     }
+
+    void firstlex();
+    bool nextlex( String& t, Cost& c);
+
+    void projectNaryBeforeSearch();
 };
 
 #define AbstractGlobalConstraint AbstractNaryConstraint

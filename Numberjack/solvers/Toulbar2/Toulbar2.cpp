@@ -941,7 +941,7 @@ Toulbar2Solver::Toulbar2Solver()
   ToulBar2::verbose = -1;
   ToulBar2::startCpuTime = cpuTime();
   initCosts(MAXCOST);
-  solver = WeightedCSPSolver::makeWeightedCSPSolver(STORE_SIZE, MAXCOST);
+  solver = WeightedCSPSolver::makeWeightedCSPSolver(MAXCOST);
   wcsp = solver->getWCSP();
   upperbound = MAXCOST;
   optimum = MAXCOST;
@@ -986,7 +986,6 @@ int Toulbar2Solver::solve()
 {
   if (!unsatisfiable) {
 	wcsp->sortConstraints();
-	wcsp->histogram();
 	if (ToulBar2::dumpWCSP == 1) {
 	  solver->dump_wcsp(ToulBar2::problemsaved_filename.c_str());
 	} else {

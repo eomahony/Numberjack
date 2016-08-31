@@ -33,7 +33,7 @@ bool cmp_function(tVACStat * v1, tVACStat * v2)
     return v1->sumlb > v2->sumlb;
 }
 
-VACExtension::VACExtension(WCSP * w):wcsp(w), VAC2(&w->getStore()->storeVariable), nbIterations(0),
+VACExtension::VACExtension(WCSP * w):wcsp(w), VAC2(&Store::storeVariable), nbIterations(0),
         inconsistentVariable(-1)
 {
     queueP = new stack < pair < int, int > >;
@@ -115,6 +115,7 @@ void VACExtension::histogram()
 
 void VACExtension::iniThreshold()
 {
+    if (scaleCost.size()>0 && scaleVAC.size()==0) histogram();
     list < Cost >::iterator it = (scaleVAC.begin());
     Cost c = ((it == scaleVAC.end())?UNIT_COST:(*it));
     if (wcsp->getUb() < c)
@@ -136,7 +137,7 @@ void VACExtension::nextScaleCost()
     if (!done)
         c = itThreshold / (UNIT_COST + UNIT_COST);
 
-    if (wcsp->getStore()->getDepth() == 0) {
+    if (Store::getDepth() == 0) {
         if (c < ToulBar2::costThresholdPre)
             c = MIN_COST;
     } else if (c < ToulBar2::costThreshold)
@@ -186,7 +187,7 @@ void VACExtension::reset()
 bool VACExtension::propagate()
 {
 
-    if (wcsp->getStore()->getDepth() >= ToulBar2::vac) {
+    if (Store::getDepth() >= ToulBar2::vac) {
         return false;
     }
     // if(getVarTimesStat(varAssign) > 100) {
@@ -197,9 +198,6 @@ bool VACExtension::propagate()
     //    }
     // }
 
-    Cost ub = wcsp->getUb();
-    Cost lb = wcsp->getLb();
-
     bool isvac = true;
     bool util = true;
 
@@ -209,11 +207,11 @@ bool VACExtension::propagate()
     bool acSupportOK = false;
 
     while ((!util || isvac) && itThreshold != MIN_COST) {
-        minlambda = ub - lb;
+        minlambda = wcsp->getUb() - wcsp->getLb();
         nbIterations++;
         reset();
         //		if (ToulBar2::verbose>=8) cout << *wcsp;
-        wcsp->getStore()->store();
+        Store::store();
         enforcePass1();
         isvac = isVAC();
 
@@ -221,7 +219,7 @@ bool VACExtension::propagate()
             acSupportOK = true;
             acSupport.clear();
             // fill SeekSupport with ALL variables if in preprocessing (i.e. before the search)
-            if (wcsp->getStore()->getDepth() <= 1 || ToulBar2::debug) {
+            if (Store::getDepth() <= 1 || ToulBar2::debug) {
                 for (unsigned int i = 0;
                         i < wcsp->numberOfVariables(); i++) {
                     ((VACVariable *) wcsp->getVar(i))->
@@ -249,9 +247,9 @@ bool VACExtension::propagate()
                 if (x->canbe(p.second))
                     acSupport.push_back(p);
             }
-            if (ToulBar2::debug && nbassignedzero>0) cout << "[" << wcsp->getStore()->getDepth() << "] " << nbassignedzero << "/" << nbassigned-nbassignedzero << "/" << wcsp->numberOfUnassignedVariables() << " fixed/singletonnonzerocost/unassigned" << endl;
+            if (ToulBar2::debug && nbassignedzero>0) cout << "[" << Store::getDepth() << "] " << nbassignedzero << "/" << nbassigned-nbassignedzero << "/" << wcsp->numberOfUnassignedVariables() << " fixed/singletonnonzerocost/unassigned" << endl;
         }
-        wcsp->getStore()->restore();
+        Store::restore();
 
         if (!isvac) {
             enforcePass2();
@@ -352,8 +350,9 @@ void VACExtension::enforcePass1()
         //list<Constraint*> l;
         for (ConstraintList::iterator itc = xj->getConstrs()->begin();
                 itc != xj->getConstrs()->end(); ++itc) {
-            cij = (VACBinaryConstraint *) (*itc).constr;
-            if (cij->arity() == 2 && !cij->isSep()) {
+            Constraint *c = (*itc).constr;
+            if (c->arity() == 2 && !c->isSep()) {
+                cij = (VACBinaryConstraint *) c;
                 //        xi = (VACVariable *)cij->getVarDiffFrom(xj);
                 //if(xj->getMaxK(nbIterations) > 2) l.push_back(cij); else
                 if (enforcePass1(xj, cij))
@@ -384,8 +383,9 @@ bool VACExtension::checkPass1() const
             continue;
         for (ConstraintList::iterator iter = xi->getConstrs()->begin();
                 iter != xj->getConstrs()->end(); ++iter) {
-            cij = (VACBinaryConstraint *) (*iter).constr;
-            if (cij->arity() == 2 && !cij->isSep()) {
+            Constraint *c = (*iter).constr;
+            if (c->arity() == 2 && !c->isSep()) {
+                cij = (VACBinaryConstraint *) c;
                 xj = (VACVariable *) cij->getVarDiffFrom(xi);
                 for (EnumeratedVariable::iterator iti =
                         xi->begin(); iti != xi->end(); ++iti) {
@@ -443,7 +443,7 @@ void VACExtension::enforcePass2()
         Cost cost = xi0->getVACCost(v);
         if (cost > MIN_COST) {
             if (cost < minlambda) {
-                minlambda = cost;	// NB: we don't need to check for bottleneck here as k=1 neesssarily
+                minlambda = cost;	// NB: we don't need to check for bottleneck here as k=1 necessarily
             }
         } else
             xi0->setMark(v, nbIterations);
@@ -485,6 +485,13 @@ void VACExtension::enforcePass2()
                                 bneckVar = -1;
                             }
                         }
+                    } else {
+                        if ((costij / tmpK) < minlambda) { // costij should be made infinite to avoid to decrease minlambda
+                            Cost cost = tmpK * minlambda - costij;
+                            assert(cost > MIN_COST);
+                            assert(ToulBar2::verbose < 1 || ((cout << "inflate(C" << cij->getVar(0)->getName() << "," << cij->getVar(1)->getName() << ", (" << ((xi==cij->getVar(0))?v:w) << "," << ((xi==cij->getVar(0))?w:v) << "), " << cost << ")" << endl), true));
+                            cij->addcost( xi, xj, v, w, cost );
+                        }
                     }
                 } else {
                     int tmpK =
@@ -523,7 +530,7 @@ void VACExtension::enforcePass2()
                                             cost;
                                 }
                             }
-                        }
+                        } // else cost is infinite and it will not be decreased by VACextend
                     }
                 }
             }
@@ -742,14 +749,15 @@ void VACExtension::dequeueVAC2(DLink < Variable * >*link)
 
 void VACExtension::printStat(bool ini)
 {
-    long double mean = to_double(sumlb) / (long double)nlb;
-    cout << "VAC mean lb/incr: " << mean << "     total increments: " << nlb
-            << "     cyclesize: " << (double)sumvars /
-            (double)nlb << "     k: " << (double)sumk /
-            (double)nlb << " (mean), " << theMaxK << " (max)" << endl;
-    if (ini)
-        cout << "Lb after VAC: " << wcsp->getLb() << endl;
-
+    if (ToulBar2::verbose >= 0) {
+        long double mean = to_double(sumlb) / (long double)nlb;
+        cout << "VAC mean lb/incr: " << mean << "     total increments: " << nlb
+                << "     cyclesize: " << (double)sumvars /
+                (double)nlb << "     k: " << (double)sumk /
+                (double)nlb << " (mean), " << theMaxK << " (max)" << endl;
+        if (ini)
+            cout << "Lb after VAC: " << wcsp->getLb() << endl;
+    }
     //sort(heap.begin(), heap.end(), cmp_function);
     /*cout << "Vars: ";
 	   vector<tVACStat*>::iterator it = heap.begin();

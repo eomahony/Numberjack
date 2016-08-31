@@ -152,7 +152,7 @@ ShowFiles(args.FileCount(), args.Files());
 </pre>
 */
 
-/*! @mainpage
+/* @mainpage
 
     <table>
         <tr><th>Library     <td>SimpleOpt

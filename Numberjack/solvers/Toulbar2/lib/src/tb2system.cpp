@@ -11,14 +11,24 @@
 #ifdef LINUX 
 #include <unistd.h> 
 #include <sys/time.h>
+#include <sys/resource.h>
 #include <sys/times.h>
+
+//double cpuTime()
+//{
+//    static struct tms buf;
+//
+//    times(&buf);
+//    double res = ((double) (buf.tms_utime+buf.tms_stime+buf.tms_cutime+buf.tms_cstime)) / ((double) sysconf(_SC_CLK_TCK));
+//    return (res>0)?res:0;
+//}
 
 double cpuTime()
 {
-    static struct tms buf;
+    static struct rusage buf;
 
-    times(&buf);
-    double res = ((double) (buf.tms_utime+buf.tms_stime+buf.tms_cutime+buf.tms_cstime)) / ((double) sysconf(_SC_CLK_TCK));
+    getrusage(RUSAGE_SELF, &buf);
+    double res = (double) (buf.ru_utime.tv_sec+buf.ru_stime.tv_sec) + (buf.ru_utime.tv_usec+buf.ru_stime.tv_usec)/1000000.;
     return (res>0)?res:0;
 }
 

@@ -176,11 +176,12 @@ public:
     TreeConstraint(WCSP * wcsp, EnumeratedVariable ** scope, int arity);
     virtual ~TreeConstraint();
 
-    Cost eval(String s);
+    Cost eval(const String& s);
 
     void read(istream & file) {} //No parameter needed
     void initMemoization();
     string getName(){return "MST";}
+    void dump(ostream& os, bool original = true);
 };
 
 #endif

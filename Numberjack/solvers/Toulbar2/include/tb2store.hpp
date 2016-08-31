@@ -17,13 +17,27 @@
  *
  *  Memory for each stack is dynamically allocated by part of \f$2^x\f$ with \e x initialized to ::STORE_SIZE and increased when needed.
  *  \note storable data are not trailed at depth 0.
- *  \warning ::StoreInt uses Store::storeValue stack (it assumes Value is encoded as int).
+ *  \warning ::StoreInt uses Store::storeValue stack (it assumes Value is encoded as int!).
+ *  \warning Current storable data management is not multi-threading safe! (Store is a static virtual class relying on StoreBasic<T> static members)
  */
 
 #ifndef TB2STORE_HPP_
 #define TB2STORE_HPP_
 
 #include "tb2types.hpp"
+
+#ifndef NUMBERJACK
+#ifdef BOOST
+#include <boost/version.hpp>
+#if (BOOST_VERSION >= 105600)
+#include <boost/type_index.hpp>
+#else
+#include <typeinfo>
+#endif
+#else
+#include <typeinfo>
+#endif
+#endif
 
 template<class T> class BTList;
 template<class T> class DLink;
@@ -39,7 +53,6 @@ class ConstraintLink;
 template<class T, class V>
 class StoreStack
 {
-    string name;
     T **pointers;
     V *content;
     ptrdiff_t index;
@@ -51,7 +64,7 @@ class StoreStack
     StoreStack& operator=(const StoreStack &s);
 
 public:
-    StoreStack(string s, int powbckmemory) : name(s) {
+    StoreStack(int powbckmemory = STORE_SIZE)  {
         if (pow(2., powbckmemory) >= SIZE_MAX) {
             cerr << "command-line initial memory size parameter " << powbckmemory << " power of two too large!" << endl;
             exit(EXIT_FAILURE);
@@ -61,8 +74,16 @@ public:
         content = new V[indexMax];
         index = 0;
         base = 0;
-        if (ToulBar2::verbose >= 0) {
-            cout << indexMax * (sizeof(V) + sizeof(T *)) << " Bytes allocated for " << name << " stack." << endl;
+        if (ToulBar2::verbose > 0) {
+            cout << "c " << indexMax * (sizeof(V) + sizeof(T *)) << " Bytes allocated for "
+#ifndef NUMBERJACK
+#if (BOOST_VERSION >= 105600)
+                << boost::typeindex::type_id<T>().pretty_name()
+#else
+                << typeid(T).name()
+#endif
+#endif
+                 << " stack." << endl;
         }
     }
 
@@ -75,20 +96,35 @@ public:
         T **newpointers = new T *[indexMax * 2];
         V *newcontent = new V[indexMax * 2];
         if (!newpointers || !newcontent) {
-            cerr << name << " stack out of memory!" << endl;
+            cerr
+#ifndef NUMBERJACK
+#if (BOOST_VERSION >= 105600)
+                << boost::typeindex::type_id<T>().pretty_name()
+#else
+                << typeid(T).name()
+#endif
+#endif
+                    << " stack out of memory!" << endl;
             exit(EXIT_FAILURE);
         }
-        for (ptrdiff_t i = 0; i < indexMax; i++) {
-            newpointers[i] = pointers[i];
-            newcontent[i] = content[i];
-        }
+        std::copy(pointers,pointers+indexMax,newpointers);
+        std::copy(content,content+indexMax,newcontent);
+
         delete[] pointers;
         delete[] content;
         pointers = newpointers;
         content = newcontent;
         indexMax *= 2;
         if (ToulBar2::verbose >= 0) {
-            cout << indexMax * (sizeof(V) + sizeof(T *)) << " Bytes allocated for " << name << " stack." << endl;
+            cout << "c " << indexMax * (sizeof(V) + sizeof(T *)) << " Bytes allocated for "
+#ifndef NUMBERJACK
+#if (BOOST_VERSION >= 105600)
+                << boost::typeindex::type_id<T>().pretty_name()
+#else
+                << typeid(T).name()
+#endif
+#endif
+                    << " stack." << endl;
         }
     }
 
@@ -152,6 +188,8 @@ public:
     }
 };
 
+
+
 /*
  * Storable basic types
  */
@@ -159,44 +197,52 @@ template<class T>
 class StoreBasic
 {
     T v;
-    StoreStack<T, T> *store;
 
 public:
-    StoreBasic(T vv, StoreStack<T, T> *s) : v(vv), store(s) {}
+    StoreBasic(T vv) : v(vv) {
+    } ///< \warning allows conversion from T to StoreBasic<T>, which may loose the compiler when mixing T and StoreBasic<T> in the same expression: explicit cast needed e.g. in T::v1 + (T) StoreBasic<T>::v2
 
     operator T() const {
         return v;
     } ///< allows conversion from StoreBasic to T
 
-    StoreBasic(const StoreBasic &elt) : v(elt.v), store(elt.store) {}
+    StoreBasic(const StoreBasic &elt) : v(elt.v) {}
 
+    static void store() { mystore.store(); };
+    static void restore() { mystore.restore(); };
+    
     StoreBasic &operator=(const StoreBasic &elt) { ///< \note assignment has to be backtrackable
         if (&elt != this) {
-            store->store(&v);
+            mystore.store(&v);
             v = elt.v;
         }
         return *this;
     }
 
     StoreBasic &operator=(const T vv) {
-        store->store(&v);
+        mystore.store(&v);
         v = vv;
         return *this;
     }
     StoreBasic &operator+=(const T vv) {
-        store->store(&v);
+        mystore.store(&v);
         v += vv;
         return *this;
     }
     StoreBasic &operator-=(const T vv) {
-        store->store(&v);
+        mystore.store(&v);
         v -= vv;
         return *this;
     }
+
+    static StoreStack<T, T> mystore;
 };
 
-typedef StoreBasic<int> StoreInt;
+template<class T>
+StoreStack<T, T> StoreBasic<T>::mystore(STORE_SIZE);
+
 typedef StoreBasic<Value> StoreValue;
+typedef StoreValue StoreInt;
 typedef StoreBasic<Cost> StoreCost;
 typedef StoreBasic<BigInteger> StoreBigInteger;
 
@@ -205,63 +251,52 @@ typedef StoreBasic<BigInteger> StoreBigInteger;
  */
 class Store
 {
-    int depth;
-public:
-    StoreStack<Value, Value> storeValue;
-    //	StoreStack<int, int> storeInt;
-    StoreStack<BTList<Value> , DLink<Value> *> storeDomain;
-    StoreStack<Cost, Cost> storeCost;
-    StoreStack<BTList<ConstraintLink> , DLink<ConstraintLink> *> storeConstraint;
-    StoreStack<BTList<Variable *> , DLink<Variable *> *> storeVariable;
-    StoreStack<BTList<Separator *> , DLink<Separator *> *> storeSeparator;
-    StoreStack<BigInteger, BigInteger> storeBigInteger;
+protected:
+    virtual ~Store() = 0; // Trick to avoid any instantiation of Store
 
-    Store(int pow) : depth(0), storeValue("Value", pow),
-            //			    storeInt("int", pow),
-            storeDomain("Domain", pow), storeCost("Cost", pow),
-            storeConstraint("Constraint", pow), storeVariable("Variable", pow), storeSeparator("Separator", pow),
-            storeBigInteger("BigInteger", pow) {
-    }
+public:
+    static int depth;
+    static StoreStack<BTList<Value> , DLink<Value> *> storeDomain;
+    static StoreStack<BTList<ConstraintLink> , DLink<ConstraintLink> *> storeConstraint;
+    static StoreStack<BTList<Variable *> , DLink<Variable *> *> storeVariable;
+    static StoreStack<BTList<Separator *> , DLink<Separator *> *> storeSeparator;
 
     /// \return the current (backtrack / tree search) depth
-    int getDepth() const {
+    static int getDepth() {
         return depth;
     }
 
     /// makes a copy of the current state
-    void store() {
+    static void store() {
         depth++;
-        storeCost.store();
-        storeValue.store();
-        //		storeInt.store();
+        StoreValue::store();
+        StoreCost::store();
+        StoreBigInteger::store();
         storeDomain.store();
         storeConstraint.store();
         storeVariable.store();
         storeSeparator.store();
-        storeBigInteger.store();
     }
 
     /// restores the current state to the last copy
-    void restore() {
+    static void restore() {
         depth--;
-        storeCost.restore();
-        storeValue.restore();
-        //		storeInt.restore();
+        StoreValue::restore();
+        StoreCost::restore();
+        StoreBigInteger::restore();
         storeDomain.restore();
         storeConstraint.restore();
         storeVariable.restore();
         storeSeparator.restore();
-        storeBigInteger.restore();
     }
 
     /// restore the current state to the copy made at depth \c newDepth
-    void restore(int newDepth) {
+    static void restore(int newDepth) {
         assert(depth >= newDepth);
         while (depth > newDepth) restore();
     }
 };
 
-#define storeInt storeValue
 #define storeIndexList storeDomain
 
 #endif /*TB2STORE_HPP_*/

@@ -9,12 +9,12 @@
  * 
  */
 
-Domain::Domain(Value inf, Value sup, StoreStack<BTList<Value>, DLink<Value> *> *s) : BTList<Value>(s), initSize(sup - inf + 1), distanceToZero(inf)
+Domain::Domain(Value inf, Value sup) : BTList<Value>(&Store::storeDomain), initSize(sup - inf + 1), distanceToZero(inf)
 {
     init(inf, sup);
 }
 
-Domain::Domain(Value *d, int dsize, StoreStack<BTList<Value>, DLink<Value> *> *s) : BTList<Value>(s), initSize(max(d,dsize)-min(d,dsize)+1), distanceToZero(min(d,dsize))
+Domain::Domain(Value *d, int dsize) : BTList<Value>(&Store::storeDomain), initSize(max(d,dsize)-min(d,dsize)+1), distanceToZero(min(d,dsize))
 {
     assert( dsize >= 1 );
     assert( dsize <= MAX_DOMAIN_SIZE );

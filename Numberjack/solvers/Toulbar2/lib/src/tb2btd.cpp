@@ -294,7 +294,7 @@ pair<Cost,Cost> Solver::binaryChoicePoint(Cluster *cluster, Cost lbgood, Cost cu
         else increasing = false;
     }
     try {
-        store->store();
+        Store::store();
         assert(td->getCurrentCluster() == cluster);
         assert(wcsp->getLb() == cluster->getLbRec());
         wcsp->setUb(cub);
@@ -317,12 +317,12 @@ pair<Cost,Cost> Solver::binaryChoicePoint(Cluster *cluster, Cost lbgood, Cost cu
     } catch (Contradiction) {
         wcsp->whenContradiction();
     }
-    store->restore();
+    Store::restore();
     nbBacktracks++;
     if (ToulBar2::restart>0 && nbBacktracks > nbBacktracksLimit) throw NbBacktracksOut();
     cluster->nbBacktracks++;
     try {
-        store->store();
+        Store::store();
         assert(wcsp->getTreeDec()->getCurrentCluster() == cluster);
         assert(wcsp->getLb() == cluster->getLbRec());
         wcsp->setUb(cub);
@@ -337,7 +337,7 @@ pair<Cost,Cost> Solver::binaryChoicePoint(Cluster *cluster, Cost lbgood, Cost cu
             if (increasing) increase(varIndex, middle+1, cluster->nbBacktracks >= cluster->hbfsLimit || nbBacktracks >= cluster->hbfsGlobalLimit); else decrease(varIndex, middle, cluster->nbBacktracks >= cluster->hbfsLimit || nbBacktracks >= cluster->hbfsGlobalLimit);
         } else remove(varIndex, value, cluster->nbBacktracks >= cluster->hbfsLimit || nbBacktracks >= cluster->hbfsGlobalLimit);
         bestlb = MAX(bestlb, wcsp->getLb());
-        if (!ToulBar2::hbfs && cluster==td->getRoot() && initialDepth+1==store->getDepth()) {initialDepth++; showGap(bestlb, cub);};
+        if (!ToulBar2::hbfs && cluster==td->getRoot() && initialDepth+1==Store::getDepth()) {initialDepth++; showGap(bestlb, cub);};
         if (cluster->nbBacktracks >= cluster->hbfsLimit || nbBacktracks >= cluster->hbfsGlobalLimit) {
             addOpenNode(*(cluster->cp), *(cluster->open), bestlb, cluster->getCurrentDelta());
         } else {
@@ -348,7 +348,7 @@ pair<Cost,Cost> Solver::binaryChoicePoint(Cluster *cluster, Cost lbgood, Cost cu
     } catch (Contradiction) {
         wcsp->whenContradiction();
     }
-    store->restore();
+    Store::restore();
     assert(lbgood <= clb);
     assert(clb <= cub);
     return make_pair(clb,cub);
@@ -376,7 +376,7 @@ BigInteger Solver::binaryChoicePointSBTD(Cluster *cluster, int varIndex, Value v
         else increasing = false;
     }
     try {
-        store->store();
+        Store::store();
         assert(wcsp->getTreeDec()->getCurrentCluster() == cluster);
 
         wcsp->setUb(cub);
@@ -391,11 +391,11 @@ BigInteger Solver::binaryChoicePointSBTD(Cluster *cluster, int varIndex, Value v
     } catch (Contradiction) {
         wcsp->whenContradiction();
     }
-    store->restore();
+    Store::restore();
     nbBacktracks++;
     if (ToulBar2::restart>0 && nbBacktracks > nbBacktracksLimit) throw NbBacktracksOut();
     try {
-        store->store();
+        Store::store();
         assert(wcsp->getTreeDec()->getCurrentCluster() == cluster);
         //		assert(wcsp->getLb() == cluster->getLbRec());
         wcsp->setUb(cub);
@@ -409,7 +409,7 @@ BigInteger Solver::binaryChoicePointSBTD(Cluster *cluster, int varIndex, Value v
     } catch (Contradiction) {
         wcsp->whenContradiction();
     }
-    store->restore();
+    Store::restore();
     return nbSol;
 }
 
@@ -422,7 +422,7 @@ BigInteger Solver::binaryChoicePointSBTD(Cluster *cluster, int varIndex, Value v
 
 pair<Cost,Cost> Solver::recursiveSolve(Cluster *cluster, Cost lbgood, Cost cub)
 {
-    if (ToulBar2::verbose >= 1) cout << "[" << store->getDepth() << "] recursive solve     cluster: " << cluster->getId() << "     clb: " << lbgood << "     cub: " << cub << "     clb0: " << cluster->getLb() << "     wcsp->lb: " << wcsp->getLb() << "     wcsp->ub: " << wcsp->getUb() << endl;
+    if (ToulBar2::verbose >= 1) cout << "[" << Store::getDepth() << "] recursive solve     cluster: " << cluster->getId() << "     clb: " << lbgood << "     cub: " << cub << "     clb0: " << cluster->getLb() << "     wcsp->lb: " << wcsp->getLb() << "     wcsp->ub: " << wcsp->getUb() << endl;
     assert(lbgood <= cub);
     TreeDecomposition* td = wcsp->getTreeDec();
     int varIndex = -1;
@@ -469,7 +469,7 @@ pair<Cost,Cost> Solver::recursiveSolve(Cluster *cluster, Cost lbgood, Cost cub)
                     wcsp->setUb(ubSon);
                     wcsp->setLb((good)?c->getLbRec():lbSon);
                     try {
-                        store->store();
+                        Store::store();
                         wcsp->enforceUb();
                         wcsp->propagate();
                         Cost bestlb = MAX(wcsp->getLb(),lbSon);
@@ -494,7 +494,7 @@ pair<Cost,Cost> Solver::recursiveSolve(Cluster *cluster, Cost lbgood, Cost cub)
                         if (csolution) csol += ubSon - lbSon;
                         else csol = MAX_COST;
                     }
-                    store->restore();
+                    Store::restore();
                 } else {
                     if (csol < MAX_COST) {
                         assert(ubSon < MAX_COST);
@@ -510,8 +510,8 @@ pair<Cost,Cost> Solver::recursiveSolve(Cluster *cluster, Cost lbgood, Cost cub)
             cluster->solutionRec(csol);
             if(cluster == td->getRoot() || cluster == td->getRootRDS()) {
                 if (ToulBar2::verbose>=0 || ToulBar2::showSolutions) {
-                    if(!ToulBar2::bayesian) cout << "New solution: " <<  csol << " (" << nbBacktracks << " backtracks, " << nbNodes << " nodes, depth " << store->getDepth() << ")" << endl;
-                    else cout << "New solution: " << csol << " log10like: " << (wcsp->Cost2LogProb(csol) + ToulBar2::markov_log)/Log(10.) << " prob: " << wcsp->Cost2Prob(csol) * Exp(ToulBar2::markov_log) << " (" << nbBacktracks << " backtracks, " << nbNodes << " nodes, depth " << store->getDepth() << ")" << endl;
+                    if(!ToulBar2::bayesian) cout << "New solution: " <<  csol << " (" << nbBacktracks << " backtracks, " << nbNodes << " nodes, depth " << Store::getDepth() << ")" << endl;
+                    else cout << "New solution: " << csol << " log10like: " << (wcsp->Cost2LogProb(csol) + ToulBar2::markov_log)/Log(10.) << " prob: " << wcsp->Cost2Prob(csol) * Exp(ToulBar2::markov_log) << " (" << nbBacktracks << " backtracks, " << nbNodes << " nodes, depth " << Store::getDepth() << ")" << endl;
                 }
                 if(cluster == td->getRoot()) td->newSolution(csol);
                 else {
@@ -533,7 +533,7 @@ pair<Cost,Cost> Solver::recursiveSolve(Cluster *cluster, Cost lbgood, Cost cub)
             }
         }
         Cost bestlb = MAX(lbgood,clb);
-        if (ToulBar2::verbose >= 1) cout << "[" << store->getDepth() << "] C" << cluster->getId() << " return " << bestlb << " " << cub << endl;
+        if (ToulBar2::verbose >= 1) cout << "[" << Store::getDepth() << "] C" << cluster->getId() << " return " << bestlb << " " << cub << endl;
         assert(bestlb <= cub);
         if (ToulBar2::hbfs && bestlb < cub) { // keep current node in open list instead of closing it!
             if (cluster->getNbVars() > 0) {
@@ -568,7 +568,7 @@ pair<Cost,Cost> Solver::recursiveSolve(Cluster *cluster, Cost lbgood, Cost cub)
         } else {
             res = binaryChoicePoint(cluster, lbgood, cub, varIndex, wcsp->getInf(varIndex));
         }
-        if (ToulBar2::verbose >= 1) cout << "[" << store->getDepth() << "] C" << cluster->getId() << " return " << res.first << " " << res.second << endl;
+        if (ToulBar2::verbose >= 1) cout << "[" << Store::getDepth() << "] C" << cluster->getId() << " return " << res.first << " " << res.second << endl;
         assert(res.first >= lbgood);
         assert(res.second <= cub);
         assert(res.first <= res.second);
@@ -594,7 +594,7 @@ pair<Cost,Cost> Solver::russianDollSearch(Cluster *c, Cost cub)
     }
 
     try {
-        store->store();
+        Store::store();
 
         Cost nogoodlb = MIN_COST;
         Cost nogoodub = MAX_COST;
@@ -603,7 +603,7 @@ pair<Cost,Cost> Solver::russianDollSearch(Cluster *c, Cost cub)
             c->nogoodGet(nogoodlb, nogoodub, &c->open); // update c->open and c->ub
             //	      if (nogoodlb == bestub) {
             //	          assert(bestub <= cub);
-            //	          store->restore();
+            //	          Store::restore();
             //	          return make_pair(bestub,bestub);
             //	      }
             assert(c->getLbRec() == MIN_COST);
@@ -637,7 +637,7 @@ pair<Cost,Cost> Solver::russianDollSearch(Cluster *c, Cost cub)
         //	  }
 
         if (ToulBar2::debug || ToulBar2::verbose >= 1) c->printStatsRec();
-        if(ToulBar2::verbose>=0) cout << "---  done  cost = [" << res.first << "," << res.second << "] ("    << nbBacktracks << " backtracks, " << nbNodes << " nodes, depth " << store->getDepth() << ")" << endl << endl;
+        if(ToulBar2::verbose>=0) cout << "---  done  cost = [" << res.first << "," << res.second << "] ("    << nbBacktracks << " backtracks, " << nbNodes << " nodes, depth " << Store::getDepth() << ")" << endl << endl;
 
     } catch (Contradiction) {
         wcsp->whenContradiction();
@@ -647,7 +647,7 @@ pair<Cost,Cost> Solver::russianDollSearch(Cluster *c, Cost cub)
         c->nogoodRec(cub, MAX_COST, &c->open);
         //	  }
     }
-    store->restore();
+    Store::restore();
     if (c == td->getRoot()) {
         c->resetLbRec();
     } else {
@@ -668,7 +668,7 @@ BigInteger Solver::sharpBTD(Cluster *cluster){
     TreeDecomposition* td = wcsp->getTreeDec();
     BigInteger NbSol = 0,nb = 0;
     TCtrs totalList;
-    if (ToulBar2::verbose >= 1) cout << "[" << store->getDepth() << "] recursive solve     cluster: " << cluster->getId() << " **************************************************************"<< endl;
+    if (ToulBar2::verbose >= 1) cout << "[" << Store::getDepth() << "] recursive solve     cluster: " << cluster->getId() << " **************************************************************"<< endl;
 
     int varIndex = -1;
     if(ToulBar2::Static_variable_ordering) varIndex = getNextUnassignedVar(cluster);
@@ -680,7 +680,7 @@ BigInteger Solver::sharpBTD(Cluster *cluster){
     if (varIndex < 0) {
         // Current cluster is completely assigned
         Cost lb = wcsp->getLb();
-        if (ToulBar2::verbose >= 1) cout << "[" << store->getDepth() << "] C" << cluster->getId() << " lb= " << lb << endl;
+        if (ToulBar2::verbose >= 1) cout << "[" << Store::getDepth() << "] C" << cluster->getId() << " lb= " << lb << endl;
         NbSol = 1*cluster->getCount();
 
         if(ToulBar2::approximateCountingBTD && cluster->getParent()==NULL)
@@ -698,7 +698,7 @@ BigInteger Solver::sharpBTD(Cluster *cluster){
                 nb = 0;
                 td->setCurrentCluster(c);
                 try{
-                    store->store();
+                    Store::store();
                     if(ToulBar2::approximateCountingBTD){
                         if(c->getParent() != NULL && c->getParent()->getParent() == NULL && c->getNbVars()>1){
                             // for this son of root, we disconnect the constraints which isn't in intersection
@@ -719,7 +719,7 @@ BigInteger Solver::sharpBTD(Cluster *cluster){
                     c->sgoodRec(0,0);// no solution
                     nbSGoods++;
                 }
-                store->restore();
+                Store::restore();
 
             }
             if(cluster->getParent()==NULL && ToulBar2::approximateCountingBTD){
@@ -747,7 +747,7 @@ BigInteger Solver::sharpBTD(Cluster *cluster){
         else {
             NbSol = binaryChoicePointSBTD(cluster, varIndex, wcsp->getInf(varIndex));
         }
-        if (ToulBar2::verbose >= 1) cout << "[" << store->getDepth() << "] C" << cluster->getId() << " return " << NbSol << endl;
+        if (ToulBar2::verbose >= 1) cout << "[" << Store::getDepth() << "] C" << cluster->getId() << " return " << NbSol << endl;
         return NbSol;
     }
 }

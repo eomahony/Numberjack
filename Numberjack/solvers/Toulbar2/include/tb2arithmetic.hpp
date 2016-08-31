@@ -22,7 +22,7 @@ class Unary : public AbstractUnaryConstraint<IntervalVariable>
     StoreValue deltaValueXsup;
 
 public:
-    Unary(WCSP *wcsp, IntervalVariable *xx, Value *d, int dsize, Cost penalty, StoreStack<Value, Value> *storeValue);
+    Unary(WCSP *wcsp, IntervalVariable *xx, Value *d, int dsize, Cost penalty);
 
     ~Unary() {}
 
@@ -62,8 +62,7 @@ class Supxyc : public AbstractBinaryConstraint<IntervalVariable,IntervalVariable
     StoreCost deltaCostYsup;
 
 public:
-    Supxyc(WCSP *wcsp, IntervalVariable *xx, IntervalVariable *yy, Value c, Value delta,
-            StoreStack<Cost, Cost> *storeCost, StoreStack<Value, Value> *storeValue);
+    Supxyc(WCSP *wcsp, IntervalVariable *xx, IntervalVariable *yy, Value c, Value delta);
 
     ~Supxyc() {}
 
@@ -98,7 +97,7 @@ class Disjunction : public AbstractBinaryConstraint<IntervalVariable, IntervalVa
 
 public:
     Disjunction(WCSP *wcsp, IntervalVariable *xx, IntervalVariable *yy, Value cxx, Value cyy,
-            Cost penalty, StoreStack<Value, Value> *storeValue);
+                Cost penalty);
 
     ~Disjunction() {}
 
@@ -146,8 +145,7 @@ class SpecialDisjunction : public AbstractBinaryConstraint<IntervalVariable, Int
 
 public:
     SpecialDisjunction(WCSP *wcsp, IntervalVariable *xx, IntervalVariable *yy, Value cxx, Value cyy, 
-            Value xmax, Value ymax, Cost xcost, Cost ycost,
-            StoreStack<Cost, Cost> *storeCost, StoreStack<Value, Value> *storeValue);
+                       Value xmax, Value ymax, Cost xcost, Cost ycost);
 
     ~SpecialDisjunction() {}
 

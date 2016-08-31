@@ -68,7 +68,7 @@ public:
     AmongConstraint(WCSP * wcsp, EnumeratedVariable ** scope, int arity);
     virtual ~AmongConstraint();
 
-    Cost evalOriginal(String s);
+    Cost evalOriginal(const String& s);
 
     void read(istream & file);
     void setUpperBound(int upper) {ub = upper;}
@@ -82,6 +82,7 @@ public:
         for (set<int>::iterator iter = V.begin(); iter != V.end(); ++iter) name += "_" + to_string(*iter);
         return name;
     }
+    void dump(ostream& os, bool original = true);
 };
 
 #endif /*TB2AMONGCONSTR_HPP_*/

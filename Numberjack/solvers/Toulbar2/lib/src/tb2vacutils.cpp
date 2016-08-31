@@ -8,12 +8,12 @@
 
 
 
-VACVariable::VACVariable (WCSP *wcsp, string n, Value iinf, Value isup) : EnumeratedVariable(wcsp, n, iinf, isup), vac(wcsp->vac), myThreshold(MIN_COST, &wcsp->getStore()->storeCost)
+VACVariable::VACVariable (WCSP *wcsp, string n, Value iinf, Value isup) : EnumeratedVariable(wcsp, n, iinf, isup), vac(wcsp->vac), myThreshold(MIN_COST)
 {
     init();
 }
 
-VACVariable::VACVariable (WCSP *wcsp, string n, Value *d, int dsize) : EnumeratedVariable(wcsp, n, d, dsize), vac(wcsp->vac), myThreshold(MIN_COST, &wcsp->getStore()->storeCost)
+VACVariable::VACVariable (WCSP *wcsp, string n, Value *d, int dsize) : EnumeratedVariable(wcsp, n, d, dsize), vac(wcsp->vac), myThreshold(MIN_COST)
 {
     init();
 }
@@ -323,30 +323,13 @@ bool VACVariable::averaging()
                     nbtuples++;
                     if (toValue(tuple[tindex] - CHAR_FIRST)==(*it) && cost < cmin) cmin = cost;
                 }
-                if (nctr->getDefCost() < cmin && nbtuples < nctr->getDomainSizeProduct()) cmin = nctr->getDefCost();
+                if (nctr->getDefCost() < cmin && nbtuples < nctr->getDomainSizeProduct()/getDomainSize()) cmin = nctr->getDefCost();
                 //				assert(cmin < Top);
                 Double mean = to_double(cmin + cu) / 2.;
                 Double extc = to_double(cu) - mean;
                 if(abs(extc) >= 1) {
                     Cost costi = (Cost) extc;
-                    if(nctr->getDefCost() < Top) {
-                        nctr->firstlex();
-                        while( nctr->nextlex(tuple,cost) ) {
-                            if (toValue(tuple[tindex] - CHAR_FIRST)==(*it)) {
-                                if(cost + costi < Top) nctr->setTuple(tuple, cost + costi);
-                                else nctr->setTuple(tuple, Top);
-                            }
-                        }
-                        nctr->setDefCost(Top);
-                    } else {
-                        nctr->first();
-                        while( nctr->next(tuple,cost) ) {
-                            if (toValue(tuple[tindex] - CHAR_FIRST)==(*it)) {
-                                if(cost + costi < Top) nctr->addtoTuple(tuple, costi);
-                                else nctr->setTuple(tuple, Top);
-                            }
-                        }
-                    }
+                    nctr->addtoTuples(this, *it, costi);
                     if(mean > to_double(cu)) project(*it, -costi);
                     else extend(*it, costi);
                     change = true;
@@ -366,7 +349,7 @@ bool VACVariable::averaging()
  *   A class that stores information about a binary cost function
  */
 
-VACBinaryConstraint::VACBinaryConstraint (WCSP *wcsp, EnumeratedVariable *xx, EnumeratedVariable *yy, vector<Cost> &tab, StoreStack<Cost, Cost> *storeCost) :  BinaryConstraint(wcsp, xx, yy, tab, storeCost), myThreshold(MIN_COST, &wcsp->getStore()->storeCost)
+VACBinaryConstraint::VACBinaryConstraint (WCSP *wcsp, EnumeratedVariable *xx, EnumeratedVariable *yy, vector<Cost> &tab) :  BinaryConstraint(wcsp, xx, yy, tab), myThreshold(MIN_COST)
 {
     for (unsigned int a = 0; a < xx->getDomainInitSize(); a++) {
         kX.push_back(0);
@@ -378,7 +361,7 @@ VACBinaryConstraint::VACBinaryConstraint (WCSP *wcsp, EnumeratedVariable *xx, En
     }
 }
 
-VACBinaryConstraint::VACBinaryConstraint (WCSP *wcsp, StoreStack<Cost, Cost> *storeCost) : BinaryConstraint(wcsp, storeCost) , myThreshold(MIN_COST, &wcsp->getStore()->storeCost)
+VACBinaryConstraint::VACBinaryConstraint (WCSP *wcsp) : BinaryConstraint(wcsp) , myThreshold(MIN_COST)
 {}
 
 void VACBinaryConstraint::VACfillElimConstr ()
@@ -407,6 +390,8 @@ void VACBinaryConstraint::VACproject (VACVariable* x, Value v, Cost c) {
     // TO BE REPLACED BY A LOOP ON THE DOMAIN IN ORDER TO AVOID SUBTRACTING TOP???
     if(!getIndex(x)) deltaCostsX[index] += c;
     else             deltaCostsY[index] += c;
+    assert(getCost((EnumeratedVariable *) x,(EnumeratedVariable *) getVarDiffFrom(x),v,getVarDiffFrom(x)->getInf()) >= MIN_COST);
+    assert(getCost((EnumeratedVariable *) x,(EnumeratedVariable *) getVarDiffFrom(x),v,getVarDiffFrom(x)->getSup()) >= MIN_COST);
     x->VACproject(v, c);
 }
 
@@ -506,7 +491,7 @@ bool VACBinaryConstraint::revise (VACVariable* var, Value v) {
  *   A class that stores information about a ternary cost function
  */
 /*
-VACTernaryConstraint::VACTernaryConstraint (WCSP *wcsp, EnumeratedVariable *xx, EnumeratedVariable *yy, EnumeratedVariable *zz, BinaryConstraint *xy, BinaryConstraint *xz, BinaryConstraint *yz, vector<Cost> &tab, StoreStack<Cost, Cost> *storeCost) :  TernaryConstraint(wcsp, xx, yy, zz, xy, xz, yz, tab, storeCost), myThreshold(MIN_COST, &wcsp->getStore()->storeCost)
+VACTernaryConstraint::VACTernaryConstraint (WCSP *wcsp, EnumeratedVariable *xx, EnumeratedVariable *yy, EnumeratedVariable *zz, BinaryConstraint *xy, BinaryConstraint *xz, BinaryConstraint *yz, vector<Cost> &tab) :  TernaryConstraint(wcsp, xx, yy, zz, xy, xz, yz, tab, storeCost), myThreshold(MIN_COST)
 {
    for (int a = 0; a < xx->getDomainInitSize(); a++) {
 	   	kX.push_back(0);
@@ -522,7 +507,7 @@ VACTernaryConstraint::VACTernaryConstraint (WCSP *wcsp, EnumeratedVariable *xx, 
    }
 }
 
-VACTernaryConstraint::VACTernaryConstraint (WCSP *wcsp, StoreStack<Cost, Cost> *storeCost) : TernaryConstraint(wcsp, storeCost) , myThreshold(MIN_COST, &wcsp->getStore()->storeCost)
+VACTernaryConstraint::VACTernaryConstraint (WCSP *wcsp) : TernaryConstraint(wcsp) , myThreshold(MIN_COST)
 {
    for (int a = 0; a < wcsp->getMaxDomainSize(); a++) {
 	   	kX.push_back(0);

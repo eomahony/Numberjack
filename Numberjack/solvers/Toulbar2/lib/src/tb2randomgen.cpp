@@ -9,11 +9,56 @@
 #include "tb2enumvar.hpp"
 
 #include <set>
+#include <algorithm>
 
 bool naryRandom::connected() {
     return true;
 }
 
+void naryRandom::generateGlobalCtr( vector<int>& indexs, string globalname, Cost costMin, Cost costMax)
+{
+    int i;
+    int arity = indexs.size();
+    EnumeratedVariable** scopeVars = new EnumeratedVariable * [arity];
+    int* scopeIndexs = new int [arity];
+    Cost Top = wcsp.getUb();
+    if(costMax < Top) Top = costMax;
+
+    for(i = 0; i<arity; i++) {
+        scopeIndexs[i] = indexs[i];
+        scopeVars[i] = (EnumeratedVariable*) wcsp.getVar(indexs[i]);
+    }
+
+    random_shuffle(&scopeIndexs[0], &scopeIndexs[arity-1]);
+
+    if (globalname == "salldiff" || globalname == "salldiffdp" || globalname == "walldiff") {
+        wcsp.postWAllDiff(scopeIndexs, arity, "var", (globalname == "salldiff")?"flow":((globalname == "walldiff")?"network":"DAG"), Top);
+    } else if (globalname == "sgcc" || globalname == "sgccdp" || globalname == "wgcc") {
+        // soft alldiff
+        vector<BoundedObj<Value> > values;
+        for (unsigned int i=0; i<scopeVars[0]->getDomainInitSize(); i++) {
+            values.push_back(BoundedObj<Value>(i, 1));
+        }
+        wcsp.postWGcc(scopeIndexs, arity, "var", (globalname == "sgcc")?"flow":((globalname == "wgcc")?"network":"DAG"), Top, values);
+    } else if (globalname == "sregular" || globalname == "sregulardp" || globalname == "wregular") {
+        // random parity automaton (XOR)
+        vector<WeightedObj<int> > init(1, WeightedObj<int>(0));
+        vector<WeightedObj<int> > last(1, WeightedObj<int>(1));
+        if (globalname == "wregular") last.push_back(WeightedObj<int>(0, Top));
+        vector<DFATransition> trans;
+        for (unsigned int i=0; i<scopeVars[0]->getDomainInitSize(); i++) {
+            trans.push_back(DFATransition(0,i,(i%2)?1:0));
+            trans.push_back(DFATransition(1,i,(i%2)?0:1));
+        }
+        wcsp.postWRegular(scopeIndexs, arity, "var", (globalname == "sregular")?"flow":((globalname == "wregular")?"network":"DAG"), Top, 2, init, last, trans);
+   } else {
+        cerr << "Random generator: unknown global cost function name " << globalname << endl;
+        exit(-1);
+    }
+
+    delete [] scopeIndexs;
+    delete [] scopeVars;
+}
 
 void naryRandom::generateNaryCtr( vector<int>& indexs, long nogoods, Cost costMin, Cost costMax)
 {
@@ -32,13 +77,13 @@ void naryRandom::generateNaryCtr( vector<int>& indexs, long nogoods, Cost costMi
     }
     tuple[arity] = '\0';
 
-    Constraint* nctr =  wcsp.getCtr( wcsp.postNaryConstraintBegin(scopeIndexs, arity, Top) );
+    Constraint* nctr =  wcsp.getCtr( wcsp.postNaryConstraintBegin(scopeIndexs, arity, Top, nogoods) );
 
     String s(tuple);
     while(nogoods>0) {
         for(i = 0; i<arity; i++) s[i] = myrand() % scopeVars[i]->getDomainInitSize() + CHAR_FIRST;
         Cost c = ToulBar2::costMultiplier * randomCost(MIN_COST, costMax);
-        nctr->setTuple(s, c, scopeVars);
+        nctr->setTuple(s, c);
         nogoods--;
     }
     nctr->propagate();
@@ -206,7 +251,7 @@ int naryRandom::inc( vector<int>& index, int i )
 }
 
 
-void naryRandom::Input( int in_n, int in_m, vector<int>& p, bool forceSubModular )
+void naryRandom::Input( int in_n, int in_m, vector<int>& p, bool forceSubModular, string globalname)
 {
     n = in_n;
     m = in_m;
@@ -265,7 +310,10 @@ void naryRandom::Input( int in_n, int in_m, vector<int>& p, bool forceSubModular
                             case 3:
                                 generateTernCtr(indexs[0],indexs[1],indexs[2],nogoods);
                                 break;
-                            default: generateNaryCtr(indexs,nogoods);
+                            default:
+                                if (globalname == "" || globalname == "nary") generateNaryCtr(indexs, nogoods);
+                                else generateGlobalCtr(indexs, globalname);
+                                break;
                             }
                         }
                         tCtrs--;

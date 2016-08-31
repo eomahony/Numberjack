@@ -14,7 +14,7 @@ template <class T> class BTList;
 
 const double epsilon = 1e-6; // 1./100001.
 
-class Solver : public WeightedCSPSolver
+class Solver FINAL : public WeightedCSPSolver
 {
 public:
     class OpenNode
@@ -49,6 +49,8 @@ public:
         Cost getUb(Cost delta = MIN_COST) const {return MAX(MIN_COST, cub - delta);}
         void setUb(Cost ub, Cost delta = MIN_COST) {cub = MAX(MIN_COST, ub + delta);}
         void updateUb(Cost ub, Cost delta = MIN_COST) {Cost tmpub = MAX(MIN_COST, ub + delta); cub = MIN(cub, tmpub); clb = MIN(clb, tmpub);}
+
+        size_type capacity() const {return c.capacity();}
     };
 
     typedef enum {
@@ -72,7 +74,7 @@ public:
         ptrdiff_t stop;        // deepest saved branch end (should be free at this position)
         StoreCost index;  // current branch depth (should be free at this position)
 
-        CPStore(Store *s) : start(0), stop(0), index(0, &s->storeCost) {}
+        CPStore() : start(0), stop(0), index(0) {}
 
         void addChoicePoint(ChoicePointOp op, int varIndex, Value value, bool reverse);
         void store() {start = stop; index = start;}
@@ -83,7 +85,6 @@ public:
     void restore(CPStore &cp, OpenNode node);
 
     protected:
-    Store *store;
     Long nbNodes;
     Long nbBacktracks;
     Long nbBacktracksLimit;
@@ -168,11 +169,11 @@ public:
     void approximate(BigInteger& nbsol, TreeDecomposition* td);
 
     public:
-    Solver(int storeSize, Cost initUpperBound);
+    Solver(Cost initUpperBound);
     ~Solver();
 
     void read_wcsp(const char *fileName);
-    void read_random(int n, int m, vector<int>& p, int seed, bool forceSubModular = false );
+    void read_random(int n, int m, vector<int>& p, int seed, bool forceSubModular = false, string globalname = "");
 
     Long getNbNodes() const {return nbNodes;}
     Long getNbBacktracks() const {return nbBacktracks;}
@@ -198,13 +199,19 @@ public:
 class NbBacktracksOut
 {
 public:
-    NbBacktracksOut() {if (ToulBar2::verbose >= 2) cout << "... limit on the number of backtracks reached!" << endl;}
+    NbBacktracksOut() {ToulBar2::limited = true; if (ToulBar2::verbose >= 2) cout << "... limit on the number of backtracks reached!" << endl;}
+};
+
+class NbSolutionsOut
+{
+public:
+    NbSolutionsOut() {ToulBar2::limited = true; if (ToulBar2::verbose >= 2) cout << "... limit on the number of solutions reached!" << endl;}
 };
 
 class TimeOut
 {
 public:
-    TimeOut() {if (ToulBar2::verbose >= 2) cout << "... time limit reached!" << endl;}
+    TimeOut() {ToulBar2::limited = true; if (ToulBar2::verbose >= 2) cout << "... time limit reached!" << endl;}
 };
 
 int solveSymMax2SAT(int n, int m, int *posx, int *posy, double *cost, int *sol);

@@ -31,21 +31,25 @@
 #include "tb2grammarconstr.hpp"
 #include "tb2treeconstr.hpp"
 #include "tb2maxconstr.hpp"
-#include "ToulbarVersion.hpp"
 
 /*
  * Global variables with their default value
  *
  */
 
+int Store::depth = 0;
+StoreStack<BTList<Value> , DLink<Value> *> Store::storeDomain(STORE_SIZE);
+StoreStack<BTList<ConstraintLink> , DLink<ConstraintLink> *> Store::storeConstraint(STORE_SIZE);
+StoreStack<BTList<Variable *> , DLink<Variable *> *> Store::storeVariable(STORE_SIZE);
+StoreStack<BTList<Separator *> , DLink<Separator *> *> Store::storeSeparator(STORE_SIZE);
+
 int WCSP::wcspCounter = 0;
 
-string ToulBar2::version;
 int ToulBar2::verbose;
 int ToulBar2::debug;
 bool ToulBar2::showSolutions;
 char *ToulBar2::writeSolution;
-bool ToulBar2::allSolutions;
+Long ToulBar2::allSolutions;
 int ToulBar2::dumpWCSP;
 bool ToulBar2::approximateCountingBTD;
 int ToulBar2::elimDegree;
@@ -168,12 +172,13 @@ Cost ToulBar2::verifiedOptimum;
 /// \brief initialization of ToulBar2 global variables needed by numberjack/toulbar2
 void tb2init()
 {
-    ToulBar2::version = Toulbar_VERSION;
+    Store::depth = 0;
+
     ToulBar2::verbose = 0;
     ToulBar2::debug = 0;
     ToulBar2::showSolutions = false;
     ToulBar2::writeSolution = NULL;
-    ToulBar2::allSolutions = false;
+    ToulBar2::allSolutions = 0;
     ToulBar2::dumpWCSP = 0;
     ToulBar2::approximateCountingBTD = false;
     ToulBar2::elimDegree = 3;
@@ -205,7 +210,7 @@ void tb2init()
     ToulBar2::DEE_ = 0;
     ToulBar2::nbDecisionVars = 0;
     ToulBar2::singletonConsistency = false;
-    ToulBar2::vacValueHeuristic = false;
+    ToulBar2::vacValueHeuristic = true;
 
     ToulBar2::setvalue = NULL;
     ToulBar2::setmin = NULL;
@@ -293,7 +298,7 @@ Cost tb2checkOptions(Cost ub)
     {
         cout << "Warning! Cannot find an approximation of solution count without BTD." << endl;
         ToulBar2::approximateCountingBTD = false;
-        ToulBar2::allSolutions = false;
+        ToulBar2::allSolutions = 0;
     }
     if (ToulBar2::allSolutions && ToulBar2::btdMode == 1 && ub > 1)
     {
@@ -303,7 +308,7 @@ Cost tb2checkOptions(Cost ub)
     if (ToulBar2::allSolutions && ToulBar2::btdMode > 1)
     {
         cout << "Warning! Cannot find all solutions with RDS-like search methods." << endl;
-        ToulBar2::allSolutions = false;
+        ToulBar2::allSolutions = 0;
     }
     if (ToulBar2::allSolutions && ToulBar2::btdMode == 1 && ToulBar2::elimDegree > 0)
     {
@@ -356,7 +361,7 @@ Cost tb2checkOptions(Cost ub)
     if (ToulBar2::vac > 1 && ToulBar2::btdMode >= 1)
     {
         cout << "Warning! VAC not implemented with BTD-like search methods during search, use VAC in preprocessing only." << endl;
-        ToulBar2::vac = 1;
+        ToulBar2::vac = 1; /// \warning VAC supports can break EAC supports (e.g. SPOT5 404.wcsp)
     }
     if (ToulBar2::preprocessFunctional >0 && ToulBar2::LcLevel == LC_NC)
     {
@@ -405,16 +410,16 @@ Cost tb2checkOptions(Cost ub)
  */
 
 /// \note isDelayedNaryCtr should be false if toulbar2 is used within numberjack
-WCSP::WCSP(Store *s, Cost upperBound, void *_solver_) :
-	        solver(_solver_), storeData(s), lb(MIN_COST, &s->storeCost), ub(upperBound), negCost(MIN_COST, &s->storeCost), NCBucketSize(cost2log2gub(upperBound) + 1),
-	        NCBuckets(NCBucketSize, VariableList(&s->storeVariable)), PendingSeparator(&s->storeSeparator),
+WCSP::WCSP(Cost upperBound, void *_solver_) :
+	        solver(_solver_), lb(MIN_COST), ub(upperBound), negCost(MIN_COST), NCBucketSize(cost2log2gub(upperBound) + 1),
+	        NCBuckets(NCBucketSize, VariableList(&Store::storeVariable)), PendingSeparator(&Store::storeSeparator),
 	        objectiveChanged(false), nbNodes(0), nbDEE(0), lastConflictConstr(NULL), maxdomainsize(0),
 #ifdef NUMBERJACK
             isDelayedNaryCtr(false),
 #else
             isDelayedNaryCtr(true),
 #endif
-	        isPartOfOptimalSolution(0, &s->storeInt), elimOrder(0, &s->storeInt), elimBinOrder(0, &s->storeInt), elimTernOrder(0, &s->storeInt),
+	        isPartOfOptimalSolution(0), elimOrder(0), elimBinOrder(0), elimTernOrder(0),
 	        maxDegree(-1), elimSpace(0) {
     instance = wcspCounter++;
     if (ToulBar2::vac) vac = new VACExtension(this);
@@ -434,8 +439,8 @@ WCSP::~WCSP() {
         delete elimTernConstrs[i];
 }
 
-WeightedCSP *WeightedCSP::makeWeightedCSP(Store *s, Cost upperBound, void *solver) {
-    WeightedCSP * W = new WCSP(s, upperBound, solver);
+WeightedCSP *WeightedCSP::makeWeightedCSP(Cost upperBound, void *solver) {
+    WeightedCSP * W = new WCSP(upperBound, solver);
     return W;
 }
 
@@ -510,10 +515,10 @@ int WCSP::postBinaryConstraint(int xIndex, int yIndex, vector<Cost> &costs) {
     } else {
         if (!ToulBar2::vac) {
             ctr
-            = new BinaryConstraint(this, (EnumeratedVariable *) vars[xIndex], (EnumeratedVariable *) vars[yIndex], costs, &storeData->storeCost);
+            = new BinaryConstraint(this, (EnumeratedVariable *) vars[xIndex], (EnumeratedVariable *) vars[yIndex], costs);
         } else {
             ctr
-            = new VACBinaryConstraint(this, (EnumeratedVariable *) vars[xIndex], (EnumeratedVariable *) vars[yIndex], costs, &storeData->storeCost);
+            = new VACBinaryConstraint(this, (EnumeratedVariable *) vars[xIndex], (EnumeratedVariable *) vars[yIndex], costs);
         }
     }
 
@@ -568,33 +573,33 @@ int WCSP::postTernaryConstraint(int xIndex, int yIndex, int zIndex, vector<Cost>
 
         if (!ToulBar2::vac) {
             if (!xy) {
-                xy = new BinaryConstraint(this, x, y, zerocostsxy, &storeData->storeCost);
+                xy = new BinaryConstraint(this, x, y, zerocostsxy);
                 xy->deconnect(true);
             }
             if (!xz) {
-                xz = new BinaryConstraint(this, x, z, zerocostsxz, &storeData->storeCost);
+                xz = new BinaryConstraint(this, x, z, zerocostsxz);
                 xz->deconnect(true);
             }
             if (!yz) {
-                yz = new BinaryConstraint(this, y, z, zerocostsyz, &storeData->storeCost);
+                yz = new BinaryConstraint(this, y, z, zerocostsyz);
                 yz->deconnect(true);
             }
         } else {
             if (!xy) {
-                xy = new VACBinaryConstraint(this, x, y, zerocostsxy, &storeData->storeCost);
+                xy = new VACBinaryConstraint(this, x, y, zerocostsxy);
                 xy->deconnect(true);
             }
             if (!xz) {
-                xz = new VACBinaryConstraint(this, x, z, zerocostsxz, &storeData->storeCost);
+                xz = new VACBinaryConstraint(this, x, z, zerocostsxz);
                 xz->deconnect(true);
             }
             if (!yz) {
-                yz = new VACBinaryConstraint(this, y, z, zerocostsyz, &storeData->storeCost);
+                yz = new VACBinaryConstraint(this, y, z, zerocostsyz);
                 yz->deconnect(true);
             }
         }
 
-        ctr = new TernaryConstraint(this, x, y, z, xy, xz, yz, costs, &storeData->storeCost);
+        ctr = new TernaryConstraint(this, x, y, z, xy, xz, yz, costs);
     } else {
         ctr->addCosts(x, y, z, costs);
         ctr->propagate();
@@ -607,27 +612,30 @@ int WCSP::postTernaryConstraint(int xIndex, int yIndex, int zIndex, vector<Cost>
 /// \param scopeIndex array of enumerated variable indexes (as returned by makeEnumeratedVariable)
 /// \param arity size of scopeIndex
 /// \param defval default cost for any tuple
+/// \param nbtuples number of tuples to be inserted after creating this global cost function (optional parameter, zero if unknown)
 /// \note should not be used for binary or ternary cost functions
 /// \warning do not forget to initially propagate the global cost function using WCSP::postNaryConstraintEnd
-int WCSP::postNaryConstraintBegin(int* scopeIndex, int arity, Cost defval) {
+int WCSP::postNaryConstraintBegin(int* scopeIndex, int arity, Cost defval, Long nbtuples) {
 #ifndef NDEBUG
     for(int i=0; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
 #endif
     EnumeratedVariable** scopeVars = new EnumeratedVariable*[arity];
     for (int i = 0; i < arity; i++)
         scopeVars[i] = (EnumeratedVariable *) vars[scopeIndex[i]];
-    NaryConstraint *ctr = new NaryConstraintMap(this, scopeVars, arity, defval);
+    NaryConstraint *ctr = new NaryConstraint(this, scopeVars, arity, defval, nbtuples);
     delete[] scopeVars;
 
-    if (isDelayedNaryCtr) delayedNaryCtr.push_back(ctr->wcspIndex);
-    else {
-        BinaryConstraint* bctr;
-        TernaryConstraint* tctr = new TernaryConstraint(this, &storeData->storeCost);
-        elimTernConstrs.push_back(tctr);
-        for (int j = 0; j < 3; j++) {
-            if (!ToulBar2::vac) bctr = new BinaryConstraint(this, &storeData->storeCost);
-            else bctr = new VACBinaryConstraint(this, &storeData->storeCost);
-            elimBinConstrs.push_back(bctr);
+    if (arity > 3) {
+        if (isDelayedNaryCtr) delayedNaryCtr.push_back(ctr->wcspIndex);
+        else {
+            BinaryConstraint* bctr;
+            TernaryConstraint* tctr = new TernaryConstraint(this);
+            elimTernConstrs.push_back(tctr);
+            for (int j = 0; j < 3; j++) {
+                if (!ToulBar2::vac) bctr = new BinaryConstraint(this);
+                else bctr = new VACBinaryConstraint(this);
+                elimBinConstrs.push_back(bctr);
+            }
         }
     }
     return ctr->wcspIndex;
@@ -641,11 +649,13 @@ int WCSP::postNaryConstraintBegin(int* scopeIndex, int arity, Cost defval) {
 /// \warning valid only for global cost function in extension
 void WCSP::postNaryConstraintTuple(int ctrindex, Value* tuple, int arity, Cost cost) {
     if(ToulBar2::vac) histogram(cost);
-    Constraint *ctr = getCtr(ctrindex);
-    assert(ctr->extension()); // must be an NaryConstraint
-    int indextuple[arity];
-    for (int i=0; i<arity; i++) indextuple[i] = ((EnumeratedVariable *) ctr->getVar(i))->toIndex(tuple[i]);
-    ctr->setTuple(indextuple, cost, NULL);
+    Constraint *ctrctr = getCtr(ctrindex);
+    assert(ctrctr->extension()); // must be an NaryConstraint
+    assert(arity == ctrctr->arity());
+    NaryConstraint *ctr = (NaryConstraint *) ctrctr;
+    String s(arity, CHAR_FIRST);
+    for (int i=0; i<arity; i++) s[i] = ((EnumeratedVariable *) ctr->getVar(i))->toIndex(tuple[i]) + CHAR_FIRST;
+    ctr->setTuple(s, cost);
 }
 
 /// \brief set one tuple with a specific cost for global cost function in extension
@@ -654,15 +664,22 @@ void WCSP::postNaryConstraintTuple(int ctrindex, Value* tuple, int arity, Cost c
 /// \param cost new cost for this tuple
 /// \warning valid only for global cost function in extension
 /// \warning string encoding of tuples is for advanced users only!
-void WCSP::postNaryConstraintTuple(int ctrindex, String& tuple, Cost cost) {
+void WCSP::postNaryConstraintTuple(int ctrindex, const String& tuple, Cost cost) {
     if(ToulBar2::vac) histogram(cost);
-    Constraint *ctr = getCtr(ctrindex);
-    assert(ctr->extension()); // must be an NaryConstraint
-    ctr->setTuple(tuple, cost, NULL);
+    Constraint *ctrctr = getCtr(ctrindex);
+    assert(ctrctr->extension()); // must be an NaryConstraint
+    NaryConstraint *ctr = (NaryConstraint *) ctrctr;
+     ctr->setTuple(tuple, cost);
+}
+
+void WCSP::postNaryConstraintEnd(int ctrindex)
+{
+  AbstractNaryConstraint *ctr = (AbstractNaryConstraint *) getCtr(ctrindex);
+  if (ctr->arity()<=3) ctr->projectNaryBeforeSearch();
+  else if (!isDelayedNaryCtr) ctr->propagate();
 }
 
 void WCSP::postWSum(int* scopeIndex, int arity, string semantics, Cost baseCost, string comparator, int rightRes){
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
 #endif
@@ -677,7 +694,6 @@ void WCSP::postWSum(int* scopeIndex, int arity, string semantics, Cost baseCost,
 
 void WCSP::postWVarSum(int* scopeIndex, int arity, string semantics, Cost baseCost, string comparator, int varIndex)
 {
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
 #endif
@@ -692,7 +708,6 @@ void WCSP::postWVarSum(int* scopeIndex, int arity, string semantics, Cost baseCo
 
 void WCSP::postWAmong(int* scopeIndex, int arity, string semantics, Cost baseCost, Value* values, int nbValues, int lb, int ub)
 {
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
 #endif
@@ -711,7 +726,6 @@ void WCSP::postWAmong(int* scopeIndex, int arity, string semantics, Cost baseCos
 
 void WCSP::postWVarAmong(int* scopeIndex, int arity, string semantics, Cost baseCost, Value* values, int nbValues, int varIndex)
 {
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
 #endif
@@ -730,7 +744,6 @@ void WCSP::postWVarAmong(int* scopeIndex, int arity, string semantics, Cost base
 void WCSP::postWRegular(int* scopeIndex, int arity, int nbStates, vector<pair<int, Cost> > initial_States, vector<pair<int, Cost> > accepting_States, int** Wtransitions,
         vector<Cost> transitionsCosts)
 {
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
 #endif
@@ -750,16 +763,10 @@ void WCSP::postWRegular(int* scopeIndex, int arity, int nbStates, vector<pair<in
     WeightedRegular regular(arity,scopeIndex);
     regular.setWFA(automaton);
     regular.addToCostFunctionNetwork(this);
-    for(unsigned int i=0; i < transitionsCosts.size(); i++)
-    {
-        delete [] Wtransitions[i];
-    }
-    delete [] Wtransitions;
 }
 
 void WCSP::postWGcc(int* scopeIndex, int arity, string semantics, Cost baseCost, Value* values, int nbValues, int* lb, int* ub)
 {
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
 #endif
@@ -779,7 +786,6 @@ void WCSP::postWGcc(int* scopeIndex, int arity, string semantics, Cost baseCost,
 
 void WCSP::postWSame(int* scopeIndex, int arity, string semantics, Cost baseCost)
 {
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity/2; i++) for (int j=i+1; j<arity/2; j++) assert(scopeIndex[i] != scopeIndex[j]);
     for(int i=arity/2; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
@@ -793,7 +799,6 @@ void WCSP::postWSame(int* scopeIndex, int arity, string semantics, Cost baseCost
 
 void WCSP::postWAllDiff(int* scopeIndex, int arity, string semantics, Cost baseCost)
 {
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
 #endif
@@ -805,7 +810,6 @@ void WCSP::postWAllDiff(int* scopeIndex, int arity, string semantics, Cost baseC
 
 void WCSP::postWSameGcc(int* scopeIndex, int arity, string semantics, Cost baseCost, Value* values, int nbValues, int* lb, int* ub)
 {
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity/2; i++) for (int j=i+1; j<arity/2; j++) assert(scopeIndex[i] != scopeIndex[j]);
     for(int i=arity/2; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
@@ -827,7 +831,6 @@ void WCSP::postWSameGcc(int* scopeIndex, int arity, string semantics, Cost baseC
 
 void WCSP::postWOverlap(int* scopeIndex, int arity, string semantics, Cost baseCost, string comparator, int rightRes)
 {
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity/2; i++) for (int j=i+1; j<arity/2; j++) assert(scopeIndex[i] != scopeIndex[j]);
     for(int i=arity/2; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
@@ -848,20 +851,38 @@ void WCSP::postWOverlap(int* scopeIndex, int arity, string semantics, Cost baseC
 /// \param file problem file (\see \ref wcspformat)
 /// \deprecated should use postWXXX methods
 int WCSP::postGlobalConstraint(int* scopeIndex, int arity, string &gcname, istream &file, int *constrcounter) {
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
+    if (gcname == "salldiffdp") {
+        string semantics;
+        Cost baseCost;
+        file >> semantics >> baseCost;
+        postWAllDiff(scopeIndex, arity, semantics, "DAG", baseCost);
+        return -1;
+    } else if (gcname == "sgccdp") {
+        string semantics;
+        Cost baseCost;
+        int nvalues;
+        vector<BoundedObj<Value> > values;
+        file >> semantics >> baseCost >> nvalues;
+        for (int i=0;i<nvalues;i++) {
+            int d, high, low;
+            file >> d >> low >> high;
+            values.push_back(BoundedObj<Value>(d, high, low));
+        }
+        postWGcc(scopeIndex, arity, semantics, "DAG", baseCost, values);
+        return -1;
+    }
+
     GlobalConstraint* gc = postGlobalCostFunction(scopeIndex, arity, gcname, constrcounter);
     if (gc == NULL) return -1;
-    if (file != NULL) gc->read(file);
+    if (file) gc->read(file);
+    gc->init();
     return gc->wcspIndex;
 }
 
-/// \warning does not work for arity below 4 (use binary or ternary cost functions instead)
 GlobalConstraint* WCSP::postGlobalCostFunction(int* scopeIndex, int arity, const string &gcname, int *constrcounter) {
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
 #endif
-    if (ToulBar2::verbose >= 2) cout << "Number of global constraints = " << globalconstrs.size() << endl;
     GlobalConstraint* gc = NULL;
     EnumeratedVariable** scopeVars = new EnumeratedVariable*[arity];
     for (int i = 0; i < arity; i++)
@@ -899,10 +920,10 @@ GlobalConstraint* WCSP::postGlobalCostFunction(int* scopeIndex, int arity, const
     return gc;
 }
 
+// only DAG-based or network-based propagator
 int WCSP::postWAmong(int* scopeIndex, int arity, const string &semantics, const string &propagator, Cost baseCost,
         const vector<Value> &values, int lb, int ub)
 {
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
 #endif
@@ -921,6 +942,7 @@ int WCSP::postWAmong(int* scopeIndex, int arity, const string &semantics, const 
     gc->setUpperBound(ub);
     gc->setLowerBound(lb);
     for(unsigned int i = 0; i < values.size(); i++) gc->addBoundingValue(values[i]);
+    gc->init();
     return gc->wcspIndex;
 }
 
@@ -931,11 +953,10 @@ int WCSP::postWRegular(int* scopeIndex, int arity, const string &semantics, cons
         const vector<WeightedObj<int> > &accepting_States,
         const vector<DFATransition > &Wtransitions )
 {
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
 #endif
-    if (propagator == "network") {
+    if (propagator == "network") { // Warning! semantics not used
         vector<pair<int, Cost> > initial_States_;
         for(unsigned int i=0; i<initial_States.size(); i++)
         {
@@ -948,7 +969,7 @@ int WCSP::postWRegular(int* scopeIndex, int arity, const string &semantics, cons
         }
         vector<Cost> transitionsCosts;
         vector<int *> transitions;
-        for(unsigned int i=0; i<transitionsCosts.size(); i++)
+        for(unsigned int i=0; i<Wtransitions.size(); i++)
         {
             int *transition = new int[3];
             transition[0] = Wtransitions[i].start;
@@ -958,6 +979,11 @@ int WCSP::postWRegular(int* scopeIndex, int arity, const string &semantics, cons
             transitionsCosts.push_back(Wtransitions[i].weight);
         }
         postWRegular(scopeIndex, arity, nbStates, initial_States_, accepting_States_, &transitions[0], transitionsCosts);
+        for(unsigned int i=0; i < Wtransitions.size(); i++)
+        {
+            delete [] transitions[i];
+        }
+
         return INT_MIN;
     }
 
@@ -995,7 +1021,7 @@ int WCSP::postWRegular(int* scopeIndex, int arity, const string &semantics, cons
                     Wtransitions[i].end, Wtransitions[i].weight);
         }
     }
-
+    if (constrIndex >= 0) ((GlobalConstraint *) getCtr(constrIndex))->init();
     return constrIndex;
 
 }
@@ -1003,22 +1029,44 @@ int WCSP::postWRegular(int* scopeIndex, int arity, const string &semantics, cons
 int WCSP::postWGcc(int* scopeIndex, int arity, const string &semantics, const string &propagator, Cost baseCost,
         const vector<BoundedObj<Value> > &values)
 {
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
 #endif
-
-    GlobalCardinalityConstraint* gc = (GlobalCardinalityConstraint*)postGlobalCostFunction(scopeIndex, arity, "sgcc");
-    if (gc == NULL) return -1;
-
-    gc->setSemantics(semantics);
-    gc->setBaseCost(baseCost);
-    for (unsigned int i=0;i<values.size();i++) {
-        gc->addValueAndBounds(values[i].val,values[i].lower,values[i].upper);
+    if (propagator == "network") {
+        string semantics_ = semantics;
+        int nbValues = values.size();
+        Value *values_ = new Value[nbValues];
+        int *lb = new int[nbValues];
+        int *ub = new int[nbValues];
+        for (unsigned int i=0;i<values.size();i++) {
+            values_[i] = values[i].val;
+            lb[i] = values[i].lower;
+            ub[i] = values[i].upper;
+        }
+        postWGcc(scopeIndex, arity, semantics, baseCost, values_, nbValues, lb, ub);
+        return INT_MIN;
     }
 
-    return gc->wcspIndex;
+    if (propagator=="flow") {
+        GlobalCardinalityConstraint* gc = (GlobalCardinalityConstraint*)postGlobalCostFunction(scopeIndex, arity, "sgcc");
+        if (gc == NULL) return -1;
 
+        gc->setSemantics(semantics);
+        gc->setBaseCost(baseCost);
+        for (unsigned int i=0;i<values.size();i++) {
+            gc->addValueAndBounds(values[i].val,values[i].lower,values[i].upper);
+        }
+        gc->init();
+        return gc->wcspIndex;
+    } else { // DAG-based propagator
+        for (unsigned int i=0;i<values.size();i++) {
+            //Adding a wamong
+            vector<Value> values_;
+            values_.push_back(values[i].val);
+            postWAmong(scopeIndex, arity, semantics, "DAG", baseCost, values_, values[i].lower, values[i].upper);
+        }
+        return INT_MIN;
+    }
 }
 
 int WCSP::postWSame(int* scopeIndexG1, int arityG1, int* scopeIndexG2, int arityG2, const string &semantics, const string &propagator, Cost baseCost)
@@ -1056,12 +1104,12 @@ int WCSP::postWSame(int* scopeIndexG1, int arityG1, int* scopeIndexG2, int arity
 
     delete[] scopeIndex;
 
+    gc->init();
     return gc->wcspIndex;
 }
 
 int WCSP::postWAllDiff(int* scopeIndex, int arity, const string &semantics, const string &propagator, Cost baseCost)
 {
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
 #endif
@@ -1071,14 +1119,34 @@ int WCSP::postWAllDiff(int* scopeIndex, int arity, const string &semantics, cons
         return INT_MIN;
     }
 
-    GlobalConstraint* gc = postGlobalCostFunction(scopeIndex, arity, "salldiff");
+    if (propagator=="flow") {
+        GlobalConstraint* gc = postGlobalCostFunction(scopeIndex, arity, "salldiff");
 
-    if (gc == NULL) return -1;
+        if (gc == NULL) return -1;
 
-    gc->setSemantics(semantics);
-    gc->setBaseCost(baseCost);
-    return gc->wcspIndex;
+        gc->setSemantics(semantics);
+        gc->setBaseCost(baseCost);
+        gc->init();
+        return gc->wcspIndex;
+    } else { // DAG-based propagation using a decomposition into multiple among cost functions
+        // Counting the number of value
+        int inf = ((EnumeratedVariable *) getVar(scopeIndex[0]))->getInf();
+        int sup = ((EnumeratedVariable *) getVar(scopeIndex[0]))->getSup();
+        for (int variable = 0 ; variable < arity ; ++variable) {
+            int tinf = ((EnumeratedVariable *) getVar(scopeIndex[variable]))->getInf();
+            int tsup = ((EnumeratedVariable *) getVar(scopeIndex[variable]))->getSup();
+            inf = min ( inf , tinf );
+            sup = max (sup , tsup );
+        }
 
+        // Adding WeightedAmong over each variable
+        for (int value = inf ; value <= sup ; value++) {
+            vector<Value> values;
+            values.push_back(value);
+            postWAmong(scopeIndex, arity, semantics, "DAG", baseCost, values, 0, 1);
+        }
+        return INT_MIN;
+    }
 }
 
 int WCSP::postWGrammarCNF(int* scopeIndex, int arity, const string &semantics, const string &propagator, Cost baseCost,
@@ -1086,7 +1154,6 @@ int WCSP::postWGrammarCNF(int* scopeIndex, int arity, const string &semantics, c
         int startSymbol,
         const vector<CFGProductionRule> WRuleToTerminal) {
 
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
 #endif
@@ -1113,12 +1180,12 @@ int WCSP::postWGrammarCNF(int* scopeIndex, int arity, const string &semantics, c
         }
     }
 
+    gc->init();
     return gc->wcspIndex;
 
 }
 
 int WCSP::postMST(int* scopeIndex, int arity, const string &semantics, const string &propagator, Cost baseCost) {
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
 #endif
@@ -1126,12 +1193,12 @@ int WCSP::postMST(int* scopeIndex, int arity, const string &semantics, const str
     if (gc == NULL) return -1;
     gc->setSemantics(semantics);
     gc->setBaseCost(baseCost);
+    gc->init();
     return gc->wcspIndex;
 }
 
 int WCSP::postMaxWeight(int* scopeIndex, int arity, const string &semantics, const string &propagator, Cost baseCost,
         const vector<WeightedVarValPair> weightFunction){
-    assert(arity >= 4); // does not work for binary or ternary cost functions!!!
 #ifndef NDEBUG
     for(int i=0; i<arity; i++) for (int j=i+1; j<arity; j++) assert(scopeIndex[i] != scopeIndex[j]);
 #endif
@@ -1149,6 +1216,7 @@ int WCSP::postMaxWeight(int* scopeIndex, int arity, const string &semantics, con
                 weightFunction[i].weight);
     }
 
+    gc->init();
     return gc->wcspIndex;
 }
 
@@ -1174,7 +1242,7 @@ void WCSP::postUnary(int xIndex, vector<Cost> &costs) {
 /// \brief add unary costs to interval variable \e xIndex
 int WCSP::postUnary(int xIndex, Value *d, int dsize, Cost penalty) {
     assert(!vars[xIndex]->enumerated());
-    Unary *ctr = new Unary(this, (IntervalVariable *) vars[xIndex], d, dsize, penalty, &storeData->storeValue);
+    Unary *ctr = new Unary(this, (IntervalVariable *) vars[xIndex], d, dsize, penalty);
     return ctr->wcspIndex;
 }
 
@@ -1184,7 +1252,7 @@ int WCSP::postSupxyc(int xIndex, int yIndex, Value cst, Value delta) {
     if (!vars[xIndex]->enumerated() && !vars[yIndex]->enumerated()) {
         Supxyc
         *ctr =
-                new Supxyc(this, (IntervalVariable *) vars[xIndex], (IntervalVariable *) vars[yIndex], cst, delta, &storeData->storeCost, &storeData->storeValue);
+                new Supxyc(this, (IntervalVariable *) vars[xIndex], (IntervalVariable *) vars[yIndex], cst, delta);
         return ctr->wcspIndex;
     } else if (vars[xIndex]->enumerated() && vars[yIndex]->enumerated()) {
         EnumeratedVariable *x = (EnumeratedVariable *) vars[xIndex];
@@ -1208,7 +1276,7 @@ int WCSP::postDisjunction(int xIndex, int yIndex, Value cstx, Value csty, Cost p
     if (!vars[xIndex]->enumerated() && !vars[yIndex]->enumerated()) {
         Disjunction
         *ctr =
-                new Disjunction(this, (IntervalVariable *) vars[xIndex], (IntervalVariable *) vars[yIndex], cstx, csty, penalty, &storeData->storeValue);
+                new Disjunction(this, (IntervalVariable *) vars[xIndex], (IntervalVariable *) vars[yIndex], cstx, csty, penalty);
         return ctr->wcspIndex;
     } else if (vars[xIndex]->enumerated() && vars[yIndex]->enumerated()) {
         EnumeratedVariable *x = (EnumeratedVariable *) vars[xIndex];
@@ -1232,7 +1300,7 @@ int WCSP::postSpecialDisjunction(int xIndex, int yIndex, Value cstx, Value csty,
     if (!vars[xIndex]->enumerated() && !vars[yIndex]->enumerated()) {
         SpecialDisjunction
         *ctr =
-                new SpecialDisjunction(this, (IntervalVariable *) vars[xIndex], (IntervalVariable *) vars[yIndex], cstx, csty, xinfty, yinfty, costx, costy, &storeData->storeCost, &storeData->storeValue);
+                new SpecialDisjunction(this, (IntervalVariable *) vars[xIndex], (IntervalVariable *) vars[yIndex], cstx, csty, xinfty, yinfty, costx, costy);
         return ctr->wcspIndex;
     } else if (vars[xIndex]->enumerated() && vars[yIndex]->enumerated()) {
         EnumeratedVariable *x = (EnumeratedVariable *) vars[xIndex];
@@ -1254,17 +1322,39 @@ void WCSP::sortConstraints()
 {
     for (vector<int>::iterator idctr = delayedNaryCtr.begin(); idctr != delayedNaryCtr.end(); ++idctr) {
         BinaryConstraint* bctr;
-        TernaryConstraint* tctr = new TernaryConstraint(this, &storeData->storeCost);
+        TernaryConstraint* tctr = new TernaryConstraint(this);
         elimTernConstrs.push_back(tctr);
         for (int j = 0; j < 3; j++) {
-            if (!ToulBar2::vac) bctr = new BinaryConstraint(this, &storeData->storeCost);
-            else bctr = new VACBinaryConstraint(this, &storeData->storeCost);
+            if (!ToulBar2::vac) bctr = new BinaryConstraint(this);
+            else bctr = new VACBinaryConstraint(this);
             elimBinConstrs.push_back(bctr);
         }
         getCtr(*idctr)->propagate();
     }
     delayedNaryCtr.clear();
     isDelayedNaryCtr = false;
+
+    // replaces small arity global cost functions in intension by their equivalent cost functions in extension
+    unsigned int i = 0;
+    while (i < globalconstrs.size()) {
+        if (globalconstrs[i]->connected()) {
+            if (globalconstrs[i]->arity() <= 3) {
+                globalconstrs[i]->projectNaryBeforeSearch(); // deconnect the current element
+                if (i < globalconstrs.size() - 1) {
+                    globalconstrs[i] = globalconstrs[globalconstrs.size() - 1]; // and replace it by the last element
+                }
+                globalconstrs.pop_back(); // decrease vector size by one
+            } else {
+                i++;
+            }
+        } else {
+            if (i < globalconstrs.size() - 1) {
+                globalconstrs[i] = globalconstrs[globalconstrs.size() - 1]; // replace the current element by the last element
+            }
+            globalconstrs.pop_back(); // decrease vector size by one
+        }
+    }
+
     if(ToulBar2::Berge_Dec > 0 ) {
         // flag pour indiquer si une variable a deja ete visitee initialement a faux
         vector<bool> marked(numberOfVariables(), false);
@@ -1415,12 +1505,13 @@ void WCSP::preprocessing() {
         Double domsize = medianDomainSize();
         Double size = (Double) numberOfUnassignedVariables() * (sizeof(Char)*deg+sizeof(Cost)) * Pow(domsize,deg+1);
         if (ToulBar2::debug>=2) cout << "MAX ESTIMATED ELIM SIZE: " << size << endl;
+        assert(ToulBar2::elimSpaceMaxMB > 0);
         if (deg >= 3 && deg <= -ToulBar2::elimDegree_preprocessing && size < (Double) ToulBar2::elimSpaceMaxMB * 1024. * 1024.) {
             ToulBar2::elimDegree_preprocessing = deg;
-            cout << "Generic variable elimination of degree " << deg << endl;
+            if (ToulBar2::verbose >= 0) cout << "Generic variable elimination of degree " << deg << endl;
         } else {
             ToulBar2::elimDegree_preprocessing = -1;
-            cout << "Generic variable elimination disabled." << endl;
+            if (ToulBar2::verbose >= 0) cout << "Generic variable elimination disabled." << endl;
         }
     }
     if (ToulBar2::elimDegree >= 0 || ToulBar2::elimDegree_preprocessing >= 0 || ToulBar2::preprocessFunctional > 0) {
@@ -1431,7 +1522,7 @@ void WCSP::preprocessing() {
             ToulBar2::elimDegree_preprocessing_ = ToulBar2::elimDegree_preprocessing;
             maxDegree = -1;
             propagate();
-            cout << "Maximum degree of generic variable elimination: " << maxDegree << endl;
+            if (ToulBar2::verbose >= 0) cout << "Maximum degree of generic variable elimination: " << maxDegree << endl;
         } else if (ToulBar2::elimDegree >= 0) {
             ToulBar2::elimDegree_ = ToulBar2::elimDegree;
         }
@@ -1491,7 +1582,7 @@ void WCSP::preprocessing() {
         for (unsigned int i = 0; i < constrs.size(); i++) {
             if (constrs[i]->connected() && !constrs[i]->isSep() && (constrs[i]->arity() > 3) && (constrs[i]->arity()
                     <= ToulBar2::preprocessNary) && constrs[i]->extension()) {
-                NaryConstraintMap* nary = (NaryConstraintMap*) constrs[i];
+                NaryConstraint* nary = (NaryConstraint*) constrs[i];
                 if (nary->size() >= 2 || nary->getDefCost() > MIN_COST) {
                     nary->keepAllowedTuples(getUb());
                     nary->preprojectall2();
@@ -1675,7 +1766,7 @@ Cost WCSP::finiteUb() const
 
 void WCSP::setInfiniteCost()
 {
-    assert(getStore()->getDepth() == 0);
+    assert(Store::getDepth() == 0);
     Cost ub = getUb() - getLb();
     assert(ub > 0);
     if (ToulBar2::verbose >= 1) cout << "Set infinite cost to " << ub << endl;
@@ -2152,7 +2243,7 @@ void WCSP::propagateDEE() {
         if (ToulBar2::interrupted) throw TimeOut();
         EnumeratedVariable *x = (EnumeratedVariable *) DEE.pop();
         if (x->unassigned()) {
-            if (ToulBar2::DEE_>=3 || (ToulBar2::DEE_==2 && getStore()->getDepth()==0)) {
+            if (ToulBar2::DEE_>=3 || (ToulBar2::DEE_==2 && Store::getDepth()==0)) {
                 for (EnumeratedVariable::iterator itera = x->begin(); itera != x->end(); ++itera ) {
                     for (EnumeratedVariable::iterator iterb = x->lower_bound(*itera +1); iterb != x->end(); ++iterb ) {
                         assert(x->canbe(*itera));
@@ -2300,7 +2391,7 @@ void WCSP::propagate() {
                     //				assert(verify());
                     if (vac->firstTime()) {
                         vac->init();
-                        cout << "Lb before VAC: " << getLb() << endl;
+                        if (ToulBar2::verbose >= 0) cout << "Lb before VAC: " << getLb() << endl;
                     }
                     vac->propagate();
                 }
@@ -2397,8 +2488,8 @@ void WCSP::restoreSolution(Cluster* c) {
 
 void WCSP::initElimConstr() {
     BinaryConstraint* xy = NULL;
-    if (!ToulBar2::vac) xy = new BinaryConstraint(this, &storeData->storeCost);
-    else xy = new VACBinaryConstraint(this, &storeData->storeCost);
+    if (!ToulBar2::vac) xy = new BinaryConstraint(this);
+    else xy = new VACBinaryConstraint(this);
     elimBinConstrs.push_back(xy);
     elimInfo ei = { NULL, NULL, NULL, NULL, NULL, NULL, NULL };
     elimInfos.push_back(ei);
@@ -2463,33 +2554,33 @@ TernaryConstraint* WCSP::newTernaryConstr(EnumeratedVariable* x, EnumeratedVaria
 
     if (!ToulBar2::vac) {
         if (!xy) {
-            xy = new BinaryConstraint(this, x, y, zerocostsxy, &storeData->storeCost);
+            xy = new BinaryConstraint(this, x, y, zerocostsxy);
             xy->deconnect(true);
         }
         if (!xz) {
-            xz = new BinaryConstraint(this, x, z, zerocostsxz, &storeData->storeCost);
+            xz = new BinaryConstraint(this, x, z, zerocostsxz);
             xz->deconnect(true);
         }
         if (!yz) {
-            yz = new BinaryConstraint(this, y, z, zerocostsyz, &storeData->storeCost);
+            yz = new BinaryConstraint(this, y, z, zerocostsyz);
             yz->deconnect(true);
         }
     } else {
         if (!xy) {
-            xy = new VACBinaryConstraint(this, x, y, zerocostsxy, &storeData->storeCost);
+            xy = new VACBinaryConstraint(this, x, y, zerocostsxy);
             xy->deconnect(true);
         }
         if (!xz) {
-            xz = new VACBinaryConstraint(this, x, z, zerocostsxz, &storeData->storeCost);
+            xz = new VACBinaryConstraint(this, x, z, zerocostsxz);
             xz->deconnect(true);
         }
         if (!yz) {
-            yz = new VACBinaryConstraint(this, y, z, zerocostsyz, &storeData->storeCost);
+            yz = new VACBinaryConstraint(this, y, z, zerocostsyz);
             yz->deconnect(true);
         }
     }
 
-    TernaryConstraint *ctr = new TernaryConstraint(this, x, y, z, xy, xz, yz, costs, &storeData->storeCost);
+    TernaryConstraint *ctr = new TernaryConstraint(this, x, y, z, xy, xz, yz, costs);
     return ctr;
 }
 
@@ -2558,10 +2649,10 @@ Constraint* WCSP::sum(Constraint* ctr1, Constraint* ctr2) {
     vector<Cost> costs;
 
     if (arityU > 3) { // || isGlobal()) {
-        ctrIndex = postNaryConstraintBegin(scopeUi, arityU, Top);
+        ctrIndex = postNaryConstraintBegin(scopeUi, arityU, Top, ctr1->size()*ctr2->size()); //TODO: improve estimated number of tuples
         ctr = getCtr(ctrIndex);
         assert(ctr->extension());
-        NaryConstraintMap* nary = (NaryConstraintMap*) ctr;
+        NaryConstraint* nary = (NaryConstraint*) ctr;
 
         nary->fillFilters();
 
@@ -2794,7 +2885,7 @@ void WCSP::project(Constraint* &ctr_inout, EnumeratedVariable* var) {
 void WCSP::variableElimination(EnumeratedVariable* var) {
     int degree = var->getTrueDegree();
     if (ToulBar2::verbose >= 1) cout << endl << "Generic variable elimination of " << var->getName() << "    degree: "
-            << var->getDegree() << " true degree: " << degree << endl;
+            << var->getDegree() << " true degree: " << degree << " max elim size: " << var->getMaxElimSize() << endl;
     if (degree > maxDegree) maxDegree = degree;
 
     if (var->getDegree() > 0) {
@@ -2874,7 +2965,7 @@ bool WCSP::kconsistency(int xIndex, int yIndex, int zIndex, BinaryConstraint* xy
     }
 
     if (minc > MIN_COST) {
-        tctr = new TernaryConstraint(this, &storeData->storeCost);
+        tctr = new TernaryConstraint(this);
         elimTernConstrs.push_back(tctr);
         tctr = newTernaryConstr(x, y, z);
         tctr->fillElimConstrBinaries();
@@ -2999,9 +3090,6 @@ void WCSP::ternaryCompletion() {
 void WCSP::histogram(Cost c) {
     if (vac) vac->histogram(c);
 }
-void WCSP::histogram() {
-    if (vac) vac->histogram();
-}
 void WCSP::iniSingleton() {
     if (vac) vac->iniSingleton();
 }
@@ -3045,7 +3133,7 @@ void WCSP::buildTreeDecomposition() {
         for (unsigned int i=0; i<numberOfConstraints(); i++) {
             Constraint* ctr = getCtr(i);
             if (ctr->connected() && !ctr->isSep()) {
-                if(ctr->arity() == 3) {
+                if(ctr->arity() == 3 && ctr->extension()) {
                     TernaryConstraint* tctr = (TernaryConstraint*) ctr;
                     tctr->setDuplicates();
                     assert(tctr->xy->getCluster() == tctr->getCluster() &&
@@ -3057,7 +3145,7 @@ void WCSP::buildTreeDecomposition() {
         for (int i=0; i<elimTernOrder; i++) if (elimTernConstrs[i]->connected()) {
             Constraint* ctr = elimTernConstrs[i];
             if (ctr->connected() && !ctr->isSep()) {
-                if(ctr->arity() == 3) {
+                if(ctr->arity() == 3 && ctr->extension()) {
                     TernaryConstraint* tctr = (TernaryConstraint*) ctr;
                     tctr->setDuplicates();
                     assert(tctr->xy->getCluster() == tctr->getCluster() &&

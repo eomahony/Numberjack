@@ -1,17 +1,16 @@
 #include "tb2graph.hpp"
 
-Graph::Graph(int n, int depth_, Store* storeStack_)  : adjlist(n)
+Graph::Graph(int n, int depth_)  : adjlist(n)
         , vertexList(n)
-        //, potential(n, StoreCost(0, &storeStack_->storeCost))
+        //, potential(n, StoreCost(0))
         , p(n)
         , counter(n)
         , d(n)
         , gsize(n)
         , depth(depth_)
-        , storeStack(storeStack_)
-        , intDLinkStore(&storeStack_->storeInt, n*n)
+        , intDLinkStore(n*n)
 {
-    for (int i=0;i<n;i++) vertexList[i] = new Vertex(n, depth_, storeStack_, &intDLinkStore);
+    for (int i=0;i<n;i++) vertexList[i] = new Vertex(n, depth_, &intDLinkStore);
 }
 
 Graph::~Graph() {
@@ -32,7 +31,7 @@ int Graph::addEdgeInternal(int u, int v, Cost w, Cost capacity, int tag,
 
     int eIndex = -1;
     if (tag == NO_TAG) {
-        adjlist[u].push_back(new List_Node(depth, storeStack, v, w, capacity, tag, index));
+        adjlist[u].push_back(new List_Node(depth, v, w, capacity, tag, index));
         eIndex = adjlist[u].size() - 1;
         if (capacity > 0) {
             vertexList[u]->edgeList[v]->push_back(adjlist[u].size()-1);
@@ -49,7 +48,7 @@ int Graph::addEdgeInternal(int u, int v, Cost w, Cost capacity, int tag,
         }
 
         if (!exist) {
-            adjlist[u].push_back(new List_Node(depth, storeStack, v, w, capacity, tag, index));
+            adjlist[u].push_back(new List_Node(depth, v, w, capacity, tag, index));
             eIndex = adjlist[u].size() - 1;
             if (capacity > 0) {
                 vertexList[u]->edgeList[v]->push_back(adjlist[u].size()-1);

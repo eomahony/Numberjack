@@ -36,10 +36,10 @@ private:
     StoreInt curUsingBlkIndex;
     vector<DLink<T>*> blockStore;
 public:
-    DLinkStore(StoreStack<int, int>* storeInt, int blkSize_)
+    DLinkStore(int blkSize_)
     : blkSize(blkSize_)
-    , curEmpty(0, storeInt)
-    , curUsingBlkIndex(0, storeInt)
+    , curEmpty(0)
+    , curUsingBlkIndex(0)
     {
         blockStore.push_back(new DLink<T>[blkSize]);
     }
@@ -74,8 +74,8 @@ private:
 public:
     typedef typename BTList<T>::iterator iterator;
 
-    BTListWrapper(StoreStack<BTList<T>, DLink<T> *> *s, DLinkStore<int>* dlinkStore)
-    : list(s), dlinkStore(dlinkStore) {}
+    BTListWrapper(DLinkStore<int>* dlinkStore)
+    : list(&Store::storeIndexList), dlinkStore(dlinkStore) {}
 
     ~BTListWrapper() {}
 
@@ -121,10 +121,9 @@ private:
         int adj;     //the node connecting to
         int tag;     // the label of the edge
         int rEdgeIndex; // the pointer to the opposite edge
-        List_Node (int depth, Store* storeStack,
-                int a = -1, Cost w = 0, Cost c = 0, int t = NO_TAG, int rIndex = -1)
-        : weight(w, &storeStack->storeCost)
-        , cap(c, &storeStack->storeCost)
+        List_Node (int depth, int a = -1, Cost w = 0, Cost c = 0, int t = NO_TAG, int rIndex = -1)
+        : weight(w)
+        , cap(c)
         , adj(a), tag(t), rEdgeIndex(rIndex) {}
     };
 
@@ -135,11 +134,11 @@ private:
         vector<BTListWrapper<EdgePtr>*> edgeList;
         BTListWrapper<int> neighbor;
 
-        Vertex (int n, int depth, Store* storeStack, DLinkStore<int>* dLinkStore)
+        Vertex (int n, int depth, DLinkStore<int>* dLinkStore)
         : edgeList(n)
-        , neighbor(&storeStack->storeIndexList, dLinkStore)
+        , neighbor(dLinkStore)
         {
-            for (int i=0;i<n;i++) edgeList[i] = new BTListWrapper<int>(&storeStack->storeIndexList, dLinkStore);
+            for (int i=0;i<n;i++) edgeList[i] = new BTListWrapper<int>(dLinkStore);
         }
 
         ~Vertex()
@@ -167,7 +166,6 @@ private:
 
     // for backtractable structure
     int depth;
-    Store* storeStack;
     DLinkStore<int> intDLinkStore;
 
     // do not allow copy
@@ -175,7 +173,7 @@ private:
 
 public:
     // constructor
-    Graph(int n, int depth, Store* storeStack);
+    Graph(int n, int depth);
 
     // destructor
     ~Graph();

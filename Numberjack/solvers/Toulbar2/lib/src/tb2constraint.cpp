@@ -65,10 +65,6 @@ void Constraint::assigns()
 
 void Constraint::sumScopeIncluded( Constraint* ctr )
 {
-    int ar = arity();
-    EnumeratedVariable** scopethis = new EnumeratedVariable * [arity()];
-    for(int i=0;i<ar;i++) scopethis[i] = (EnumeratedVariable*) getVar(i);
-
     Cost Top = wcsp->getUb();
     Cost c;
     String t;
@@ -78,22 +74,20 @@ void Constraint::sumScopeIncluded( Constraint* ctr )
         while( nextlex(t,c) ) {
             Cost cplus = ctr->evalsubstr(t, this);
             if(c + cplus < Top) {
-                if (arity() > 3 && getDefCost() > MIN_COST) setTuple( t, c + cplus, scopethis);
-                else addtoTuple( t, cplus, scopethis);
+                if (arity() > 3 && getDefCost() > MIN_COST) setTuple( t, c + cplus);
+                else addtoTuple( t, cplus);
             } else {
-                setTuple( t, Top, scopethis);
+                setTuple( t, Top);
             }
         }
     } else {
         first();
         while( next(t,c) ) {
             Cost cplus = ctr->evalsubstr(t, this);
-            if(c + cplus < Top) addtoTuple( t, cplus, scopethis);
-            else setTuple( t, Top, scopethis);
+            if(c + cplus < Top) addtoTuple( t, cplus);
+            else setTuple( t, Top);
         }
     }
-
-    delete [] scopethis;
 }
 
 
@@ -255,7 +249,7 @@ Constraint *Constraint::copy()
 {
     int scope[arity()];
     for (int i=0; i<arity(); i++) scope[i] = getVar(i)->wcspIndex;
-    int ctrIndex = wcsp->postNaryConstraintBegin(scope, arity(), getDefCost());
+    int ctrIndex = wcsp->postNaryConstraintBegin(scope, arity(), getDefCost(), size());
     Cost c;
     String t;
     first();

@@ -80,7 +80,7 @@ public:
     GrammarConstraint(WCSP * wcsp, EnumeratedVariable ** scope, int arity);
     virtual ~GrammarConstraint();
 
-    Cost eval(String s);
+    Cost eval(const String& s);
 
     void read(istream & file);
     //void setDefaultViolationCost(Cost cost) {if(configuring) def = cost;}                
@@ -91,6 +91,7 @@ public:
     string getName() {
         return "sgrammar";
     }
+    void dump(ostream& os, bool original = true);
 };
 
 #endif /* TB2GRAMMARCCONSTR_HPP_ */

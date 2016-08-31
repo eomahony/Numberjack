@@ -25,9 +25,9 @@ class Domain : public BTList<Value>
 public:
     typedef BTList<Value>::iterator iterator;
 
-    Domain(Value inf, Value sup, StoreStack<BTList<Value>, DLink<Value> *> *s);
+    Domain(Value inf, Value sup);
 
-    Domain(Value *d, int dsize, StoreStack<BTList<Value>, DLink<Value> *> *s);
+    Domain(Value *d, int dsize);
 
     ~Domain() {if (initSize >= 1) delete[] all;}
 

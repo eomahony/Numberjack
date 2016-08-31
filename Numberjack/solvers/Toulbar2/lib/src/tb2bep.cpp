@@ -83,7 +83,6 @@ void BEP::read(const char *fileName, WCSP *wcsp)
         }
     }
     wcsp->sortConstraints();
-    wcsp->histogram();
 
     if (ToulBar2::verbose >= 0) {
         cout << "Read BEP with " << size << " photographs and total gain " << top/(size-1) << endl;

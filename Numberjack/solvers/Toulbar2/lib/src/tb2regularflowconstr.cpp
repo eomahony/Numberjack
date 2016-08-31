@@ -147,9 +147,14 @@ void RegularFlowConstraint::buildWeightedDFATable() {
                 it != dfa.transition[i].end();it++) {
             for (set<int>::iterator jt = sigma.begin();
                     jt != sigma.end();jt++) {
-                costTb[i][*jt][it->second] = subdef;
+                if (costTb[i].find(*jt) != costTb[i].end()) costTb[i][*jt].insert(make_pair((int) it->second, (Cost) subdef));
+                else {
+                    map<int, Cost> inner;
+                    inner.insert(make_pair((int) it->second, (Cost) subdef));
+                    costTb[i].insert(make_pair(*jt, inner));
+                }
             }
-            costTb[i][it->first][it->second] = 0;
+            costTb[i][it->first][it->second] = (Cost) 0;
         }
     }
 
@@ -173,7 +178,7 @@ void RegularFlowConstraint::buildWeightedDFATable() {
 
 }
 
-Cost RegularFlowConstraint::evalOriginal(String s) {
+Cost RegularFlowConstraint::evalOriginal(const String& s) {
 
     typedef pair<Cost,pair<int,int> > Element;
     //priority_queue<Element, vector<Element>, greater<Element> > minqueue;
@@ -429,28 +434,36 @@ void RegularFlowConstraint::computeShortestPath(Graph &g, StoreCost &cost) {
 
 }
 
-
-// void RegularFlowConstraint::dump(ostream& os, bool original)
-// {
-//   if (original) {
-//     os << arity_;
-//     for(int i = 0; i < arity_;i++) os << " " << scope[i]->wcspIndex;
-//   } else {
-// 	os << nonassigned;
-//     for(int i = 0; i < arity_; i++) if (scope[i]->unassigned()) os << " " << scope[i]->getCurrentVarId();
-//   }
-//   os << " -1 sregular" << endl << ((insdef==0 && deldef==0)?"var":"edit") << " " << def << endl;
-//   os << endl;
-// }
-
-void RegularFlowConstraint::print(ostream& os) {
-    os << "sregular(";
-    for (int i = 0; i < arity_; i++) {
-        os << scope[i]->wcspIndex;
-        if (i < arity_ - 1) os << ",";
+void RegularFlowConstraint::dump(ostream& os, bool original)
+{
+    if (original) {
+        os << arity_;
+        for(int i = 0; i < arity_;i++) os << " " << scope[i]->wcspIndex;
+    } else {
+        os << nonassigned;
+        for(int i = 0; i < arity_; i++) if (scope[i]->unassigned()) os << " " << scope[i]->getCurrentVarId();
     }
-    os << ")[" << subdef << "," << insdef << "," << deldef << "]";
+    os << " -1 sregular " << ((insdef==0 && deldef==0)?"var":"edit") << " " << def << endl;
+    dfa.dump(os, original);
 }
+
+string RegularFlowConstraint::getName() {
+    ostringstream name;
+    name << "sregular_" << to_string(subdef) << "_" << to_string(insdef) << "_" << to_string(deldef) << "\n{";
+    dfa.dump(name, true);
+    name << "\n}";
+    return name.str();
+}
+
+//void RegularFlowConstraint::print(ostream& os) {
+//    os << "sregular(";
+//    for (int i = 0; i < arity_; i++) {
+//        os << scope[i]->wcspIndex;
+//        if (i < arity_ - 1) os << ",";
+//    }
+//    os << ")[" << subdef << "," << insdef << "," << deldef << "]";
+//    dfa.dump(os, true);
+//}
 
 /* Local Variables: */
 /* c-basic-offset: 4 */

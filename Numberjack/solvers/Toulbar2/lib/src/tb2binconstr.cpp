@@ -11,16 +11,16 @@
  *
  */
 
-BinaryConstraint::BinaryConstraint(WCSP *wcsp, EnumeratedVariable *xx, EnumeratedVariable *yy, vector<Cost> &tab, StoreStack<Cost, Cost> *storeCost) :
+BinaryConstraint::BinaryConstraint(WCSP *wcsp, EnumeratedVariable *xx, EnumeratedVariable *yy, vector<Cost> &tab) :
         AbstractBinaryConstraint<EnumeratedVariable,EnumeratedVariable>(wcsp, xx, yy), sizeX(xx->getDomainInitSize()), sizeY(yy->getDomainInitSize())
 {
-    deltaCostsX = vector<StoreCost>(sizeX,StoreCost(MIN_COST,storeCost));
-    deltaCostsY = vector<StoreCost>(sizeY,StoreCost(MIN_COST,storeCost));
+    deltaCostsX = vector<StoreCost>(sizeX,StoreCost(MIN_COST));
+    deltaCostsY = vector<StoreCost>(sizeY,StoreCost(MIN_COST));
     assert(tab.size() == sizeX * sizeY);
     supportX = vector<Value>(sizeX,y->getInf());
     supportY = vector<Value>(sizeY,x->getInf());
 
-    costs = vector<StoreCost>(sizeX*sizeY,StoreCost(MIN_COST,storeCost));
+    costs = vector<StoreCost>(sizeX*sizeY,StoreCost(MIN_COST));
 
     for (unsigned int a = 0; a < x->getDomainInitSize(); a++)
         for (unsigned int b = 0; b < y->getDomainInitSize(); b++)
@@ -29,7 +29,7 @@ BinaryConstraint::BinaryConstraint(WCSP *wcsp, EnumeratedVariable *xx, Enumerate
     propagate();
 }
 
-BinaryConstraint::BinaryConstraint(WCSP *wcsp, StoreStack<Cost, Cost> *storeCost) : AbstractBinaryConstraint<EnumeratedVariable,EnumeratedVariable>(wcsp), sizeX(0), sizeY(0)
+BinaryConstraint::BinaryConstraint(WCSP *wcsp) : AbstractBinaryConstraint<EnumeratedVariable,EnumeratedVariable>(wcsp), sizeX(0), sizeY(0)
 {
     //	unsigned int maxdomainsize = wcsp->getMaxDomainSize();
     //    deltaCostsX = vector<StoreCost>(maxdomainsize,StoreCost(MIN_COST,storeCost));
@@ -86,6 +86,8 @@ bool BinaryConstraint::project(EnumeratedVariable *x, Value value, Cost cost, ve
         TreeDecomposition* td = wcsp->getTreeDec();
         if(td) td->addDelta(cluster,x,value,cost);
         deltaCostsX[x->toIndex(value)] += cost;  // Warning! Possible overflow???
+        assert(getCost(x,(EnumeratedVariable *) getVarDiffFrom(x),value,getVarDiffFrom(x)->getInf()) >= MIN_COST);
+        assert(getCost(x,(EnumeratedVariable *) getVarDiffFrom(x),value,getVarDiffFrom(x)->getSup()) >= MIN_COST);
     }
 
     Cost oldcost = x->getCost(value);

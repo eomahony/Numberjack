@@ -19,16 +19,15 @@ TernaryConstraint::TernaryConstraint(WCSP *wcsp,
         BinaryConstraint *xy_,
         BinaryConstraint *xz_,
         BinaryConstraint *yz_,
-        vector<Cost> &tab,
-        StoreStack<Cost, Cost> *storeCost) :
+        vector<Cost> &tab) :
         AbstractTernaryConstraint<EnumeratedVariable,EnumeratedVariable,EnumeratedVariable>(wcsp, xx, yy, zz),
         sizeX(xx->getDomainInitSize()), sizeY(yy->getDomainInitSize()), sizeZ(zz->getDomainInitSize()),
-        functionalX(true), functionalY(true), functionalZ(true)
+        top(wcsp->getUb()), functionalX(true), functionalY(true), functionalZ(true)
 {
     assert(tab.size() == sizeX * sizeY * sizeZ);
-    deltaCostsX = vector<StoreCost>(sizeX,StoreCost(MIN_COST,storeCost));
-    deltaCostsY = vector<StoreCost>(sizeY,StoreCost(MIN_COST,storeCost));
-    deltaCostsZ = vector<StoreCost>(sizeZ,StoreCost(MIN_COST,storeCost));
+    deltaCostsX = vector<StoreCost>(sizeX,StoreCost(MIN_COST));
+    deltaCostsY = vector<StoreCost>(sizeY,StoreCost(MIN_COST));
+    deltaCostsZ = vector<StoreCost>(sizeZ,StoreCost(MIN_COST));
     assert(getIndex(x) < getIndex(y) && getIndex(y) < getIndex(z));
     functionX = vector<Value>(sizeY * sizeZ, WRONG_VAL);
     functionY = vector<Value>(sizeX * sizeZ, WRONG_VAL);
@@ -44,7 +43,7 @@ TernaryConstraint::TernaryConstraint(WCSP *wcsp,
             for (unsigned int c = 0; c < z->getDomainInitSize(); c++) {
                 Cost cost = tab[a * sizeY * sizeZ + b * sizeZ + c];
                 //		  costs[a * sizeY * sizeZ + b * sizeZ + c] = cost;
-                if (!CUT(cost, wcsp->getUb()) && x->canbe(x->toValue(a)) && y->canbe(y->toValue(b)) && z->canbe(z->toValue(c))) {
+                if (!CUT(cost, top) && x->canbe(x->toValue(a)) && y->canbe(y->toValue(b)) && z->canbe(z->toValue(c))) {
                     if (functionalX) {
                         if (functionX[b * sizeZ + c] == WRONG_VAL) functionX[b * sizeZ + c] = x->toValue(a);
                         else functionalX = false;
@@ -67,7 +66,7 @@ TernaryConstraint::TernaryConstraint(WCSP *wcsp,
     yz = yz_;
 
     if (functionalX) {
-        costsYZ = vector<StoreCost>(sizeY*sizeZ,StoreCost(MIN_COST,storeCost));
+        costsYZ = vector<StoreCost>(sizeY*sizeZ,StoreCost(MIN_COST));
         for (unsigned int b = 0; b < y->getDomainInitSize(); b++) {
             for (unsigned int c = 0; c < z->getDomainInitSize(); c++) {
                 if (functionX[b * sizeZ + c] != WRONG_VAL) costsYZ[b * sizeZ + c] = tab[x->toIndex(functionX[b * sizeZ + c]) * sizeY * sizeZ + b * sizeZ + c];
@@ -75,7 +74,7 @@ TernaryConstraint::TernaryConstraint(WCSP *wcsp,
         }
         //    	costs.free_all();
     } else {
-        costs = vector<StoreCost>(sizeX*sizeY*sizeZ,StoreCost(MIN_COST,storeCost));
+        costs = vector<StoreCost>(sizeX*sizeY*sizeZ,StoreCost(MIN_COST));
         for (unsigned int a = 0; a < x->getDomainInitSize(); a++) {
             for (unsigned int b = 0; b < y->getDomainInitSize(); b++) {
                 for (unsigned int c = 0; c < z->getDomainInitSize(); c++) {
@@ -175,7 +174,7 @@ TernaryConstraint::TernaryConstraint(WCSP *wcsp,
 }
 
 
-TernaryConstraint::TernaryConstraint(WCSP *wcsp, StoreStack<Cost, Cost> *storeCost) : AbstractTernaryConstraint<EnumeratedVariable,EnumeratedVariable,EnumeratedVariable>(wcsp),
+TernaryConstraint::TernaryConstraint(WCSP *wcsp) : AbstractTernaryConstraint<EnumeratedVariable,EnumeratedVariable,EnumeratedVariable>(wcsp),
   sizeX(0), sizeY(0), sizeZ(0),
   functionalX(false), functionalY(false), functionalZ(false)
 {
@@ -455,7 +454,7 @@ void TernaryConstraint::separate(EnumeratedVariable *vy, EnumeratedVariable *vz)
     }
     BinaryConstraint* existZX = xvar->getConstr(zvar);
     assert(existZX);
-    BinaryConstraint  *zx = new BinaryConstraint(wcsp,zvar, xvar,costsZX, &wcsp->getStore()->storeCost);
+    BinaryConstraint  *zx = new BinaryConstraint(wcsp,zvar, xvar,costsZX);
     if(ToulBar2::verbose >= 3)cout << "-------------\n";
     if(ToulBar2::verbose >= 3) cout << "[ " << xvar->getName() << " " << yvar->getName() << " ]" <<  endl;
 
@@ -478,7 +477,7 @@ void TernaryConstraint::separate(EnumeratedVariable *vy, EnumeratedVariable *vz)
     }
     BinaryConstraint* existXY = xvar->getConstr(yvar);
     assert(existXY);
-    BinaryConstraint * xy = new BinaryConstraint(wcsp,xvar, yvar,costsXY, &wcsp->getStore()->storeCost);
+    BinaryConstraint * xy = new BinaryConstraint(wcsp,xvar, yvar,costsXY);
 
     assert(verifySeparate(zx,xy));
 

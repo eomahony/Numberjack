@@ -53,9 +53,9 @@ public:
     WFA(int nbSymbol, string forbiddenPattern, Cost cost);
 
     inline unsigned int 			getNbStates() 			 	{return nbStates;}
-    inline list<pair<int,Cost> > 	getInitialStates() 		 	{return initialStates;}
-    inline list<pair<int,Cost> >	getAcceptingStates() 		{return acceptingStates;}
-    inline list<WTransition*>		getTransitions() 			{return transitions;}
+    inline list<pair<int,Cost> >& 	getInitialStates() 		 	{return initialStates;}
+    inline list<pair<int,Cost> >&	getAcceptingStates() 		{return acceptingStates;}
+    inline list<WTransition*>&		getTransitions() 			{return transitions;}
 
 
     void display() ;

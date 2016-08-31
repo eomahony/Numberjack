@@ -520,8 +520,6 @@ void Pedigree::buildWCSP(const char *fileName, WCSP *wcsp)
         unaryconstrs[u].var->findSupport();
     }
 
-    wcsp->histogram();
-
     if (ToulBar2::verbose >= 0) {
         cout << "Read pedigree with " << nbindividuals << " individuals, " << nbfounders << " founders, " << nballeles << " alleles, " << nbtypings << " genotypings and " << generations << " generations." << endl;
     }
@@ -730,8 +728,6 @@ void Pedigree::buildWCSP_bayesian( const char *fileName, WCSP *wcsp )
         }
         unaryconstrs[u].var->findSupport();
     }
-
-    wcsp->histogram();
 
     if (ToulBar2::verbose >= 0) {
         int nbtypings = genotypes.size();

@@ -6,26 +6,30 @@
 #ifndef TB2SYSTEM_HPP_
 #define TB2SYSTEM_HPP_
 
-double cpuTime();		///< \brief return CPU time in seconds
+#if __cplusplus > 199711L
+#define FINAL final
+#else
+#define FINAL
+#endif
+
+double cpuTime();		///< \brief return CPU time in seconds with high resolution (microseconds) if available
 void timeOut(int sig);
 void timer(int t); 		///< \brief set a timer (in seconds)
 void timerStop(); 		///< \brief stop a timer
 
 #ifdef WIDE_STRING
-    const int MAX_CHAR = WCHAR_MAX;
     typedef wchar_t Char;
     typedef wstring String;
     #define Cout wcout
     #include <cwchar>
     #define Strcpy wcscpy
-    #define Strncpy wcsncpy
-    #define Strcat wcscat
-    #define Strncat wcsncat
+//    #define Strncpy wcsncpy
+//    #define Strcat wcscat
+//    #define Strncat wcsncat
     #define Strcmp wcscmp
-    #define Strncmp wcsncmp
+//    #define Strncmp wcsncmp
     #define Strlen wcslen
 #else
-    const int MAX_CHAR = CHAR_MAX;
     typedef char Char;
     typedef string String;
     #define Cout cout

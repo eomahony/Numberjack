@@ -56,7 +56,7 @@ void AllDiffConstraint::organizeConfig() {
     if (mode == DECBI) decompose();
 }
 
-Cost AllDiffConstraint::evalOriginal( String s ) {
+Cost AllDiffConstraint::evalOriginal( const String& s ) {
     Cost tuple_cost = 0;
     if (mode == DEC) {
         for (unsigned int i=0;i<s.length();i++) {
@@ -162,9 +162,9 @@ void AllDiffConstraint::decompose() {
             }
             else {
                 if (!ToulBar2::vac) {
-                    ctr = new BinaryConstraint(wcsp, x, y, costs, &wcsp->getStore()->storeCost);
+                    ctr = new BinaryConstraint(wcsp, x, y, costs);
                 } else {
-                    ctr = new VACBinaryConstraint(wcsp, x, y, costs, &wcsp->getStore()->storeCost);
+                    ctr = new VACBinaryConstraint(wcsp, x, y, costs);
                 }
             }
         }
@@ -180,17 +180,21 @@ void AllDiffConstraint::dump(ostream& os, bool original)
         os << nonassigned;
         for(int i = 0; i < arity_; i++) if (scope[i]->unassigned()) os << " " << scope[i]->getCurrentVarId();
     }
-    os << " -1 salldiff" << endl << ((mode==VAR)?"var":"dec") << " " << def << endl;
+    os << " -1 salldiff " << ((mode==VAR)?"var":"dec") << " " << def << endl;
 }
 
-void AllDiffConstraint::print(ostream& os) {
-    os << "salldiff(";
-    for(int i = 0; i < arity_;i++) {
-        os << scope[i]->wcspIndex;
-        if(i < arity_-1) os << ",";
-    }
-    os << ")[" << ((mode==VAR)?"var":"dec") << "," << def << "]";
-}
+//void AllDiffConstraint::print(ostream& os) {
+//    os << "salldiff(";
+//    for(int i = 0; i < arity_;i++) {
+//        os << scope[i]->wcspIndex;
+//        if(i < arity_-1) os << ",";
+//    }
+//    os << ")[" << ((mode==VAR)?"var":"dec") << "," << def << "]";
+//    if (ToulBar2::verbose >= 4) {
+//        os << endl;
+//        GlobalConstraint::print(os);
+//    }
+//}
 
 /* Local Variables: */
 /* c-basic-offset: 4 */

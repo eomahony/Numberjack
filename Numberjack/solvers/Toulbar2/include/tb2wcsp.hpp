@@ -12,11 +12,8 @@
 #include "tb2enumvar.hpp"
 #include "tb2intervar.hpp"
 
-class BinaryConstraint;
-class TernaryConstraint;
 class NaryConstraint;
 class VACExtension;
-class TreeDecomposition;
 
 class GlobalConstraint;
 class FlowBasedGlobalConstraint;
@@ -36,12 +33,11 @@ class RegularFlowConstraint;
  *
  */
 
-class WCSP : public WeightedCSP {
+class WCSP FINAL : public WeightedCSP {
     static int wcspCounter; 			///< count the number of instances of WCSP class
     int instance; 						///< instance number
     string name; 						///< problem name
     void *solver;						///< special hook to access solver information
-    Store *storeData; 					///< backtrack management system and data
     StoreCost lb; 						///< current problem lower bound
     Cost ub; 							///< current problem upper bound
     StoreCost negCost;					///< shifting value to be added to problem lowerbound when computing the partition function
@@ -119,7 +115,7 @@ public:
     vector< vector<int> > Doms;			///< structures for solution translation: we don't have to parse the XML file again
 #endif
 
-    WCSP(Store *s, Cost upperBound, void *solver = NULL);
+    WCSP(Cost upperBound, void *solver = NULL);
 
     virtual ~WCSP();
 
@@ -147,7 +143,11 @@ public:
 
     /// \brief enforces problem upper bound when exploring an alternative search node
     void enforceUb() {
-        if (CUT((((lb % ((Cost) ceil(ToulBar2::costMultiplier))) != MIN_COST)?(lb + ToulBar2::costMultiplier):lb), ub)) THROWCONTRADICTION;
+        if (CUT(((((Cost)lb % ((Cost) ceil(ToulBar2::costMultiplier))) != MIN_COST)?
+                 ((Cost)lb + ToulBar2::costMultiplier):
+                 (Cost)lb),
+                ub))
+            THROWCONTRADICTION;
         objectiveChanged=true;
     }
 
@@ -155,7 +155,7 @@ public:
     /// \deprecated
     void decreaseUb(Cost newUb) {
         if (newUb < ub) {
-            if (CUT((((lb % ((Cost) ceil(ToulBar2::costMultiplier))) != MIN_COST)?(lb + ToulBar2::costMultiplier):lb), newUb)) THROWCONTRADICTION;
+            if (CUT(((((Cost)lb % ((Cost) ceil(ToulBar2::costMultiplier))) != MIN_COST)?((Cost)lb + ToulBar2::costMultiplier):(Cost)lb), newUb)) THROWCONTRADICTION;
             ub = newUb;
             objectiveChanged=true;
         }
@@ -234,9 +234,9 @@ public:
     }
 
     void assignLS(int *varIndexes, Value *newValues, unsigned int size, bool dopropagate) {
-        set<Constraint *> delayedctrs;
+        ConstraintSet delayedctrs;
         for (unsigned int i=0; i<size; i++) vars[varIndexes[i]]->assignLS(newValues[i], delayedctrs);
-        for (set<Constraint *>::iterator it = delayedctrs.begin(); it != delayedctrs.end(); ++it) if (!(*it)->isGlobal()) {if ((*it)->isSep()) (*it)->assigns(); else (*it)->propagate();}
+        for (ConstraintSet::iterator it = delayedctrs.begin(); it != delayedctrs.end(); ++it) if (!(*it)->isGlobal()) {if ((*it)->isSep()) (*it)->assigns(); else (*it)->propagate();}
         if (dopropagate) propagate();
     }
 
@@ -313,15 +313,17 @@ public:
 
     void postUnary(int xIndex, vector<Cost> &costs);
     int postUnary(int xIndex, Value *d, int dsize, Cost penalty);
+    void postUnaryConstraint(int xIndex, vector<Cost> &costs) {postUnary(xIndex, costs);}
+    int postUnaryConstraint(int xIndex, Value *d, int dsize, Cost penalty) {return postUnary(xIndex, d, dsize, penalty);}
     int postSupxyc(int xIndex, int yIndex, Value cst, Value deltamax = MAX_VAL-MIN_VAL);
     int postDisjunction(int xIndex, int yIndex, Value cstx, Value csty, Cost penalty);
     int postSpecialDisjunction(int xIndex, int yIndex, Value cstx, Value csty, Value xinfty, Value yinfty, Cost costx, Cost costy);
     int postBinaryConstraint(int xIndex, int yIndex, vector<Cost> &costs);
     int postTernaryConstraint(int xIndex, int yIndex, int zIndex, vector<Cost> &costs);
-    int postNaryConstraintBegin(int* scopeIndex, int arity, Cost defval); /// \warning must call postNaryConstraintEnd after giving cost tuples
+    int postNaryConstraintBegin(int* scopeIndex, int arity, Cost defval, Long nbtuples = 0); /// \warning must call postNaryConstraintEnd after giving cost tuples
     void postNaryConstraintTuple(int ctrindex, Value* tuple, int arity, Cost cost);
-    void postNaryConstraintTuple(int ctrindex, String& tuple, Cost cost);
-    void postNaryConstraintEnd(int ctrindex) {if (!isDelayedNaryCtr) getCtr(ctrindex)->propagate();}
+    void postNaryConstraintTuple(int ctrindex, const String& tuple, Cost cost);
+    void postNaryConstraintEnd(int ctrindex);
 
     int postGlobalConstraint(int* scopeIndex, int arity, string &gcname, istream &file, int *constrcounter = NULL); ///< \deprecated should use WCSP::postGlobalCostFunction instead \warning does not work for arity below 4 (use binary or ternary cost functions instead)
 
@@ -360,7 +362,7 @@ public:
 
     void read_wcsp(const char *fileName); 		///< \brief load problem in native wcsp format (\ref wcspformat)
     void read_uai2008(const char *fileName);	///< \brief load problem in UAI 2008 format (see http://graphmod.ics.uci.edu/uai08/FileFormat and http://www.cs.huji.ac.il/project/UAI10/fileFormat.php) \warning UAI10 evidence file format not recognized by toulbar2 as it does not allow multiple evidence (you should remove the first value in the file)
-    void read_random(int n, int m, vector<int>& p, int seed, bool forceSubModular = false );	///< \brief create a random WCSP with \e n variables, domain size \e m, array \e p where the first element is a percentage of tuples with a nonzero cost and next elements are the number of random cost functions for each different arity (starting with arity two), random seed, and a flag to have a percentage (last element in the array \e p) of the binary cost functions being permutated submodular
+    void read_random(int n, int m, vector<int>& p, int seed, bool forceSubModular = false, string globalname = "");	    ///< \brief create a random WCSP with \e n variables, domain size \e m, array \e p where the first element is a percentage of tuples with a nonzero cost and next elements are the number of random cost functions for each different arity (starting with arity two), random seed, a flag to have a percentage (last element in the array \e p) of the binary cost functions being permutated submodular, and a string to use a specific global cost function instead of random cost functions in extension
     void read_wcnf(const char *fileName);		///< \brief load problem in (w)cnf format (see http://www.maxsat.udl.cat/08/index.php?disp=requirements)
     void read_qpbo(const char *fileName);		///< \brief load quadratic pseudo-Boolean optimization problem in unconstrained quadratic programming text format (first text line with n, number of variables and m, number of triplets, followed by the m triplets (x,y,cost) describing the sparse symmetric nXn cost matrix with variable indexes such that x <= y and any positive or negative real numbers for costs)
 
@@ -381,7 +383,6 @@ public:
     // -----------------------------------------------------------
     // Specific API for Variable and Constraint classes
 
-    Store *getStore() {return storeData;}
     Variable   *getVar(int varIndex) const {return vars[varIndex];}
     vector< vector<int> > *getListSuccessors() {return &listofsuccessors;}
     Constraint *getCtr(int ctrIndex) const {
@@ -475,9 +476,7 @@ public:
     // -----------------------------------------------------------
     // Data and methods for Virtual Arc Consistency
 
-    void histogram( Cost c );
-    /// \brief initializes histogram of costs used by Virtual Arc Consistency to speed up its convergence (Bool\f$_\theta\f$ of P)
-    void histogram();
+    void histogram( Cost c ); /// \brief initializes histogram of costs used by Virtual Arc Consistency to speed up its convergence (Bool\f$_\theta\f$ of P)
     void iniSingleton();
     void updateSingleton();
     void removeSingleton();
@@ -488,7 +487,7 @@ public:
     // Data and methods for Cluster Tree Decomposition
 
     TreeDecomposition* td;
-    TreeDecomposition* getTreeDec()  { return td; }
+    TreeDecomposition* getTreeDec() { return td; }
     void buildTreeDecomposition();
     void elimOrderFile2Vector(char *elimVarOrder, vector<int> &order);
     void setDACOrder(vector<int> &elimVarOrder);

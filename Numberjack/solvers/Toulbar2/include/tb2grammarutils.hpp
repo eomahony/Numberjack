@@ -111,7 +111,7 @@ public:
     inline NonTermProdIterator endNonTermProd() {return nonTermProd.end();}
     
     void print(ostream &ofs);
-    
+    void dump(ostream& os, bool original = true);
 };
 
 #endif

@@ -58,7 +58,7 @@ void SameConstraint::read(istream &file) {
     }
 }
 
-Cost SameConstraint::evalOriginal(String s) {
+Cost SameConstraint::evalOriginal(const String& s) {
     Cost tuple_cost = 0;
     map<char, int> appear;
     for (vector<int>::iterator i = group[0].begin();i != group[0].end();i++) {
@@ -146,7 +146,7 @@ void SameConstraint::dump(ostream& os, bool original)
         os << nonassigned;
         for(int i = 0; i < arity_; i++) if (scope[i]->unassigned()) os << " " << scope[i]->getCurrentVarId();
     }
-    os << " -1 ssame" << endl << def << " " <<  group[0].size() << " " << group[1].size() << endl;
+    os << " -1 ssame " << def << " " <<  group[0].size() << " " << group[1].size() << endl;
     for (int g=0; g<2; g++) {
         for (unsigned int i = 0; i < group[g].size(); i++) {
             os << " " << getVar(group[g][i])->wcspIndex;
@@ -155,21 +155,21 @@ void SameConstraint::dump(ostream& os, bool original)
     os << endl;
 }
 
-void SameConstraint::print(ostream& os)
-{
-    os << "ssame(";
-    for(int i = 0; i < arity_;i++) {
-        os << scope[i]->wcspIndex;
-        if(i < arity_-1) os << ",";
-    }
-    os << ")[" << def << "," << group[0].size() << "," << group[1].size();
-    for (int g=0; g<2; g++) {
-        for (unsigned int i = 0; i < group[g].size(); i++) {
-            os << "," << getVar(group[g][i])->wcspIndex;
-        }
-    }
-    os << "]";
-}
+//void SameConstraint::print(ostream& os)
+//{
+//    os << "ssame(";
+//    for(int i = 0; i < arity_;i++) {
+//        os << scope[i]->wcspIndex;
+//        if(i < arity_-1) os << ",";
+//    }
+//    os << ")[" << def << "," << group[0].size() << "," << group[1].size();
+//    for (int g=0; g<2; g++) {
+//        for (unsigned int i = 0; i < group[g].size(); i++) {
+//            os << "," << getVar(group[g][i])->wcspIndex;
+//        }
+//    }
+//    os << "]";
+//}
 
 /* Local Variables: */
 /* c-basic-offset: 4 */

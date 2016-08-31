@@ -68,7 +68,7 @@ protected:
     // undo the previous extension
     virtual void undoExtend() {}
     // compute the original cost of the tuple s (i.e. cost without projection)
-    virtual Cost evalOriginal( String s ) {return 0;}        	
+    virtual Cost evalOriginal( const String& s ) {return 0;}
 
     // compute the minimum cost of the tuple from all feasible tuples
 
@@ -86,11 +86,12 @@ public:
     bool isGlobal() const {return true;}
 
     // evaluate the cost of the tuple
-    virtual Cost eval( String s );
+    virtual Cost eval( const String& s );
 
     double computeTightness() { return 0; }
-    virtual string getName() {return "global constraint";}
+    virtual string getName() =0;
     virtual void print(ostream& os);
+    virtual void dump(ostream& os, bool original = true) =0;
 
     // initialize the constraint structure for enforing consistency
     void init();
@@ -138,7 +139,7 @@ public:
     virtual void decrease(int index) {((EnumeratedVariable*)getVar(index))->queueAC();}
 
     // read the parameter of the constraint parameter from the file
-    virtual void read(istream &file) {}
+    virtual void read(istream &file) =0;
 
     // return the minimum cost of the tuples
     virtual Cost getMinCost() {return 0;}

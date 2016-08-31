@@ -1,7 +1,55 @@
 /** \file toulbar2lib.hpp
  *  \brief Main protocol class of a global soft constraint representing a weighted CSP and a generic WCSP complete tree-search-based solver
  *
+<pre>
+    Copyright (c) 2006-2016, INRA
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    toulbar2 is currently maintained by Simon de Givry, INRA - MIAT, Toulouse, France (simon.degivry@toulouse.inra.fr)
+</pre>
  */
+
+/*! @mainpage
+
+    <table>
+        <tr><th>Weighted CSP Solver     <td>toulbar2
+        <tr><th>Copyright               <td>INRA
+        <tr><th>Source                  <td>https://mulcyber.toulouse.inra.fr/projects/toulbar2/
+    </table>
+
+    See the @link md_README.html README @endlink for more details.
+
+    toulbar2 can be used as a stand-alone solver reading various problem file formats (wcsp, uai, wcnf, qpbo) or as a C++ library.\n
+    This document describes the wcsp native file format and the toulbar2 C++ library API.
+    \note Use cmake flags LIBTB2=ON and TOULBAR2_ONLY=OFF to get the toulbar2 C++ library libtb2.so and toulbar2test executable example.
+    \see ./src/toulbar2test.cpp
+
+    \defgroup wcspformat
+    \defgroup modeling
+    \defgroup solving
+    \defgroup verbosity
+    \defgroup preprocessing
+    \defgroup heuristics
+    \defgroup softac
+    \defgroup VAC
+    \defgroup ncbucket
+    \defgroup varelim
+    \defgroup propagation
+    \defgroup backtrack
+
+*/
 
 #ifndef TOULBAR2LIB_HPP_
 #define TOULBAR2LIB_HPP_
@@ -21,7 +69,7 @@
 
 class WeightedCSP {
 public:
-    static WeightedCSP *makeWeightedCSP(Store *s, Cost upperBound, void *solver = NULL);	///< \brief Weighted CSP factory
+    static WeightedCSP *makeWeightedCSP(Cost upperBound, void *solver = NULL);	///< \brief Weighted CSP factory
     
     virtual ~WeightedCSP() {}
 
@@ -97,9 +145,6 @@ public:
     /// \warning side-effect: updates DAC order according to an existing variable elimination order
     /// \note must be called after creating all the cost functions and before solving the problem
     virtual void sortConstraints() =0;
-    /// \brief initializes histogram of costs used by Virtual Arc Consistency to speed up its convergence (Bool\f$_\theta\f$ of P)
-    /// \note must be called after creating all the cost functions and before solving the problem
-    virtual void histogram() =0;
 
     virtual void whenContradiction() =0;    ///< \brief after a contradiction, resets propagation queues
     virtual void propagate() =0;            ///< \brief propagates until a fix point is reached (or throws a contradiction)
@@ -140,7 +185,7 @@ public:
     /// - simple arithmetic and scheduling (temporal disjunction) cost functions on interval variables
     /// - global cost functions (\e eg soft alldifferent, soft global cardinality constraint, soft same, soft regular, etc) with three different propagator keywords:
     ///   - \e flow propagator based on flow algorithms with "s" prefix in the keyword (\e salldiff, \e sgcc, \e ssame, \e sregular)
-    ///   - \e DAG propagator based on dynamic programming algorithms with "s" prefix and "dp" postfix (\e samongdp, sregulardp, sgrammardp, smstdp, smaxdp)
+    ///   - \e DAG propagator based on dynamic programming algorithms with "s" prefix and "dp" postfix (\e samongdp, salldiffdp, sgccdp, sregulardp, sgrammardp, smstdp, smaxdp)
     ///   - \e network propagator based on cost function network decomposition with "w" prefix (\e wsum, \e wvarsum, \e walldiff, \e wgcc, \e wsame, \e wsamegcc, \e wregular, \e wamong, \e wvaramong, \e woverlap)
     ///   .
     /// .
@@ -151,18 +196,20 @@ public:
     /// \warning Current implementation of toulbar2 has limited solving facilities for monolithic global cost functions (no BTD-like methods nor variable elimination)
     /// \warning Current implementation of toulbar2 disallows global cost functions with less than or equal to three variables in their scope (use cost functions in extension instead)
     /// \warning Before modeling the problem using make and post, call ::tb2init method to initialize toulbar2 global variables
-    /// \warning After modeling the problem using make and post, call WeightedCSP::sortConstraints and WeightedCSP::histogram methods to initialize correctly the model before solving it
+    /// \warning After modeling the problem using make and post, call WeightedCSP::sortConstraints method to initialize correctly the model before solving it
 
     virtual int makeEnumeratedVariable(string n, Value iinf, Value isup) =0; ///< \brief create an enumerated variable with its domain bounds
     virtual int makeEnumeratedVariable(string n, Value *d, int dsize) =0; ///< \brief create an enumerated variable with its domain values
     virtual int makeIntervalVariable(string n, Value iinf, Value isup) =0; ///< \brief create an interval variable with its domain bounds
-    virtual void postUnary(int xIndex, vector<Cost> &costs) =0;
+    virtual void postUnary(int xIndex, vector<Cost> &costs) =0; ///< \deprecated Please use the postUnaryConstraint method instead
+    virtual void postUnaryConstraint(int xIndex, vector<Cost> &costs) =0;
     virtual int postBinaryConstraint(int xIndex, int yIndex, vector<Cost> &costs) =0;
     virtual int postTernaryConstraint(int xIndex, int yIndex, int zIndex, vector<Cost> &costs) =0;
-    virtual int postNaryConstraintBegin(int* scope, int arity, Cost defval) =0; /// \warning must call WeightedCSP::postNaryConstraintEnd after giving cost tuples
+    virtual int postNaryConstraintBegin(int* scope, int arity, Cost defval, Long nbtuples = 0) =0; /// \warning must call WeightedCSP::postNaryConstraintEnd after giving cost tuples
     virtual void postNaryConstraintTuple(int ctrindex, Value* tuple, int arity, Cost cost) =0;
-    virtual void postNaryConstraintEnd(int ctrindex) =0; /// \warning must call WeightedCSP::sortConstraints after all cost functions have been posted (see WeightedCSP::sortConstraints and WeightedCSP::histogram)
-    virtual int postUnary(int xIndex, Value *d, int dsize, Cost penalty) =0;
+    virtual void postNaryConstraintEnd(int ctrindex) =0; /// \warning must call WeightedCSP::sortConstraints after all cost functions have been posted (see WeightedCSP::sortConstraints)
+    virtual int postUnary(int xIndex, Value *d, int dsize, Cost penalty) =0; ///< \deprecated Please use the postUnaryConstraint method instead
+    virtual int postUnaryConstraint(int xIndex, Value *d, int dsize, Cost penalty) =0;
     virtual int postSupxyc(int xIndex, int yIndex, Value cst, Value deltamax = MAX_VAL-MIN_VAL) =0;
     virtual int postDisjunction(int xIndex, int yIndex, Value cstx, Value csty, Cost penalty) =0;
     virtual int postSpecialDisjunction(int xIndex, int yIndex, Value cstx, Value csty, Value xinfty, Value yinfty, Cost costx, Cost costy) =0;
@@ -186,13 +233,13 @@ public:
     /// \brief post a soft or weighted regular cost function
     /// \param scopeIndex an array of variable indexes as returned by WeightedCSP::makeEnumeratedVariable
     /// \param arity the size of the array
-    /// \param semantics the semantics of the global cost function: "var" or "edit" (flow-based propagator only) or -- "hard" or "lin" or "quad" (network-based propagator only)--
+    /// \param semantics the semantics of the soft global cost function: "var" or "edit" (flow-based propagator) or -- "var" (DAG-based propagator)-- (unused parameter for network-based propagator)
     /// \param propagator the propagation method ("flow", "DAG", "network")
-    /// \param baseCost the scaling factor of the violation
+    /// \param baseCost the scaling factor of the violation ("flow", "DAG")
     /// \param nbStates the number of the states in the corresponding DFA. The states are indexed as 0, 1, ..., nbStates-1
     /// \param initial_States a vector of WeightedObj specifying the starting states with weight
     /// \param accepting_States a vector of WeightedObj specifying the final states
-    /// \param Wtransitions a vector of transitions
+    /// \param Wtransitions a vector of (weighted) transitions
     /// \warning Weights are ignored in the current implementation of DAG and flow-based propagators
     virtual int postWRegular(int* scopeIndex, int arity, const string &semantics, const string &propagator, Cost baseCost,
             int nbStates,
@@ -204,8 +251,8 @@ public:
     /// \brief post a soft alldifferent cost function
     /// \param scopeIndex an array of variable indexes as returned by WeightedCSP::makeEnumeratedVariable
     /// \param arity the size of the array
-    /// \param semantics the semantics of the global cost function: for flow-based propagator: "var" or "dec" or "decbi" (decomposed into a binary cost function complete network), for network-based propagator: "hard" or "lin" or "quad" (decomposed based on wamong)
-    /// \param propagator the propagation method ("flow", "network")
+    /// \param semantics the semantics of the global cost function: for flow-based propagator: "var" or "dec" or "decbi" (decomposed into a binary cost function complete network), for DAG-based propagator: "var", for network-based propagator: "hard" or "lin" or "quad" (decomposed based on wamong)
+    /// \param propagator the propagation method ("flow", "DAG", "network")
     /// \param baseCost the scaling factor of the violation
     virtual int postWAllDiff(int* scopeIndex, int arity, const string &semantics, const string &propagator, Cost baseCost) =0;
     virtual void postWAllDiff(int* scopeIndex, int arity, string semantics, Cost baseCost) =0; ///< \deprecated post a soft alldifferent cost function decomposed as a cost function network
@@ -213,8 +260,8 @@ public:
     /// \brief post a soft global cardinality cost function
     /// \param scopeIndex an array of variable indexes as returned by WeightedCSP::makeEnumeratedVariable
     /// \param arity the size of the array
-    /// \param semantics the semantics of the global cost function: "var" or "dec" or "wdec" (flow-based propagator only) or -- "hard" or "lin" or "quad" (network-based propagator only)--
-    /// \param propagator the propagation method ("flow", "network")
+    /// \param semantics the semantics of the global cost function: "var" (DAG-based propagator only) or -- "var" or "dec" or "wdec" (flow-based propagator only) or -- "hard" or "lin" or "quad" (network-based propagator only)--
+    /// \param propagator the propagation method ("flow", "DAG", "network")
     /// \param baseCost the scaling factor of the violation
     /// \param values a vector of BoundedObj, specifying the lower and upper bounds of each value, restricting the number of variables can be assigned to them
     virtual int postWGcc(int* scopeIndex, int arity, const string &semantics, const string &propagator, Cost baseCost,
@@ -297,7 +344,7 @@ public:
 
     virtual void read_wcsp(const char *fileName) =0;	///< \brief load problem in native wcsp format (\ref wcspformat)
     virtual void read_uai2008(const char *fileName) =0;	///< \brief load problem in UAI 2008 format (see http://graphmod.ics.uci.edu/uai08/FileFormat and http://www.cs.huji.ac.il/project/UAI10/fileFormat.php) \warning UAI10 evidence file format not recognized by toulbar2 as it does not allow multiple evidence (you should remove the first value in the file)
-    virtual void read_random(int n, int m, vector<int>& p, int seed, bool forceSubModular = false) =0;	///< \brief create a random WCSP with \e n variables, domain size \e m, array \e p where the first element is a percentage of tuples with a nonzero cost and next elements are the number of random cost functions for each different arity (starting with arity two), random seed, and a flag to have a percentage (last element in the array \e p) of the binary cost functions being permutated submodular
+    virtual void read_random(int n, int m, vector<int>& p, int seed, bool forceSubModular = false, string globalname = "") =0;	///< \brief create a random WCSP with \e n variables, domain size \e m, array \e p where the first element is a percentage of tuples with a nonzero cost and next elements are the number of random cost functions for each different arity (starting with arity two), random seed, a flag to have a percentage (last element in the array \e p) of the binary cost functions being permutated submodular, and a string to use a specific global cost function instead of random cost functions in extension
     virtual void read_wcnf(const char *fileName) =0;	///< \brief load problem in (w)cnf format (see http://www.maxsat.udl.cat/08/index.php?disp=requirements)
     virtual void read_qpbo(const char *fileName) =0;	///< \brief load quadratic pseudo-Boolean optimization problem in unconstrained quadratic programming text format (first text line with n, number of variables and m, number of triplets, followed by the m triplets (x,y,cost) describing the sparse symmetric nXn cost matrix with variable indexes such that x <= y and any positive or negative real numbers for costs)
 
@@ -354,7 +401,7 @@ ostream& operator<<(ostream& os, WeightedCSP &wcsp);			///< \see WeightedCSP::pr
 class WeightedCSPSolver
 {
 public:
-    static WeightedCSPSolver *makeWeightedCSPSolver(int storeSize, Cost initUpperBound);	///< \brief WeightedCSP Solver factory
+    static WeightedCSPSolver *makeWeightedCSPSolver(Cost initUpperBound);	///< \brief WeightedCSP Solver factory
 
     virtual ~WeightedCSPSolver() {}
 
@@ -368,8 +415,52 @@ public:
     virtual void assign(int varIndex, Value value, bool reverse = false) =0;		///< \brief assigns a variable and propagates
     virtual void remove(int varIndex, Value value, bool reverse = false) =0;		///< \brief removes a domain value and propagates (valid if done for an enumerated variable or on its domain bounds)
 
-    virtual void read_wcsp(const char *fileName) =0;		///< \brief reads a WCSP from a file in wcsp text format (can be other formats if using specific ::ToulBar2 global variables)
-    virtual void read_random(int n, int m, vector<int>& p, int seed, bool forceSubModular = false ) =0;	///< \brief create a random WCSP, see WeightedCSP::read_random
+    /** \defgroup solving Solving cost function networks
+     * After creating a Weighted CSP, it can be solved using a local search method INCOP (see WeightedCSPSolver::narycsp) and/or an exact B&B search method (see WeightedCSPSolver::solve).\n
+     * Various options of the solving methods are controlled by ::Toulbar2 static class members (see files src/tb2types.hpp and src/tb2main.cpp).\n
+     * A brief code example reading a wcsp problem given as a single command-line parameter and solving it:
+     * \code
+    #include "toulbar2lib.hpp"
+    #include <string.h>
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <unistd.h>
+    int main(int argc, char **argv) {
+
+        tb2init(); // must be call before setting specific ToulBar2 options and creating a model
+
+        // Create a solver object
+        WeightedCSPSolver *solver = WeightedCSPSolver::makeWeightedCSPSolver(MAX_COST);
+
+        // Read a problem file in wcsp format
+        solver->read_wcsp(argv[1]);
+
+        ToulBar2::verbose = -1;  // change to 0 or higher values to see more trace information
+
+        // Uncomment if solved using INCOP local search followed by a partial Limited Discrepancy Search with a maximum discrepancy of one
+        //  ToulBar2::incop_cmd = "0 1 3 idwa 100000 cv v 0 200 1 0 0";
+        //  ToulBar2::lds = -1;  // remove it or change to a positive value then the search continues by a complete B&B search method
+
+        if (solver->solve()) {
+            // show (sub-)optimal solution
+            vector<Value> sol;
+            Cost ub = solver->getSolution(sol);
+            cout << "Best solution found cost: " << ub << endl;
+            cout << "Best solution found:";
+            for (unsigned int i=0; i<sol.size(); i++) cout << ((i>0)?",":"") << " x" << i << " = " << sol[i];
+            cout << endl;
+        } else {
+            cout << "No solution found!" << endl;
+        }
+        delete solver;
+    }
+    \endcode
+     * \see another code example in src/toulbar2test.cpp
+     * \warning variable domains must start at zero, otherwise recompile libtb2.so without flag WCSPFORMATONLY
+    **/
+
+    virtual void read_wcsp(const char *fileName) =0;        ///< \brief reads a WCSP from a file in wcsp text format (can be other formats if using specific ::ToulBar2 global variables)
+    virtual void read_random(int n, int m, vector<int>& p, int seed, bool forceSubModular = false, string globalname = "") =0;  ///< \brief create a random WCSP, see WeightedCSP::read_random
 
     /// \brief simplifies and solves to optimality the problem
     /// \return false if there is no solution found

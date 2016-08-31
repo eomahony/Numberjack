@@ -40,6 +40,24 @@ void AmongConstraint::read(istream & file) {
 
 }
 
+void AmongConstraint::dump(ostream& os, bool original)
+{
+    assert(original); //TODO: case original is false
+    if (original) {
+        os << arity_;
+        for(int i = 0; i < arity_;i++) os << " " << scope[i]->wcspIndex;
+    } else {
+        os << nonassigned;
+        for(int i = 0; i < arity_; i++) if (scope[i]->unassigned()) os << " " << scope[i]->getCurrentVarId();
+    }
+    os << " -1 samong var " << def << " " << lb << " " << ub << endl;
+    os << V.size();
+    for (set<Value>::iterator it = V.begin(); it != V.end(); ++it) {
+        os << " " << *it;
+    }
+    os << endl;
+}
+
 void AmongConstraint::initMemoization() {
 
     if (lb > ub) {
@@ -96,7 +114,7 @@ Cost AmongConstraint::minCostOriginal(int var, Value val, bool changed) {
     return result.first;
 }
 
-Cost AmongConstraint::evalOriginal(String s)
+Cost AmongConstraint::evalOriginal(const String& s)
 {
     int n = arity();
     int count = 0;

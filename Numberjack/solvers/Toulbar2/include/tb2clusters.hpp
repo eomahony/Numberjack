@@ -18,15 +18,19 @@
 class Cluster;
 
 typedef set<int>	       TVars;
-typedef set<Constraint*>   TCtrs;
+typedef ConstraintSet   TCtrs;
 //typedef map<int,Value>     TAssign;
 
 
+// sort clusters by their id if non-negative else by pointer addresses (warning! stochastic behavior!!)
+struct CmpClusterStructBasic {
+    bool operator() (const Cluster *lhs, const Cluster *rhs) const;
+};
+typedef set<Cluster *, CmpClusterStructBasic>       TClusters;
 // sort cluster sons by mean separator size first and by number of variables in their subtree next
 struct CmpClusterStruct {
     bool operator() (const Cluster *lhs, const Cluster *rhs) const;
 };
-typedef set<Cluster*>       TClusters;
 typedef set<Cluster*, CmpClusterStruct>       TClustersSorted;
 
 typedef triplet<Cost, Cost, Solver::OpenList >     TPairNG;
@@ -107,7 +111,7 @@ public:
     void   increase(int index) {}
     void   decrease(int index) {}
     void   remove(int index) {}
-    //set<Constraint*> subConstraint(){TCtrs s; return s;}
+    //ConstraintSet subConstraint(){TCtrs s; return s;}
     void   print(ostream& os);
 };
 
@@ -115,6 +119,8 @@ public:
 class Cluster
 {
 private:
+    static int clusterCounter;          ///< count the number of instances of Cluster class
+    int instance;                       ///< instance number
     TreeDecomposition*  td;
     WCSP*				  wcsp;
     int                 id; // corresponding to the vector index of the cluster in the tree decomposition
@@ -143,7 +149,8 @@ public:
 
     void          setup();
 
-    int           getId() const { return id; }
+    int getIndex() const {return instance;}     ///< \brief instantiation occurrence number of current Cluster object
+    int           getId() const { return id; }  ///< \brief temporary/final index of the cluster in the current tree decomposition
     void          setId(int iid) { id=iid; }
 
     WCSP* 		getWCSP() { return wcsp; }
@@ -299,8 +306,8 @@ public:
     void pathFusions(vector<int> &order);   // builds a path decomposition of clusters from a given order
 
     void buildFromOrderForApprox();	//builds a decomposition for approximation solution counting
-    void maxchord(int sizepart, vector<int> &order, set<Constraint*> &totalusedctrs, TVars &inusedvars, TVars &currentusedvars, vector<Variable *> &currentRevElimOrder,set<Constraint*> &currentusedctrs);
-    void insert(int sizepart, vector <Variable *> currentRevElimOrder, set<Constraint *> currentusedctrs );
+    void maxchord(int sizepart, vector<int> &order, ConstraintSet &totalusedctrs, TVars &inusedvars, TVars &currentusedvars, vector<Variable *> &currentRevElimOrder,ConstraintSet &currentusedctrs);
+    void insert(int sizepart, vector <Variable *> currentRevElimOrder, ConstraintSet currentusedctrs );
 
     void fusion( Cluster* ci, Cluster* cj );
     bool reduceHeight( Cluster* c, Cluster *father );

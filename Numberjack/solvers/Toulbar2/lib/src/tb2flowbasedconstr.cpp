@@ -2,7 +2,7 @@
 #include "tb2wcsp.hpp"
 
 FlowBasedGlobalConstraint::FlowBasedGlobalConstraint(WCSP *wcsp, EnumeratedVariable** scope_in, int arity_in) : GlobalConstraint(wcsp, scope_in, arity_in, 0),
-        graph(NULL), cost(MIN_COST, &wcsp->getStore()->storeCost), zeroEdges(NULL), hasConfigOrganized(false)
+        graph(NULL), cost(MIN_COST), zeroEdges(NULL), hasConfigOrganized(false)
 {
 }
 
@@ -20,7 +20,7 @@ void FlowBasedGlobalConstraint::initStructure() {
 
     if (graph == NULL) {
         size_t graphSize = GetGraphAllocatedSize();
-        graph = new Graph(graphSize, arity_, wcsp->getStore());
+        graph = new Graph(graphSize, arity_);
 
         if (zeroEdges == NULL) {
             zeroEdges = new bool*[graph->size()];
@@ -84,7 +84,7 @@ void FlowBasedGlobalConstraint::checkRemoved(Graph &graph, StoreCost &cost, vect
                 pair<int, int> edge = mapto(i, *v);
                 vector<Cost> weight = graph.getWeight(edge.second, edge.first);
                 if (weight.size() == 0) {
-                    cout << "error for non-existence of egde (" << edge.second << "," << edge.first << ")\n";
+                    cout << "error for non-existence of edge (" << edge.second << "," << edge.first << ")\n";
                     graph.print();
                     exit(0);
                 }
@@ -95,7 +95,7 @@ void FlowBasedGlobalConstraint::checkRemoved(Graph &graph, StoreCost &cost, vect
                     result.second = graph.removeEdge(edge.first, edge.second);
                 }
                 if (!result.second) {
-                    cout << "ERROR cannot delete egde (" << edge.second << "," << edge.first << ")\n";
+                    cout << "ERROR cannot delete edge (" << edge.second << "," << edge.first << ")\n";
                     graph.print();
                     exit(0);
                 }

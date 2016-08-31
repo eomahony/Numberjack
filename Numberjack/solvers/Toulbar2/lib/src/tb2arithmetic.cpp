@@ -11,9 +11,9 @@
  * 
  */
 
-Unary::Unary(WCSP *wcsp, IntervalVariable *xx, Value *d, int dsize, Cost c, StoreStack<Value, Value> *storeValue) :
+Unary::Unary(WCSP *wcsp, IntervalVariable *xx, Value *d, int dsize, Cost c) :
         AbstractUnaryConstraint<IntervalVariable>(wcsp, xx), permitted(d, d+dsize), penalty(c),
-        deltaValueXinf(xx->getSup()+1, storeValue), deltaValueXsup(xx->getSup()+1, storeValue)
+        deltaValueXinf(xx->getSup()+1), deltaValueXsup(xx->getSup()+1)
 {
     xx->queueInc();
     xx->queueDec();
@@ -36,12 +36,11 @@ void Unary::dump(ostream& os, bool original)
     }
 }
 
-Supxyc::Supxyc(WCSP *wcsp, IntervalVariable *xx, IntervalVariable *yy, Value c, Value delta,
-        StoreStack<Cost, Cost> *storeCost, StoreStack<Value, Value> *storeValue) :
+Supxyc::Supxyc(WCSP *wcsp, IntervalVariable *xx, IntervalVariable *yy, Value c, Value delta) :
         AbstractBinaryConstraint<IntervalVariable,IntervalVariable>(wcsp, xx, yy),
-        cst(c), deltamax(delta), deltaCost(MIN_COST, storeCost),
-        deltaValueXinf(xx->getSup()+1, storeValue), deltaValueYsup(yy->getSup()+1, storeValue),
-        deltaCostXinf(MIN_COST, storeCost), deltaCostYsup(MIN_COST, storeCost)
+        cst(c), deltamax(delta), deltaCost(MIN_COST),
+        deltaValueXinf(xx->getSup()+1), deltaValueYsup(yy->getSup()+1),
+        deltaCostXinf(MIN_COST), deltaCostYsup(MIN_COST)
 {
     xx->queueInc();
     xx->queueDec();
@@ -60,11 +59,11 @@ void Supxyc::dump(ostream& os, bool original)
 }
 
 Disjunction::Disjunction(WCSP *wcsp, IntervalVariable *xx, IntervalVariable *yy, Value cxx, Value cyy,
-        Cost cost, StoreStack<Value, Value> *storeValue) :
+        Cost cost) :
         AbstractBinaryConstraint<IntervalVariable,IntervalVariable>(wcsp, xx, yy),
         cstx(cxx), csty(cyy), penalty(cost),
-        deltaValueXinf(xx->getSup()+1, storeValue),deltaValueYinf(yy->getSup()+1, storeValue),
-        deltaValueXsup(xx->getSup()+1, storeValue),deltaValueYsup(yy->getSup()+1, storeValue)
+        deltaValueXinf(xx->getSup()+1),deltaValueYinf(yy->getSup()+1),
+        deltaValueXsup(xx->getSup()+1),deltaValueYsup(yy->getSup()+1)
 {
     xx->queueInc();
     xx->queueDec();
@@ -84,16 +83,14 @@ void Disjunction::dump(ostream& os, bool original)
 
 SpecialDisjunction::SpecialDisjunction(WCSP *wcsp, IntervalVariable *xx, IntervalVariable *yy, 
         Value cxx, Value cyy, Value xmax, Value ymax,
-        Cost xcost, Cost ycost,
-        StoreStack<Cost, Cost> *storeCost,
-        StoreStack<Value, Value> *storeValue) :
+        Cost xcost, Cost ycost) :
         AbstractBinaryConstraint<IntervalVariable,IntervalVariable>(wcsp, xx, yy),
         cstx(cxx), csty(cyy), xinfty(xmax), yinfty(ymax), costx(xcost), costy(ycost),
-        deltaCost(MIN_COST, storeCost),
-        deltaValueXinf(xx->getSup()+1, storeValue),deltaValueYinf(yy->getSup()+1, storeValue),
-        deltaValueXsup(xx->getSup()+1, storeValue),deltaValueYsup(yy->getSup()+1, storeValue),
-        deltaCostXinf(MIN_COST, storeCost), deltaCostYinf(MIN_COST, storeCost),
-        deltaCostXsup(MIN_COST, storeCost), deltaCostYsup(MIN_COST, storeCost)
+        deltaCost(MIN_COST),
+        deltaValueXinf(xx->getSup()+1),deltaValueYinf(yy->getSup()+1),
+        deltaValueXsup(xx->getSup()+1),deltaValueYsup(yy->getSup()+1),
+        deltaCostXinf(MIN_COST), deltaCostYinf(MIN_COST),
+        deltaCostXsup(MIN_COST), deltaCostYsup(MIN_COST)
 {
     xx->queueInc();
     xx->queueDec();
@@ -236,12 +233,12 @@ bool Supxyc::verify()
     cmin = y->getInf() + cst - x->getSup() - deltaCost;
     if (cmin > MIN_COST) cout << "cmin=" << cmin << endl;
     cxinf = y->getInf() + cst - x->getInf() - deltaCost
-            - ((y->getInf() == deltaValueYsup)?deltaCostYsup:MIN_COST)
-            - ((x->getInf() == deltaValueXinf)?deltaCostXinf:MIN_COST);
+        - ((y->getInf() == deltaValueYsup)?(Cost)deltaCostYsup:MIN_COST)
+        - ((x->getInf() == deltaValueXinf)?(Cost)deltaCostXinf:MIN_COST);
     if (cxinf > MIN_COST) cout << "cxinf=" << cxinf << endl;
     cysup = y->getSup() + cst - x->getSup() - deltaCost
-            - ((y->getSup() == deltaValueYsup)?deltaCostYsup:MIN_COST)
-            - ((x->getSup() == deltaValueXinf)?deltaCostXinf:MIN_COST);
+        - ((y->getSup() == deltaValueYsup)?(Cost)deltaCostYsup:MIN_COST)
+        - ((x->getSup() == deltaValueXinf)?(Cost)deltaCostXinf:MIN_COST);
     if (cysup > MIN_COST) cout << "cysup=" << cysup << endl;
     bool icbac = (cmin <= MIN_COST) && (cysup <= MIN_COST) && (cxinf <= MIN_COST);
     if (!icbac) {

@@ -31,6 +31,12 @@
 #include <queue>
 using namespace std;
 
+#ifdef NDEBUG
+#define DEBONLY(x)
+#else
+#define DEBONLY(x) x
+#endif
+
 template<typename T1, typename T2, typename T3>
 struct triplet
 {

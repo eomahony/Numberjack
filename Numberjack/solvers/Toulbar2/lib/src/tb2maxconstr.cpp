@@ -40,6 +40,28 @@ void MaxConstraint::read(istream &file){
 
 }
 
+void MaxConstraint::dump(ostream& os, bool original)
+{
+    assert(original); //TODO: case original is false
+    if (original) {
+        os << arity_;
+        for(int i = 0; i < arity_;i++) os << " " << scope[i]->wcspIndex;
+    } else {
+        os << nonassigned;
+        for(int i = 0; i < arity_; i++) if (scope[i]->unassigned()) os << " " << scope[i]->getCurrentVarId();
+    }
+    os << " -1 smaxdp " << def << endl;
+    int ntuples = 0;
+    for (int i=0;i<arity_;i++) ntuples += weightMap[i].size();
+    os << ntuples << endl;
+    for (int i=0;i<arity_;i++) {
+        for (map<Value, Cost>::iterator it = weightMap[i].begin(); it != weightMap[i].end(); ++it) {
+            os << i << " " << it->first << " " << it->second << endl;
+        }
+    }
+    os << endl;
+}
+
 void MaxConstraint::initMemoization() {
     int n = arity();
     for(int i = 0; i < n; i++){
@@ -56,7 +78,7 @@ void MaxConstraint::initMemoization() {
     best.resize(n);
 }
 
-Cost MaxConstraint::evalOriginal( String s ) {
+Cost MaxConstraint::evalOriginal( const String& s ) {
     int largeComp = 0;
     int n = arity();
     for(int i = 0; i < n; i++){

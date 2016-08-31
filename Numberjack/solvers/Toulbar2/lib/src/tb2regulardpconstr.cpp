@@ -86,7 +86,7 @@ Cost RegularDPConstraint::minCostOriginal(int var, Value val, bool changed) {
 	return minCost(var, val, changed).first;
 }
 
-Cost RegularDPConstraint::eval(String s) {
+Cost RegularDPConstraint::eval(const String& s) {
 	int n = arity();
 	for (int i=1;i<=n;i++) {
 		for (unsigned int j=0;j<dfa.symbol.size();j++) {												
@@ -190,6 +190,29 @@ Cost RegularDPConstraint::unary(int ch, int var, Value v) {
 	Cost ucost = (v==ch)?0:def;	
         EnumeratedVariable *x = scope[var];	
 	return ucost - deltaCost[var][x->toIndex(v)];
+}
+
+void RegularDPConstraint::dump(ostream& os, bool original)
+{
+    if (original) {
+        os << arity_;
+        for(int i = 0; i < arity_;i++) os << " " << scope[i]->wcspIndex;
+    } else {
+        os << nonassigned;
+        for(int i = 0; i < arity_; i++) if (scope[i]->unassigned()) os << " " << scope[i]->getCurrentVarId();
+    }
+    os << " -1 sregulardp var " << def << endl;
+    dfa.dump(os, original);
+}
+
+void RegularDPConstraint::print(ostream& os) {
+    os << "sregulardp(";
+    for (int i = 0; i < arity_; i++) {
+        os << scope[i]->wcspIndex;
+        if (i < arity_ - 1) os << ",";
+    }
+    os << ")[" << def << "]";
+    dfa.dump(os, true);
 }
 
 /* Local Variables: */

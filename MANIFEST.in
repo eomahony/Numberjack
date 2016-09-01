@@ -23,8 +23,8 @@ graft Numberjack/solvers/Mistral/mistral
 graft Numberjack/solvers/Mistral2/mistral
 graft Numberjack/solvers/Toulbar2/include
 graft Numberjack/solvers/Toulbar2/lib
-include Numberjack/solvers/Toulbar2/Copyright.txt
-include Numberjack/solvers/Toulbar2/ReadMe.txt
+include Numberjack/solvers/Toulbar2/LICENSE
+include Numberjack/solvers/Toulbar2/README.md
 graft Numberjack/solvers/Walksat/walksat_src
 
 # Exclude some folders of the solvesr that we don't use

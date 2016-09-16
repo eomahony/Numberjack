@@ -415,7 +415,7 @@ public:
     double computeTightness() {
         int count = 0;
         double sum = 0;
-        Cost costs[x->getDomainSize()*y->getDomainSize()];
+        Cost *costs = new Cost[x->getDomainSize()*y->getDomainSize()];
         for (EnumeratedVariable::iterator iterX = x->begin(); iterX != x->end(); ++iterX) {
             for (EnumeratedVariable::iterator iterY = y->begin(); iterY != y->end(); ++iterY) {
                 Cost c = getCost(*iterX, *iterY);
@@ -429,6 +429,7 @@ public:
         } else {
             tight = sum / (double) count;
         }
+        delete[] costs;
         return tight;
     }
 

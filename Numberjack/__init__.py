@@ -733,7 +733,7 @@ class Model(object):
         #SDG: check if it is an optimization problem
         if not any([issubclass(type(expr), Minimise) or issubclass(type(expr), Maximise) or issubclass(type(expr), CostFunction) for expr in self.__expressions]):
             self.upper_bound = 1
-        if solver is not None and solver.Library is 'Toulbar2' and self.upper_bound is not None:
+        if solver != None and solver.Library == 'Toulbar2' and self.upper_bound != None:
             solver.setOption('updateUb', str(self.upper_bound))
 
         if self.closed == len(self.__expressions):
@@ -2125,7 +2125,7 @@ class Sum(Predicate):
                 return X[0]
             else:
                 return Add([X[0], addition(X[1:])])   #SDG: use specific Add BinPredicate instead of Sum
-        return [addition([(child if coef is 1 else (child * Variable(coef,coef,str(coef)))) for child, coef in zip(self.children, self.parameters[0])] + [Variable(e,e,str(e)) for e in self.parameters[1:] if e is not 0])]
+        return [addition([(child if coef==1 else (child * Variable(coef,coef,str(coef)))) for child, coef in zip(self.children, self.parameters[0])] + [Variable(e,e,str(e)) for e in self.parameters[1:] if e != 0])]
 
 
 class OrderedSum(Predicate):
@@ -3028,7 +3028,7 @@ def load_in_decompositions():
     # First add the constraints
     for attr_name in dir(Decomp):
         attr = getattr(Decomp, attr_name)
-        if hasattr(attr, "__name__") and attr.__name__.find("decompose") is -1:
+        if hasattr(attr, "__name__") and attr.__name__.find("decompose")==-1:
             if not hasattr(sys.modules[__name__], attr.__name__):
                 setattr(sys.modules[__name__], attr.__name__, attr)
 

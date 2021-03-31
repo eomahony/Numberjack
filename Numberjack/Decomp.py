@@ -537,16 +537,16 @@ def decompose_BinPredicate(self):
     arity = get_arity(self)
     scope = get_scope(self)
     res = Variable(self.get_lb(),self.get_ub())
-    if arity is 0:
+    if arity == 0:
         val = evaluate(self, dict([]))
         res2 = Variable(val,val,str(val))
         return [res2]
-    elif arity is 1:
+    elif arity == 1:
         return [res, Table([res, scope[0]], [(evaluate(self, dict([(scope[0],val0)])), val0) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else range(scope[0].get_lb(), scope[0].get_ub()+1))])]
-    elif arity is 2:
+    elif arity == 2:
         product = cartesian_product(self)  # check if decomposition is feasible in size
         return [res, Table([res, scope[0], scope[1]], [(evaluate(self, dict([(scope[0],val0), (scope[1],val1)])), val0, val1) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else range(scope[0].get_lb(), scope[0].get_ub()+1)) for val1 in (scope[1].domain_ if scope[1].domain_ is not None else range(scope[1].get_lb(), scope[1].get_ub()+1))])]
-    elif arity is 3:
+    elif arity == 3:
         product = cartesian_product(self)  # check if decomposition is feasible in size
         return [res, Table([res, scope[0], scope[1], scope[2]], [(evaluate(self, dict([(scope[0],val0), (scope[1],val1), (scope[2],val2)])), val0, val1, val2) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else range(scope[0].get_lb(), scope[0].get_ub()+1)) for val1 in (scope[1].domain_ if scope[1].domain_ is not None else range(scope[1].get_lb(), scope[1].get_ub()+1)) for val2 in (scope[2].domain_ if scope[2].domain_ is not None else range(scope[2].get_lb(), scope[2].get_ub()+1))])]
 #    elif arity is 4:
@@ -573,18 +573,18 @@ def decompose_Minimise(self):
         res = []
         for i in range(len(self.children[0].children)):
             res.extend(decompose_Minimise(Minimise(Mul([self.children[0].children[i], self.children[0].parameters[0][i]]))))
-        return res + [decompose_Minimise(Minimise(e)) for e in self.children[0].parameters[1:] if e is not 0]
+        return res + [decompose_Minimise(Minimise(e)) for e in self.children[0].parameters[1:] if e != 0]
     else:
         product = cartesian_product(self.children[0])  # check if decomposition is feasible in size
         arity = get_arity(self.children[0])
         scope = get_scope(self.children[0])
         #print "decompose ", self.children[0], " size: ", product, " arity: ", arity, " scope: ", scope
-        if arity is 0:
+        if arity == 0:
             return [PostNullary(evaluate(self.children[0], dict([])))]
-        elif arity is 1:
+        elif arity == 1:
             costs = [evaluate(self.children[0], dict([(scope[0],val0)])) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else range(scope[0].get_lb(), scope[0].get_ub()+1))]
             return [PostUnary(scope[0], costs)]
-        elif arity is 2:
+        elif arity == 2:
             costs = [evaluate(self.children[0], dict([(scope[0],val0), (scope[1],val1)])) for val0 in (scope[0].domain_ if scope[0].domain_ is not None else range(scope[0].get_lb(), scope[0].get_ub()+1)) for val1 in (scope[1].domain_ if scope[1].domain_ is not None else range(scope[1].get_lb(), scope[1].get_ub()+1))]
             return [PostBinary(scope[0], scope[1], costs)]
         else:

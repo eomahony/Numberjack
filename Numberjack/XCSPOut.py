@@ -332,7 +332,7 @@ class XCSPOutput():
         """
         This adds a global constraint to the list of constraints
         """
-        if self.global_map.get(expr.get_operator()) is "NOT_SUPPORTED":
+        if self.global_map.get(expr.get_operator()) == "NOT_SUPPORTED":
             print("Global operator, %s, is not supported, yet" % expr.get_operator())
         else:
             conformat = self.global_format.get(expr.get_operator())
@@ -342,7 +342,7 @@ class XCSPOutput():
 
             # Create intermediate variable for storing result of Element
             index = None
-            if expr.get_operator() is "Element":
+            if expr.get_operator() == "Element":
                 index = self.create_variable(1, len(expr.get_children())-1,
                                              Name="Result of Element C%d" %
                                                 self.__local_con_idx)
@@ -383,7 +383,7 @@ class XCSPOutput():
                     con_string += "\t\t\tV%d\n" % val.ident
 
             if "VARS" in conformat:
-                if expr.get_operator() is "Element":
+                if expr.get_operator() == "Element":
                     con_string += "V%d\n\t\t\t" % index
                     del(params[-1])
                 con_string += "["
@@ -409,7 +409,7 @@ class XCSPOutput():
                     duration = task.duration
                     end      = task.get_ub()
                     height   = task#.something
-                    con_string += "{ O%d D%d E%d H%d}" (origin,duration,end,height)
+                    con_string += "{ O%d D%d E%d H%d}"%(origin,duration,end,height)
                 con_string += " ]\n"
 
             if "MATRIX" in conformat:
@@ -583,9 +583,9 @@ class XCSPOutput():
         semantics = expr.parameters[1]
         scope = expr.get_children()
 
-        if semantics is "conflict":
+        if semantics == "conflict":
             semantics = "conflicts"
-        elif semantics is "support":
+        elif semantics == "support":
             semantics = "supports"
 
         relation  = "\t<relation name=\"R%d\"" % self.__local_rel_idx

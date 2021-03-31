@@ -43,13 +43,13 @@ disabled_extensions = []  # The names of solver interfaces which have been
 
 if sys.platform == 'darwin':
     EXTRA_COMPILE_ARGS.extend([
-        '-stdlib=libstdc++', '-Wno-shorten-64-to-32',
+        '-stdlib=libc++', '-Wno-shorten-64-to-32',
         '-arch', 'x86_64',  # force 64bit only builds on Mac
 
         # ignore warning about swig code
         '-Wno-self-assign', '-Wno-unused-const-variable',
     ])
-    EXTRA_LINK_ARGS.extend(['-arch', 'x86_64', '-stdlib=libstdc++'])
+    EXTRA_LINK_ARGS.extend(['-arch', 'x86_64', '-stdlib=libc++'])
 elif sys.platform.startswith('linux'):
     EXTRA_COMPILE_ARGS.extend([
         '-Wno-narrowing',
@@ -88,10 +88,10 @@ class njbuild_ext(_build_ext):
             _build_ext.build_extension(self, ext)
 
             # Record the names of extensions which were successful, trim '_'
-            self.builtsolvernames.append(ext.name[1:])
+            self.builtsolvernames.append(ext.name.split('.')[-1][1:])
 
         except CCompilerError:
-            self.failedsolvernames.append(ext.name[1:])
+            self.failedsolvernames.append(ext.name.split('.')[-1][1:])
 
 
 # ------------------------------ Helper Methods ------------------------------
@@ -178,7 +178,7 @@ def listextfiles(folder, extension=".cpp"):
 
 mistralsrc = 'Numberjack/solvers/Mistral/mistral/lib/src'
 mistral = Extension(
-    '_Mistral',
+    'Numberjack.solvers._Mistral',
     sources=[
         'Numberjack/solvers/Mistral.i',
         'Numberjack/solvers/Mistral/Mistral.cpp',
@@ -205,7 +205,7 @@ extensions.append(mistral)
 
 mistral2src = 'Numberjack/solvers/Mistral2/mistral/src/lib'
 mistral2 = Extension(
-    '_Mistral2',
+    'Numberjack.solvers._Mistral2',
     sources=[
         'Numberjack/solvers/Mistral2.i',
         'Numberjack/solvers/Mistral2/Mistral2.cpp',
@@ -234,7 +234,7 @@ extensions.append(mistral2)
 toulbar2src = 'Numberjack/solvers/Toulbar2/lib/src'
 toulbar2incopsrc = 'Numberjack/solvers/Toulbar2/lib/src/incop'
 toulbar2 = Extension(
-    '_Toulbar2',
+    'Numberjack.solvers._Toulbar2',
     sources=[
         'Numberjack/solvers/Toulbar2.i',
         'Numberjack/solvers/Toulbar2/Toulbar2.cpp',
@@ -269,7 +269,7 @@ extensions.append(toulbar2)
 
 
 mip = Extension(
-    '_MipWrapper',
+    'Numberjack.solvers._MipWrapper',
     sources=[
         'Numberjack/solvers/MipWrapper.i',
         'Numberjack/solvers/MipWrapper/MipWrapper.cpp',
@@ -287,7 +287,7 @@ extensions.append(mip)
 
 
 sat = Extension(
-    '_SatWrapper',
+    'Numberjack.solvers._SatWrapper',
     sources=[
         'Numberjack/solvers/SatWrapper.i',
         'Numberjack/solvers/SatWrapper/SatWrapper.cpp',
@@ -311,7 +311,7 @@ extensions.append(sat)
 
 
 minisat = Extension(
-    '_MiniSat',
+    'Numberjack.solvers._MiniSat',
     sources=[
         'Numberjack/solvers/MiniSat.i',
         'Numberjack/solvers/MiniSat/MiniSat.cpp',
@@ -340,7 +340,7 @@ extensions.append(minisat)
 
 
 walksat = Extension(
-    '_Walksat',
+    'Numberjack.solvers._Walksat',
     sources=[
         'Numberjack/solvers/Walksat.i',
         'Numberjack/solvers/Walksat/Walksat.cpp',
@@ -399,7 +399,7 @@ if cplexhome:
         return [getlibdirs(cplexlibfolder), getlibdirs(concertlibfolder)]
 
     cplex = Extension(
-        '_CPLEX',
+        'Numberjack.solvers._CPLEX',
         sources=[
             'Numberjack/solvers/CPLEX.i',
             'Numberjack/solvers/CPLEX/CPLEX.cpp',
@@ -449,7 +449,7 @@ if gurobihome:
         return ['gurobi_c++', get_gurobi_libname()]
 
     gurobi = Extension(
-        '_Gurobi',
+        'Numberjack.solvers._Gurobi',
         sources=[
             'Numberjack/solvers/Gurobi.i',
             'Numberjack/solvers/Gurobi/Gurobi.cpp',
@@ -522,7 +522,7 @@ if scipopthome:
     scipincfolder = os.path.join(scipfolder, "src")
 
     scip = Extension(
-        '_SCIP',
+        'Numberjack.solvers._SCIP',
         sources=[
             'Numberjack/solvers/SCIP.i',
             'Numberjack/solvers/SCIP/SCIP.cpp',
@@ -554,7 +554,7 @@ else:
 # Possibly compile only a subset of the solvers. This can be specified as a CSV
 # list on the command line or by passing -solver multiple times, e.g:
 # python setup.py build -solver Mistral,Mistral2 -solver SCIP
-allsolvers = dict((e.name[1:], e) for e in extensions)
+allsolvers = dict((e.name.split('.')[-1][1:], e) for e in extensions)
 SOLVERARG = "-solver"
 solversubsetnames = set()
 while SOLVERARG in sys.argv:

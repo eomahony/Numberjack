@@ -37,7 +37,7 @@ following to be installed:
 
 [minisat]: http://minisat.se
 [walksat]: http://www.cs.rochester.edu/u/kautz/walksat/
-[toulbar2]: https://mulcyber.toulouse.inra.fr/projects/toulbar2/
+[toulbar2]: https://github.com/toulbar2/toulbar2
 
 
 ## Building the Solver Interfaces

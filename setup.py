@@ -20,9 +20,9 @@
 '''
 
 from __future__ import print_function
-from distutils.core import setup
-from distutils.extension import Extension
-from distutils.command.build_ext import build_ext as _build_ext
+from setuptools import setup
+from setuptools.extension import Extension
+from setuptools.command.build_ext import build_ext as _build_ext
 from distutils.errors import CCompilerError
 from distutils.spawn import find_executable
 import subprocess as sp
@@ -91,6 +91,7 @@ class njbuild_ext(_build_ext):
             self.builtsolvernames.append(ext.name.split('.')[-1][1:])
 
         except CCompilerError:
+            print("Could not build %s"%ext.name)
             self.failedsolvernames.append(ext.name.split('.')[-1][1:])
 
 
@@ -598,7 +599,7 @@ lic = "License :: OSI Approved :: " \
 
 setup(
     name='Numberjack',
-    version='1.2.0',
+    version='1.2.1',
     author='Numberjack Developers',
     packages=['Numberjack', 'Numberjack.solvers'],
     ext_modules=extensions,

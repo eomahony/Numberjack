@@ -91,7 +91,6 @@ class njbuild_ext(_build_ext):
             self.builtsolvernames.append(ext.name.split('.')[-1][1:])
 
         except CCompilerError:
-
             self.failedsolvernames.append(ext.name.split('.')[-1][1:])
 
 
